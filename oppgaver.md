@@ -1,4 +1,4 @@
-# Melosys Skjema - Epic og Stories
+# Melosys A1-skjema - Epic, stories og oppgaver
 
 ## EPIC: Digitalt A1-skjema på Nav.no
 

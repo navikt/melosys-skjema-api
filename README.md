@@ -5,13 +5,13 @@
 2. [Systemarkitektur](#2-systemarkitektur)
 3. [Komponenter](#3-komponenter)
 4. [Brukerflyter](#4-brukerflyter)
-5. [Dataflyt og Prosesser](#5-dataflyt-og-prosesser)
+5. [Dataflyt og prosesser](#5-dataflyt-og-prosesser)
 6. [Integrasjoner](#6-integrasjoner)
-7. [Sikkerhet og Autorisering](#7-sikkerhet-og-autorisering)
-8. [Database Design](#8-database-design)
-9. [API Spesifikasjon](#9-api-spesifikasjon)
-10. [Åpne Punkter og Avklaringer](#10-åpne-punkter-og-avklaringer)
-11. [Vedlegg](#11-vedlegg)
+7. [Sikkerhet og autorisering](#7-sikkerhet-og-autorisering)
+8. [API Spesifikasjon](#8-api-spesifikasjon)
+9. [Åpne punkter og avklaringer](#9-åpne-punkter-og-avklaringer)
+10. [Vedlegg](#10-vedlegg)
+11. [Epic, stories og oppgaver](oppgaver.md)
 
 ---
 
@@ -23,7 +23,9 @@ Team MELOSYS skal erstatte eksisterende Altinn-skjema for "Utsendt arbeidstaker"
 ### 1.2 Formål
 Systemet håndterer søknader om lovvalgsavklaring for utsendte arbeidstakere innen EU/EØS (artikkel 12 i forordningen).
 
-I første omgang skal det håndtere søknader for arbeidstakere som sendes ut av norske arbeidsgivere til EU/EØS-land. Systemet skal støtte både arbeidsgivere og arbeidstakere i prosessen, inkludert fullmakter for rådgiverfirmaer.
+I første omgang skal det håndtere søknader for arbeidstakere som sendes ut av norske arbeidsgivere til EU/EØS-land. Systemet skal støtte både arbeidsgivere og arbeidstakere i prosessen, inkludert fullmakter for rådgiverfirmaer. 
+
+Resten av dokumentasjonen vil ta utgangspunkt i A1-skjema, men vil være utvidbart til andre skjemaer i fremtiden.
 
 ### 1.3 Hovedfunksjoner
 - ✅ **Digital innsending** for arbeidsgivere
@@ -42,7 +44,7 @@ I første omgang skal det håndtere søknader for arbeidstakere som sendes ut av
 | **Rådgiverfirmaer** | Firmaer som bistår med søknadsprosessen | Håndtere mange klienter effektivt |
 | **Saksbehandlere** | NAV-ansatte som behandler søknader | Motta strukturerte søknader automatisk |
 
-### 1.5 Volum og Skalering
+### 1.5 Volum og skalering
 - **Initialt volum**: 10+ søknader per dag
 - **Fremtidig vekst**: Planlagt utvidelse til flere skjematyper
 - **Skalerbarhet**: Designet for å håndtere betydelig vekst
@@ -51,7 +53,7 @@ I første omgang skal det håndtere søknader for arbeidstakere som sendes ut av
 
 ## 2. Systemarkitektur
 
-### 2.1 Overordnet Arkitektur
+### 2.1 Overordnet arkitektur
 
 ```mermaid
 graph TB
@@ -110,22 +112,40 @@ graph TB
     Web -.->|Autentisering| IDPorten
 ```
 
-### 2.2 Teknisk Stack
+### 2.2 Tech-stack
 
-| Lag | Teknologi | Versjon | Formål |
-|-----|-----------|---------|--------|
-| **Frontend** | React | 18.x | UI-rammeverk |
-| **Frontend** | TypeScript | 5.x | Typesikkerhet |
-| **Frontend** | Node m/ express.js | 5.x | Proxy-server |
-| **Frontend** | NAV Aksel | Siste | Designsystem |
-| **Backend** | Spring Boot | 3.2.x | Applikasjonsrammeverk |
-| **Backend** | Kotlin | 1.9.x | Programmeringsspråk |
-| **Database** | PostgreSQL | 15.x | Datalagring |
-| **Meldingskø** | Kafka | 3.x | Hendelsesstrøm |
-| **Plattform** | NAIS | - | Kubernetes-plattform |
+| Lag | Teknologi    | Versjon  | Formål                |
+|-----|--------------|----------|-----------------------|
+| **Frontend** | React        | 19.x     | UI-rammeverk          |
+| **Frontend** | TypeScript   | 5.9.x    | Typesikkerhet         |
+| **Frontend** | Node.js      | 22.x LTS | JavaScript runtime    |
+| **Frontend** | Express.js   | 5.x      | Proxy-server          |
+| **Frontend** | NAV Aksel    | Siste    | Designsystem          |
+| **Frontend** | Vitest       | 1.0.x    | Enhetstesting         |
+| **Frontend** | Playwright   | 1.35.x   | End-to-end testing    |
+| **Frontend** | Unleash      | -        | Feature toggling      |
+| **Backend** | Spring Boot  | 3.5.x    | Applikasjonsrammeverk |
+| **Backend** | Kotlin       | 2.2.x    | Programmeringsspråk   |
+| **Backend** | JPA/Hibernate | 6.x      | ORM for database      |
+| **Backend** | Flyway       | 11.x     | Database migrering    |
+| **Backend** | Unleash      | -        | Feature toggling      |
+| **Database** | PostgreSQL   | 17.x     | Datalagring           |
+| **Meldingskø** | Kafka        | 3.9.x    | Hendelsesstrøm        |
+| **Plattform** | NAIS         | -        | Kubernetes-plattform  |
 
 ### 2.3 Deployment
-Gjøre som resten av Team Melosys sine apper.
+
+Systemet deployes automatisk via GitHub Actions til NAIS-plattformen:
+
+- **Dev-miljø**: Automatisk deploy ved push til `main`-branch
+- **Prod-miljø**: Deploy ved publisering av ny release på GitHub
+
+Begge miljøer kjører på NAIS med følgende oppsett:
+- Docker-images bygges og pushes til Google Artifact Registry (GAR)
+- Deployment til NAIS cluster via `nais/deploy` action
+- Automatisk database-migrering med Flyway
+- Unleash for feature toggles
+- Automatisk Slack-varsling ved deploy
 
 ---
 
@@ -227,15 +247,15 @@ graph TD
 
 ## 4. Brukerflyter
 
-### 4.1 Hovedflyt - Arbeidsgiver med Fullmakt
+### 4.1 Hovedflyt - Arbeidsgiver med fullmakt
 
-TODO:
-- Arbeidstaker og arbeidsgiver kan sende sin del uavhengigh av hverandre (men arbeidsgiver må først oppgi arbeidstaker som en del av søknaden)
-- Arbeidsgiver skal få spørsmål om de ØNSKER å fylle inn på vegne av bruker.
-    - Hvis de velger å fylle inn, må de som nevnt i grafen, spørre om fullmakt
-    - Hvis de velger å ikke fylle inn på vegne av arbeidstaker, sendes det varsel til arebidstaker om å fylle inn sin del (uten fullmakt-logikken).
+> **Viktige prinsipper:**
+> - Arbeidstaker og arbeidsgiver kan sende sin del uavhengig av hverandre (men arbeidsgiver må først oppgi arbeidstaker som en del av søknaden)
+> - Arbeidsgiver skal få spørsmål om de ØNSKER å fylle inn på vegne av bruker:
+>   - Hvis de velger å fylle inn, må de som nevnt i grafen, spørre om fullmakt
+>   - Hvis de velger å ikke fylle inn på vegne av arbeidstaker, sendes det varsel til arbeidstaker om å fylle inn sin del (uten fullmakt-logikken)
 
-### 4.2 Alternativ Flyt - Arbeidstaker Fyller Selv
+### 4.2 Alternativ flyt - Arbeidstaker fyller selv
 
 ```mermaid
 sequenceDiagram
@@ -287,15 +307,15 @@ sequenceDiagram
     System->>AT: Kvittering
 ```
 
-### 4.3 Rådgiverfirma Flyt
+### 4.3 Rådgiverfirma - flyt
 
 Når en bruker velger en bedrift de har tilgang til, opererer de som om de er den bedriften og kan dermed gå gjennom samme flyten som beskrevet over.
 
 ---
 
-## 5. Dataflyt og Prosesser
+## 5. Dataflyt og prosesser
 
-### 5.1 Søknadsprosess - Komplett Flyt
+### 5.1 Søknadsprosess - Komplett flyt
 
 ```mermaid
 sequenceDiagram
@@ -382,7 +402,7 @@ stateDiagram-v2
 
 ## 6. Integrasjoner
 
-### 6.1 Eksterne Systemer
+### 6.1 Eksterne systemer
 
 ```mermaid
 graph TB
@@ -428,7 +448,7 @@ graph TB
 | **Nav-melding** | REST | Systembruker | Sende varsler |
 | **Melosys-API** | REST + Kafka | Intern | Saksbehandling |
 
-### 6.3 Integrasjonsflyt Eksempel - Preutfylling
+### 6.3 Integrasjonsflyt - eksempel - preutfylling
 
 ```mermaid
 sequenceDiagram
@@ -458,7 +478,7 @@ sequenceDiagram
 
 ---
 
-## 7. Sikkerhet og Autorisering
+## 7. Sikkerhet og autorisering
 
 ### 7.1 Autorisasjonsmodell
 
@@ -485,9 +505,9 @@ graph TD
 
 ---
 
-## 9. API Spesifikasjon
+## 8. API Spesifikasjon
 
-### 9.1 REST Endepunkter Oversikt
+### 8.1 REST Endepunktoversikt
 
 | Metode | Endepunkt | Beskrivelse | Auth påkrevd |
 |--------|-----------|-------------|--------------|
@@ -510,7 +530,7 @@ graph TD
 | POST | /api/v1/prefill/person | Hent persondata | Ja |
 | GET | /api/v1/prefill/org/{orgnr} | Hent organisasjonsdata | Ja |
 
-### 9.2 Kafka-hendelser
+### 8.2 Kafka-hendelser
 
 | Hendelse | Topic | Beskrivelse | Konsumenter |
 |----------|-------|-------------|-------------|
@@ -518,30 +538,30 @@ graph TD
 
 ---
 
-## 10. Åpne Punkter og Avklaringer
+## 9. Åpne punkter og avklaringer
 
-### 10.1 Funksjonelle Avklaringer
+### 9.1 Funksjonelle avklaringer
 
-| ID | Kategori | Beskrivelse | Status | Eier | Frist |
-|----|----------|-------------|--------|------|-------|
-| F01 | 🔑 Fullmakt | Skal fullmakt gjelde for én søknad eller periode? | 🟡 Under avklaring | Produkteier | 2024-02-01 |
-| F02 | ⏱️ Timeout | Hvor lenge venter vi på respons fra arbeidstaker? | 🟡 Under avklaring | Produkteier | 2024-02-01 |
-| F03 | 🔔 Purring | Automatiske påminnelser - antall og timing? | 🔴 Ikke startet | Produkteier | 2024-02-15 |
-| F04 | 📧 Kvittering | Er Nav.no standard kvittering juridisk tilstrekkelig? | 🟡 Under avklaring | Juridisk | 2024-01-25 |
-| F05 | 🗑️ GDPR | Sletteregler for persondata | 🔴 Ikke startet | Juridisk | 2024-03-01 |
+| ID | Kategori | Beskrivelse | Status | Eier |
+|----|----------|-------------|--------|------|
+| F01 | 🔑 Fullmakt | Skal fullmakt gjelde for én søknad eller periode? | 🟡 Under avklaring | Produkteier |
+| F02 | ⏱️ Timeout | Hvor lenge venter vi på respons fra arbeidstaker? | 🟡 Under avklaring | Produkteier |
+| F03 | 🔔 Purring | Automatiske påminnelser - antall og timing? | 🔴 Ikke startet | Produkteier |
+| F04 | 📧 Kvittering | Er Nav.no standard kvittering juridisk tilstrekkelig? | 🟡 Under avklaring | Juridisk |
+| F05 | 🗑️ GDPR | Sletteregler for persondata | 🔴 Ikke startet | Juridisk |
 
-### 10.2 Tekniske Avklaringer
+### 9.2 Tekniske avklaringer
 
-| ID | Kategori | Beskrivelse | Status | Eier | Frist |
-|----|----------|-------------|--------|------|-------|
-| T01 | 📄 PDF | Hvilken tjeneste for PDF-generering? | 🔴 Ikke startet | Arkitektur | 2024-03-01 |
-| T02 | 📊 Monitoring | Grafana dashboards oppsett | 🔴 Ikke startet | DevOps | 2024-06-01 |
+| ID | Kategori | Beskrivelse | Status | Eier |
+|----|----------|-------------|--------|------|
+| T01 | 📄 PDF | Hvilken tjeneste for PDF-generering? | 🔴 Ikke startet | Arkitektur |
+| T02 | 📊 Monitoring | Grafana dashboards oppsett | 🔴 Ikke startet | DevOps |
 
 ---
 
-## 11. Vedlegg
+## 10. Vedlegg
 
-### 11.1 Ordliste
+### 10.1 Ordliste
 
 | Term | Forklaring |
 |------|------------|
@@ -557,7 +577,7 @@ graph TD
 | **TokenX** | Token exchange service for zero trust-arkitektur |
 | **Utsending** | Midlertidig arbeid i annet EØS-land med norsk trygdedekning |
 
-### 11.2 Referanser
+### 10.2 Referanser
 
 #### Interne dokumenter
 - [Elektronisk søknadsdialog på Altinn - Confluence](https://confluence.adeo.no/spaces/TEESSI/pages/340512270/)
@@ -575,7 +595,7 @@ graph TD
 - [Forordning 883/2004](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32004R0883)
 - [GDPR](https://gdpr.eu)
 
-### 11.3 Kontaktinformasjon
+### 10.3 Kontaktinformasjon
 
 | Rolle | Team/Person | Kontaktkanal | Ansvar |
 |-------|-------------|--------------|--------|
@@ -585,7 +605,7 @@ graph TD
 | Altinn-kontakt | Dana | Slack | Altinn-integrasjon og support |
 | DevOps | NAIS team | Slack: #nais | Infrastruktur og plattform |
 
-### 11.4 Miljøer og URLer
+### 10.4 Miljøer og URLer
 
 | Miljø | Type | URL | Formål |
 |-------|------|-----|--------|
@@ -607,6 +627,16 @@ graph TD
 |---------|------|-----------|-----------|
 | 1.0.0 | 2024-01-15 | Team Melosys | Initialversjon |
 | 1.1.0 | 2024-11-08 | Team Melosys | Forenklet og fokusert dokumentasjon |
+
+---
+
+## Epic, stories og oppgaver
+
+For detaljert oversikt over utviklingsoppgaver, brukerhistorier og epics, se [oppgaver.md](oppgaver.md). Dette dokumentet inneholder:
+- Overordnede epics for prosjektet
+- Brukerhistorier (user stories) med akseptansekriterier
+- Tekniske oppgaver og implementasjonsdetaljer
+- Prioritering og estimater
 
 ---
 
