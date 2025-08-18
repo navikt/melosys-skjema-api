@@ -1,0 +1,66 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: melosys-skjema-api
+  namespace: melosys
+  labels:
+    team: melosys
+spec:
+  image: {{image}}
+  port: 8080
+  ingresses:
+    - https://melosys-skjema-api.intern.nav.no
+  liveness:
+    path: /api/internal/health/liveness
+    initialDelay: 20
+    timeout: 60
+  readiness:
+    path: /api/internal/health/readiness
+    initialDelay: 20
+    timeout: 60
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2Gi
+    requests:
+      cpu: "200m"
+      memory: 512Mi
+  replicas:
+    min: 2
+    max: 10
+    cpuThresholdPercentage: 50
+  prometheus:
+    enabled: true
+    path: /api/internal/metrics
+  secureLogs:
+    enabled: true
+  kafka:
+    pool: nav-prod
+  gcp:
+    sqlInstances:
+      - name: melosys-skjema-db-prod
+        type: POSTGRES_15
+        tier: db-standard-2
+        databases:
+          - name: melosys-skjema
+        diskAutoresize: true
+  accessPolicy:
+    inbound:
+      rules:
+        - application: melosys-skjema-web
+          namespace: melosys
+    outbound:
+      external:
+        - host: pdl-api.prod-fss-pub.nais.io
+        - host: aareg-services.prod-fss-pub.nais.io
+        - host: ereg-services.prod-fss-pub.nais.io
+        - host: altinn.no
+        - host: nav-melding-api.intern.nav.no
+      rules:
+        - application: melosys-api
+          namespace: melosys
+  envFrom:
+    - secret: melosys-skjema-api-secrets
+  env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: prod
