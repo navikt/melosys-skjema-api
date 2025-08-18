@@ -621,15 +621,6 @@ graph TD
 
 ---
 
-## Dokumenthistorikk
-
-| Versjon | Dato | Forfatter | Endringer |
-|---------|------|-----------|-----------|
-| 1.0.0 | 2024-01-15 | Team Melosys | Initialversjon |
-| 1.1.0 | 2024-11-08 | Team Melosys | Forenklet og fokusert dokumentasjon |
-
----
-
 ## Epic, stories og oppgaver
 
 For detaljert oversikt over utviklingsoppgaver, brukerhistorier og epics, se [oppgaver.md](oppgaver.md). Dette dokumentet inneholder:
@@ -639,9 +630,5 @@ For detaljert oversikt over utviklingsoppgaver, brukerhistorier og epics, se [op
 - Prioritering og estimater
 
 ---
-
-**Status**: 📝 Under utvikling  
-**Sist oppdatert**: 2024-11-08  
-**Neste gjennomgang**: 2024-02-01
 
 *Dette er et levende dokument som oppdateres kontinuerlig gjennom prosjektets levetid.*
