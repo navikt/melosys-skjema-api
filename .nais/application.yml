@@ -47,6 +47,7 @@ spec:
         - application: melosys-skjema-web
           namespace: melosys
     outbound:
+      # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
         - host: pdl-api.prod-fss-pub.nais.io
         - host: aareg-services.prod-fss-pub.nais.io  
