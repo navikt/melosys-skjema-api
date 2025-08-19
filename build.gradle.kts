@@ -17,6 +17,15 @@ java {
     }
 }
 
+// Enable automatic toolchain provisioning
+gradle.beforeProject {
+    project.plugins.withType<JavaPlugin> {
+        project.extensions.configure<JavaToolchainService> {
+            // Empty configuration to enable auto-provisioning
+        }
+    }
+}
+
 repositories {
     mavenCentral()
 }
