@@ -14,6 +14,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: melosys
+          POSTGRES_USER: melosys
+          POSTGRES_DB: melosys_skjema
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,6 +43,9 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test
+        env:
+          DB_USERNAME: melosys
+          DB_PASSWORD: melosys
 
   build:
     runs-on: ubuntu-latest
