@@ -36,6 +36,7 @@ spec:
     sqlInstances:
       - name: melosys-skjema-db
         type: POSTGRES_15
+        tier: db-f1-micro
         databases:
           - name: melosys-skjema
         diskAutoresize: true
