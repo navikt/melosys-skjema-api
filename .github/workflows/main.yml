@@ -57,4 +57,4 @@ jobs:
         env:
           CLUSTER: dev-gcp
           RESOURCE: .nais/app.yaml
-          VAR: image=${{ steps.docker-build-push.outputs.image }},kafka_pool=nav-dev,spring_profile=dev
+          VAR: image=${{ steps.docker-build-push.outputs.image }}, spring_profile=dev
