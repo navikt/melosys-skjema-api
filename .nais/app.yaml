@@ -40,6 +40,7 @@ spec:
         databases:
           - name: melosys-skjema
         diskAutoresize: true
+        cascadingDelete: false
   accessPolicy:
     inbound:
       rules:
