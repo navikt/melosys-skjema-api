@@ -32,8 +32,6 @@ spec:
     path: /api/internal/metrics
   secureLogs:
     enabled: true
-  kafka:
-    pool: {{kafka_pool}}
   gcp:
     sqlInstances:
       - name: melosys-skjema-db
