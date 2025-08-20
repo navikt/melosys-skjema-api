@@ -35,10 +35,11 @@ spec:
   gcp:
     sqlInstances:
       - name: melosys-skjema-db
-        type: POSTGRES_15
+        type: POSTGRES_17
         tier: db-f1-micro
         databases:
           - name: melosys-skjema
+            envVarPrefix: DB
         diskAutoresize: true
         cascadingDelete: false
   accessPolicy:

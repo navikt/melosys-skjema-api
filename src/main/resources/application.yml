@@ -1,13 +1,10 @@
 spring:
   application:
     name: melosys-skjema-api
-  
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/melosys_skjema
-    username: ${DB_USERNAME:melosys}
-    password: ${DB_PASSWORD:melosys}
-    driver-class-name: org.postgresql.Driver
-  
+    url: ${DB_JDBC_URL}
+
   jpa:
     hibernate:
       ddl-auto: validate
