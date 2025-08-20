@@ -41,7 +41,7 @@ spec:
           - name: melosys-skjema
             envVarPrefix: DB
         diskAutoresize: true
-        cascadingDelete: true
+        cascadingDelete: false
   accessPolicy:
     inbound:
       rules:
