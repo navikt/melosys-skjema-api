@@ -56,6 +56,5 @@ jobs:
         uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: dev-gcp
-          RESOURCE: .nais/app.yaml # same list as in changed-files step above
-          WORKLOAD_IMAGE: ${{ steps.docker-build-push.outputs.image }}
-          TELEMETRY: ${{ steps.docker-build-push.outputs.telemetry }}
+          RESOURCE: .nais/app.yaml
+          VAR: image=${{ steps.docker-build-push.outputs.image }},kafka_pool=nav-dev,spring_profile=dev
