@@ -2,9 +2,9 @@ apiVersion: nais.io/v1alpha1
 kind: Application
 metadata:
   name: melosys-skjema-api
-  namespace: melosys
+  namespace: teammelosys
   labels:
-    team: melosys
+    team: teammelosys
 spec:
   image: {{image}}
   port: 8080
