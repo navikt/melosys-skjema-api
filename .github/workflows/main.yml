@@ -11,6 +11,20 @@ jobs:
       contents: read
       id-token: write
       actions: read
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: melosys
+          POSTGRES_USER: melosys
+          POSTGRES_DB: melosys_skjema
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,6 +43,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Build application
         run: ./gradlew build
+        env:
+          DB_USERNAME: melosys
+          DB_PASSWORD: melosys
       - name: Build and push image and SBOM to OCI registry
         if: steps.changed-files.outputs.changed != 'only-inputs'
         uses: nais/docker-build-push@v0
