@@ -39,7 +39,7 @@
 **Slik at:** Jeg kan fylle ut skjema for riktig part
 
 **Oppgaver:**
-- **TASK-2.1:** Implementer ID-porten token-utveksling med backend og frontend
+- **TASK-2.1:** Implementer ID-porten / tokenX token-utveksling med backend og frontend
 - **TASK-2.2:** Opprett ressurs/delegering i Altinn for A1-skjema
 - **TASK-2.3:** Integrer Altinn for å hente representasjoner
 - **TASK-2.4:** Implementer rollevalg-UI og kontekstbytte
