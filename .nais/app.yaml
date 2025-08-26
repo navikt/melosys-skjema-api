@@ -63,3 +63,5 @@ spec:
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: {{spring_profile}}
+    - name: SPRING_FLYWAY_VALIDATE_ON_MIGRATE #TODO remove
+      value: "false"
