@@ -42,11 +42,13 @@ spec:
             envVarPrefix: DB
         diskAutoresize: true
         cascadingDelete: false
+  tokenx:
+    enabled: true
   accessPolicy:
     inbound:
       rules:
         - application: melosys-skjema-web
-          namespace: melosys
+          namespace: teammelosys
     outbound:
       # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
@@ -57,7 +59,7 @@ spec:
         - host: nav-melding-api.intern.nav.no
       rules:
         - application: melosys-api
-          namespace: melosys
+          namespace: teammelosys
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: {{spring_profile}}
