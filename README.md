@@ -527,8 +527,8 @@ graph TD
 | POST | /api/v1/fullmakt/{id}/godkjenn | Godkjenn fullmakt | Ja |
 | POST | /api/v1/fullmakt/{id}/avslag | Avslå fullmakt | Ja |
 | **Preutfyllingsdata** | | | |
-| POST | /api/v1/prefill/person | Hent persondata | Ja |
-| GET | /api/v1/prefill/org/{orgnr} | Hent organisasjonsdata | Ja |
+| POST | /api/v1/preutfyll/person | Hent persondata | Ja |
+| GET | /api/v1/preutfyll/org/{orgnr} | Hent organisasjonsdata | Ja |
 
 ### 8.2 Kafka-hendelser
 
