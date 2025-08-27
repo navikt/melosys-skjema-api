@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/fullmakt")
+@RequestMapping("/fullmakt")
 @Tag(name = "Fullmakt", description = "placeholder")
 class FullmaktController {
 

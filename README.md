@@ -328,7 +328,7 @@ sequenceDiagram
     participant M as Melosys-API
     
     B->>W: Start søknad
-    W->>A: POST /api/v1/skjema
+    W->>A: POST /skjema
     A->>DB: Opprett utkast
     A-->>W: Skjema-ID
     
@@ -338,17 +338,17 @@ sequenceDiagram
         A->>E: Hent fra PDL/Areg
         E-->>A: Data
         A-->>W: Preutfylte felt
-        W->>A: PUT /api/v1/skjema/{id}
+        W->>A: PUT /skjema/{id}
         A->>DB: Oppdater utkast
     end
     
     B->>W: Send inn skjema
-    W->>A: POST /api/v1/skjema/{id}/submit
+    W->>A: POST /skjema/{id}/submit
     A->>A: Valider komplett
     A->>DB: Oppdater status
     A->>K: Publiser hendelse
     K->>M: Konsumer hendelse
-    M->>A: GET /api/v1/skjema/{id}
+    M->>A: GET /skjema/{id}
     A-->>M: Skjemadata
     M->>M: Opprett sak
     M->>M: Arkiver
@@ -512,23 +512,23 @@ graph TD
 | Metode | Endepunkt | Beskrivelse | Auth påkrevd |
 |--------|-----------|-------------|--------------|
 | **Autentisering** | | | |
-| GET | /api/v1/auth/representasjoner | Hent brukers organisasjoner | Ja |
+| GET | /auth/representasjoner | Hent brukers organisasjoner | Ja |
 | **Skjemaer** | | | |
-| GET | /api/v1/skjema | List skjemaer | Ja |
-| POST | /api/v1/skjema | Opprett nytt skjema | Ja |
-| GET | /api/v1/skjema/{id} | Hent spesifikt skjema | Ja |
-| PUT | /api/v1/skjema/{id} | Oppdater skjema | Ja |
-| DELETE | /api/v1/skjema/{id} | Slett utkast | Ja |
-| POST | /api/v1/skjema/{id}/submit | Send inn skjema | Ja |
-| GET | /api/v1/skjema/{id}/pdf | Generer PDF | Ja |
+| GET | /skjema | List skjemaer | Ja |
+| POST | /skjema | Opprett nytt skjema | Ja |
+| GET | /skjema/{id} | Hent spesifikt skjema | Ja |
+| PUT | /skjema/{id} | Oppdater skjema | Ja |
+| DELETE | /skjema/{id} | Slett utkast | Ja |
+| POST | /skjema/{id}/submit | Send inn skjema | Ja |
+| GET | /skjema/{id}/pdf | Generer PDF | Ja |
 | **Fullmakt** | | | |
-| POST | /api/v1/fullmakt | Be om fullmakt | Ja |
-| GET | /api/v1/fullmakt/{id} | Hent fullmaktdetaljer | Ja |
-| POST | /api/v1/fullmakt/{id}/godkjenn | Godkjenn fullmakt | Ja |
-| POST | /api/v1/fullmakt/{id}/avslag | Avslå fullmakt | Ja |
+| POST | /fullmakt | Be om fullmakt | Ja |
+| GET | /fullmakt/{id} | Hent fullmaktdetaljer | Ja |
+| POST | /fullmakt/{id}/godkjenn | Godkjenn fullmakt | Ja |
+| POST | /fullmakt/{id}/avslag | Avslå fullmakt | Ja |
 | **Preutfyllingsdata** | | | |
-| POST | /api/v1/preutfyll/person | Hent persondata | Ja |
-| GET | /api/v1/preutfyll/org/{orgnr} | Hent organisasjonsdata | Ja |
+| POST | /preutfyll/person | Hent persondata | Ja |
+| GET | /preutfyll/org/{orgnr} | Hent organisasjonsdata | Ja |
 
 ### 8.2 Kafka-hendelser
 
