@@ -1,3 +1,5 @@
 # Template verdier for application-local.yml (som ikke sjekkes inn i git)
 
 DB_JDBC_URL: 'jdbc:postgresql://localhost:5433/melosys_skjema?user=melosys&password=melosys'
+TOKEN_X_ISSUER: placeholder
+TOKEN_X_JWKS_URI: placeholder
