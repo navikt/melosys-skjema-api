@@ -9,11 +9,11 @@ spec:
   image: {{image}}
   port: 8080
   liveness:
-    path: /api/internal/health/liveness
+    path: /actuator/health
     initialDelay: 20
     timeout: 60
   readiness:
-    path: /api/internal/health/readiness
+    path: /actuator/health
     initialDelay: 20
     timeout: 60
   resources:
@@ -29,7 +29,7 @@ spec:
     cpuThresholdPercentage: 50
   prometheus:
     enabled: true
-    path: /api/internal/metrics
+    path: /actuator/prometheus
   secureLogs:
     enabled: true
   gcp:

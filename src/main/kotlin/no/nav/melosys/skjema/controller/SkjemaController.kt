@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/skjema")
+@RequestMapping("/api/skjema")
 @Tag(name = "Skjema", description = "placeholder")
 class SkjemaController {
 
