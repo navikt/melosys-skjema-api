@@ -19,6 +19,13 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${TOKEN_X_ISSUER}
+          jwk-set-uri: ${TOKEN_X_JWKS_URI}
+
 server:
   port: 8080
 
