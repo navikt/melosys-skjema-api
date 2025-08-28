@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: melosys_skjema
+      POSTGRES_USER: melosys
+      POSTGRES_PASSWORD: melosys
+    ports:
+      - "5432:5432"

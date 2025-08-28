@@ -49,3 +49,4 @@ logs/
 # Environment files
 .env
 .env.local
+/src/main/resources/application-local.yml
