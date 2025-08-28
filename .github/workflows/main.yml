@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
 jobs:
   build_and_deploy:
     name: Build, push and deploy
@@ -11,20 +13,6 @@ jobs:
       contents: read
       id-token: write
       actions: read
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_PASSWORD: melosys
-          POSTGRES_USER: melosys
-          POSTGRES_DB: melosys_skjema
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
