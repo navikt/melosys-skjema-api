@@ -31,8 +31,8 @@ management:
 no.nav.security.jwt:
   issuer:
     tokenx:
-      discovery-url: {TOKEN_X_WELL_KNOWN_URL}
-      accepted_audience: {TOKEN_X_CLIENT_ID}
+      discovery-url: ${TOKEN_X_WELL_KNOWN_URL}
+      accepted_audience: ${TOKEN_X_CLIENT_ID}
 
 logging:
   level:
