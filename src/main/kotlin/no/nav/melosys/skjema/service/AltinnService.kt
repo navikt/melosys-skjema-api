@@ -1,6 +1,8 @@
 package no.nav.melosys.skjema.service
 
-import no.nav.melosys.skjema.dto.*
+import no.nav.melosys.skjema.dto.AltinnResponse
+import no.nav.melosys.skjema.dto.RepresentasjonerRequest
+import no.nav.melosys.skjema.dto.RepresentasjonerResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
@@ -15,20 +17,12 @@ class AltinnService(
     fun getRepresentasjoner(request: RepresentasjonerRequest): RepresentasjonerResponse {
         val url = "$altinnBaseUrl$tilgangerEndpoint"
         
-        val altinnRequest = AltinnRequest(
-            fnr = request.fnr,
-            filter = AltinnFilter(
-                altinn2Tilganger = listOf("4936:1"), //TODO endre til det vi får opprettet. Det er sannsynlig at vi ikke får opprettet altinn 3 med det første
-                altinn3Tilganger = listOf("nav_permittering-og-nedbemmaning_innsyn-i-alle-innsendte-meldinger")
-            )
-        )
-        
-        val altinnResponse = restTemplate.postForObject(url, altinnRequest, AltinnResponse::class.java)
+        val altinnResponse = restTemplate.postForObject(url, request, AltinnResponse::class.java)
         
         val orgnrList = altinnResponse?.tilgangTilOrgNr?.get("tilgang1") ?: emptyList() //TODO endre til vår tilgang
         
         return RepresentasjonerResponse(
-            fnr = altinnRequest.fnr,
+            fnr = request.fnr,
             orgnr = orgnrList
         )
     }
