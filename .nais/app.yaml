@@ -60,6 +60,8 @@ spec:
       rules:
         - application: melosys-api
           namespace: teammelosys
+        - application: arbeidsgiver-altinn-tilganger
+          namespace: fager
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: {{spring_profile}}
