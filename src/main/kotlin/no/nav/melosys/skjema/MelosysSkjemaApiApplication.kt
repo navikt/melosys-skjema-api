@@ -6,7 +6,7 @@ import no.nav.security.token.support.spring.api.EnableJwtTokenValidation
 
 
 @SpringBootApplication
-//@EnableJwtTokenValidation
+@EnableJwtTokenValidation
 class MelosysSkjemaApiApplication
 
 fun main(args: Array<String>) {
