@@ -27,6 +27,7 @@ gradle.beforeProject {
 }
 
 val tokenSupportVersion = "5.0.34"
+val mockOAuth2ServerVersion = "2.2.1"
 
 repositories {
     mavenCentral()
@@ -53,6 +54,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
 }
 
 tasks.withType<KotlinCompile> {
