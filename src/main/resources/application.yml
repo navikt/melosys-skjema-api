@@ -37,3 +37,4 @@ logging:
 altinn:
   base-url: http://localhost:8083
   tilganger-endpoint: /m2m/altinn-tilganger
+  resource-registry-url: https://platform.tt02.altinn.no/resourceregistry/api/v1/resource/test-fager/policy/subjects

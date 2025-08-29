@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.service
 import no.nav.melosys.skjema.dto.AltinnResponse
 import no.nav.melosys.skjema.dto.RepresentasjonerRequest
 import no.nav.melosys.skjema.dto.RepresentasjonerResponse
+import no.nav.melosys.skjema.dto.RessursRegisterResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
@@ -11,7 +12,8 @@ import org.springframework.web.client.RestTemplate
 class AltinnService(
     private val restTemplate: RestTemplate,
     @Value("\${altinn.base-url}") private val altinnBaseUrl: String,
-    @Value("\${altinn.tilganger-endpoint}") private val tilgangerEndpoint: String
+    @Value("\${altinn.tilganger-endpoint}") private val tilgangerEndpoint: String,
+    @Value("\${altinn.resource-registry-url}") private val resourceRegistryUrl: String
 ) {
 
     companion object {
@@ -26,15 +28,20 @@ class AltinnService(
         
         val altinnResponse = restTemplate.postForObject(url, request, AltinnResponse::class.java)
         
-        val filteredOrgnrList = altinnResponse?.orgNrTilTilganger
+        val tilgangerForRessursRespons = restTemplate.getForObject(resourceRegistryUrl, RessursRegisterResponse::class.java)
+        val tilgangerForRessurs = tilgangerForRessursRespons?.data?.map { it.type } ?: emptyList()
+        
+        val alleTilganger = PAAREVDE_TILGANGER + tilgangerForRessurs
+        
+        val filtrertOrgnrListe = altinnResponse?.orgNrTilTilganger
             ?.filter { (_, tilganger) ->
-                tilganger.any { tilgang -> PAAREVDE_TILGANGER.contains(tilgang) }
+                tilganger.any { tilgang -> alleTilganger.contains(tilgang) }
             }
             ?.keys?.toList() ?: emptyList()
         
         return RepresentasjonerResponse(
             fnr = request.fnr,
-            orgnr = filteredOrgnrList
+            orgnr = filtrertOrgnrListe
         )
     }
 }
