@@ -3,7 +3,7 @@ spring:
     name: melosys-skjema-api
 
   datasource:
-    url: ${DB_JDBC_URL}
+    url: jdbc:postgresql://localhost:5432/melosys_skjema?user=melosys&password=melosys
 
   jpa:
     hibernate:
@@ -33,3 +33,6 @@ logging:
     no.nav.melosys: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+altinn:
+  base-url: http://localhost:8083

@@ -1,14 +1,18 @@
 package no.nav.melosys.skjema.service
 
 import no.nav.melosys.skjema.dto.*
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
 @Service
-class AltinnService(private val restTemplate: RestTemplate) {
+class AltinnService(
+    private val restTemplate: RestTemplate,
+    @Value("\${altinn.base-url}") private val altinnBaseUrl: String
+) {
 
     fun getRepresentasjoner(request: RepresentasjonerRequest): RepresentasjonerResponse {
-        val url = "http://localhost:8083/m2m/altinn-tilganger"
+        val url = "$altinnBaseUrl/m2m/altinn-tilganger"
         
         val altinnRequest = AltinnRequest(
             fnr = request.fnr,
@@ -20,8 +24,7 @@ class AltinnService(private val restTemplate: RestTemplate) {
         
         val altinnResponse = restTemplate.postForObject(url, altinnRequest, AltinnResponse::class.java)
         
-        // Extract organization numbers for "tilgang1" permission
-        val orgnrList = altinnResponse?.tilgangTilOrgNr?.get("tilgang1") ?: emptyList()
+        val orgnrList = altinnResponse?.tilgangTilOrgNr?.get("tilgang1") ?: emptyList() //TODO endre til vår tilgang
         
         return RepresentasjonerResponse(
             fnr = emptyList(),
