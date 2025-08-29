@@ -36,3 +36,4 @@ logging:
 
 altinn:
   base-url: http://localhost:8083
+  tilganger-endpoint: /m2m/altinn-tilganger
