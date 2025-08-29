@@ -14,16 +14,27 @@ class AltinnService(
     @Value("\${altinn.tilganger-endpoint}") private val tilgangerEndpoint: String
 ) {
 
+    companion object {
+        private val PAAREVDE_TILGANGER = listOf(
+            "4936:1",
+            "tilgang1"
+        )
+    }
+
     fun getRepresentasjoner(request: RepresentasjonerRequest): RepresentasjonerResponse {
         val url = "$altinnBaseUrl$tilgangerEndpoint"
         
         val altinnResponse = restTemplate.postForObject(url, request, AltinnResponse::class.java)
         
-        val orgnrList = altinnResponse?.tilgangTilOrgNr?.get("tilgang1") ?: emptyList() //TODO endre til vår tilgang
+        val filteredOrgnrList = altinnResponse?.orgNrTilTilganger
+            ?.filter { (_, tilganger) ->
+                tilganger.any { tilgang -> PAAREVDE_TILGANGER.contains(tilgang) }
+            }
+            ?.keys?.toList() ?: emptyList()
         
         return RepresentasjonerResponse(
             fnr = request.fnr,
-            orgnr = orgnrList
+            orgnr = filteredOrgnrList
         )
     }
 }
