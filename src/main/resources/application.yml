@@ -28,6 +28,12 @@ management:
       exposure:
         include: health,prometheus
 
+no.nav.security.jwt:
+  issuer:
+    tokenx:
+      discovery-url: ${TOKEN_X_WELL_KNOWN_URL}
+      accepted_audience: ${TOKEN_X_CLIENT_ID}
+
 logging:
   level:
     no.nav.melosys: INFO
