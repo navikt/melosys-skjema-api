@@ -19,13 +19,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${TOKEN_X_ISSUER}
-          jwk-set-uri: ${TOKEN_X_JWKS_URI}
-
 server:
   port: 8080
 
@@ -34,6 +27,12 @@ management:
     web:
       exposure:
         include: health,prometheus
+
+no.nav.security.jwt:
+  issuer:
+    tokenx:
+      discovery-url: {TOKEN_X_WELL_KNOWN_URL}
+      accepted_audience: {TOKEN_X_CLIENT_ID}
 
 logging:
   level:
