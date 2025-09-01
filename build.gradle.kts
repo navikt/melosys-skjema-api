@@ -26,8 +26,14 @@ gradle.beforeProject {
     }
 }
 
+val tokenSupportVersion = "5.0.34"
+val mockOAuth2ServerVersion = "2.2.1"
+
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
+    }
 }
 
 dependencies {
@@ -35,6 +41,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("no.nav.security:token-validation-spring:$tokenSupportVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -47,6 +54,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
 }
 
 tasks.withType<KotlinCompile> {
