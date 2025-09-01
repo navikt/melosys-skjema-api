@@ -55,6 +55,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
 }
 
 tasks.withType<KotlinCompile> {
