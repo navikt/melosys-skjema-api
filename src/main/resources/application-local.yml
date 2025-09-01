@@ -1,5 +1,5 @@
 # Template verdier for application-local.yml (som ikke sjekkes inn i git)
 
 DB_JDBC_URL: 'jdbc:postgresql://localhost:5433/melosys_skjema?user=melosys&password=melosys'
-TOKEN_X_WELL_KNOWN_URL: placeholder
-TOKEN_X_CLIENT_ID: placeholder
+TOKEN_X_WELL_KNOWN_URL: http://host.docker.internal:8082/isso/.well-known/openid-configuration
+TOKEN_X_CLIENT_ID: melosys-localhost
