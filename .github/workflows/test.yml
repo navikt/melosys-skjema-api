@@ -1,0 +1,37 @@
+name: "Kjør tester"
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - 'src/**'
+      - '.github/*/test.yaml'
+      - '*gradle*'
+
+permissions:
+  contents: read
+
+jobs:
+  setup-and-run-tests:
+    name: Setter opp og kjører tester
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache Depdendencies
+        uses: actions/cache@v4.2.3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Kjører tester
+        env:
+          GITHUB_USERNAME: x-access-token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew test --parallel --max-workers=4
