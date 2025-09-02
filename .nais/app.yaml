@@ -63,6 +63,8 @@ spec:
       rules:
         - application: melosys-api
           namespace: teammelosys
+  envFrom:
+    - secret: melosys-skjema-api
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: {{spring_profile}}
