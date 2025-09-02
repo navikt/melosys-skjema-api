@@ -49,6 +49,9 @@ spec:
       rules:
         - application: melosys-skjema-web
           namespace: teammelosys
+        - application: tokenx-token-generator
+          namespace: nais
+          cluster: dev-gcp
     outbound:
       # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
@@ -60,6 +63,8 @@ spec:
       rules:
         - application: melosys-api
           namespace: teammelosys
+  envFrom:
+    - secret: melosys-skjema-api
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: {{spring_profile}}
