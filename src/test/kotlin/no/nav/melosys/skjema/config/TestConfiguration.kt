@@ -15,40 +15,13 @@ import org.springframework.web.reactive.function.client.WebClient
 @TestConfiguration
 class TestConfiguration {
     
-    @Bean
-    @Primary
-    fun testSpringTokenValidationContextHolder(): SpringTokenValidationContextHolder {
-        val mockContextHolder = mockk<SpringTokenValidationContextHolder>(relaxed = true)
-        val mockContext = mockk<TokenValidationContext>(relaxed = true)
-        
-        every { mockContextHolder.getTokenValidationContext() } returns mockContext
-        every { mockContext.hasTokenFor(any()) } returns false
-        
-        return mockContextHolder
-    }
-    
-    @Bean
-    @Primary
-    fun testSpringSubjectHandler(contextHolder: SpringTokenValidationContextHolder): SpringSubjectHandler {
-        return SpringSubjectHandler(contextHolder)
-    }
+    // Remove mock SpringTokenValidationContextHolder to allow real OAuth2 integration
     
     @Bean
     @Primary
     fun testArbeidsgiverAltinnTilgangerConsumer(): ArbeidsgiverAltinnTilgangerConsumer {
-        val mockConsumer = mockk<ArbeidsgiverAltinnTilgangerConsumer>(relaxed = true)
-        
-        // Mock default response for hentTilganger - returnerer AltinnTilgangerResponse
-        every { 
-            mockConsumer.hentTilganger(any()) 
-        } returns AltinnTilgangerResponse(
-            isError = false,
-            hierarki = emptyList(),
-            tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
-        )
-        
-        return mockConsumer
+        // Create relaxed mock without default behavior - let individual tests configure it
+        return mockk<ArbeidsgiverAltinnTilgangerConsumer>(relaxed = true)
     }
     
     @Bean
