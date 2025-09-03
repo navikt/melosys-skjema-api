@@ -93,7 +93,7 @@ class AltinnControllerWebMvcTest {
     }
     
     @Test
-    fun `GET hentTilganger skal returnere 204 når ingen tilganger`() {
+    fun `GET hentTilganger skal returnere tom liste når ingen tilganger`() {
 
         every { altinnService.hentBrukersTilganger() } returns emptyList()
         
@@ -101,7 +101,9 @@ class AltinnControllerWebMvcTest {
         mockMvc.get("/api/hentTilganger") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
-            status { isNoContent() }
+            status { isOk() }
+            content { contentType(MediaType.APPLICATION_JSON) }
+            jsonPath("$.length()") { value(0) }
         }
 
 

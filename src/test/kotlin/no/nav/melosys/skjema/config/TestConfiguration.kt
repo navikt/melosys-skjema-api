@@ -1,12 +1,10 @@
 package no.nav.melosys.skjema.config
 
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
-import no.nav.melosys.skjema.integrasjon.altinn.dto.OrganisasjonMedTilgang
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.sikkerhet.context.SpringSubjectHandler
-import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.security.token.support.core.context.TokenValidationContext
 import no.nav.security.token.support.spring.SpringTokenValidationContextHolder
 import org.springframework.boot.test.context.TestConfiguration
@@ -40,14 +38,15 @@ class TestConfiguration {
     fun testArbeidsgiverAltinnTilgangerConsumer(): ArbeidsgiverAltinnTilgangerConsumer {
         val mockConsumer = mockk<ArbeidsgiverAltinnTilgangerConsumer>(relaxed = true)
         
-        // Mock default responses with coEvery for suspend functions
-        coEvery { 
+        // Mock default response for hentTilganger - returnerer AltinnTilgangerResponse
+        every { 
             mockConsumer.hentTilganger(any()) 
-        } returns emptyList()
-        
-        coEvery { 
-            mockConsumer.harTilgang(any()) 
-        } returns false
+        } returns AltinnTilgangerResponse(
+            isError = false,
+            hierarki = emptyList(),
+            tilgangTilOrgNr = emptyMap(),
+            orgNrTilTilganger = emptyMap()
+        )
         
         return mockConsumer
     }
