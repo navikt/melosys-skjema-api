@@ -1,10 +1,11 @@
 package no.nav.melosys.skjema.sikkerhet.context
 
-import org.slf4j.LoggerFactory
-import java.util.UUID
+import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.*
+
+private val log = KotlinLogging.logger {}
 
 object ThreadLocalAccessInfo {
-    private val log = LoggerFactory.getLogger(ThreadLocalAccessInfo::class.java)
 
     private val threadLocalStorage = ThreadLocal.withInitial { AccessInfo() }
 
@@ -21,10 +22,6 @@ object ThreadLocalAccessInfo {
         fun isFromAdminRequest(): Boolean = isAdminRequest
     }
 
-    fun getProcessId(): UUID? {
-        return threadLocalStorage.get().processId
-    }
-
     //TODO: Implementer admin-request-sjekk senere
     fun beforeControllerRequest(requestUri: String, isAdminRequest: Boolean = false) {
         val accessInfo = threadLocalStorage.get()
@@ -36,7 +33,9 @@ object ThreadLocalAccessInfo {
     }
 
     fun afterControllerRequest(requestUri: String) {
-        log.debug("Etter en controller request: {}", threadLocalStorage.get())
+        log.debug {
+            "Etter en controller request: ${threadLocalStorage.get()}"
+        }
 
         val accessInfo = threadLocalStorage.get()
         if (accessInfo.requestUri != requestUri) {
@@ -60,14 +59,12 @@ object ThreadLocalAccessInfo {
         if (!accessInfo.isFromWebRequest()) {
             val stackTrace = Thread.currentThread().stackTrace
             val stackTraceAsString = stackTrace.joinToString("\n") { it.toString() }
-            log.warn("Kall har ikke blitt registrert fra RestController eller Prosess\n$stackTraceAsString")
+            log.warn{
+                "Kall har ikke blitt registrert fra RestController eller Prosess \n $stackTraceAsString"
+            }
             return false
         }
 
         return accessInfo.isFromAdminRequest()
-    }
-
-    fun getInfo(): String {
-        return threadLocalStorage.get().toString()
     }
 }
