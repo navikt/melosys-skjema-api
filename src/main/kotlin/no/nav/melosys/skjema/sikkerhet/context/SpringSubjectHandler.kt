@@ -35,7 +35,7 @@ class SpringSubjectHandler(
     }
 
     override fun getOidcTokenString(): String? {
-        return if (hasValidToken()) tokenXToken()?.tokenAsString else null
+        return if (hasValidToken()) tokenXToken()?.encodedToken else null
     }
 
     override fun getUserID(): String? {
@@ -50,8 +50,8 @@ class SpringSubjectHandler(
 
         // For person-tokens, bruk pid (personnummer/fødselsnummer)
         // Fallback til sub hvis pid ikke er tilstede
-        return token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_PID)?.toString()
-            ?: token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_SUB)?.toString()
+        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_PID)?.toString()
+            ?: token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_SUB)?.toString()
     }
 
     override fun getUserName(): String? {
@@ -101,7 +101,7 @@ class SpringSubjectHandler(
         if (!hasValidToken()) return null
 
         val token = tokenXToken() ?: return null
-        val consumerClaim = token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_CONSUMER) as? Map<*, *>
+        val consumerClaim = token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CONSUMER) as? Map<*, *>
             ?: return null
 
         val authority = consumerClaim[JWT_TOKEN_CLAIM_CONSUMER_AUTHORITY]?.toString()
@@ -135,8 +135,8 @@ class SpringSubjectHandler(
      * M2M tokens bruker typisk client credentials flow med private_key_jwt
      */
     private fun isM2MToken(token: JwtToken): Boolean {
-        val clientAmr = token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_CLIENT_AMR)?.toString()
-        val pid = token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_PID)
+        val clientAmr = token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CLIENT_AMR)?.toString()
+        val pid = token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_PID)
 
         // M2M tokens har typisk private_key_jwt som client_amr og ingen pid
         return clientAmr == "private_key_jwt" && pid == null
@@ -146,14 +146,14 @@ class SpringSubjectHandler(
      * Hent klient-ID fra tokenet
      */
     private fun getClientId(token: JwtToken): String? {
-        return token.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_CLIENT_ID)?.toString()
+        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CLIENT_ID)?.toString()
     }
 
     private fun hasValidToken(): Boolean {
         return try {
             RequestContextHolder.getRequestAttributes() != null &&
                     getValidationContext().hasTokenFor(TOKENX)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -161,7 +161,7 @@ class SpringSubjectHandler(
     private fun tokenXToken(): JwtToken? {
         return try {
             getValidationContext().getJwtToken(TOKENX)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

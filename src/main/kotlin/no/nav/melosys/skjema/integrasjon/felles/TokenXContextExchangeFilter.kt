@@ -1,9 +1,7 @@
 package no.nav.melosys.skjema.integrasjon.felles
 
 import com.nimbusds.oauth2.sdk.GrantType
-import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.security.token.support.client.core.ClientProperties
-import no.nav.security.token.support.client.core.OAuth2GrantType
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
 import no.nav.security.token.support.client.spring.ClientConfigurationProperties
 
