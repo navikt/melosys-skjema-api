@@ -51,7 +51,7 @@ arbeidsgiver:
       url: ${ARBEIDSGIVER_ALTINN_TILGANGER_URL}
 
 altinn:
-  ressurs: ${ALTINN_RESSURS:test-fager}
+  ressurs: ${ALTINN_RESSURS}
 
 logging:
   level:
