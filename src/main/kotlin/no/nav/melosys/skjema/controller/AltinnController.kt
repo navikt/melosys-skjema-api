@@ -22,11 +22,7 @@ class AltinnController(
 
         val tilganger = altinnService.hentBrukersTilganger()
 
-        return if (tilganger.isNotEmpty()) {
-            ResponseEntity.ok(tilganger)
-        } else {
-            ResponseEntity.noContent().build()
-        }
+        return ResponseEntity.ok(tilganger)
     }
 
     @GetMapping("/harTilgang/{orgnr}")
