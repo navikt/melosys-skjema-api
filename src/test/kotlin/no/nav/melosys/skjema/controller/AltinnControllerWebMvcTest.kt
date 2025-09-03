@@ -60,7 +60,6 @@ class AltinnControllerWebMvcTest {
     
     @Test
     fun `GET hentTilganger skal returnere liste over organisasjoner`() {
-        // Arrange
         val organisasjoner = listOf(
             OrganisasjonDto(
                 orgnr = "123456789",
@@ -76,7 +75,7 @@ class AltinnControllerWebMvcTest {
         
         every { altinnService.hentBrukersTilganger() } returns organisasjoner
         
-        // Act & Assert
+
         mockMvc.get("/api/hentTilganger") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
@@ -90,62 +89,64 @@ class AltinnControllerWebMvcTest {
             jsonPath("$[1].navn") { value("Annen Bedrift AS") }
         }
         
-        // Verifiser at service ble kalt
         verify(exactly = 1) { altinnService.hentBrukersTilganger() }
     }
     
     @Test
     fun `GET hentTilganger skal returnere 204 når ingen tilganger`() {
-        // Arrange
+
         every { altinnService.hentBrukersTilganger() } returns emptyList()
         
-        // Act & Assert
+
         mockMvc.get("/api/hentTilganger") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
             status { isNoContent() }
         }
-        
+
+
         verify(exactly = 1) { altinnService.hentBrukersTilganger() }
     }
     
     @Test
     fun `GET harTilgang skal returnere true når bruker har tilgang`() {
-        // Arrange
+
         val orgnr = "123456789"
         every { altinnService.harBrukerTilgang(orgnr) } returns true
         
-        // Act & Assert
+
         mockMvc.get("/api/harTilgang/$orgnr") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
             status { isOk() }
             content { string("true") }
         }
-        
+
+
         verify(exactly = 1) { altinnService.harBrukerTilgang(orgnr) }
     }
     
     @Test
     fun `GET harTilgang skal returnere false når bruker ikke har tilgang`() {
-        // Arrange
+
         val orgnr = "987654321"
         every { altinnService.harBrukerTilgang(orgnr) } returns false
         
-        // Act & Assert
+
         mockMvc.get("/api/harTilgang/$orgnr") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
             status { isOk() }
             content { string("false") }
         }
-        
+
+
         verify(exactly = 1) { altinnService.harBrukerTilgang(orgnr) }
     }
     
     @Test
     fun `GET hentTilganger skal håndtere spesielle tegn i organisasjonsnavn`() {
-        // Arrange
+
         val organisasjoner = listOf(
             OrganisasjonDto(
                 orgnr = "123456789",
@@ -158,10 +159,10 @@ class AltinnControllerWebMvcTest {
                 organisasjonsform = "AS"
             )
         )
-        
+
         every { altinnService.hentBrukersTilganger() } returns organisasjoner
         
-        // Act & Assert
+
         mockMvc.get("/api/hentTilganger") {
             accept = MediaType.APPLICATION_JSON
             characterEncoding = "UTF-8"
@@ -178,7 +179,6 @@ class AltinnControllerWebMvcTest {
     
     @Test
     fun `GET hentTilganger skal returnere mange organisasjoner`() {
-        // Arrange - Simuler bruker med mange tilganger
         val mangeTilganger = (1..50).map { i ->
             OrganisasjonDto(
                 orgnr = (100000000 + i).toString(),
@@ -189,7 +189,7 @@ class AltinnControllerWebMvcTest {
         
         every { altinnService.hentBrukersTilganger() } returns mangeTilganger
         
-        // Act & Assert
+
         mockMvc.get("/api/hentTilganger") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
