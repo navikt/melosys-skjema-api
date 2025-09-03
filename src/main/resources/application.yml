@@ -33,6 +33,25 @@ no.nav.security.jwt:
     tokenx:
       discovery-url: ${TOKEN_X_WELL_KNOWN_URL}
       accepted_audience: ${TOKEN_X_CLIENT_ID}
+  client:
+    registration:
+      arbeidsgiver-altinn-tilganger:
+        token-endpoint-url: ${TOKEN_X_TOKEN_ENDPOINT}
+        grant-type: urn:ietf:params:oauth:grant-type:token-exchange
+        authentication:
+          client-id: ${TOKEN_X_CLIENT_ID}
+          client-jwk: ${TOKEN_X_PRIVATE_JWK}
+          client-auth-method: private_key_jwt
+        token-exchange:
+          audience: ${TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER}
+
+arbeidsgiver:
+  altinn:
+    tilganger:
+      url: ${ARBEIDSGIVER_ALTINN_TILGANGER_URL}
+
+altinn:
+  ressurs: ${ALTINN_RESSURS}
 
 logging:
   level:

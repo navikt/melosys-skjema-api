@@ -26,8 +26,12 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "5.0.34"
+val tokenSupportVersion = "5.0.36"
 val mockOAuth2ServerVersion = "2.2.1"
+val kotlinLoggingVersion = "7.0.3"
+val kotestVersion = "6.0.1"
+val mockwebserverVersion = "5.1.0"
+val mockkVersion = "1.14.5"
 
 repositories {
     mavenCentral()
@@ -41,13 +45,20 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("no.nav.security:token-validation-spring:$tokenSupportVersion")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("no.nav.security:token-validation-spring:${tokenSupportVersion}")
+    implementation("no.nav.security:token-client-spring:${tokenSupportVersion}")
+    implementation("no.nav.security:token-validation-core:${tokenSupportVersion}")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11")
+    implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     runtimeOnly("org.postgresql:postgresql")
     
@@ -55,7 +66,11 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
-    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("no.nav.security:token-validation-spring-test:${tokenSupportVersion}")
+    testImplementation("io.mockk:mockk:${mockkVersion}")
+    testImplementation("io.kotest:kotest-runner-junit5:${kotestVersion}")
+    testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
+    testImplementation("com.squareup.okhttp3:mockwebserver:${mockwebserverVersion}")
 }
 
 tasks.withType<KotlinCompile> {
