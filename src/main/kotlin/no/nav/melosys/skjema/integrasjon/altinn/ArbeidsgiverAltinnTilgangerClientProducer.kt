@@ -17,7 +17,7 @@ private val log = KotlinLogging.logger { }
 @Configuration
 class ArbeidsgiverAltinnTilgangerClientProducer(
     @param:Value("\${arbeidsgiver.altinn.tilganger.url}") private val arbeidsgiverAltinnTilgangerBaseUrl: String,
-) : WebClientConfig {
+) {
 
     companion object {
         private const val CLIENT_NAME = "arbeidsgiver-altinn-tilganger"
@@ -40,7 +40,7 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
         return webClientBuilder
             .baseUrl(arbeidsgiverAltinnTilgangerBaseUrl)
             .filter(tokenXContextExchangeFilter)
-            .filter(errorFilter("Kall mot arbeidsgiver-altinn-tilganger feilet"))
+            .filter(WebClientConfig.errorFilter("Kall mot arbeidsgiver-altinn-tilganger feilet"))
             .filter(headerFilter())
             .build()
     }

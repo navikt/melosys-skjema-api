@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import reactor.core.publisher.Mono
 
-interface WebClientConfig {
+object WebClientConfig {
     fun errorFilter(feilmelding: String): ExchangeFilterFunction {
         return ExchangeFilterFunction.ofResponseProcessor { response ->
             if (response.statusCode().isError) {
