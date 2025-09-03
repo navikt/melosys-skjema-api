@@ -14,7 +14,7 @@ class AltinnService(
         private val log = LoggerFactory.getLogger(AltinnService::class.java)
     }
     
-    suspend fun hentBrukersTilganger(): List<OrganisasjonDto> {
+    fun hentBrukersTilganger(): List<OrganisasjonDto> {
         log.info("Henter brukers tilganger fra Altinn")
         
         return try {
@@ -33,7 +33,7 @@ class AltinnService(
         }
     }
     
-    suspend fun harBrukerTilgang(orgnr: String): Boolean {
+    fun harBrukerTilgang(orgnr: String): Boolean {
         log.info("Sjekker om bruker har tilgang til organisasjon: $orgnr")
         
         return try {

@@ -19,7 +19,7 @@ class AltinnController(
     }
     
     @GetMapping("/hentTilganger")
-    suspend fun hentTilganger(): ResponseEntity<List<OrganisasjonDto>> {
+    fun hentTilganger(): ResponseEntity<List<OrganisasjonDto>> {
         log.info("Henter tilganger for innlogget bruker")
         
         val tilganger = altinnService.hentBrukersTilganger()
@@ -32,7 +32,7 @@ class AltinnController(
     }
     
     @GetMapping("/harTilgang/{orgnr}")
-    suspend fun harTilgang(@PathVariable orgnr: String): ResponseEntity<Boolean> {
+    fun harTilgang(@PathVariable orgnr: String): ResponseEntity<Boolean> {
         log.info("Sjekker tilgang til organisasjon: $orgnr")
         
         if (!orgnr.matches(Regex("\\d{9}"))) {

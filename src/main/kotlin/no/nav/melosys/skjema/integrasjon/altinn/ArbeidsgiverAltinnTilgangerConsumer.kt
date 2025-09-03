@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
-import kotlinx.coroutines.reactive.awaitSingle
 import no.nav.melosys.skjema.integrasjon.altinn.dto.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -18,7 +17,7 @@ class ArbeidsgiverAltinnTilgangerConsumer(
         private val log = LoggerFactory.getLogger(ArbeidsgiverAltinnTilgangerConsumer::class.java)
     }
 
-    suspend fun hentTilganger(filter: Filter? = null): List<OrganisasjonMedTilgang> {
+    fun hentTilganger(filter: Filter? = null): List<OrganisasjonMedTilgang> {
         log.info("Henter Altinn-tilganger med filter: $filter")
 
         val request = AltinnTilgangerRequest(filter)
@@ -33,10 +32,10 @@ class ArbeidsgiverAltinnTilgangerConsumer(
                 .doOnNext { resp ->
                     log.debug("Mottok response fra Altinn-tilganger: {}", resp)
                 }
-                .awaitSingle()
+                .block()
 
-            if (response.isError) {
-                log.warn("Altinn-tilganger returnerte feil-status")
+            if (response == null || response.isError) {
+                log.warn("Altinn-tilganger returnerte feil-status eller null")
                 return emptyList()
             }
 
@@ -51,7 +50,7 @@ class ArbeidsgiverAltinnTilgangerConsumer(
         }
     }
 
-    suspend fun harTilgang(orgnr: String): Boolean {
+    fun harTilgang(orgnr: String): Boolean {
         log.info("Sjekker tilgang til organisasjon: $orgnr")
 
         val tilganger = hentTilganger()

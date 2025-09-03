@@ -26,9 +26,11 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "5.0.34"
+val tokenSupportVersion = "5.0.36"
 val mockOAuth2ServerVersion = "2.2.1"
 val kotlinLoggingVersion = "7.0.3"
+val kotestVersion = "6.0.1"
+val mockwebserverVersion = "5.1.0"
 
 repositories {
     mavenCentral()
@@ -65,9 +67,9 @@ dependencies {
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("no.nav.security:token-validation-spring-test:${tokenSupportVersion}")
     testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
+    testImplementation("io.kotest:kotest-runner-junit5:${kotestVersion}")
+    testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
+    testImplementation("com.squareup.okhttp3:mockwebserver:${mockwebserverVersion}")
 }
 
 tasks.withType<KotlinCompile> {
