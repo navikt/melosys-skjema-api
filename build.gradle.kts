@@ -31,6 +31,7 @@ val mockOAuth2ServerVersion = "2.2.1"
 val kotlinLoggingVersion = "7.0.3"
 val kotestVersion = "6.0.1"
 val mockwebserverVersion = "5.1.0"
+val mockkVersion = "1.14.5"
 
 repositories {
     mavenCentral()
@@ -66,7 +67,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
     testImplementation("no.nav.security:token-validation-spring-test:${tokenSupportVersion}")
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("io.kotest:kotest-runner-junit5:${kotestVersion}")
     testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
     testImplementation("com.squareup.okhttp3:mockwebserver:${mockwebserverVersion}")
