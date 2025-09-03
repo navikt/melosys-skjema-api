@@ -70,7 +70,7 @@ dependencies {
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("io.kotest:kotest-runner-junit5:${kotestVersion}")
     testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
-    testImplementation("com.squareup.okhttp3:mockwebserver:${mockwebserverVersion}")
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
 }
 
 tasks.withType<KotlinCompile> {

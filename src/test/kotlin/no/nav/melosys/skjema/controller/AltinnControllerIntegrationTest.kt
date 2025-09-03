@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.controller
 
+import com.ninjasquad.springmockk.MockkBean
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
@@ -26,8 +27,8 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Autowired 
     private lateinit var mockOAuth2Server: MockOAuth2Server
-    
-    @Autowired
+
+    @MockkBean
     private lateinit var arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer
     
     @Test
@@ -56,7 +57,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
         )
         
         every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger(null) } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
