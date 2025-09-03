@@ -11,7 +11,7 @@ data class AltinnTilgangerRequest(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Filter(
-    val altinn2Tilganger: Set<String>? = null,
-    val altinn3Tilganger: Set<String>? = null,
+    val altinn2Tilganger: Set<String> = emptySet(),
+    val altinn3Tilganger: Set<String> = emptySet(),
     val inkluderSlettede: Boolean = false
 )
