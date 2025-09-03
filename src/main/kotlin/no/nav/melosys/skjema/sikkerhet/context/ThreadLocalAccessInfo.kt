@@ -13,8 +13,8 @@ object ThreadLocalAccessInfo {
         var processId: UUID? = null,
         var processName: String? = null,
         var isAdminRequest: Boolean = false,
-        var saksbehandler: String? = null,
-        var saksbehandlerNavn: String? = null
+        var brukerID: String? = null,
+        var brukerNavn: String? = null
     ) {
         fun isFromWebRequest(): Boolean = requestUri != null
         fun isFromProcess(): Boolean = processId != null

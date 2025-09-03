@@ -10,7 +10,6 @@ interface SubjectHandler {
     fun getAuthenticationLevel(): String? = null
     fun getIdentityProvider(): String? = null
     fun getConsumerInfo(): Pair<String, String>? = null
-    fun getOrganizationNumber(): String? = null
 
     companion object {
         private var subjectHandler: SubjectHandler? = null
@@ -27,7 +26,7 @@ interface SubjectHandler {
          * Hent brukerens personnummer (fødselsnummer)
          * Dette er primæridentifikatoren for brukere autentisert via ID-porten/TokenX
          */
-        fun getSaksbehandlerIdent(): String? {
+        fun hentBrukerID(): String? {
             return getInstance().getUserID()
         }
 
@@ -39,17 +38,6 @@ interface SubjectHandler {
             val handler = getInstance()
             return if (handler is SpringSubjectHandler) {
                 handler.getAuthenticationLevel()
-            } else null
-        }
-
-        /**
-         * Hent organisasjonsnummeret hvis det finnes i tokenet
-         * Dette ekstraheres fra consumer claim
-         */
-        fun getOrgNumber(): String? {
-            val handler = getInstance()
-            return if (handler is SpringSubjectHandler) {
-                handler.getOrganizationNumber()
             } else null
         }
     }

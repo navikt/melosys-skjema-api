@@ -113,24 +113,6 @@ class SpringSubjectHandler(
     }
 
     /**
-     * Hent organisasjonsnummeret fra consumer info hvis det eksisterer
-     * Formatet er typisk "0192:orgNummer"
-     *
-     * TODO: Sjekk om noe annet enn orgnr til NAV kommer ut her.
-     */
-    override fun getOrganizationNumber(): String? {
-        val consumerInfo = getConsumerInfo() ?: return null
-        val id = consumerInfo.second
-
-        // Ekstraher organisasjonsnummer fra format som "0192:889640782"
-        return if (id.contains(":")) {
-            id.substringAfter(":")
-        } else {
-            id
-        }
-    }
-
-    /**
      * Sjekk om dette er en maskin-til-maskin token
      * M2M tokens bruker typisk client credentials flow med private_key_jwt
      */
