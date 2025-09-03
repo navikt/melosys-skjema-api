@@ -55,6 +55,10 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/fullmakt"),
         Arguments.of(HttpMethod.GET, "/api/fullmakt/123"),
         Arguments.of(HttpMethod.POST, "/api/fullmakt/123/godkjenn"),
-        Arguments.of(HttpMethod.POST, "/api/fullmakt/123/avslag")
+        Arguments.of(HttpMethod.POST, "/api/fullmakt/123/avslag"),
+
+        // AltinnController
+        Arguments.of(HttpMethod.GET, "/api/hentTilganger"),
+        Arguments.of(HttpMethod.GET, "/api/harTilgang/123456789")
     )
 }

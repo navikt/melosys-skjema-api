@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.altinn
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import no.nav.melosys.skjema.altinnTilgangerResponseMedDefaultVerdier
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -39,8 +40,7 @@ class ArbeidsgiverAltinnTilgangerConsumerTest {
     
     @Test
     fun `hentTilganger skal returnere AltinnTilgangerResponse ved vellykket kall`() {
-        val expectedResponse = AltinnTilgangerResponse(
-            isError = false,
+        val altinnTilgangerResponse = altinnTilgangerResponseMedDefaultVerdier().copy(
             hierarki = listOf(
                 AltinnTilgang(
                     orgnr = "123456789",
@@ -52,8 +52,7 @@ class ArbeidsgiverAltinnTilgangerConsumerTest {
             tilgangTilOrgNr = mapOf(
                 "test-fager" to setOf("123456789", "987654321"),
                 "annen-rolle" to setOf("123456789")
-            ),
-            orgNrTilTilganger = mapOf()
+            )
         )
         
         // Set up MockWebServer response
@@ -61,12 +60,12 @@ class ArbeidsgiverAltinnTilgangerConsumerTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody(objectMapper.writeValueAsString(expectedResponse))
+                .setBody(objectMapper.writeValueAsString(altinnTilgangerResponse))
         )
         
         val result = consumer.hentTilganger()
         
-        assertEquals(expectedResponse, result)
+        assertEquals(altinnTilgangerResponse, result)
         assertEquals(false, result.isError)
         assertEquals(1, result.hierarki.size)
         assertEquals("123456789", result.hierarki[0].orgnr)
@@ -80,13 +79,8 @@ class ArbeidsgiverAltinnTilgangerConsumerTest {
     
     @Test
     fun `hentTilganger skal returnere response med isError = true når API returnerer feil`() {
-        val errorResponse = AltinnTilgangerResponse(
-            isError = true,
-            hierarki = emptyList(),
-            tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
-        )
-        
+        val errorResponse = altinnTilgangerResponseMedDefaultVerdier().copy(isError = true)
+
         mockWebServer.enqueue(
             MockResponse()
                 .setResponseCode(200)
