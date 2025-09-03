@@ -1,34 +1,44 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import io.kotest.assertions.throwables.shouldThrow
-import io.mockk.every
-import io.mockk.verify
-import io.mockk.mockk
-import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
-import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerRequest
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
+import org.junit.jupiter.api.Assertions.*
 
-class ArbeidsgiverAltinnTilgangerConsumerTest : FunSpec({
+class ArbeidsgiverAltinnTilgangerConsumerTest {
     
-    val mockWebClient = mockk<WebClient>()
-    val mockRequestSpec = mockk<WebClient.RequestBodyUriSpec>()
-    val mockRequestHeadersSpec = mockk<WebClient.RequestHeadersSpec<*>>()
-    val mockResponseSpec = mockk<WebClient.ResponseSpec>()
+    private lateinit var mockWebServer: MockWebServer
+    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private lateinit var consumer: ArbeidsgiverAltinnTilgangerConsumer
     
-    val consumer = ArbeidsgiverAltinnTilgangerConsumer(mockWebClient)
-    
-    beforeTest {
-        every { mockWebClient.post() } returns mockRequestSpec
-        every { mockRequestSpec.uri(any<String>()) } returns mockRequestSpec
-        every { mockRequestSpec.bodyValue(any()) } returns mockRequestHeadersSpec
-        every { mockRequestHeadersSpec.retrieve() } returns mockResponseSpec
+    @BeforeEach
+    fun setup() {
+        mockWebServer = MockWebServer()
+        mockWebServer.start()
+        val webClient = WebClient.builder()
+            .baseUrl(mockWebServer.url("/").toString())
+            .build()
+        consumer = ArbeidsgiverAltinnTilgangerConsumer(webClient)
     }
     
-    test("hentTilganger skal returnere AltinnTilgangerResponse ved vellykket kall") {
+    @AfterEach
+    fun teardown() {
+        mockWebServer.shutdown()
+    }
+    
+    @Test
+    fun `hentTilganger skal returnere AltinnTilgangerResponse ved vellykket kall`() {
         val expectedResponse = AltinnTilgangerResponse(
             isError = false,
             hierarki = listOf(
@@ -46,21 +56,30 @@ class ArbeidsgiverAltinnTilgangerConsumerTest : FunSpec({
             orgNrTilTilganger = mapOf()
         )
         
-        every { 
-            mockResponseSpec.bodyToMono(AltinnTilgangerResponse::class.java) 
-        } returns Mono.just(expectedResponse)
+        // Set up MockWebServer response
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(expectedResponse))
+        )
         
         val result = consumer.hentTilganger()
         
-        result shouldBe expectedResponse
-        result.isError shouldBe false
-        result.hierarki.size shouldBe 1
-        result.hierarki[0].orgnr shouldBe "123456789"
+        assertEquals(expectedResponse, result)
+        assertEquals(false, result.isError)
+        assertEquals(1, result.hierarki.size)
+        assertEquals("123456789", result.hierarki[0].orgnr)
         
-        verify { mockRequestSpec.uri("/altinn-tilganger") }
+        // Verify the request was made correctly
+        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
+        assertEquals("POST", recordedRequest.method)
+        assertEquals("/altinn-tilganger", recordedRequest.path)
+        assertTrue(recordedRequest.getHeader("Content-Type")?.contains("application/json") == true)
     }
     
-    test("hentTilganger skal returnere response med isError = true når API returnerer feil") {
+    @Test
+    fun `hentTilganger skal returnere response med isError = true når API returnerer feil`() {
         val errorResponse = AltinnTilgangerResponse(
             isError = true,
             hierarki = emptyList(),
@@ -68,27 +87,34 @@ class ArbeidsgiverAltinnTilgangerConsumerTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { 
-            mockResponseSpec.bodyToMono(AltinnTilgangerResponse::class.java) 
-        } returns Mono.just(errorResponse)
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(errorResponse))
+        )
         
         val result = consumer.hentTilganger()
         
-        result shouldBe errorResponse
-        result.isError shouldBe true
+        assertEquals(errorResponse, result)
+        assertEquals(true, result.isError)
     }
     
-    test("hentTilganger skal kaste RuntimeException når response er null") {
-        every { 
-            mockResponseSpec.bodyToMono(AltinnTilgangerResponse::class.java) 
-        } returns Mono.empty()
+    @Test
+    fun `hentTilganger skal kaste WebClientResponseException når API returnerer 500`() {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(500)
+                .setBody("Internal Server Error")
+        )
         
-        shouldThrow<RuntimeException> {
+        assertThrows<WebClientResponseException> {
             consumer.hentTilganger()
-        }.message shouldBe "Fikk null response fra arbeidsgiver-altinn-tilganger"
+        }
     }
     
-    test("hentTilganger skal kalle riktig URI med riktig body") {
+    @Test
+    fun `hentTilganger skal kalle riktig URI med riktig body`() {
         val response = AltinnTilgangerResponse(
             isError = false,
             hierarki = emptyList(),
@@ -96,14 +122,59 @@ class ArbeidsgiverAltinnTilgangerConsumerTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { 
-            mockResponseSpec.bodyToMono(AltinnTilgangerResponse::class.java) 
-        } returns Mono.just(response)
+        val expectedRequestBody = AltinnTilgangerRequest(null)
+        
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(response))
+        )
         
         val result = consumer.hentTilganger()
         
-        result shouldNotBe null
-        verify { mockRequestSpec.uri("/altinn-tilganger") }
-        verify { mockRequestSpec.bodyValue(any()) }
+        assertNotNull(result)
+        assertEquals(response, result)
+        
+        // Verify the exact request was made
+        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
+        assertEquals("POST", recordedRequest.method)
+        assertEquals("/altinn-tilganger", recordedRequest.path)
+        assertTrue(recordedRequest.getHeader("Content-Type")?.contains("application/json") == true)
+        
+        val requestBodyJson = recordedRequest.body.readUtf8()
+        val actualRequestBody = objectMapper.readValue(requestBodyJson, AltinnTilgangerRequest::class.java)
+        assertEquals(expectedRequestBody, actualRequestBody)
     }
-})
+    
+    @Test
+    fun `hentTilganger skal sende riktig filter i request body`() {
+        val testFilter = null // Test med null filter (default)
+        val response = AltinnTilgangerResponse(
+            isError = false,
+            hierarki = emptyList(),
+            tilgangTilOrgNr = emptyMap(),
+            orgNrTilTilganger = emptyMap()
+        )
+        
+        val expectedRequestBody = AltinnTilgangerRequest(testFilter)
+        
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(response))
+        )
+        
+        consumer.hentTilganger(testFilter)
+        
+        // Verify the request body contains the filter
+        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
+        assertEquals("POST", recordedRequest.method)
+        assertEquals("/altinn-tilganger", recordedRequest.path)
+        
+        val requestBodyJson = recordedRequest.body.readUtf8()
+        val actualRequestBody = objectMapper.readValue(requestBodyJson, AltinnTilgangerRequest::class.java)
+        assertEquals(expectedRequestBody, actualRequestBody)
+    }
+}
