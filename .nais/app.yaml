@@ -8,6 +8,8 @@ metadata:
 spec:
   image: {{image}}
   port: 8080
+  ingresses:
+    - https://melosys-skjema-api.intern.dev.nav.no
   liveness:
     path: /actuator/health
     initialDelay: 20
