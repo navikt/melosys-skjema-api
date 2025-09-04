@@ -8,4 +8,4 @@ services:
       POSTGRES_USER: melosys
       POSTGRES_PASSWORD: melosys
     ports:
-      - "5433:5432"
+      - "5434:5432"
