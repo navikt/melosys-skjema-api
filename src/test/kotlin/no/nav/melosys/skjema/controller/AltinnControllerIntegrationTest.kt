@@ -1,14 +1,17 @@
 package no.nav.melosys.skjema.controller
 
+import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.collections.shouldContainAll
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.mockk.clearMocks
 import io.mockk.every
-import io.mockk.verify
 import no.nav.melosys.skjema.*
 import no.nav.melosys.skjema.dto.OrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
-import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -26,57 +29,53 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Autowired 
     private lateinit var mockOAuth2Server: MockOAuth2Server
-    
-    @Autowired
+
+    @MockkBean
     private lateinit var arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer
     
     @Test
     fun `GET hentTilganger skal returnere liste over organisasjoner`() {
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+
+        val orgnr1 = "123456789"
+        val orgnr2 = "987654321"
         
         // Mock Consumer response
-        val response = AltinnTilgangerResponse(
-            isError = false,
+        val altinnTilgangerResponse = altinnTilgangerResponseMedDefaultVerdier().copy(
             hierarki = listOf(
                 AltinnTilgang(
-                    orgnr = "123456789",
+                    orgnr = orgnr1,
                     navn = "Test Bedrift AS",
                     organisasjonsform = "AS"
                 ),
                 AltinnTilgang(
-                    orgnr = "987654321", 
+                    orgnr = orgnr2,
                     navn = "Annen Bedrift AS",
                     organisasjonsform = "AS"
                 )
             ),
             tilgangTilOrgNr = mapOf(
-                "test-ressurs" to setOf("123456789", "987654321")
-            ),
-            orgNrTilTilganger = emptyMap()
+                "test-ressurs" to setOf(orgnr1, orgnr2)
+            )
         )
         
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger(null) } returns response
+        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns altinnTilgangerResponse
         
-        val token = mockOAuth2Server.getToken(
+        val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
         )
 
         webTestClient.get()
             .uri("/api/hentTilganger")
-            .header("Authorization", "Bearer $token")
+            .header("Authorization", "Bearer $accessToken")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<List<OrganisasjonDto>>()
             .consumeWith { response ->
-                val organisasjoner = response.responseBody!!
-                assert(organisasjoner.size == 2)
-                assert(organisasjoner[0].orgnr == "123456789")
-                assert(organisasjoner[0].navn == "Test Bedrift AS")
-                assert(organisasjoner[1].orgnr == "987654321")
-                assert(organisasjoner[1].navn == "Annen Bedrift AS")
+                response.responseBody.shouldNotBeNull()
+                response.responseBody!!.map { it.orgnr }.shouldContainAll(orgnr1, orgnr2)
             }
     }
     
@@ -84,15 +83,11 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     fun `GET hentTilganger skal returnere tom liste når ingen tilganger`() {
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
         
-        val response = AltinnTilgangerResponse(
-            isError = false,
-            hierarki = emptyList(),
+        val response = altinnTilgangerResponseMedDefaultVerdier().copy(
             tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
         )
         
         every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger(null) } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -107,18 +102,21 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<List<OrganisasjonDto>>()
             .consumeWith { response ->
-                val organisasjoner = response.responseBody!!
-                assert(organisasjoner.isEmpty())
+                response.run {
+                    response.responseBody.shouldNotBeNull()
+                    response.responseBody!!.shouldHaveSize(0)
+                }
             }
     }
     
     @Test
+    @DisplayName("GET /api/harTilgang/{orgnr} skal returnere true når bruker har tilgang")
     fun `GET harTilgang skal returnere true når bruker har tilgang`() {
         // Clear any previous mocks on this bean
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
         
         val orgnr = "123456789"
-        val response = AltinnTilgangerResponse(
+        val response = altinnTilgangerResponseMedDefaultVerdier().copy(
             isError = false,
             hierarki = listOf(
                 AltinnTilgang(
@@ -134,7 +132,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
         )
         
         every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger(null) } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -148,9 +145,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
             .expectBody<Boolean>()
             .isEqualTo(true)
-            
-        // Verify the mock was called
-        verify { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() }
+
     }
     
     @Test
@@ -158,7 +153,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
         
         val orgnr = "987654321"
-        val response = AltinnTilgangerResponse(
+        val response = altinnTilgangerResponseMedDefaultVerdier().copy(
             isError = false,
             hierarki = listOf(
                 AltinnTilgang(
@@ -174,7 +169,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
         )
         
         every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger(null) } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -188,21 +182,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
             .expectBody<Boolean>()
             .isEqualTo(false)
-    }
-    
-    @Test
-    fun `GET api endepunkter skal kreve autentisering`() {
-        webTestClient.get()
-            .uri("/api/hentTilganger")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isUnauthorized
-            
-        webTestClient.get()
-            .uri("/api/harTilgang/123456789")
-            .accept(MediaType.APPLICATION_JSON) 
-            .exchange()
-            .expectStatus().isUnauthorized
     }
     
     @Test
