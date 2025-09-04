@@ -6,9 +6,7 @@ import org.springframework.context.annotation.Configuration
 
 @EnableOAuth2Client(cacheEnabled = true)
 @EnableJwtTokenValidation(
-    ignore = ["org.springdoc"]
+    ignore = ["org.springframework", "org.springdoc"]
 )
 @Configuration
-class TokenSupportConfiguration {
-
-}
+class TokenSupportConfiguration {}
