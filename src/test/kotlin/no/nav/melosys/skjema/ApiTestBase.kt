@@ -7,7 +7,7 @@ import org.springframework.test.context.ContextConfiguration
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(
-    initializers = [MockOAuth2ServerInitializer::class],
+    initializers = [MockOAuth2ServerInitializer::class, WireMockInitializer::class],
     classes = [MelosysSkjemaApiApplication::class]
 )
 abstract class ApiTestBase

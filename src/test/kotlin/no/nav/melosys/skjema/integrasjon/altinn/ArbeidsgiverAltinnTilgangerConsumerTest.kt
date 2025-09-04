@@ -1,174 +1,118 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import no.nav.melosys.skjema.altinnTilgangerResponseMedDefaultVerdier
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
+import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.equals.shouldBeEqual
+import io.mockk.every
+import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnFilter
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
-import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerRequest
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
-import org.junit.jupiter.api.Assertions.*
+import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenResponse
+import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 
-class ArbeidsgiverAltinnTilgangerConsumerTest {
-    
-    private lateinit var mockWebServer: MockWebServer
-    private val objectMapper = ObjectMapper().registerKotlinModule()
-    private lateinit var consumer: ArbeidsgiverAltinnTilgangerConsumer
-    
-    @BeforeEach
-    fun setup() {
-        mockWebServer = MockWebServer()
-        mockWebServer.start()
-        val webClient = WebClient.builder()
-            .baseUrl(mockWebServer.url("/").toString())
-            .build()
-        consumer = ArbeidsgiverAltinnTilgangerConsumer(webClient)
-    }
+class ArbeidsgiverAltinnTilgangerConsumerTest: ApiTestBase() {
+
+    @Autowired
+    private lateinit var arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer
+
+    @Autowired
+    private lateinit var wireMockServer: WireMockServer
+
+    @MockkBean
+    private lateinit var oAuth2AccessTokenService: OAuth2AccessTokenService
+
     
     @AfterEach
     fun teardown() {
-        mockWebServer.shutdown()
+        wireMockServer.resetAll()
     }
-    
+
     @Test
-    fun `hentTilganger skal returnere AltinnTilgangerResponse ved vellykket kall`() {
-        val altinnTilgangerResponse = altinnTilgangerResponseMedDefaultVerdier().copy(
-            hierarki = listOf(
-                AltinnTilgang(
-                    orgnr = "123456789",
-                    navn = "Test Org",
-                    organisasjonsform = "AS",
-                    altinn3Tilganger = setOf("test-fager", "annen-rolle")
-                )
-            ),
-            tilgangTilOrgNr = mapOf(
-                "test-fager" to setOf("123456789", "987654321"),
-                "annen-rolle" to setOf("123456789")
+    fun `hentTilganger skal utføre forventet http-request og deserialisere json respons`() {
+
+        val expectedAccessToken = "expectedAccessToken"
+
+        every {
+            oAuth2AccessTokenService.getAccessToken(any())
+        } returns OAuth2AccessTokenResponse(access_token = expectedAccessToken)
+
+        val responseJson = """
+            {
+              "isError": false,
+              "hierarki": [
+                {
+                  "orgnr": "123456789",
+                  "navn": "Test Bedrift AS",
+                  "organisasjonsform": "AS",
+                  "type": "Enterprise"
+                }
+              ],
+              "orgNrTilTilganger": {
+                "123456789": ["4936"]
+              },
+              "tilgangTilOrgNr": {
+                "4936": ["123456789"]
+              },
+              "unknownProperty": "should be ignored"
+            }
+        """.trimIndent()
+
+        wireMockServer.stubFor(post(urlPathMatching(".*"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(responseJson)
             )
         )
-        
-        // Set up MockWebServer response
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(objectMapper.writeValueAsString(altinnTilgangerResponse))
-        )
-        
-        val result = consumer.hentTilganger()
-        
-        assertEquals(altinnTilgangerResponse, result)
-        assertEquals(false, result.isError)
-        assertEquals(1, result.hierarki.size)
-        assertEquals("123456789", result.hierarki[0].orgnr)
-        
-        // Verify the request was made correctly
-        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
-        assertEquals("POST", recordedRequest.method)
-        assertEquals("/altinn-tilganger", recordedRequest.path)
-        assertTrue(recordedRequest.getHeader("Content-Type")?.contains("application/json") == true)
-    }
-    
-    @Test
-    fun `hentTilganger skal returnere response med isError = true når API returnerer feil`() {
-        val errorResponse = altinnTilgangerResponseMedDefaultVerdier().copy(isError = true)
 
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(objectMapper.writeValueAsString(errorResponse))
+        val altinnTilgangerResponse = arbeidsgiverAltinnTilgangerConsumer.hentTilganger(
+            AltinnFilter(
+                inkluderSlettede = false,
+                altinn2Tilganger = setOf("1234"),
+                altinn3Tilganger = setOf("4936")
+            )
         )
-        
-        val result = consumer.hentTilganger()
-        
-        assertEquals(errorResponse, result)
-        assertEquals(true, result.isError)
-    }
-    
-    @Test
-    fun `hentTilganger skal kaste WebClientResponseException når API returnerer 500`() {
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(500)
-                .setBody("Internal Server Error")
-        )
-        
-        assertThrows<WebClientResponseException> {
-            consumer.hentTilganger()
+
+        altinnTilgangerResponse.run {
+            this.shouldBeEqual(AltinnTilgangerResponse(
+                isError = false,
+                hierarki = listOf(
+                    AltinnTilgang(
+                        orgnr = "123456789",
+                        navn = "Test Bedrift AS",
+                        organisasjonsform = "AS"
+                    )
+                ),
+                orgNrTilTilganger = mapOf("123456789" to setOf("4936")),
+                tilgangTilOrgNr = mapOf("4936" to setOf("123456789"))
+            ))
         }
-    }
-    
-    @Test
-    fun `hentTilganger skal kalle riktig URI med riktig body`() {
-        val response = AltinnTilgangerResponse(
-            isError = false,
-            hierarki = emptyList(),
-            tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
+
+        wireMockServer.verify(postRequestedFor(urlPathEqualTo("/altinn-tilganger"))
+            .withHeader("Authorization", equalTo("Bearer $expectedAccessToken"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withRequestBody(equalToJson("""
+                {
+                  "filter": {
+                    "inkluderSlettede": false,
+                    "altinn2Tilganger": ["1234"],
+                    "altinn3Tilganger": ["4936"]
+                  }
+                }
+            """.trimIndent()))
         )
-        
-        val expectedRequestBody = AltinnTilgangerRequest(null)
-        
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(objectMapper.writeValueAsString(response))
-        )
-        
-        val result = consumer.hentTilganger()
-        
-        assertNotNull(result)
-        assertEquals(response, result)
-        
-        // Verify the exact request was made
-        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
-        assertEquals("POST", recordedRequest.method)
-        assertEquals("/altinn-tilganger", recordedRequest.path)
-        assertTrue(recordedRequest.getHeader("Content-Type")?.contains("application/json") == true)
-        
-        val requestBodyJson = recordedRequest.body.readUtf8()
-        val actualRequestBody = objectMapper.readValue(requestBodyJson, AltinnTilgangerRequest::class.java)
-        assertEquals(expectedRequestBody, actualRequestBody)
-    }
-    
-    @Test
-    fun `hentTilganger skal sende riktig filter i request body`() {
-        val testFilter = null // Test med null filter (default)
-        val response = AltinnTilgangerResponse(
-            isError = false,
-            hierarki = emptyList(),
-            tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
-        )
-        
-        val expectedRequestBody = AltinnTilgangerRequest(testFilter)
-        
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(objectMapper.writeValueAsString(response))
-        )
-        
-        consumer.hentTilganger(testFilter)
-        
-        // Verify the request body contains the filter
-        val recordedRequest: RecordedRequest = mockWebServer.takeRequest()
-        assertEquals("POST", recordedRequest.method)
-        assertEquals("/altinn-tilganger", recordedRequest.path)
-        
-        val requestBodyJson = recordedRequest.body.readUtf8()
-        val actualRequestBody = objectMapper.readValue(requestBodyJson, AltinnTilgangerRequest::class.java)
-        assertEquals(expectedRequestBody, actualRequestBody)
     }
 }

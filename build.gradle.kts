@@ -30,8 +30,8 @@ val tokenSupportVersion = "5.0.36"
 val mockOAuth2ServerVersion = "2.2.1"
 val kotlinLoggingVersion = "7.0.3"
 val kotestVersion = "6.0.1"
-val mockwebserverVersion = "5.1.0"
 val mockkVersion = "1.14.5"
+val wiremockVersion = "3.0.1"
 
 repositories {
     mavenCentral()
@@ -71,6 +71,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:${kotestVersion}")
     testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
+    testImplementation("org.wiremock:wiremock-standalone:$wiremockVersion")
 }
 
 tasks.withType<KotlinCompile> {
