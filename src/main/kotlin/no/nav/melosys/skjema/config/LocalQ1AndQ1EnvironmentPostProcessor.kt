@@ -5,7 +5,7 @@ import org.springframework.boot.env.EnvironmentPostProcessor
 import org.springframework.core.env.ConfigurableEnvironment
 import org.springframework.core.env.MapPropertySource
 
-class TokenXEnvironmentPostProcessor : EnvironmentPostProcessor {
+class LocalQ1AndQ1EnvironmentPostProcessor : EnvironmentPostProcessor {
 
     override fun postProcessEnvironment(environment: ConfigurableEnvironment, application: SpringApplication) {
         val activeProfiles = environment.activeProfiles
