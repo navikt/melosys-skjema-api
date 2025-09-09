@@ -631,4 +631,36 @@ For detaljert oversikt over utviklingsoppgaver, brukerhistorier og epics, se [op
 
 ---
 
+## Utviklerdokumentasjon
+
+### Kjøre APIet lokalt mot ekte q1 og q2 miljø
+
+For å kjøre APIet lokalt med tilkobling til ekte Q1 eller Q2 miljøer:
+
+#### Forutsetninger
+- `kubectl` konfigurert mot riktig cluster
+- `gcloud` CLI installert og autentisert med `gcloud auth login --update-adc`
+- Databasetilkobling via `nais postgres proxy melosys-skjema-api`
+
+#### Engangsoppsett
+```bash
+chmod +x scripts/*.sh
+```
+
+#### Kjøring
+```bash
+# For Q1-miljø
+./gradlew bootRun --args='--spring.profiles.active=local-q1'
+
+# For Q2-miljø  
+./gradlew bootRun --args='--spring.profiles.active=local-q2'
+```
+
+Ved oppstart vil applikasjonen automatisk:
+- Hente TokenX secrets fra Kubernetes via `scripts/get-tokenx-private-jwk.sh`
+- Hente din gcloud account via `scripts/get-gcloud-account.sh` for database-tilkobling
+- Koble til lokal PostgreSQL database med din gcloud bruker som username
+
+---
+
 *Dette er et levende dokument som oppdateres kontinuerlig gjennom prosjektets levetid.*
