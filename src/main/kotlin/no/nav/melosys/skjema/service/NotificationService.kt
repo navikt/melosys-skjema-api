@@ -1,10 +1,11 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.melosys.skjema.dto.NotificationDto
+import no.nav.melosys.skjema.dto.TekstDto
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 import java.util.UUID
 
 private val log = KotlinLogging.logger { }
@@ -19,19 +20,14 @@ class NotificationService(
     fun sendNotification(ident: String) {
         val varselId = UUID.randomUUID().toString()
         
-        val notification = mapOf(
-            "type" to "beskjed",
-            "varselId" to varselId,
-            "ident" to ident,
-            "tekster" to mapOf(
-                "nb" to mapOf(
-                    "tekst" to "Du har mottatt en melding fra Melosys",
-                    "default" to true
+        val notification = NotificationDto(
+            varselId = varselId,
+            ident = ident,
+            tekster = mapOf(
+                "nb" to TekstDto(
+                    tekst = "Du har mottatt en melding fra Melosys"
                 )
-            ),
-            "sensitivitet" to "substantial",
-            "aktiv" to true,
-            "forstBehandlet" to LocalDateTime.now().toString()
+            )
         )
         
         try {
