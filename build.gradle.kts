@@ -60,6 +60,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation("org.springframework.kafka:spring-kafka")
 
     runtimeOnly("org.postgresql:postgresql")
     
@@ -73,6 +74,7 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core:${kotestVersion}")
     testImplementation("com.ninja-squad:springmockk:$springMockkVersion")
     testImplementation("org.wiremock:wiremock-standalone:$wiremockVersion")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
 }
 
 tasks.withType<KotlinCompile> {
