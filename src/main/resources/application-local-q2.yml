@@ -1,11 +1,8 @@
-# Config for q2 integrasjoner, men lokal database
+# Config for q2 integrasjoner
 
-DB_JDBC_URL: 'jdbc:postgresql://localhost:5433/melosys_skjema?user=melosys&password=melosys'
 TOKEN_X_WELL_KNOWN_URL: https://tokenx.dev-gcp.nav.cloud.nais.io/.well-known/oauth-authorization-server
 TOKEN_X_CLIENT_ID: dev-gcp:teammelosys:melosys-skjema-api
 TOKEN_X_TOKEN_ENDPOINT: https://tokenx.dev-gcp.nav.cloud.nais.io/token
-TOKEN_X_JWKS_URI: https://tokenx.dev-gcp.nav.cloud.nais.io/jwks
 TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: dev-gcp:fager:arbeidsgiver-altinn-tilganger
 ALTINN_RESSURS: test-fager
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: https://arbeidsgiver-altinn-tilganger.intern.dev.nav.no
-TOKEN_X_PRIVATE_JWK: Ikke lov å ta med i git. Autohenting av dette fikses i en annen PR.
