@@ -27,19 +27,19 @@ if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
     # Copy to clipboard (cross-platform)
     if command -v pbcopy >/dev/null 2>&1; then
         # macOS
-        echo "Bearer $TOKEN" | pbcopy
+        echo "$TOKEN" | pbcopy
         echo "✅ Token copied to clipboard (macOS)!"
     elif command -v xclip >/dev/null 2>&1; then
         # Linux
-        echo "Bearer $TOKEN" | xclip -selection clipboard
+        echo "$TOKEN" | xclip -selection clipboard
         echo "✅ Token copied to clipboard (Linux)!"
     elif command -v clip >/dev/null 2>&1; then
         # Windows (WSL/Git Bash)
-        echo "Bearer $TOKEN" | clip
+        echo "$TOKEN" | clip
         echo "✅ Token copied to clipboard (Windows)!"
     else
         echo "📋 Clipboard not available. Here's your token:"
-        echo "Bearer $TOKEN"
+        echo "$TOKEN"
     fi
     
     echo "🕐 Token expires in 1 hour"
