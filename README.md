@@ -639,7 +639,7 @@ For å kjøre APIet lokalt med tilkobling til ekte Q1 eller Q2 miljøer:
 
 #### Forutsetninger
 - `kubectl` konfigurert mot riktig cluster
-- `gcloud` CLI installert og autentiseret med `gcloud auth login --update-adc`
+- `gcloud` CLI installert og logget inn med `gcloud auth login --update-adc`
 - Databasetilkobling via `nais postgres proxy melosys-skjema-api`
 
 #### Engangsoppsett
@@ -688,7 +688,7 @@ For å teste endpoints som krever autentisering:
 Scriptet vil:
 - Generere en JWT token fra MockOAuth2Server
 - Inkludere claims som `pid`, `azp` og `expiry`
-- Kopiere token til clipboard (med "Bearer " prefix)
+- Kopiere token til clipboard
 - Token er gyldig i 1 time
 
 ---
