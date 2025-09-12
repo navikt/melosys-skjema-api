@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.security.token.support.core.api.Protected
+import no.nav.security.token.support.core.api.Unprotected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -14,7 +15,7 @@ private val log = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/api/skjema")
 @Tag(name = "Skjema", description = "placeholder")
-@Protected
+@Unprotected
 class SkjemaController(
     private val notificationService: NotificationService
 ) {
@@ -61,7 +62,7 @@ class SkjemaController(
         log.info { "Submitting skjema med id: $id" }
         
         try {
-            notificationService.sendNotification(id)
+            notificationService.sendNotification(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
             log.info { "Notifikasjon sendt for skjema med id: $id" }
             return ResponseEntity.ok().build()
         } catch (e: Exception) {
