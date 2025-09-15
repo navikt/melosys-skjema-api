@@ -15,6 +15,7 @@ private val log = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/api/skjema")
 @Tag(name = "Skjema", description = "placeholder")
+@Protected
 class SkjemaController(
     private val notificationService: NotificationService
 ) {
@@ -59,7 +60,7 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "placeholder")
     fun submitSkjema(@PathVariable id: String): ResponseEntity<Any> {
         log.info { "Submitting skjema med id: $id" }
-        
+
         try {
             notificationService.sendNotification(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
             log.info { "Notifikasjon sendt for skjema med id: $id" }
