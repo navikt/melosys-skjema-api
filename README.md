@@ -28,11 +28,11 @@ I første omgang skal det håndtere søknader for arbeidstakere som sendes ut av
 Resten av dokumentasjonen vil ta utgangspunkt i A1-skjema, men vil være utvidbart til andre skjemaer i fremtiden.
 
 ### 1.3 Hovedfunksjoner
-- ✅ **Digital innsending** for arbeidsgivere
-- ✅ **Fullmakthåndtering** mellom arbeidsgiver og arbeidstaker
-- ✅ **Rådgiverfirma-støtte** som kan opptre på vegne av arbeidsgivere
-- ✅ **Automatisk journalføring** og saksopprettelse
-- ✅ **Status-sporing** for alle parter
+- ✅ **Digital innsending** for arbeidsgivere og arbeidstakere (uavhengig av hverandre)
+- ✅ **Fullmakthåndtering** mellom ulike parter (per søknad)
+- ✅ **Rådgiverfirma-støtte** som kan opptre på vegne av arbeidsgivere via Altinn-delegering
+- ✅ **Automatisk journalføring** når arbeidstaker sender inn sin del
+- ✅ **Status-sporing** for alle parter på oversiktssiden
 - ✅ **PDF-generering** av innsendte søknader
 
 ### 1.4 Målgrupper
@@ -197,7 +197,9 @@ graph TD
 **Viktige prinsipper:**
 - Arbeidstaker og arbeidsgiver kan sende sine deler uavhengig av hverandre
 - Arbeidsgiver må oppgi arbeidstaker som del av søknaden
-- Arbeidsgiver får aktivt valg om de ønsker å fylle inn på vegne av arbeidstaker
+- Arbeidsgiver får aktivt valg om de ØNSKER å fylle inn på vegne av arbeidstaker
+- Fullmakt gjelder kun for én spesifikk søknad
+- Journalføring starter når arbeidstaker sender inn sin del
 
 ### 3.2 melosys-skjema-api (Backend)
 
@@ -223,9 +225,7 @@ graph TD
 
 #### 3.3.1 Hovedtabeller
 
-> **📌 Avklaring påkrevd:** Fullmaktmodell må bestemmes før implementering
-
-**Alternativ 1: Fullmakt per skjemainstans (anbefalt)**
+> **✅ Besluttet:** Fullmakt per skjemainstans
 
 | Tabell | Beskrivelse | Nøkkelfelt |
 |--------|-------------|------------|
@@ -233,15 +233,7 @@ graph TD
 | **fullmakt** | Fullmakter | id, skjema_id, status, gyldig_fra, gyldig_til |
 | **vedlegg** | Vedlegg | id, skjema_id, filnavn, storage_url |
 
-**Alternativ 2: Fullmakt per skjematype**
-
-| Tabell | Beskrivelse | Nøkkelfelt |
-|--------|-------------|------------|
-| **skjema** | Skjemaer | id, status, type, fnr, orgnr, opprettet_dato, endret_dato |
-| **fullmakt** | Fullmakter | id, fnr, orgnr, skjematype, status, gyldig_fra, gyldig_til |
-| **pdf** | PDF-er | id, skjema_id, filnavn, storage_url |
-
-*Anbefaling: Alternativ 1 gir bedre sikkerhet og krever ikke tilbaketrekking av fullmakt.*
+*Fullmakt gjelder kun for én spesifikk søknad og er ikke overførbar til andre søknader.*
 
 ---
 
@@ -256,6 +248,8 @@ graph TD
 >   - Hvis de velger å ikke fylle inn på vegne av arbeidstaker, sendes det varsel til arbeidstaker om å fylle inn sin del (uten fullmakt-logikken)
 
 ### 4.2 Alternativ flyt - Arbeidstaker fyller selv
+
+> **Viktig:** Se fullmakt.md for detaljerte fullmaktscenarioer
 
 ```mermaid
 sequenceDiagram
@@ -394,9 +388,13 @@ stateDiagram-v2
 - `MOTTATT` - Skjema mottatt og journalført i NAV
 
 **Fullmaktstatuser:**
-- `VENTER` - Venter på svar fra arbeidstaker
+- `VENTER` - Venter på svar fra arbeidstaker (timeout: 30 dager foreslått)
 - `GODKJENT` - Arbeidstaker har godkjent fullmakt
 - `AVSLÅTT` - Arbeidstaker har avslått fullmakt
+
+**Journalføring:**
+- Starter når arbeidstaker sender inn sin del (juridisk krav)
+- Skjer uavhengig av om arbeidsgiver har sendt sin del
 
 ---
 
@@ -482,6 +480,8 @@ sequenceDiagram
 
 ### 7.1 Autorisasjonsmodell
 
+> **Se fullmakt.md for komplett dokumentasjon av fullmaktmodellen**
+
 ```mermaid
 graph TD
     Bruker[Bruker]
@@ -544,8 +544,8 @@ graph TD
 
 | ID | Kategori | Beskrivelse | Status | Eier |
 |----|----------|-------------|--------|------|
-| F01 | 🔑 Fullmakt | Skal fullmakt gjelde for én søknad eller periode? | 🟡 Under avklaring | Produkteier |
-| F02 | ⏱️ Timeout | Hvor lenge venter vi på respons fra arbeidstaker? | 🟡 Under avklaring | Produkteier |
+| F01 | 🔑 Fullmakt | Hvem får fullmakt når rådgiverfirma ber om det? | 🟡 Under avklaring | Produkteier |
+| F02 | ⏱️ Timeout | 30 dager foreslått - må bekreftes | 🟡 Under avklaring | Produkteier |
 | F03 | 🔔 Purring | Automatiske påminnelser - antall og timing? | 🔴 Ikke startet | Produkteier |
 | F04 | 📧 Kvittering | Er Nav.no standard kvittering juridisk tilstrekkelig? | 🟡 Under avklaring | Juridisk |
 | F05 | 🗑️ GDPR | Sletteregler for persondata | 🔴 Ikke startet | Juridisk |
@@ -628,6 +628,14 @@ For detaljert oversikt over utviklingsoppgaver, brukerhistorier og epics, se [op
 - Brukerhistorier (user stories) med akseptansekriterier
 - Tekniske oppgaver og implementasjonsdetaljer
 - Prioritering og estimater
+
+## Fullmaktmodell
+
+For detaljert dokumentasjon av fullmaktmodellen, se [fullmakt.md](fullmakt.md). Dette dokumentet inneholder:
+- Alle fullmaktscenarioer med diagrammer
+- Tilgangskontroll-matrise
+- Tekniske beslutninger og avklaringer
+- Kommunikasjonstips for teamet
 
 ---
 

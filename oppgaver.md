@@ -149,6 +149,13 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Ønsker jeg:** Å fylle ut arbeidsgiverdelen av søknadsskjemaet  
 **Slik at:** Jeg kan søke om utsending for min ansatt
 
+**Akseptansekriterier:**
+- Arbeidsgiver skal få aktivt valg om de ØNSKER å fylle inn på vegne av arbeidstaker
+- Hvis arbeidsgiver velger å ikke fylle for arbeidstaker, skal arbeidstaker varsles om å fylle sin del
+- Hvis arbeidsgiver ønsker å fylle for arbeidstaker, må de be om fullmakt
+- Rådgiverfirma som opptrer på vegne av arbeidsgiver skal kunne gjøre samme valg
+- Preutfylling skal hente data fra Enhetsregisteret og A-reg
+
 **Oppgaver:**
 - **TASK-5.1:** Implementer arbeidsgiver-skjema UI med valg for arbeidstaker-utfylling
 - **TASK-5.2:** Lag skjema-API med CRUD-operasjoner og validering
@@ -166,6 +173,14 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Som:** Arbeidstaker  
 **Ønsker jeg:** Å bli varslet og kunne fylle ut min del  
 **Slik at:** Søknaden blir komplett
+
+**Akseptansekriterier:**
+- Arbeidstaker kan fylle sin del uavhengig av om arbeidsgiver har startet søknad
+- Når arbeidstaker sender inn sin del, skal journalføring starte (juridisk krav)
+- Arbeidstaker og arbeidsgiver sin del skal matches automatisk basert på personnummer + organisasjonsnummer
+- Arbeidstaker skal kunne se status på oversiktssiden, inkludert om arbeidsgiver har fylt sin del
+- Preutfylling skal hente data fra PDL
+- Arbeidstaker skal få varsel på nav.no (Min side) ved fullmaktforespørsler eller når de må fylle sin del
 
 **Oppgaver:**
 - **TASK-6.1:** Lag arbeidstaker-skjema UI med validering
@@ -185,12 +200,23 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Ønsker jeg:** Å håndtere fullmakter mellom ulike parter  
 **Slik at:** Arbeidsgivere kan fylle ut på vegne av arbeidstakere når de har fått tillatelse
 
+**Akseptansekriterier:**
+- Fullmakt gjelder KUN for én spesifikk søknad (ikke generell fullmakt)
+- Fullmaktforespørsel må tydelig presisere hvem som får tilgang og hvem som mottar brev
+- Når rådgiverfirma ber om fullmakt: MÅ AVKLARES om kun rådgiverfirma eller både rådgiverfirma og arbeidsgiver får fullmakt
+- Når arbeidsgiver ber om fullmakt direkte: Fullmakt går til arbeidsgiver
+- Fullmakt er IKKE transitiv - hvis rådgiverfirma senere får Altinn-delegering, kan de ikke se arbeidstaker-delen for eksisterende søknader
+- Timeout for fullmaktsvar: 30 dager (foreslått - må bekreftes)
+- Støtte for fullmektig (advokat/person/organisasjon) som kan fylle på vegne av arbeidstaker
+- MÅ AVKLARES: Skal vi bruke NAVs eksisterende fullmaktsløsning for person-til-person, eller bygge egen løsning?
+
 **Oppgaver:**
 - **TASK-7.1:** Implementer fullmakt-API med forespørsel og beslutning
 - **TASK-7.2:** Lag fullmakt-UI for både arbeidsgiver og arbeidstaker
 - **TASK-7.3:** Håndter tilgangskontroll basert på fullmaktstatus
+- **TASK-7.4:** Implementer varsling for fullmaktforespørsler (nav.no for personer, Altinn for organisasjoner)
 
-*Merk: Vi har fortsatt ikke avklart alle detaljer rundt fullmaktløsningen. Spesielt er det uklart hvordan fullmakt til annen person/organisasjon skal fungere, samt juridiske krav og tidsavgrensninger.*
+*Avklaringer som gjenstår: Se fullmakt.md for komplett liste over åpne punkter.*
 
 ---
 
@@ -203,6 +229,13 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Som:** Bruker  
 **Ønsker jeg:** Å se oversikt over mine skjemaer  
 **Slik at:** Jeg har kontroll på status, kan starte nye søknader og se utkast
+
+**Akseptansekriterier:**
+- Oversiktssiden skal vise status for både arbeidsgiver-del og arbeidstaker-del
+- Bruker skal kunne se om den andre parten har fylt ut sin del
+- For rådgiverfirma: Vise søknader de har tilgang til via Altinn-delegering
+- For fullmektig: Vise søknader de har fullmakt for
+- Støtte rollebytte mellom person og organisasjon(er)
 
 **Oppgaver:**
 - **TASK-8.1:** Lag API for å liste skjemaer (innsendte, utkast, status)
@@ -239,14 +272,21 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Ferdig:** 15. desember  
 
 **Som:** System  
-**Ønsker jeg:** At komplette skjemaer journalføres og opprettes som saker  
+**Ønsker jeg:** At skjemaer journalføres og opprettes som saker  
 **Slik at:** Søknader behandles korrekt i Melosys
+
+**Akseptansekriterier:**
+- Journalføring skal starte når ARBEIDSTAKER sender inn sin del (juridisk krav - søknaden gjelder arbeidstakeren)
+- Ikke vente på at arbeidsgiver har sendt sin del før journalføring
+- System skal håndtere både komplette og delvise søknader
+- Saksbehandler skal kunne se status for begge deler i saken
 
 *Merk: Vi må fortsatt avklare hvor og hvordan denne funksjonaliteten skal implementeres. Det kan enten gjøres i Melosys-API eller i denne nye applikasjonen.*
 
 **Oppgaver:**
-- **TASK-10.1:** Journalføring
+- **TASK-10.1:** Journalføring av arbeidstaker-del
 - **TASK-10.2:** Lag sak og behandling
+- **TASK-10.3:** Håndter matching når arbeidsgiver-del kommer inn senere
 
 ---
 
