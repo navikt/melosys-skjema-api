@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 import no.nav.tms.varsel.action.Produsent
