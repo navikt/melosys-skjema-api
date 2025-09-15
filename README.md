@@ -639,7 +639,7 @@ For å kjøre APIet lokalt med tilkobling til ekte Q1 eller Q2 miljøer:
 
 #### Forutsetninger
 - `kubectl` konfigurert mot riktig cluster
-- `gcloud` CLI installert og autentisert med `gcloud auth login --update-adc`
+- `gcloud` CLI installert og logget inn med `gcloud auth login --update-adc`
 - Databasetilkobling via `nais postgres proxy melosys-skjema-api`
 
 #### Engangsoppsett
@@ -660,6 +660,36 @@ Ved oppstart vil applikasjonen automatisk:
 - Hente TokenX secrets fra Kubernetes via `scripts/get-tokenx-private-jwk.sh`
 - Hente din gcloud account via `scripts/get-gcloud-account.sh` for database-tilkobling
 - Koble til lokal PostgreSQL database med din gcloud bruker som username
+
+### Kjøre APIet mot lokalt miljø
+
+#### Forutsetninger
+
+- Kjører containerne docker-compose, nyeste master, i [melosys-docker-compose](https://github.com/navikt/melosys-docker-compose)
+- Har kjørt opp docker-compose i dette prosjektet.
+
+#### Kjøring
+```bash
+# Start applikasjonen med lokal profil
+./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
+#### Generere test-tokens
+For å teste endpoints som krever autentisering:
+
+```bash
+# Generer token med standard PID (12345678910)
+./scripts/get-local-access-token.sh
+
+# Generer token med custom PID
+./scripts/get-local-access-token.sh 09876543210
+```
+
+Scriptet vil:
+- Generere en JWT token fra MockOAuth2Server
+- Inkludere claims som `pid`, `azp` og `expiry`
+- Kopiere token til clipboard
+- Token er gyldig i 1 time
 
 ---
 
