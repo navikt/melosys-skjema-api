@@ -33,6 +33,7 @@ val kotestVersion = "6.0.1"
 val mockkVersion = "1.14.5"
 val wiremockVersion = "3.13.1"
 val springMockkVersion = "4.0.2"
+val springdocVersion = "2.8.13"
 
 repositories {
     mavenCentral()
@@ -55,7 +56,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
