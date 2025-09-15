@@ -15,7 +15,6 @@ private val log = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/api/skjema")
 @Tag(name = "Skjema", description = "placeholder")
-@Unprotected
 class SkjemaController(
     private val notificationService: NotificationService
 ) {
