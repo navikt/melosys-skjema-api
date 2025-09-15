@@ -28,7 +28,7 @@ sequenceDiagram
     participant RF as Beta Rådgivning AS (Rådgiverfirma)
     participant AG as Alfa Industri AS (Arbeidsgiver)
     participant AT as Arbeidstaker
-    participant System as NAV System
+    participant System as melosys-søknadsskjema
     participant Altinn as Altinn
     
     Note over RF,Altinn: FORUTSETNING: Alfa Industri AS har delegert tilgang i Altinn
@@ -45,7 +45,7 @@ sequenceDiagram
     RF->>System: Ønsker å fylle for arbeidstaker
     
     System->>AT: Fullmaktforespørsel
-    Note over System,AT: MÅ AVKLARES: Hvem får fullmakt?<br/>Alt 1: Kun Beta Rådgivning AS<br/>Alt 2: Både Beta Rådgivning AS og Alfa Industri AS<br/>Forespørsel må presisere hvem som får tilgang og mottar brev
+    Note over System,AT: MÅ AVKLARES: Hvem får fullmakt?<br/>Alt 1: Kun Beta Rådgivning AS<br/>Alt 2: Både Beta Rådgivning AS og Alfa Industri AS<br/>Forespørsel MÅ presisere hvem som får tilgang<br/>og hvem som mottar brev
     
     alt Arbeidstaker godkjenner
         AT->>System: Godkjenner fullmakt
@@ -72,7 +72,7 @@ sequenceDiagram
 sequenceDiagram
     participant AG as Arbeidsgiver (Alfa Industri AS)
     participant AT as Arbeidstaker
-    participant System as NAV System
+    participant System as melosys-søknadsskjema
     
     AG->>System: Logger inn direkte
     AG->>System: Starter søknad
@@ -174,41 +174,6 @@ graph TD
 
 ---
 
-## Matching av søknadsdeler
-
-Når arbeidstaker og arbeidsgiver fyller inn uavhengig av hverandre, må systemet matche delene:
-
-```mermaid
-flowchart LR
-    subgraph "Arbeidstaker-del"
-        AT_FNR[Personnummer: 12345678901]
-        AT_ORG[Oppgitt org: 999888777]
-    end
-    
-    subgraph "Arbeidsgiver-del"
-        AG_FNR[Oppgitt ansatt: 12345678901]
-        AG_ORG[Organisasjonsnr: 999888777]
-    end
-    
-    AT_FNR -.->|Match| AG_FNR
-    AT_ORG -.->|Match| AG_ORG
-    
-    AT_FNR --> KOMPLETT[Komplett søknad]
-    AG_FNR --> KOMPLETT
-```
-
-**Matchingskriterier:**
-- Personnummer (arbeidstaker) må matche oppgitt ansatt (arbeidsgiver)
-- Organisasjonsnummer må matche på begge sider
-- Begge deler må være sendt inn for komplett søknad
-
-**Viktig om journalføring:**
-- Journalføring starter når arbeidstaker sender inn sin del (uavhengig av arbeidsgiver-status)
-- Søknaden gjelder alltid arbeidstakeren juridisk sett
-- Oversiktssiden viser alltid status for begge deler
-
----
-
 ## Tilgangskontroll-matrise
 
 | Aktør | Rolle | Kan se/redigere | Forutsetning |
@@ -232,8 +197,8 @@ flowchart LR
 
 ### 2. Uavhengighet
 - Arbeidsgiver og arbeidstaker kan sende inn sine deler uavhengig
-- Systemet matcher automatisk basert på personnummer og organisasjonsnummer
 - Ingen part må vente på den andre for å sende sin del
+- Se README.md for detaljer om matching av søknadsdeler
 
 ### 3. Søknadsspesifikk fullmakt
 - Fullmakt gjelder for én spesifikk søknad (bekreftet beslutning)

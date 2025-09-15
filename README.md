@@ -396,6 +396,40 @@ stateDiagram-v2
 - Starter når arbeidstaker sender inn sin del (juridisk krav)
 - Skjer uavhengig av om arbeidsgiver har sendt sin del
 
+### 5.4 Matching av søknadsdeler
+
+Når arbeidstaker og arbeidsgiver fyller inn uavhengig av hverandre, må systemet matche delene:
+
+```mermaid
+flowchart LR
+    subgraph "Arbeidstaker-del"
+        AT_FNR[Personnummer: 12345678901]
+        AT_ORG[Oppgitt org: 999888777]
+    end
+    
+    subgraph "Arbeidsgiver-del"
+        AG_FNR[Oppgitt ansatt: 12345678901]
+        AG_ORG[Organisasjonsnr: 999888777]
+    end
+    
+    AT_FNR -.->|Match| AG_FNR
+    AT_ORG -.->|Match| AG_ORG
+    
+    AT_FNR --> KOMPLETT[Komplett søknad]
+    AG_FNR --> KOMPLETT
+```
+
+**Matchingskriterier:**
+- Personnummer (arbeidstaker) må matche oppgitt ansatt (arbeidsgiver)
+- Organisasjonsnummer må matche på begge sider
+- Begge deler må være sendt inn for komplett søknad
+- Matching skjer automatisk når begge deler er mottatt
+
+**Viktig om journalføring:**
+- Journalføring starter når arbeidstaker sender inn sin del (uavhengig av arbeidsgiver-status)
+- Søknaden gjelder alltid arbeidstakeren juridisk sett
+- Oversiktssiden viser alltid status for begge deler
+
 ---
 
 ## 6. Integrasjoner
