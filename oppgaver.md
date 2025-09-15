@@ -24,7 +24,7 @@ gantt
     section Pågående
     Varsling til brukere              :active, varsling, 2025-09-12, 2025-09-25
     Arbeidsgiver-skjema               :crit, active, agskjema, 2025-09-12, 2025-11-25
-    Avklare og specs fullmaktløsning  :avklarefullmakt, 2025-09-12, 32d
+    Avklare og specs fullmaktløsning  :avklarefullmakt, 2025-09-12, 28d
     
     section Hovedutvikling
     Arbeidstaker-skjema               :crit, atskjema, 2025-09-26, 2025-11-25
@@ -33,13 +33,13 @@ gantt
     Fullmaktløsning                   :fullmakt, 2025-10-14, 33d
     
     section UX Deadlines
-    UX Arbeidsgiver                   :milestone, uxag, 2025-09-26, 0d
+    UX Arbeidsgiver                   :milestone, uxag, 2025-09-29, 0d
     UX Arbeidstaker                   :milestone, uxat, 2025-10-06, 0d
     UX Oversiktside                   :milestone, uxoversikt, 2025-10-13, 0d
     UX Fullmakt                       :milestone, uxfullmakt, 2025-10-20, 0d
     
     section Avslutning
-    Sending og kvittering             :sending, 2025-11-25, 3d
+    Sending og kvittering             :sending, 2025-11-25, 5d
     Kommunikasjon mellom APIer        :komm, 2025-11-28, 3d
     Journalføring og saksopprettelse  :journal, 2025-12-01, 2025-12-15
     
@@ -48,17 +48,12 @@ gantt
     Klar for regresjonstest           :milestone, 2025-12-15, 0d
 ```
 
-### Ferdigstilte oppgaver (15. aug - 15. sept)
-- ✅ **Uke 1-2** (15-29 aug): Backend & Frontend prosjektoppsett (parallelt)
-- ✅ **Uke 3-4** (29 aug - 12 sept): Innlogging og rollevalg  
-- 🔄 **Uke 5** (12-15 sept): Startet Varsling til brukere og Arbeidsgiver-skjema (parallelt)
-
 ### Viktige detaljer om skjema-utviklingen
 
 **Preutfylling integrasjoner (Okt 7-28):**
 Som del av skjema-arbeidet vil vi integrere mot Enhetsregisteret og A-reg for arbeidsgiver-skjema, og PDL for arbeidstaker-skjema. Dette gjør at brukerne slipper å fylle inn informasjon vi allerede har.
 
-**Avklare og specs fullmaktløsning (Sept 12 - Okt 14):**
+**Avklare og specs fullmaktløsning (Sept 12 - Okt 10):**
 Før implementering må vi avklare alle detaljer rundt fullmaktløsningen, inkludert juridiske krav, brukerflyt og teknisk arkitektur.
 
 **Fullmaktløsning (Okt 14 - Nov 16):**
@@ -69,20 +64,10 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 - **Design-implementering (13-20. okt):** Implementerer det endelige designet når UX er klar
 
 **UX-leveranse deadlines:**
-- Arbeidsgiver-skjema: 26. september
+- Arbeidsgiver-skjema: 29. september
 - Arbeidstaker-skjema: 6. oktober
 - Oversiktside: 13. oktober
 - Fullmakt-flyter: 20. oktober
-
-### Gjenstående arbeid - Oppsummering
-
-| Periode | Hovedfokus | Parallelle aktiviteter | Team |
-|---------|------------|------------------------|------|
-| **15-25 sept** | Varsling ferdig<br>AG-skjema basis | Avklare fullmaktløsning<br>Oversikt teknisk start | Øystein & Øyvind |
-| **22 sept - 28 okt** | AG & AT skjemaer<br>Preutfylling | Fullmakt-system<br>Oversiktside | Øystein & Øyvind |
-| **28 okt - 25 nov** | Fullføre skjemaer<br>Fullmakt ferdig | Validering & testing | Isa & Øyvind |
-| **25 nov - 1 des** | Sending & kvittering<br>Kommunikasjon API-er | Integrasjonstesting | Isa & Øyvind |
-| **1-15 des** | Journalføring<br>Saksopprettelse | Sluttesting | Isa & Øyvind |
 
 ---
 
@@ -131,6 +116,7 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 - ✅ **TASK-3.2:** Integrer Altinn for å hente representasjoner
 - ✅ **TASK-3.3:** Implementer rollevalg-UI og kontekstbytte
 - 🔄 **TASK-3.4:** Opprett ressurs/delegering i Altinn for søknadsskjema (Teknisk analyse)
+  - *Merk: Vi bruker foreløpig testressurs, men vi må opprette endelig ressurs når vi nærmer oss produksjonssetting.*
 
 ---
 
@@ -167,8 +153,7 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 - **TASK-5.1:** Implementer arbeidsgiver-skjema UI med valg for arbeidstaker-utfylling
 - **TASK-5.2:** Lag skjema-API med CRUD-operasjoner og validering
 - **TASK-5.3:** Implementer preutfylling fra Enhetsregisteret og A-reg
-- **TASK-5.4:** Implementer fullmakt-API med forespørsel og beslutning
-- **TASK-5.5:** Lag fullmakt-UI og håndter tilgangskontroll basert på fullmaktstatus
+- **TASK-5.4:** Integrer med varslingssystem for arbeidsgiver
 
 ---
 
@@ -186,11 +171,30 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 - **TASK-6.1:** Lag arbeidstaker-skjema UI med validering
 - **TASK-6.2:** Implementer preutfylling fra PDL
 - **TASK-6.3:** Håndter uavhengig innsending av skjemadeler
-- **TASK-6.4:** Integrer med varslingssystemet fra Story 4
+- **TASK-6.4:** Integrer med varslingssystem for arbeidstaker
 
 ---
 
-### Story 7: Oversiktside
+### Story 7: Fullmaktløsning
+**Status:** PLANLAGT  
+**Varighet:** 5 uker  
+**Start:** 14. oktober  
+**Ferdig:** 16. november  
+
+**Som:** System  
+**Ønsker jeg:** Å håndtere fullmakter mellom ulike parter  
+**Slik at:** Arbeidsgivere kan fylle ut på vegne av arbeidstakere når de har fått tillatelse
+
+**Oppgaver:**
+- **TASK-7.1:** Implementer fullmakt-API med forespørsel og beslutning
+- **TASK-7.2:** Lag fullmakt-UI for både arbeidsgiver og arbeidstaker
+- **TASK-7.3:** Håndter tilgangskontroll basert på fullmaktstatus
+
+*Merk: Vi har fortsatt ikke avklart alle detaljer rundt fullmaktløsningen. Spesielt er det uklart hvordan fullmakt til annen person/organisasjon skal fungere, samt juridiske krav og tidsavgrensninger.*
+
+---
+
+### Story 8: Oversiktside
 **Status:** PLANLAGT  
 **Varighet:** 2 uker  
 **Start:** 11. november  
@@ -201,15 +205,13 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Slik at:** Jeg har kontroll på status, kan starte nye søknader og se utkast
 
 **Oppgaver:**
-- **TASK-7.1:** Lag API for å liste skjemaer (innsendte, utkast, status)
-- **TASK-7.2:** Implementer oversiktsside UI med skjemaliste
-- **TASK-7.3:** Lag funksjonalitet for å starte ny søknad
-- **TASK-7.4:** Implementer statusvisning og filtrering
-- **TASK-7.5:** Lag detaljvisning for enkeltskjemaer
+- **TASK-8.1:** Lag API for å liste skjemaer (innsendte, utkast, status)
+- **TASK-8.2:** Implementer oversiktsside UI med skjemaliste og statusvisning
+- **TASK-8.3:** Lag funksjonalitet for å starte ny søknad
 
 ---
 
-### Story 8: Kommunikasjon mellom søknadsskjema-api og melosys-api (MELOSYS-7545)
+### Story 9: Kommunikasjon mellom søknadsskjema-api og melosys-api (MELOSYS-7545)
 **Status:** PLANLAGT  
 **Varighet:** 3 dager  
 **Start:** 21. oktober  
@@ -224,31 +226,31 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Slik at vi:** Kan følge opp feil som oppstår og rette på de
 
 **Oppgaver:**
-- **TASK-8.1:** Sett opp Kafka-producer og meldingsformat
-- **TASK-8.2:** Implementer REST-endepunkt for Melosys-API å hente søknadsdata
-- **TASK-8.3:** Implementer feilhåndtering og retry-mekanisme
+- **TASK-9.1:** Sett opp Kafka-producer og meldingsformat
+- **TASK-9.2:** Implementer REST-endepunkt for Melosys-API å hente søknadsdata
+- **TASK-9.3:** Implementer feilhåndtering og retry-mekanisme
 
 ---
 
-### Story 9: Journalføring og saksopprettelse
+### Story 10: Journalføring og saksopprettelse
 **Status:** PLANLAGT  
 **Varighet:** 2 uker  
-**Start:** 25. november  
-**Ferdig:** 9. desember  
+**Start:** 1. desember  
+**Ferdig:** 15. desember  
 
 **Som:** System  
 **Ønsker jeg:** At komplette skjemaer journalføres og opprettes som saker  
 **Slik at:** Søknader behandles korrekt i Melosys
 
+*Merk: Vi må fortsatt avklare hvor og hvordan denne funksjonaliteten skal implementeres. Det kan enten gjøres i Melosys-API eller i denne nye applikasjonen.*
+
 **Oppgaver:**
-- **TASK-9.1:** Journalfør dokument
-- **TASK-9.2:** Lag sak og behandling for søknad sendt gjennom nav.no
-- **TASK-9.3:** Generer og lagre PDF av innsendt skjema
-- **TASK-9.4:** Implementer arkivering av dokumenter
+- **TASK-10.1:** Journalføring
+- **TASK-10.2:** Lag sak og behandling
 
 ---
 
-### Story 10: Overvåking
+### Story 11: Overvåking
 **Status:** IKKE STARTET  
 **Varighet:** Løpende ved behov  
 
@@ -257,8 +259,8 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Slik at:** Vi kan oppdage og løse problemer raskt
 
 **Oppgaver:**
-- **TASK-10.1:** Sett opp Grafana dashboards og alerts
-- **TASK-10.2:** Implementer helsesjekker og metrics
-- **TASK-10.3:** Sett opp logging og feilsporing
+- **TASK-11.1:** Sett opp Grafana dashboards og alerts
+- **TASK-11.2:** Implementer helsesjekker og metrics
+- **TASK-11.3:** Sett opp logging og feilsporing
 
 ---
