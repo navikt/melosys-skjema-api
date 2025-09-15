@@ -27,7 +27,7 @@ gradle.beforeProject {
 }
 
 val tokenSupportVersion = "5.0.36"
-val mockOAuth2ServerVersion = "2.2.1"
+val mockOAuth2ServerVersion = "2.3.0"
 val kotlinLoggingVersion = "7.0.13"
 val kotestVersion = "6.0.1"
 val mockkVersion = "1.14.5"
