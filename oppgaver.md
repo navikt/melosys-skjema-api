@@ -185,7 +185,7 @@ Parallelt med skjema-utviklingen bygges fullmaktløsningen. Dette inkluderer ful
 **Oppgaver:**
 - **TASK-6.1:** Lag arbeidstaker-skjema UI med validering
 - **TASK-6.2:** Implementer preutfylling fra PDL
-- **TASK-6.3:** Håndter uavhengig innsending av skjemadeler
+- **TASK-6.3:** Håndter uavhengig innsending av skjemadeler (inkl. matching via FNR + orgnr)
 - **TASK-6.4:** Integrer med varslingssystem for arbeidstaker
 
 ---
