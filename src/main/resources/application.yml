@@ -19,6 +19,9 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
 server:
   port: ${SERVER_PORT:8080}
 
