@@ -47,11 +47,23 @@ no.nav.security.jwt:
           client-auth-method: private_key_jwt
         token-exchange:
           audience: ${TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER}
+      arbeidsgiver-notifikasjon:
+        token-endpoint-url: ${TOKEN_X_TOKEN_ENDPOINT}
+        grant-type: urn:ietf:params:oauth:grant-type:token-exchange
+        authentication:
+          client-id: ${TOKEN_X_CLIENT_ID}
+          client-jwk: ${TOKEN_X_PRIVATE_JWK}
+          client-auth-method: private_key_jwt
+        token-exchange:
+          audience: ${TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON}
 
 arbeidsgiver:
   altinn:
     tilganger:
       url: ${ARBEIDSGIVER_ALTINN_TILGANGER_URL}
+  notifikasjon:
+    url: ${ARBEIDSGIVER_NOTIFIKASJON_URL}
+    merkelapp: ${ARBEIDSGIVER_NOTIFIKASJON_MERKELAPP:Melosys}
 
 altinn:
   ressurs: ${ALTINN_RESSURS}
