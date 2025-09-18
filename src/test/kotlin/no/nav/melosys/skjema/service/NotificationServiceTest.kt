@@ -15,7 +15,7 @@ class NotificationServiceTest : FunSpec({
     
     val mockKafkaTemplate = mockk<KafkaTemplate<String, String>>()
     val notificationTopic = "test-notifications"
-    val service = NotificationService(mockKafkaTemplate, notificationTopic)
+    val service = NotificationService(mockKafkaTemplate, null, notificationTopic)
     
     test("sendNotification skal sende notifikasjon til Kafka med riktige data") {
         val ident = "12345678901"
@@ -29,7 +29,7 @@ class NotificationServiceTest : FunSpec({
             mockKafkaTemplate.send(capture(topicSlot), capture(keySlot), capture(valueSlot)) 
         } returns mockFuture
         
-        service.sendNotification(ident, notificationText)
+        service.sendNotificationToArbeidstaker(ident, notificationText)
         
         verify(exactly = 1) { mockKafkaTemplate.send(any<String>(), any<String>(), any<String>()) }
         
@@ -51,7 +51,7 @@ class NotificationServiceTest : FunSpec({
         } throws RuntimeException("Kafka connection failed")
         
         try {
-            service.sendNotification(ident, notificationText)
+            service.sendNotificationToArbeidstaker(ident, notificationText)
             throw AssertionError("Expected exception was not thrown")
         } catch (e: RuntimeException) {
             e.message shouldBe "Kafka connection failed"

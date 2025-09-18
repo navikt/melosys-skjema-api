@@ -62,7 +62,7 @@ class SkjemaController(
         log.info { "Submitting skjema med id: $id" }
 
         try {
-            notificationService.sendNotification(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
+            notificationService.sendNotificationToArbeidstaker(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
             log.info { "Notifikasjon sendt for skjema med id: $id" }
             return ResponseEntity.ok().build()
         } catch (e: Exception) {
