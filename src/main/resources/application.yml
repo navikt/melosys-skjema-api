@@ -56,13 +56,6 @@ arbeidsgiver:
 altinn:
   ressurs: ${ALTINN_RESSURS}
 
-app:
-  notification:
-    producer:
-      cluster: ${PRODUCER_CLUSTER:prod-gcp}
-      namespace: ${PRODUCER_NAMESPACE:teammelosys}
-      app: ${PRODUCER_APP:melosys-skjema-api}
-
 logging:
   level:
     no.nav.melosys: INFO

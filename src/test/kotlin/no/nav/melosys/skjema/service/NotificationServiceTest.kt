@@ -14,11 +14,8 @@ import java.util.concurrent.CompletableFuture
 class NotificationServiceTest : FunSpec({
     
     val mockKafkaTemplate = mockk<KafkaTemplate<String, String>>()
-    val brukervarselTopic = "test-brukervarsel"
-    val producerCluster = "test-cluster"
-    val producerNamespace = "test-namespace"
-    val producerApp = "test-app"
-    val service = NotificationService(mockKafkaTemplate, brukervarselTopic, producerCluster, producerNamespace, producerApp)
+    val notificationTopic = "test-notifications"
+    val service = NotificationService(mockKafkaTemplate, notificationTopic)
     
     test("sendNotification skal sende notifikasjon til Kafka med riktige data") {
         val ident = "12345678901"
@@ -36,7 +33,7 @@ class NotificationServiceTest : FunSpec({
         
         verify(exactly = 1) { mockKafkaTemplate.send(any<String>(), any<String>(), any<String>()) }
         
-        topicSlot.captured shouldBe brukervarselTopic
+        topicSlot.captured shouldBe notificationTopic
         
         val varselJson = valueSlot.captured
         varselJson shouldContain ident
