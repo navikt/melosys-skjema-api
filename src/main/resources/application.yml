@@ -59,7 +59,7 @@ altinn:
 app:
   notification:
     producer:
-      cluster: ${PRODUCER_CLUSTER:prod-gcp}
+      cluster: ${PRODUCER_CLUSTER:dev-gcp}
       namespace: ${PRODUCER_NAMESPACE:teammelosys}
       app: ${PRODUCER_APP:melosys-skjema-api}
 
