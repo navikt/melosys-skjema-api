@@ -56,15 +56,13 @@ arbeidsgiver:
 altinn:
   ressurs: ${ALTINN_RESSURS}
 
-app:
-  kafka:
-    topic:
-      brukervarsel: ${KAFKA_TOPIC_BRUKERVARSEL}
-  notification:
-    producer:
-      cluster: ${NAIS_CLUSTER_NAME}
-      namespace: ${NAIS_NAMESPACE}
-      app: ${NAIS_APP_NAME}
+kafka:
+  topic:
+    brukervarsel: aapen-brukervarsel-v1
+  producer:
+    cluster: ${NAIS_CLUSTER_NAME}
+    namespace: ${NAIS_NAMESPACE}
+    appname: ${NAIS_APP_NAME}
 
 logging:
   level:
