@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger { }
 @Service
 class NotificationService(
     private val kafkaTemplate: KafkaTemplate<String, String>,
-    @Value("\${app.kafka.topic.brukervarsel:aapen-brukervarsel-v1}")
+    @Value("\${app.kafka.topic.brukervarsel}")
     private val brukervarselTopic: String,
     @Value("\${app.notification.producer.cluster}")
     private val producerCluster: String,

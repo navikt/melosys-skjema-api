@@ -7,6 +7,7 @@ TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: dev-gcp:fager:arbeidsgiver-altinn
 ALTINN_RESSURS: test-fager
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: https://arbeidsgiver-altinn-tilganger.intern.dev.nav.no
 KAFKA_BOOTSTRAP_SERVERS: localhost:29092
-PRODUCER_CLUSTER: dev-gcp
-PRODUCER_NAMESPACE: teammelosys
-PRODUCER_APP: melosys-skjema-api
+KAFKA_TOPIC_BRUKERVARSEL: aapen-brukervarsel-v1
+NAIS_CLUSTER_NAME: dev-gcp
+NAIS_NAMESPACE: teammelosys
+NAIS_APP_NAME: melosys-skjema-api

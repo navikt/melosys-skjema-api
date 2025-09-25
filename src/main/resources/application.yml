@@ -57,11 +57,14 @@ altinn:
   ressurs: ${ALTINN_RESSURS}
 
 app:
+  kafka:
+    topic:
+      brukervarsel: ${KAFKA_TOPIC_BRUKERVARSEL}
   notification:
     producer:
-      cluster: ${PRODUCER_CLUSTER:dev-gcp}
-      namespace: ${PRODUCER_NAMESPACE:teammelosys}
-      app: ${PRODUCER_APP:melosys-skjema-api}
+      cluster: ${NAIS_CLUSTER_NAME}
+      namespace: ${NAIS_NAMESPACE}
+      app: ${NAIS_APP_NAME}
 
 logging:
   level:
