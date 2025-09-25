@@ -6,3 +6,7 @@ TOKEN_X_PRIVATE_JWK: "{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\"
 TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: test:fager:arbeidsgiver-altinn-tilganger
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: ${wiremock.server.url}
 ALTINN_RESSURS: test-ressurs
+KAFKA_TOPIC_BRUKERVARSEL: test-brukervarsel-topic
+NAIS_CLUSTER_NAME: test-cluster
+NAIS_NAMESPACE: test-namespace
+NAIS_APP_NAME: test-app
