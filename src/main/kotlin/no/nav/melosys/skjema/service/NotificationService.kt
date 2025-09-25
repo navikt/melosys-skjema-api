@@ -19,15 +19,21 @@ private val log = KotlinLogging.logger { }
 @Service
 class NotificationService(
     private val kafkaTemplate: KafkaTemplate<String, String>,
-    @Value("\${app.kafka.topic.notifications:aapen-brukervarsel-v1}")
-    private val notificationTopic: String
+    @Value("\${kafka.topic.brukervarsel}")
+    private val topic: String,
+    @Value("\${kafka.producer.cluster}")
+    private val cluster: String,
+    @Value("\${kafka.producer.namespace}")
+    private val namespace: String,
+    @Value("\${kafka.producer.appname}")
+    private val appName: String
 ) {
 
     fun sendNotification(ident: String, notificationText: String) {
         val varselId = UUID.randomUUID().toString()
 
         val varsel = VarselActionBuilder.opprett {
-            produsent = Produsent("test", "test", "test")
+            produsent = Produsent(cluster, namespace, appName)
             type = Varseltype.Beskjed
             this.ident = ident
             this.varselId = varselId
@@ -41,7 +47,7 @@ class NotificationService(
         }
         
         try {
-            kafkaTemplate.send(notificationTopic, varselId, varsel) //TODO vet ikke om det gir mening att kafkaId er det samme som varselId
+            kafkaTemplate.send(topic, UUID.randomUUID().toString(), varsel)
             log.info { "Sendt notifikasjon med varselId: $varselId til ident: $ident" }
         } catch (e: Exception) {
             log.error(e) { "Feil ved sending av notifikasjon til ident: $ident" }
