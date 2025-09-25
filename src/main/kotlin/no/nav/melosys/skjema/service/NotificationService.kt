@@ -47,7 +47,7 @@ class NotificationService(
         }
         
         try {
-            kafkaTemplate.send(topic, UUID.randomUUID().toString(), varsel) //TODO vet ikke om det gir mening att kafkaId er det samme som varselId
+            kafkaTemplate.send(topic, UUID.randomUUID().toString(), varsel)
             log.info { "Sendt notifikasjon med varselId: $varselId til ident: $ident" }
         } catch (e: Exception) {
             log.error(e) { "Feil ved sending av notifikasjon til ident: $ident" }
