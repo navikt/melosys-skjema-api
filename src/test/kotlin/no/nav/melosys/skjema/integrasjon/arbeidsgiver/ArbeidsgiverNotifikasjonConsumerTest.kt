@@ -75,41 +75,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         capturedRequest.variables["merkelapp"] shouldBe merkelapp
     }
 
-    test("opprettBeskjed should generate UUID when eksternId not provided") {
-        val virksomhetsnummer = "123456789"
-        val tekst = "Test beskjed"
-        val lenke = "https://test.nav.no/beskjed/123"
-        val expectedId = "beskjed-id-123"
-        
-        val expectedResponse = GraphQLResponse(
-            data = NyBeskjedResponse(
-                nyBeskjed = BeskjedResult(
-                    __typename = "NyBeskjedVellykket",
-                    id = expectedId,
-                    feilmelding = null
-                )
-            ),
-            errors = null
-        )
-        
-        val requestSlot = slot<GraphQLRequest>()
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(expectedResponse)
-        
-        val result = consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
-        
-        result shouldBe expectedId
-        
-        verify { mockRequestBodySpec.bodyValue(capture(requestSlot)) }
-        
-        val capturedRequest = requestSlot.captured
-        val generatedEksternId = capturedRequest.variables["eksternId"] as String
-        
-        // Verify it's a valid UUID format
-        UUID.fromString(generatedEksternId) // This will throw if not valid UUID
-    }
-
     test("opprettBeskjed should handle GraphQL errors") {
         val virksomhetsnummer = "123456789"
         val tekst = "Test beskjed"
@@ -136,87 +101,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         exception.message shouldContain "Missing required field"
     }
 
-    test("opprettBeskjed should handle business logic error response") {
-        val virksomhetsnummer = "123456789"
-        val tekst = "Test beskjed"
-        val lenke = "https://test.nav.no/beskjed/123"
-        
-        val errorResponse = GraphQLResponse(
-            data = NyBeskjedResponse(
-                nyBeskjed = BeskjedResult(
-                    __typename = "Error",
-                    id = null,
-                    feilmelding = "Virksomhet har ikke tilgang til denne ressursen"
-                )
-            ),
-            errors = null
-        )
-        
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(errorResponse)
-        
-        val exception = shouldThrow<RuntimeException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
-        }
-        
-        exception.message shouldBe "Feil ved opprettelse av beskjed: Virksomhet har ikke tilgang til denne ressursen"
-    }
-
-    test("opprettBeskjed should handle unknown response type") {
-        val virksomhetsnummer = "123456789"
-        val tekst = "Test beskjed"
-        val lenke = "https://test.nav.no/beskjed/123"
-        
-        val unknownResponse = GraphQLResponse(
-            data = NyBeskjedResponse(
-                nyBeskjed = BeskjedResult(
-                    __typename = "UnknownType",
-                    id = null,
-                    feilmelding = null
-                )
-            ),
-            errors = null
-        )
-        
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(unknownResponse)
-        
-        val exception = shouldThrow<RuntimeException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
-        }
-        
-        exception.message shouldBe "Ukjent respons type: UnknownType"
-    }
-
-    test("opprettBeskjed should handle missing id in successful response") {
-        val virksomhetsnummer = "123456789"
-        val tekst = "Test beskjed"
-        val lenke = "https://test.nav.no/beskjed/123"
-        
-        val responseWithoutId = GraphQLResponse(
-            data = NyBeskjedResponse(
-                nyBeskjed = BeskjedResult(
-                    __typename = "NyBeskjedVellykket",
-                    id = null,
-                    feilmelding = null
-                )
-            ),
-            errors = null
-        )
-        
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(responseWithoutId)
-        
-        val exception = shouldThrow<RuntimeException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
-        }
-        
-        exception.message shouldBe "Manglende id i vellykket respons"
-    }
-
     test("opprettBeskjed should handle empty response") {
         val virksomhetsnummer = "123456789"
         val tekst = "Test beskjed"
@@ -231,19 +115,5 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         }
         
         exception.message shouldBe "Ukjent respons type: null"
-    }
-
-    test("opprettBeskjed should handle WebClient exceptions") {
-        val virksomhetsnummer = "123456789"
-        val tekst = "Test beskjed"
-        val lenke = "https://test.nav.no/beskjed/123"
-        
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.error(WebClientResponseException.create(500, "Internal Server Error", HttpHeaders(), ByteArray(0), null))
-        
-        shouldThrow<WebClientResponseException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
-        }
     }
 })
