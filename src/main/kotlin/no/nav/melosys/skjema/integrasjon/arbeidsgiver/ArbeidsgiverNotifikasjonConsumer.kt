@@ -34,7 +34,7 @@ class ArbeidsgiverNotifikasjonConsumer(
                 }
                 mottakere: [{
                   altinn: {
-                    serviceCode: "5516"
+                    serviceCode: "4826"
                     serviceEdition: "1"
                   }
                 }]
@@ -54,7 +54,7 @@ class ArbeidsgiverNotifikasjonConsumer(
               }
             }
         """
-        //TODO mottakere kan ta i bruk ressurs i prod/dev. Det er mulig vi ønsker å byttet til dette. ressurs funker ikke mot mock.
+        //TODO vi kan også bruke ressurs i tillegg til mock, men fra det jeg har fått av info er dette ikke integrert enda i prod. Ressurs er påkrevd for altinn 3. REf https://navikt.github.io/arbeidsgiver-notifikasjon-produsent-api/api.html#definition-AltinnRessursMottakerInput
     }
 
     fun opprettBeskjed(
