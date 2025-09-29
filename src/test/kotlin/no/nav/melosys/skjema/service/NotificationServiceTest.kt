@@ -7,18 +7,20 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.slot
+import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonConsumer
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import java.util.concurrent.CompletableFuture
 
 class NotificationServiceTest : FunSpec({
     
+    val mockArbeidsgiverNotifikasjonConsumer = mockk<ArbeidsgiverNotifikasjonConsumer>()
     val mockKafkaTemplate = mockk<KafkaTemplate<String, String>>()
     val brukervarselTopic = "test-brukervarsel"
     val producerCluster = "test-cluster"
     val producerNamespace = "test-namespace"
     val producerApp = "test-app"
-    val service = NotificationService(mockKafkaTemplate, brukervarselTopic, producerCluster, producerNamespace, producerApp)
+    val service = NotificationService(mockArbeidsgiverNotifikasjonConsumer, mockKafkaTemplate, brukervarselTopic, producerCluster, producerNamespace, producerApp)
     
     test("sendNotification skal sende notifikasjon til Kafka med riktige data") {
         val ident = "12345678901"
