@@ -15,7 +15,7 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:true}
     locations: classpath:db/migration
     baseline-on-migrate: true
 
@@ -63,7 +63,7 @@ arbeidsgiver:
       url: ${ARBEIDSGIVER_ALTINN_TILGANGER_URL}
   notifikasjon:
     url: ${ARBEIDSGIVER_NOTIFIKASJON_URL}
-    merkelapp: ${ARBEIDSGIVER_NOTIFIKASJON_MERKELAPP:Melosys}
+    merkelapp: Melosys
 
 altinn:
   ressurs: ${ALTINN_RESSURS}
