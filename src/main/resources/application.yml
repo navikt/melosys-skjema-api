@@ -68,6 +68,14 @@ arbeidsgiver:
 altinn:
   ressurs: ${ALTINN_RESSURS}
 
+kafka:
+  topic:
+    brukervarsel: aapen-brukervarsel-v1
+  producer:
+    cluster: ${NAIS_CLUSTER_NAME}
+    namespace: ${NAIS_NAMESPACE}
+    appname: ${NAIS_APP_NAME}
+
 logging:
   level:
     no.nav.melosys: INFO

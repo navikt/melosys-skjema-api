@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.5.5"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.spring") version "2.2.20"
-    kotlin("plugin.jpa") version "2.2.0"
+    kotlin("plugin.jpa") version "2.2.20"
 }
 
 group = "no.nav.melosys"
@@ -26,8 +26,8 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "5.0.36"
-val mockOAuth2ServerVersion = "2.3.0"
+val tokenSupportVersion = "5.0.37"
+val mockOAuth2ServerVersion = "3.0.0"
 val kotlinLoggingVersion = "7.0.13"
 val kotestVersion = "6.0.3"
 val mockkVersion = "1.14.5"
