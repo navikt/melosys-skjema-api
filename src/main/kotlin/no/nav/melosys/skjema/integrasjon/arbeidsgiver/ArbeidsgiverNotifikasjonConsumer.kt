@@ -54,6 +54,7 @@ class ArbeidsgiverNotifikasjonConsumer(
               }
             }
         """
+        //TODO mottakere kan ta i bruk ressurs i prod/dev. Det er mulig vi ønsker å byttet til dette. ressurs funker ikke mot mock.
     }
 
     fun opprettBeskjed(
