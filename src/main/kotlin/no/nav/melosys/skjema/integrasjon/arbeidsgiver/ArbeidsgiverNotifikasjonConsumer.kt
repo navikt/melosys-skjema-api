@@ -34,9 +34,8 @@ class ArbeidsgiverNotifikasjonConsumer(
                 }
                 mottakere: [{
                   altinn: {
-                    altinnressurs: {
-                      ressursId: "team-fager"
-                    }
+                    serviceCode: "5516"
+                    serviceEdition: "1"
                   }
                 }]
                 notifikasjon: {
