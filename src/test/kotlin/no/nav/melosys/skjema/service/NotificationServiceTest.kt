@@ -7,18 +7,20 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.slot
+import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonConsumer
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import java.util.concurrent.CompletableFuture
 
 class NotificationServiceTest : FunSpec({
     
+    val mockArbeidsgiverNotifikasjonConsumer = mockk<ArbeidsgiverNotifikasjonConsumer>()
     val mockKafkaTemplate = mockk<KafkaTemplate<String, String>>()
     val brukervarselTopic = "test-brukervarsel"
     val producerCluster = "test-cluster"
     val producerNamespace = "test-namespace"
     val producerApp = "test-app"
-    val service = NotificationService(mockKafkaTemplate, brukervarselTopic, producerCluster, producerNamespace, producerApp)
+    val service = NotificationService(mockArbeidsgiverNotifikasjonConsumer, mockKafkaTemplate, brukervarselTopic, producerCluster, producerNamespace, producerApp)
     
     test("sendNotification skal sende notifikasjon til Kafka med riktige data") {
         val ident = "12345678901"
@@ -32,7 +34,7 @@ class NotificationServiceTest : FunSpec({
             mockKafkaTemplate.send(capture(topicSlot), capture(keySlot), capture(valueSlot)) 
         } returns mockFuture
         
-        service.sendNotification(ident, notificationText)
+        service.sendNotificationToArbeidstaker(ident, notificationText)
         
         verify(exactly = 1) { mockKafkaTemplate.send(any<String>(), any<String>(), any<String>()) }
         
@@ -54,7 +56,7 @@ class NotificationServiceTest : FunSpec({
         } throws RuntimeException("Kafka connection failed")
         
         try {
-            service.sendNotification(ident, notificationText)
+            service.sendNotificationToArbeidstaker(ident, notificationText)
             throw AssertionError("Expected exception was not thrown")
         } catch (e: RuntimeException) {
             e.message shouldBe "Kafka connection failed"

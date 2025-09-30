@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.security.token.support.core.api.Protected
-import no.nav.security.token.support.core.api.Unprotected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -62,7 +61,8 @@ class SkjemaController(
         log.info { "Submitting skjema med id: $id" }
 
         try {
-            notificationService.sendNotification(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
+            notificationService.sendNotificationToArbeidstaker(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
+            notificationService.sendNotificationToArbeidsgiver("test", "test", "test", "222222") //TODO finn ut hva vi skal sende og hvor
             log.info { "Notifikasjon sendt for skjema med id: $id" }
             return ResponseEntity.ok().build()
         } catch (e: Exception) {

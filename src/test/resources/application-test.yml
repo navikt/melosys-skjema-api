@@ -5,7 +5,11 @@ TOKEN_X_TOKEN_ENDPOINT: ${mock-oauth2-server.baseUrl}/tokenx/token
 TOKEN_X_PRIVATE_JWK: "{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"test-key\",\"n\":\"test\",\"e\":\"AQAB\",\"d\":\"test\",\"p\":\"test\",\"q\":\"test\",\"dp\":\"test\",\"dq\":\"test\",\"qi\":\"test\"}"
 TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: test:fager:arbeidsgiver-altinn-tilganger
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: ${wiremock.server.url}
+ARBEIDSGIVER_NOTIFIKASJON_URL: ${wiremock.server.url}
+TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
 ALTINN_RESSURS: test-ressurs
 NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app
+MERKELAPP: foo123
+RESSURS_ID: test123

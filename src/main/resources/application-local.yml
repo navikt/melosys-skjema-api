@@ -1,4 +1,4 @@
-DB_JDBC_URL: 'jdbc:postgresql://localhost:5434/melosys_skjema?user=melosys&password=melosys'
+DB_JDBC_URL: 'jdbc:postgresql://localhost:5432/melosys_skjema?user=melosys&password=melosys'
 TOKEN_X_WELL_KNOWN_URL: http://host.docker.internal:8082/isso/.well-known/openid-configuration
 TOKEN_X_TOKEN_ENDPOINT: http://host.docker.internal:8082/isso/token
 # this key is useless in production; disregard security notices
@@ -7,7 +7,11 @@ TOKEN_X_CLIENT_ID: melosys-skjema-api
 SERVER_PORT: 8089
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: placeholder
 ALTINN_RESSURS: placeholder
+TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
 KAFKA_BOOTSTRAP_SERVERS: localhost:29092
 NAIS_CLUSTER_NAME: local
 NAIS_NAMESPACE: teammelosys
 NAIS_APP_NAME: melosys-skjema-api
+ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.dev.nav.no
+MERKELAPP: foo123
+RESSURS_ID: foo123
