@@ -12,3 +12,4 @@ NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app
 MERKELAPP: foo123
+RESSURS_ID: test123

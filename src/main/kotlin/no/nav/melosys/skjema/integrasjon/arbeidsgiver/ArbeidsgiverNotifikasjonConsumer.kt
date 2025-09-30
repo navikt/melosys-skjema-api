@@ -18,13 +18,13 @@ data class BeskjedRequest(
     val tekst: String,
     val lenke: String,
     val eksternId: String = UUID.randomUUID().toString(),
-    val ressursId: String
 )
 
 @Component
 class ArbeidsgiverNotifikasjonConsumer(
     private val arbeidsgiverNotifikasjonClient: WebClient,
-    @Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String
+    @Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
+    @Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
 ) {
 
     private val nyBeskjedMutation: String by lazy {
@@ -42,7 +42,7 @@ class ArbeidsgiverNotifikasjonConsumer(
                 "lenke" to request.lenke,
                 "tekst" to request.tekst,
                 "merkelapp" to merkelapp,
-                "ressursId" to request.ressursId,
+                "ressursId" to ressursId,
             )
         )
 

@@ -64,6 +64,7 @@ arbeidsgiver:
   notifikasjon:
     url: ${ARBEIDSGIVER_NOTIFIKASJON_URL}
     merkelapp: ${MERKELAPP}
+    ressursId: ${RESSURS_ID}
 
 altinn:
   ressurs: ${ALTINN_RESSURS}

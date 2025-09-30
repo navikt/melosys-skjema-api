@@ -14,6 +14,7 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
 
     val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
     val merkelapp = "TestMerkelapp"
+    val ressursId = "test-ressurs"
     
     lateinit var consumer: ArbeidsgiverNotifikasjonConsumer
 
@@ -22,7 +23,7 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         val webClient = WebClient.builder()
             .baseUrl("http://localhost:${wireMockServer.port()}")
             .build()
-        consumer = ArbeidsgiverNotifikasjonConsumer(webClient, merkelapp)
+        consumer = ArbeidsgiverNotifikasjonConsumer(webClient, merkelapp, ressursId)
     }
 
     afterEach {
@@ -63,7 +64,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
                 tekst = tekst,
                 lenke = lenke,
                 eksternId = eksternId,
-                ressursId = "test-ressurs"
             )
         )
         
@@ -121,7 +121,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
                     virksomhetsnummer = virksomhetsnummer,
                     tekst = tekst,
                     lenke = lenke,
-                    ressursId = "test-ressurs"
                 )
             )
         }
@@ -163,7 +162,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
                     virksomhetsnummer = virksomhetsnummer,
                     tekst = tekst,
                     lenke = lenke,
-                    ressursId = "test-ressurs"
                 )
             )
         }
@@ -204,7 +202,6 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
                     virksomhetsnummer = virksomhetsnummer,
                     tekst = tekst,
                     lenke = lenke,
-                    ressursId = "test-ressurs"
                 )
             )
         }

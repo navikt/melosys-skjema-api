@@ -14,3 +14,4 @@ NAIS_NAMESPACE: teammelosys
 NAIS_APP_NAME: melosys-skjema-api
 ARBEIDSGIVER_NOTIFIKASJON_URL: https://ag-notifikasjon-produsent-api.intern.dev.nav.no/api/graphql
 MERKELAPP: test-fager
+RESSURS_ID: test-fager

@@ -75,7 +75,6 @@ class NotificationService(
                     tekst = notificationText,
                     lenke = lenke,
                     eksternId = eksternId ?: UUID.randomUUID().toString(),
-                    ressursId = "foo123" //TODO oppdater når vi får vår egen ressurs id
                 )
             )
             log.info { "Sendt arbeidsgiver notifikasjon med beskjed id: $beskjedId til virksomhet: $virksomhetsnummer" }
