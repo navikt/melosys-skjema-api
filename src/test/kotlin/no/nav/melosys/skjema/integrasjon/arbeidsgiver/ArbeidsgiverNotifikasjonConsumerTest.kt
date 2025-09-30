@@ -1,40 +1,32 @@
 package no.nav.melosys.skjema.integrasjon.arbeidsgiver
 
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.*
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedResult
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLError
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLRequest
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLResponse
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.NyBeskjedResponse
-import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
-import reactor.core.publisher.Mono
-import java.util.UUID
 
 class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
 
-    val mockWebClient = mockk<WebClient>()
-    val mockRequestBodyUriSpec = mockk<WebClient.RequestBodyUriSpec>()
-    val mockRequestBodySpec = mockk<WebClient.RequestBodySpec>()
-    val mockResponseSpec = mockk<WebClient.ResponseSpec>()
+    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
     val merkelapp = "TestMerkelapp"
     
-    val consumer = ArbeidsgiverNotifikasjonConsumer(mockWebClient, merkelapp)
+    lateinit var consumer: ArbeidsgiverNotifikasjonConsumer
 
     beforeEach {
-        every { mockWebClient.post() } returns mockRequestBodyUriSpec
-        every { mockRequestBodyUriSpec.uri(any<String>()) } returns mockRequestBodySpec
-        every { mockRequestBodySpec.bodyValue(any()) } returns mockRequestBodySpec
-        every { mockRequestBodySpec.retrieve() } returns mockResponseSpec
+        wireMockServer.start()
+        val webClient = WebClient.builder()
+            .baseUrl("http://localhost:${wireMockServer.port()}")
+            .build()
+        consumer = ArbeidsgiverNotifikasjonConsumer(webClient, merkelapp)
+    }
+
+    afterEach {
+        wireMockServer.stop()
     }
 
     test("opprettBeskjed should create beskjed successfully and return id") {
@@ -44,21 +36,26 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         val expectedId = "beskjed-id-123"
         val eksternId = "extern-id-123"
         
-        val expectedResponse = GraphQLResponse(
-            data = NyBeskjedResponse(
-                nyBeskjed = BeskjedResult(
-                    __typename = "NyBeskjedVellykket",
-                    id = expectedId,
-                    feilmelding = null
+        wireMockServer.stubFor(
+            post(urlEqualTo("/api/graphql"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            """
+                            {
+                                "data": {
+                                    "nyBeskjed": {
+                                        "__typename": "NyBeskjedVellykket",
+                                        "id": "$expectedId"
+                                    }
+                                }
+                            }
+                            """.trimIndent()
+                        )
                 )
-            ),
-            errors = null
         )
-        
-        val requestSlot = slot<GraphQLRequest>()
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(expectedResponse)
         
         val result = consumer.opprettBeskjed(
             BeskjedRequest(
@@ -72,16 +69,15 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         
         result shouldBe expectedId
         
-        verify { mockRequestBodySpec.bodyValue(capture(requestSlot)) }
-        
-        val capturedRequest = requestSlot.captured
-        capturedRequest.query shouldContain "mutation OpprettNyBeskjed"
-        capturedRequest.variables["eksternId"] shouldBe eksternId
-        capturedRequest.variables["virksomhetsnummer"] shouldBe virksomhetsnummer
-        capturedRequest.variables["tekst"] shouldBe tekst
-        capturedRequest.variables["lenke"] shouldBe lenke
-        capturedRequest.variables["merkelapp"] shouldBe merkelapp
-        capturedRequest.variables["ressursId"] shouldBe "test-ressurs"
+        wireMockServer.verify(
+            postRequestedFor(urlEqualTo("/api/graphql"))
+                .withRequestBody(matchingJsonPath("$.variables.eksternId", equalTo(eksternId)))
+                .withRequestBody(matchingJsonPath("$.variables.virksomhetsnummer", equalTo(virksomhetsnummer)))
+                .withRequestBody(matchingJsonPath("$.variables.tekst", equalTo(tekst)))
+                .withRequestBody(matchingJsonPath("$.variables.lenke", equalTo(lenke)))
+                .withRequestBody(matchingJsonPath("$.variables.merkelapp", equalTo(merkelapp)))
+                .withRequestBody(matchingJsonPath("$.variables.ressursId", equalTo("test-ressurs")))
+        )
     }
 
     test("opprettBeskjed should handle GraphQL errors") {
@@ -89,17 +85,35 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         val tekst = "Test beskjed"
         val lenke = "https://test.nav.no/beskjed/123"
         
-        val errorResponse = GraphQLResponse<NyBeskjedResponse>(
-            data = null,
-            errors = listOf(
-                GraphQLError("Invalid virksomhetsnummer", mapOf("code" to "VALIDATION_ERROR")),
-                GraphQLError("Missing required field", mapOf("field" to "tekst"))
-            )
+        wireMockServer.stubFor(
+            post(urlEqualTo("/api/graphql"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            """
+                            {
+                                "data": null,
+                                "errors": [
+                                    {
+                                        "message": "Invalid virksomhetsnummer",
+                                        "extensions": {
+                                            "code": "VALIDATION_ERROR"
+                                        }
+                                    },
+                                    {
+                                        "message": "Missing required field",
+                                        "extensions": {
+                                            "field": "tekst"
+                                        }
+                                    }
+                                ]
+                            }
+                            """.trimIndent()
+                        )
+                )
         )
-        
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.just(errorResponse)
         
         val exception = shouldThrow<RuntimeException> {
             consumer.opprettBeskjed(
@@ -117,14 +131,31 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         exception.message shouldContain "Missing required field"
     }
 
-    test("opprettBeskjed should handle empty response") {
+    test("opprettBeskjed should handle unknown response type") {
         val virksomhetsnummer = "123456789"
         val tekst = "Test beskjed"
         val lenke = "https://test.nav.no/beskjed/123"
         
-        every { 
-            mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
-        } returns Mono.empty()
+        wireMockServer.stubFor(
+            post(urlEqualTo("/api/graphql"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            """
+                            {
+                                "data": {
+                                    "nyBeskjed": {
+                                        "__typename": "UnknownType",
+                                        "someField": "someValue"
+                                    }
+                                }
+                            }
+                            """.trimIndent()
+                        )
+                )
+        )
         
         val exception = shouldThrow<RuntimeException> {
             consumer.opprettBeskjed(
@@ -137,6 +168,47 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
             )
         }
         
-        exception.message shouldBe "Ukjent respons type: null"
+        exception.message shouldBe "Ukjent respons type: UnknownType"
+    }
+
+    test("opprettBeskjed should handle Error response type") {
+        val virksomhetsnummer = "123456789"
+        val tekst = "Test beskjed"
+        val lenke = "https://test.nav.no/beskjed/123"
+        val feilmelding = "Noe gikk galt"
+        
+        wireMockServer.stubFor(
+            post(urlEqualTo("/api/graphql"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            """
+                            {
+                                "data": {
+                                    "nyBeskjed": {
+                                        "__typename": "Error",
+                                        "feilmelding": "$feilmelding"
+                                    }
+                                }
+                            }
+                            """.trimIndent()
+                        )
+                )
+        )
+        
+        val exception = shouldThrow<RuntimeException> {
+            consumer.opprettBeskjed(
+                BeskjedRequest(
+                    virksomhetsnummer = virksomhetsnummer,
+                    tekst = tekst,
+                    lenke = lenke,
+                    ressursId = "test-ressurs"
+                )
+            )
+        }
+        
+        exception.message shouldBe "Feil ved opprettelse av beskjed: $feilmelding"
     }
 })
