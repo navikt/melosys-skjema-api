@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLResponse
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.NyBeskjedResponse
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -18,61 +19,28 @@ class ArbeidsgiverNotifikasjonConsumer(
     @Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String
 ) {
 
-    companion object {
-        private const val NY_BESKJED_MUTATION = """
-            mutation OpprettNyBeskjed(
-              ${'$'}eksternId: String!
-              ${'$'}virksomhetsnummer: String!
-              ${'$'}lenke: String!
-              ${'$'}tekst: String!
-              ${'$'}merkelapp: String!
-            ) {
-              nyBeskjed(nyBeskjed: {
-                metadata: {
-                  eksternId: ${'$'}eksternId
-                  virksomhetsnummer: ${'$'}virksomhetsnummer
-                }
-                mottakere: [{
-                  altinn: {
-                    serviceCode: "4826"
-                    serviceEdition: "1"
-                  }
-                }]
-                notifikasjon: {
-                  merkelapp: ${'$'}merkelapp
-                  tekst: ${'$'}tekst
-                  lenke: ${'$'}lenke
-                }
-              }) {
-                __typename
-                ... on NyBeskjedVellykket {
-                  id
-                }
-                ... on Error {
-                  feilmelding
-                }
-              }
-            }
-        """
-        //TODO vi kan også bruke ressurs i tillegg til mock, men fra det jeg har fått av info er dette ikke integrert enda i prod. Ressurs er påkrevd for altinn 3. REf https://navikt.github.io/arbeidsgiver-notifikasjon-produsent-api/api.html#definition-AltinnRessursMottakerInput
+    private val nyBeskjedMutation: String by lazy {
+        ClassPathResource("graphql/opprett-ny-beskjed.graphql").inputStream.bufferedReader().use { it.readText() }
     }
 
     fun opprettBeskjed(
         virksomhetsnummer: String,
         tekst: String,
         lenke: String,
-        eksternId: String = UUID.randomUUID().toString()
+        eksternId: String = UUID.randomUUID().toString(),
+        ressursId: String
     ): String {
         log.info { "Oppretter ny beskjed for virksomhet $virksomhetsnummer med eksternId $eksternId" }
 
         val graphQLRequest = GraphQLRequest(
-            query = NY_BESKJED_MUTATION,
+            query = nyBeskjedMutation,
             variables = mapOf(
                 "eksternId" to eksternId,
                 "virksomhetsnummer" to virksomhetsnummer,
                 "lenke" to lenke,
                 "tekst" to tekst,
-                "merkelapp" to merkelapp
+                "merkelapp" to merkelapp,
+                "ressursId" to ressursId,
             )
         )
 
