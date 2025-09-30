@@ -13,6 +13,14 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger { }
 
+data class BeskjedRequest(
+    val virksomhetsnummer: String,
+    val tekst: String,
+    val lenke: String,
+    val eksternId: String = UUID.randomUUID().toString(),
+    val ressursId: String
+)
+
 @Component
 class ArbeidsgiverNotifikasjonConsumer(
     private val arbeidsgiverNotifikasjonClient: WebClient,
@@ -23,24 +31,18 @@ class ArbeidsgiverNotifikasjonConsumer(
         ClassPathResource("graphql/opprett-ny-beskjed.graphql").inputStream.bufferedReader().use { it.readText() }
     }
 
-    fun opprettBeskjed(
-        virksomhetsnummer: String,
-        tekst: String,
-        lenke: String,
-        eksternId: String = UUID.randomUUID().toString(),
-        ressursId: String
-    ): String {
-        log.info { "Oppretter ny beskjed for virksomhet $virksomhetsnummer med eksternId $eksternId" }
+    fun opprettBeskjed(request: BeskjedRequest): String {
+        log.info { "Oppretter ny beskjed for virksomhet ${request.virksomhetsnummer} med eksternId ${request.eksternId}" }
 
         val graphQLRequest = GraphQLRequest(
             query = nyBeskjedMutation,
             variables = mapOf(
-                "eksternId" to eksternId,
-                "virksomhetsnummer" to virksomhetsnummer,
-                "lenke" to lenke,
-                "tekst" to tekst,
+                "eksternId" to request.eksternId,
+                "virksomhetsnummer" to request.virksomhetsnummer,
+                "lenke" to request.lenke,
+                "tekst" to request.tekst,
                 "merkelapp" to merkelapp,
-                "ressursId" to ressursId,
+                "ressursId" to request.ressursId,
             )
         )
 

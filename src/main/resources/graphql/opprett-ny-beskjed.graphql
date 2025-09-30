@@ -12,10 +12,9 @@ mutation OpprettNyBeskjed(
       virksomhetsnummer: $virksomhetsnummer
     }
     mottakere: [{
-      AltinnRessursMottaker: {
-      "virksomhetsnummer": $virksomhetsnummer,
-      "ressursId": $ressursId
-    }
+      altinnRessurs: {
+        ressursId: $ressursId
+      }
     }]
     notifikasjon: {
       merkelapp: $merkelapp

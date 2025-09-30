@@ -60,7 +60,15 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
             mockResponseSpec.bodyToMono(any<ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>>()) 
         } returns Mono.just(expectedResponse)
         
-        val result = consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke, eksternId)
+        val result = consumer.opprettBeskjed(
+            BeskjedRequest(
+                virksomhetsnummer = virksomhetsnummer,
+                tekst = tekst,
+                lenke = lenke,
+                eksternId = eksternId,
+                ressursId = "test-ressurs"
+            )
+        )
         
         result shouldBe expectedId
         
@@ -73,6 +81,7 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         capturedRequest.variables["tekst"] shouldBe tekst
         capturedRequest.variables["lenke"] shouldBe lenke
         capturedRequest.variables["merkelapp"] shouldBe merkelapp
+        capturedRequest.variables["ressursId"] shouldBe "test-ressurs"
     }
 
     test("opprettBeskjed should handle GraphQL errors") {
@@ -93,7 +102,14 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         } returns Mono.just(errorResponse)
         
         val exception = shouldThrow<RuntimeException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
+            consumer.opprettBeskjed(
+                BeskjedRequest(
+                    virksomhetsnummer = virksomhetsnummer,
+                    tekst = tekst,
+                    lenke = lenke,
+                    ressursId = "test-ressurs"
+                )
+            )
         }
         
         exception.message shouldContain "GraphQL feil ved opprettelse av beskjed"
@@ -111,7 +127,14 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         } returns Mono.empty()
         
         val exception = shouldThrow<RuntimeException> {
-            consumer.opprettBeskjed(virksomhetsnummer, tekst, lenke)
+            consumer.opprettBeskjed(
+                BeskjedRequest(
+                    virksomhetsnummer = virksomhetsnummer,
+                    tekst = tekst,
+                    lenke = lenke,
+                    ressursId = "test-ressurs"
+                )
+            )
         }
         
         exception.message shouldBe "Ukjent respons type: null"

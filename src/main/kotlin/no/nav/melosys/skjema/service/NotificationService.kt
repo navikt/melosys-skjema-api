@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonConsumer
+import no.nav.melosys.skjema.integrasjon.arbeidsgiver.BeskjedRequest
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Tekst
@@ -69,10 +70,13 @@ class NotificationService(
 
         try {
             val beskjedId = arbeidsgiverNotifikasjonConsumer.opprettBeskjed(
-                virksomhetsnummer = virksomhetsnummer,
-                tekst = notificationText,
-                lenke = lenke,
-                eksternId = eksternId ?: UUID.randomUUID().toString()
+                BeskjedRequest(
+                    virksomhetsnummer = virksomhetsnummer,
+                    tekst = notificationText,
+                    lenke = lenke,
+                    eksternId = eksternId ?: UUID.randomUUID().toString(),
+                    ressursId = "foo123" //TODO oppdater når vi får vår egen ressurs id
+                )
             )
             log.info { "Sendt arbeidsgiver notifikasjon med beskjed id: $beskjedId til virksomhet: $virksomhetsnummer" }
             return beskjedId
