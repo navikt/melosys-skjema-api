@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonConsumer
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.BeskjedRequest
+import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Tekst
