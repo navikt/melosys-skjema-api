@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto
 
-data class GraphQLRequest(
+data class GraphQLRequest<T>(
     val query: String,
-    val variables: Map<String, Any?> = emptyMap()
+    val variables: T
 )
