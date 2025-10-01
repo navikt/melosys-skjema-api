@@ -8,6 +8,8 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
+import java.time.LocalDate
 
 private val log = KotlinLogging.logger { }
 
@@ -77,4 +79,142 @@ class SkjemaController(
     fun generatePdf(@PathVariable id: String): ResponseEntity<Any> {
         return ResponseEntity.ok().build()
     }
+
+    // Arbeidsgiver Flow Endpoints
+    @PostMapping("/v1/arbeidsgiver/arbeidsgiveren")
+    @Operation(summary = "Register arbeidsgiver information")
+    @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
+    fun registerArbeidsgiver(@RequestBody request: ArbeidsgiverRequest): ResponseEntity<Any> {
+        log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
+        return ResponseEntity.ok().build()
+    }
+
+    @PostMapping("/v1/arbeidsgiver/virksomhet-i-norge")
+    @Operation(summary = "Register virksomhet information")
+    @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
+    fun registerVirksomhet(@RequestBody request: VirksomhetRequest): ResponseEntity<Any> {
+        log.info { "Registering virksomhet information" }
+        return ResponseEntity.ok().build()
+    }
+
+    @PostMapping("/v1/arbeidsgiver/utenlandsoppdraget")
+    @Operation(summary = "Register utenlandsoppdrag information")
+    @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
+    fun registerUtenlandsoppdrag(@RequestBody request: UtenlandsoppdragRequest): ResponseEntity<Any> {
+        log.info { "Registering utenlandsoppdrag to ${request.utsendelseLand}" }
+        return ResponseEntity.ok().build()
+    }
+
+    @PostMapping("/v1/arbeidsgiver/arbeidstakerens-lonn")
+    @Operation(summary = "Register arbeidstaker lønn information")
+    @ApiResponse(responseCode = "200", description = "Arbeidstaker lønn information registered")
+    fun registerArbeidstakerLonn(@RequestBody request: ArbeidstakerLonnRequest): ResponseEntity<Any> {
+        log.info { "Registering arbeidstaker lønn information" }
+        return ResponseEntity.ok().build()
+    }
+
+    @PostMapping("/v1/arbeidsgiver/oppsummering")
+    @Operation(summary = "Submit arbeidsgiver oppsummering")
+    @ApiResponse(responseCode = "200", description = "Oppsummering submitted")
+    fun submitArbeidsgiverOppsummering(@RequestBody request: OppsummeringRequest): ResponseEntity<Any> {
+        log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
+        return ResponseEntity.ok().build()
+    }
+
+    // Arbeidstaker Flow Endpoints
+    @PostMapping("/v1/arbeidstaker/arbeidstakeren")
+    @Operation(summary = "Register arbeidstaker information")
+    @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
+    fun registerArbeidstaker(@RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
+        log.info { "Registering arbeidstaker with fnr: ${request.fodselsnummer?.take(6)}******" }
+        return ResponseEntity.ok().build()
+    }
+
+    @PostMapping("/v1/arbeidstaker/skatteforhold-og-inntekt")
+    @Operation(summary = "Register skatteforhold og inntekt information")
+    @ApiResponse(responseCode = "200", description = "Skatteforhold og inntekt information registered")
+    fun registerSkatteforholdOgInntekt(@RequestBody request: SkatteforholdOgInntektRequest): ResponseEntity<Any> {
+        log.info { "Registering skatteforhold og inntekt information" }
+        return ResponseEntity.ok().build()
+    }
 }
+
+// Data classes for Arbeidsgiver Flow
+data class ArbeidsgiverRequest(
+    val organisasjonsnummer: String,
+    val organisasjonNavn: String
+)
+
+data class VirksomhetRequest(
+    val erArbeidsgiverenOffentligVirksomhet: Boolean,
+    val erArbeidsgiverenBemanningsEllerVikarbyraa: Boolean,
+    val opprettholderArbeidsgivereVanligDrift: Boolean
+)
+
+data class UtenlandsoppdragRequest(
+    val utsendelseLand: String,
+    val arbeidstakerUtsendelseFraDato: LocalDate,
+    val arbeidstakerUtsendelseTilDato: LocalDate,
+    val arbeidsgiverHarOppdragILandet: Boolean,
+    val arbeidstakerBleAnsattForUtenlandsoppdraget: Boolean,
+    val arbeidstakerForblirAnsattIHelePerioden: Boolean,
+    val arbeidstakerErstatterAnnenPerson: Boolean,
+    val arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget: Boolean?,
+    val utenlandsoppholdetsBegrunnelse: String?,
+    val ansettelsesforholdBeskrivelse: String?,
+    val forrigeArbeidstakerUtsendelseFradato: LocalDate?,
+    val forrigeArbeidstakerUtsendelseTilDato: LocalDate?
+)
+
+data class ArbeidstakerLonnRequest(
+    val arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden: Boolean,
+    val virksomheterSomUtbetalerLonnOgNaturalytelser: VirksomheterSomUtbetalerLonnOgNaturalytelser?
+)
+
+data class VirksomheterSomUtbetalerLonnOgNaturalytelser(
+    val norskeVirksomheter: List<NorskVirksomhet>?,
+    val utenlandskeVirksomheter: List<UtenlandskVirksomhet>?
+)
+
+data class NorskVirksomhet(
+    val organisasjonsnummer: String
+)
+
+data class UtenlandskVirksomhet(
+    val navn: String,
+    val organisasjonsnummer: String,
+    val vegnavnOgHusnummer: String,
+    val bygning: String?,
+    val postkode: String,
+    val byStedsnavn: String,
+    val region: String,
+    val land: String,
+    val tilhorerSammeKonsern: Boolean
+)
+
+data class OppsummeringRequest(
+    val bekreftetRiktighet: Boolean,
+    val submittedAt: Instant
+)
+
+// Data classes for Arbeidstaker Flow
+data class ArbeidstakerRequest(
+    val harNorskFodselsnummer: Boolean,
+    val fodselsnummer: String?,
+    val fornavn: String?,
+    val etternavn: String?,
+    val fodselsdato: LocalDate?,
+    val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean,
+    val aktivitetIMaanedenFoerUtsendingen: String,
+    val skalJobbeForFlereVirksomheter: Boolean,
+    val norskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<NorskVirksomhet>?,
+    val utenlandskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<UtenlandskVirksomhet>?
+)
+
+data class SkatteforholdOgInntektRequest(
+    val erSkattepliktigTilNorgeIHeleutsendingsperioden: Boolean,
+    val mottarPengestotteFraAnnetEosLandEllerSveits: Boolean,
+    val landSomUtbetalerPengestotte: String?,
+    val pengestotteSomMottasFraAndreLandBelop: String?,
+    val pengestotteSomMottasFraAndreLandBeskrivelse: String?
+)
