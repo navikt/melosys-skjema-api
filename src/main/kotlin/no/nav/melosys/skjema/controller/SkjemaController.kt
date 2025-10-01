@@ -5,11 +5,13 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.service.NotificationService
+import no.nav.melosys.skjema.service.SkjemaService
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 import java.time.LocalDate
+import java.util.*
 
 private val log = KotlinLogging.logger { }
 
@@ -18,53 +20,67 @@ private val log = KotlinLogging.logger { }
 @Tag(name = "Skjema", description = "placeholder")
 @Protected
 class SkjemaController(
-    private val notificationService: NotificationService
+    private val notificationService: NotificationService,
+    private val skjemaService: SkjemaService
 ) {
 
     @GetMapping
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
+    @Operation(summary = "List skjemaer for current user")
+    @ApiResponse(responseCode = "200", description = "List of skjemaer")
     fun listSkjemaer(): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+        val skjemaer = skjemaService.listSkjemaerByUser()
+        return ResponseEntity.ok(skjemaer)
     }
 
     @PostMapping
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun createSkjema(@RequestBody skjema: Any): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+    @Operation(summary = "Create new skjema")
+    @ApiResponse(responseCode = "201", description = "Skjema created")
+    fun createSkjema(@RequestBody request: CreateSkjemaRequest): ResponseEntity<Any> {
+        val skjema = skjemaService.createSkjema(request.fnr, request.orgnr)
+        return ResponseEntity.status(201).body(skjema)
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun getSkjema(@PathVariable id: String): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun updateSkjema(@PathVariable id: String, @RequestBody skjema: Any): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+    @Operation(summary = "Get skjema by ID")
+    @ApiResponse(responseCode = "200", description = "Skjema found")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun getSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
+        val skjema = skjemaService.getSkjema(id)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun deleteSkjema(@PathVariable id: String): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+    @Operation(summary = "Delete skjema")
+    @ApiResponse(responseCode = "204", description = "Skjema deleted")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun deleteSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
+        val deleted = skjemaService.deleteSkjema(id)
+        return if (deleted) {
+            ResponseEntity.noContent().build()
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @PostMapping("/{id}/submit")
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun submitSkjema(@PathVariable id: String): ResponseEntity<Any> {
+    @Operation(summary = "Submit skjema")
+    @ApiResponse(responseCode = "200", description = "Skjema submitted")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun submitSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
         log.info { "Submitting skjema med id: $id" }
 
+        val skjema = skjemaService.getSkjema(id)
+        if (skjema == null) {
+            return ResponseEntity.notFound().build()
+        }
+
         try {
-            notificationService.sendNotificationToArbeidstaker(id, "Skjema har blitt sendt til behandling") //TODO finn ut hva som faktisk skal stå her
-            notificationService.sendNotificationToArbeidsgiver("test", "test", "test", "222222") //TODO finn ut hva vi skal sende og hvor
+            notificationService.sendNotificationToArbeidstaker(id.toString(), "Skjema har blitt sendt til behandling")
+            notificationService.sendNotificationToArbeidsgiver("test", "test", "test", skjema.orgnr)
             log.info { "Notifikasjon sendt for skjema med id: $id" }
             return ResponseEntity.ok().build()
         } catch (e: Exception) {
@@ -74,70 +90,124 @@ class SkjemaController(
     }
 
     @GetMapping("/{id}/pdf")
-    @Operation(summary = "placeholder", description = "placeholder")
-    @ApiResponse(responseCode = "200", description = "placeholder")
-    fun generatePdf(@PathVariable id: String): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+    @Operation(summary = "Generate PDF for skjema")
+    @ApiResponse(responseCode = "200", description = "PDF generated")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun generatePdf(@PathVariable id: UUID): ResponseEntity<Any> {
+        val skjema = skjemaService.getSkjema(id)
+        return if (skjema != null) {
+            ResponseEntity.ok().build()
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     // Arbeidsgiver Flow Endpoints
-    @PostMapping("/v1/arbeidsgiver/arbeidsgiveren")
+    @PostMapping("/{skjemaId}/arbeidsgiver/arbeidsgiveren")
     @Operation(summary = "Register arbeidsgiver information")
     @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
-    fun registerArbeidsgiver(@RequestBody request: ArbeidsgiverRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidsgiverRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveArbeidsgiverInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
-    @PostMapping("/v1/arbeidsgiver/virksomhet-i-norge")
+    @PostMapping("/{skjemaId}/arbeidsgiver/virksomhet-i-norge")
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
-    fun registerVirksomhet(@RequestBody request: VirksomhetRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody request: VirksomhetRequest): ResponseEntity<Any> {
         log.info { "Registering virksomhet information" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveVirksomhetInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
-    @PostMapping("/v1/arbeidsgiver/utenlandsoppdraget")
+    @PostMapping("/{skjemaId}/arbeidsgiver/utenlandsoppdraget")
     @Operation(summary = "Register utenlandsoppdrag information")
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
-    fun registerUtenlandsoppdrag(@RequestBody request: UtenlandsoppdragRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragRequest): ResponseEntity<Any> {
         log.info { "Registering utenlandsoppdrag to ${request.utsendelseLand}" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveUtenlandsoppdragInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
-    @PostMapping("/v1/arbeidsgiver/arbeidstakerens-lonn")
+    @PostMapping("/{skjemaId}/arbeidsgiver/arbeidstakerens-lonn")
     @Operation(summary = "Register arbeidstaker lønn information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker lønn information registered")
-    fun registerArbeidstakerLonn(@RequestBody request: ArbeidstakerLonnRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerLonnRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidstaker lønn information" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveArbeidstakerLonnInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
-    @PostMapping("/v1/arbeidsgiver/oppsummering")
+    @PostMapping("/{skjemaId}/arbeidsgiver/oppsummering")
     @Operation(summary = "Submit arbeidsgiver oppsummering")
     @ApiResponse(responseCode = "200", description = "Oppsummering submitted")
-    fun submitArbeidsgiverOppsummering(@RequestBody request: OppsummeringRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun submitArbeidsgiverOppsummering(@PathVariable skjemaId: UUID, @RequestBody request: OppsummeringRequest): ResponseEntity<Any> {
         log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.submitArbeidsgiverOppsummering(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     // Arbeidstaker Flow Endpoints
-    @PostMapping("/v1/arbeidstaker/arbeidstakeren")
+    @PostMapping("/{skjemaId}/arbeidstaker/arbeidstakeren")
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
-    fun registerArbeidstaker(@RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidstaker with fnr: ${request.fodselsnummer?.take(6)}******" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
-    @PostMapping("/v1/arbeidstaker/skatteforhold-og-inntekt")
+    @PostMapping("/{skjemaId}/arbeidstaker/skatteforhold-og-inntekt")
     @Operation(summary = "Register skatteforhold og inntekt information")
     @ApiResponse(responseCode = "200", description = "Skatteforhold og inntekt information registered")
-    fun registerSkatteforholdOgInntekt(@RequestBody request: SkatteforholdOgInntektRequest): ResponseEntity<Any> {
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody request: SkatteforholdOgInntektRequest): ResponseEntity<Any> {
         log.info { "Registering skatteforhold og inntekt information" }
-        return ResponseEntity.ok().build()
+        val skjema = skjemaService.saveSkatteforholdOgInntektInfo(skjemaId, request)
+        return if (skjema != null) {
+            ResponseEntity.ok(skjema)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 }
+
+// Data classes for request bodies
+data class CreateSkjemaRequest(
+    val fnr: String,
+    val orgnr: String
+)
 
 // Data classes for Arbeidsgiver Flow
 data class ArbeidsgiverRequest(
