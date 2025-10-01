@@ -40,13 +40,17 @@ class SkjemaService(
     }
 
     fun getSkjema(id: UUID): Skjema? {
-        return skjemaRepository.findById(id).orElse(null)
+        val currentUser = subjectHandler.getUserID() 
+            ?: throw IllegalStateException("Unable to determine current user")
+        return skjemaRepository.findByIdAndFnr(id, currentUser)
     }
 
     private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
-        val skjema = skjemaRepository.findById(id).orElseThrow {
-            IllegalArgumentException("Skjema with id $id not found")
-        }
+        val currentUser = subjectHandler.getUserID() 
+            ?: throw IllegalStateException("Unable to determine current user")
+        
+        val skjema = skjemaRepository.findByIdAndFnr(id, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
         
         // Get current JSON data based on type
         val currentJsonData = when (dataType) {
@@ -107,12 +111,14 @@ class SkjemaService(
 
     fun submitArbeidsgiverOppsummering(skjemaId: UUID, request: OppsummeringRequest): Skjema {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
-        val skjema = skjemaRepository.findById(skjemaId).orElseThrow {
-            IllegalArgumentException("Skjema with id $skjemaId not found")
-        }
-        skjema.status = SkjemaStatus.SENDT
-        skjema.endretAv = subjectHandler.getUserID() 
+        val currentUser = subjectHandler.getUserID() 
             ?: throw IllegalStateException("Unable to determine current user")
+            
+        val skjema = skjemaRepository.findByIdAndFnr(skjemaId, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found or access denied")
+        
+        skjema.status = SkjemaStatus.SENDT
+        skjema.endretAv = currentUser
         return skjemaRepository.save(skjema)
     }
 
@@ -133,11 +139,10 @@ class SkjemaService(
     }
 
     fun deleteSkjema(id: UUID): Boolean {
-        return if (skjemaRepository.existsById(id)) {
-            skjemaRepository.deleteById(id)
-            true
-        } else {
-            false
-        }
+        val currentUser = subjectHandler.getUserID() 
+            ?: throw IllegalStateException("Unable to determine current user")
+        
+        val deletedCount = skjemaRepository.deleteByIdAndFnr(id, currentUser)
+        return deletedCount > 0
     }
 }
