@@ -43,8 +43,10 @@ class SkjemaService(
         return skjemaRepository.findById(id).orElse(null)
     }
 
-    private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema? {
-        val skjema = skjemaRepository.findById(id).orElse(null) ?: return null
+    private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
+        val skjema = skjemaRepository.findById(id).orElseThrow {
+            IllegalArgumentException("Skjema with id $id not found")
+        }
         
         // Get current JSON data based on type
         val currentJsonData = when (dataType) {
@@ -75,49 +77,51 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun updateArbeidsgiverData(id: UUID, data: Any): Skjema? {
+    fun updateArbeidsgiverData(id: UUID, data: Any): Skjema {
         return updateJsonData(id, data, DataType.ARBEIDSGIVER)
     }
 
-    fun updateArbeidstakerData(id: UUID, data: Any): Skjema? {
+    fun updateArbeidstakerData(id: UUID, data: Any): Skjema {
         return updateJsonData(id, data, DataType.ARBEIDSTAKER)
     }
 
-    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverRequest): Skjema? {
+    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverRequest): Skjema {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
         return updateArbeidsgiverData(skjemaId, request)
     }
 
-    fun saveVirksomhetInfo(skjemaId: UUID, request: VirksomhetRequest): Skjema? {
+    fun saveVirksomhetInfo(skjemaId: UUID, request: VirksomhetRequest): Skjema {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
         return updateArbeidsgiverData(skjemaId, request)
     }
 
-    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragRequest): Skjema? {
+    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragRequest): Skjema {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
         return updateArbeidsgiverData(skjemaId, request)
     }
 
-    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerLonnRequest): Skjema? {
+    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerLonnRequest): Skjema {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
         return updateArbeidsgiverData(skjemaId, request)
     }
 
-    fun submitArbeidsgiverOppsummering(skjemaId: UUID, request: OppsummeringRequest): Skjema? {
+    fun submitArbeidsgiverOppsummering(skjemaId: UUID, request: OppsummeringRequest): Skjema {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
-        val skjema = skjemaRepository.findById(skjemaId).orElse(null) ?: return null
+        val skjema = skjemaRepository.findById(skjemaId).orElseThrow {
+            IllegalArgumentException("Skjema with id $skjemaId not found")
+        }
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = subjectHandler.getUserID() 
             ?: throw IllegalStateException("Unable to determine current user")
         return skjemaRepository.save(skjema)
     }
 
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerRequest): Skjema? {
+    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerRequest): Skjema {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
         return updateArbeidstakerData(skjemaId, request)
     }
 
-    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektRequest): Skjema? {
+    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektRequest): Skjema {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
         return updateArbeidstakerData(skjemaId, request)
     }

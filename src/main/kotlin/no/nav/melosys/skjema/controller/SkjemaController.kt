@@ -110,11 +110,7 @@ class SkjemaController(
     fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidsgiverRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
         val skjema = skjemaService.saveArbeidsgiverInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @PostMapping("/{skjemaId}/arbeidsgiver/virksomhet-i-norge")
@@ -124,11 +120,7 @@ class SkjemaController(
     fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody request: VirksomhetRequest): ResponseEntity<Any> {
         log.info { "Registering virksomhet information" }
         val skjema = skjemaService.saveVirksomhetInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @PostMapping("/{skjemaId}/arbeidsgiver/utenlandsoppdraget")
@@ -138,11 +130,7 @@ class SkjemaController(
     fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragRequest): ResponseEntity<Any> {
         log.info { "Registering utenlandsoppdrag to ${request.utsendelseLand}" }
         val skjema = skjemaService.saveUtenlandsoppdragInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @PostMapping("/{skjemaId}/arbeidsgiver/arbeidstakerens-lonn")
@@ -152,11 +140,7 @@ class SkjemaController(
     fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerLonnRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidstaker lønn information" }
         val skjema = skjemaService.saveArbeidstakerLonnInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @PostMapping("/{skjemaId}/arbeidsgiver/oppsummering")
@@ -166,11 +150,7 @@ class SkjemaController(
     fun submitArbeidsgiverOppsummering(@PathVariable skjemaId: UUID, @RequestBody request: OppsummeringRequest): ResponseEntity<Any> {
         log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
         val skjema = skjemaService.submitArbeidsgiverOppsummering(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     // Arbeidstaker Flow Endpoints
@@ -181,11 +161,7 @@ class SkjemaController(
     fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
         log.info { "Registering arbeidstaker with fnr: ${request.fodselsnummer?.take(6)}******" }
         val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @PostMapping("/{skjemaId}/arbeidstaker/skatteforhold-og-inntekt")
@@ -195,11 +171,7 @@ class SkjemaController(
     fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody request: SkatteforholdOgInntektRequest): ResponseEntity<Any> {
         log.info { "Registering skatteforhold og inntekt information" }
         val skjema = skjemaService.saveSkatteforholdOgInntektInfo(skjemaId, request)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 }
 
