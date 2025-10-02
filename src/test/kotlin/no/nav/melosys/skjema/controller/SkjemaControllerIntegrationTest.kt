@@ -68,9 +68,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<List<Map<String, Any>>>()
             .consumeWith { response ->
-                response.responseBody.shouldNotBeNull()
-                response.responseBody!!.shouldHaveSize(2)
-                val orgnrs = response.responseBody!!.map { it["orgnr"] }
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
+                responseBody.shouldHaveSize(2)
+                val orgnrs = responseBody.map { it["orgnr"] }
                 orgnrs shouldBe listOf(testOrgnr, "987654321")
             }
     }
@@ -94,8 +95,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<Map<String, Any>>()
             .consumeWith { response ->
-                response.responseBody.shouldNotBeNull()
-                val responseBody = response.responseBody!!
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
                 responseBody["fnr"] shouldBe testPid
                 responseBody["orgnr"] shouldBe testOrgnr
                 responseBody["status"] shouldBe "UTKAST"
@@ -120,8 +121,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<Map<String, Any>>()
             .consumeWith { response ->
-                response.responseBody.shouldNotBeNull()
-                val responseBody = response.responseBody!!
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
                 responseBody["id"] shouldBe savedSkjema.id.toString()
                 responseBody["fnr"] shouldBe testPid
                 responseBody["orgnr"] shouldBe testOrgnr
@@ -198,8 +199,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<Map<String, Any>>()
             .consumeWith { response ->
-                response.responseBody.shouldNotBeNull()
-                val responseBody = response.responseBody!!
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
                 responseBody["id"] shouldBe savedSkjema.id.toString()
                 responseBody["data"].toString().shouldNotBeBlank()
             }
@@ -250,8 +251,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<Map<String, Any>>()
             .consumeWith { response ->
-                response.responseBody.shouldNotBeNull()
-                val responseBody = response.responseBody!!
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
                 responseBody["status"] shouldBe "SENDT"
             }
     }
