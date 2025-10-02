@@ -46,11 +46,7 @@ class SkjemaController(
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun getSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
         val skjema = skjemaService.getSkjema(id)
-        return if (skjema != null) {
-            ResponseEntity.ok(skjema)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok(skjema)
     }
 
     @DeleteMapping("/{id}")
@@ -74,9 +70,6 @@ class SkjemaController(
         log.info { "Submitting skjema med id: $id" }
 
         val skjema = skjemaService.getSkjema(id)
-        if (skjema == null) {
-            return ResponseEntity.notFound().build()
-        }
 
         try {
             notificationService.sendNotificationToArbeidstaker(id.toString(), "Skjema har blitt sendt til behandling")
@@ -94,12 +87,7 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "PDF generated")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun generatePdf(@PathVariable id: UUID): ResponseEntity<Any> {
-        val skjema = skjemaService.getSkjema(id)
-        return if (skjema != null) {
-            ResponseEntity.ok().build()
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        return ResponseEntity.ok().build()
     }
 
     // Arbeidsgiver Flow Endpoints
