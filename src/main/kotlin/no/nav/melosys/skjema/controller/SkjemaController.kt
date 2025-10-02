@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.service.SkjemaService
 import no.nav.security.token.support.core.api.Protected

@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.controller
+package no.nav.melosys.skjema.dto
 
 data class VirksomhetRequest(
     val erArbeidsgiverenOffentligVirksomhet: Boolean,
