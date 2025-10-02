@@ -10,8 +10,6 @@ import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
-import java.time.LocalDate
 import java.util.*
 
 private val log = KotlinLogging.logger { }
@@ -152,93 +150,7 @@ class SkjemaController(
     }
     
     @ExceptionHandler(IllegalArgumentException::class)
-    fun handleNotFound(e: IllegalArgumentException): ResponseEntity<Any> {
+    fun handleNotFound(): ResponseEntity<Any> {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 }
-
-// Data classes for request bodies
-data class CreateSkjemaRequest(
-    val fnr: String,
-    val orgnr: String
-)
-
-// Data classes for Arbeidsgiver Flow
-data class ArbeidsgiverRequest(
-    val organisasjonsnummer: String,
-    val organisasjonNavn: String
-)
-
-data class VirksomhetRequest(
-    val erArbeidsgiverenOffentligVirksomhet: Boolean,
-    val erArbeidsgiverenBemanningsEllerVikarbyraa: Boolean,
-    val opprettholderArbeidsgivereVanligDrift: Boolean
-)
-
-data class UtenlandsoppdragRequest(
-    val utsendelseLand: String,
-    val arbeidstakerUtsendelseFraDato: LocalDate,
-    val arbeidstakerUtsendelseTilDato: LocalDate,
-    val arbeidsgiverHarOppdragILandet: Boolean,
-    val arbeidstakerBleAnsattForUtenlandsoppdraget: Boolean,
-    val arbeidstakerForblirAnsattIHelePerioden: Boolean,
-    val arbeidstakerErstatterAnnenPerson: Boolean,
-    val arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget: Boolean?,
-    val utenlandsoppholdetsBegrunnelse: String?,
-    val ansettelsesforholdBeskrivelse: String?,
-    val forrigeArbeidstakerUtsendelseFradato: LocalDate?,
-    val forrigeArbeidstakerUtsendelseTilDato: LocalDate?
-)
-
-data class ArbeidstakerLonnRequest(
-    val arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden: Boolean,
-    val virksomheterSomUtbetalerLonnOgNaturalytelser: VirksomheterSomUtbetalerLonnOgNaturalytelser?
-)
-
-data class VirksomheterSomUtbetalerLonnOgNaturalytelser(
-    val norskeVirksomheter: List<NorskVirksomhet>?,
-    val utenlandskeVirksomheter: List<UtenlandskVirksomhet>?
-)
-
-data class NorskVirksomhet(
-    val organisasjonsnummer: String
-)
-
-data class UtenlandskVirksomhet(
-    val navn: String,
-    val organisasjonsnummer: String,
-    val vegnavnOgHusnummer: String,
-    val bygning: String?,
-    val postkode: String,
-    val byStedsnavn: String,
-    val region: String,
-    val land: String,
-    val tilhorerSammeKonsern: Boolean
-)
-
-data class OppsummeringRequest(
-    val bekreftetRiktighet: Boolean,
-    val submittedAt: Instant
-)
-
-// Data classes for Arbeidstaker Flow
-data class ArbeidstakerRequest(
-    val harNorskFodselsnummer: Boolean,
-    val fodselsnummer: String?,
-    val fornavn: String?,
-    val etternavn: String?,
-    val fodselsdato: LocalDate?,
-    val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean,
-    val aktivitetIMaanedenFoerUtsendingen: String,
-    val skalJobbeForFlereVirksomheter: Boolean,
-    val norskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<NorskVirksomhet>?,
-    val utenlandskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<UtenlandskVirksomhet>?
-)
-
-data class SkatteforholdOgInntektRequest(
-    val erSkattepliktigTilNorgeIHeleutsendingsperioden: Boolean,
-    val mottarPengestotteFraAnnetEosLandEllerSveits: Boolean,
-    val landSomUtbetalerPengestotte: String?,
-    val pengestotteSomMottasFraAndreLandBelop: String?,
-    val pengestotteSomMottasFraAndreLandBeskrivelse: String?
-)
