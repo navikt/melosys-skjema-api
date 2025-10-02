@@ -27,8 +27,7 @@ class SkjemaService(
 ) {
 
     fun createSkjema(fnr: String, orgnr: String): Skjema {
-        val currentUser = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
+        val currentUser = subjectHandler.getUserID()
         val skjema = Skjema(
             status = SkjemaStatus.UTKAST,
             fnr = fnr,
@@ -39,18 +38,15 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun getSkjema(id: UUID): Skjema? {
-        val currentUser = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
+    fun getSkjema(id: UUID): Skjema {
+        val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByIdAndFnr(id, currentUser)
     }
 
     private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
-        val currentUser = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
+        val currentUser = subjectHandler.getUserID()
         
         val skjema = skjemaRepository.findByIdAndFnr(id, currentUser)
-            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
         
         // Read existing JSON or create empty object
         val existingData = if (!skjema.data.isNullOrBlank()) {
@@ -76,9 +72,7 @@ class SkjemaService(
         
         // Update the data field with merged JSON
         skjema.data = objectMapper.writeValueAsString(existingData)
-        
-        skjema.endretAv = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
+
         return skjemaRepository.save(skjema)
     }
 
@@ -112,11 +106,9 @@ class SkjemaService(
 
     fun submitArbeidsgiverOppsummering(skjemaId: UUID, request: OppsummeringRequest): Skjema {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
-        val currentUser = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
-            
-        val skjema = skjemaRepository.findByIdAndFnr(skjemaId, currentUser)
-            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found or access denied")
+        val currentUser = subjectHandler.getUserID()
+
+        val skjema = getSkjema(skjemaId)
         
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
@@ -134,14 +126,12 @@ class SkjemaService(
     }
 
     fun listSkjemaerByUser(): List<Skjema> {
-        val currentUser = subjectHandler.getUserID() //TODO Sjekk om vi faktisk kan bruke getUserID
-            ?: throw IllegalStateException("Unable to determine current user")
+        val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByFnr(currentUser)
     }
 
     fun deleteSkjema(id: UUID): Boolean {
-        val currentUser = subjectHandler.getUserID() 
-            ?: throw IllegalStateException("Unable to determine current user")
+        val currentUser = subjectHandler.getUserID()
         
         val deletedCount = skjemaRepository.deleteByIdAndFnr(id, currentUser)
         return deletedCount > 0
