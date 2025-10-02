@@ -14,7 +14,6 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
     fun findByFnrAndOrgnr(fnr: String, orgnr: String): List<Skjema>
     
     // Ownership-aware methods
-    fun findByIdAndFnr(id: UUID, fnr: String): Skjema
+    fun findByIdAndFnr(id: UUID, fnr: String): Skjema?
     fun existsByIdAndFnr(id: UUID, fnr: String): Boolean
-    fun deleteByIdAndFnr(id: UUID, fnr: String): Int
 }

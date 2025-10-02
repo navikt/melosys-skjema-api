@@ -41,16 +41,18 @@ class SkjemaService(
     fun getSkjema(id: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByIdAndFnr(id, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
     }
 
     private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
         val currentUser = subjectHandler.getUserID()
         
         val skjema = skjemaRepository.findByIdAndFnr(id, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
         
         // Read existing JSON or create empty object
-        val existingData = if (!skjema.data.isNullOrBlank()) {
-            objectMapper.readTree(skjema.data) as ObjectNode
+        val existingData = if (skjema.data != null && !skjema.data!!.isNull && skjema.data!!.isObject) {
+            skjema.data!!.deepCopy() as ObjectNode
         } else {
             objectMapper.createObjectNode()
         }
@@ -71,7 +73,7 @@ class SkjemaService(
         sectionData.setAll<JsonNode>(newData)
         
         // Update the data field with merged JSON
-        skjema.data = objectMapper.writeValueAsString(existingData)
+        skjema.data = existingData
 
         return skjemaRepository.save(skjema)
     }
@@ -130,10 +132,4 @@ class SkjemaService(
         return skjemaRepository.findByFnr(currentUser)
     }
 
-    fun deleteSkjema(id: UUID): Boolean {
-        val currentUser = subjectHandler.getUserID()
-        
-        val deletedCount = skjemaRepository.deleteByIdAndFnr(id, currentUser)
-        return deletedCount > 0
-    }
 }

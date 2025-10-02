@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.service.SkjemaService
 import no.nav.security.token.support.core.api.Protected
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
@@ -49,18 +50,6 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete skjema")
-    @ApiResponse(responseCode = "204", description = "Skjema deleted")
-    @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun deleteSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
-        val deleted = skjemaService.deleteSkjema(id)
-        return if (deleted) {
-            ResponseEntity.noContent().build()
-        } else {
-            ResponseEntity.notFound().build()
-        }
-    }
 
     @PostMapping("/{id}/submit")
     @Operation(summary = "Submit skjema")
@@ -160,6 +149,11 @@ class SkjemaController(
         log.info { "Registering skatteforhold og inntekt information" }
         val skjema = skjemaService.saveSkatteforholdOgInntektInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
+    }
+    
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleNotFound(e: IllegalArgumentException): ResponseEntity<Any> {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 }
 

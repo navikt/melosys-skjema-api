@@ -1,6 +1,9 @@
 package no.nav.melosys.skjema.entity
 
+import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.*
 
@@ -25,8 +28,9 @@ class Skjema(
     @Column(name = "orgnr", nullable = false, length = 9)
     val orgnr: String,
 
-    @Column(name = "data", columnDefinition = "jsonb")
-    var data: String? = null,
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "data")
+    var data: JsonNode? = null,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
