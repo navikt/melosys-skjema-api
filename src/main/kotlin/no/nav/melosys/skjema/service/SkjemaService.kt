@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.controller.*
-import no.nav.melosys.skjema.domain.Skjema
-import no.nav.melosys.skjema.domain.SkjemaStatus
+import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.stereotype.Service
@@ -52,29 +52,30 @@ class SkjemaService(
         val skjema = skjemaRepository.findByIdAndFnr(id, currentUser)
             ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
         
-        // Get current JSON data based on type
-        val currentJsonData = when (dataType) {
-            DataType.ARBEIDSGIVER -> skjema.arbeidsgiverData
-            DataType.ARBEIDSTAKER -> skjema.arbeidstakerData
-        }
-        
         // Read existing JSON or create empty object
-        val existingData = if (!currentJsonData.isNullOrBlank()) {
-            objectMapper.readTree(currentJsonData) as ObjectNode
+        val existingData = if (!skjema.data.isNullOrBlank()) {
+            objectMapper.readTree(skjema.data) as ObjectNode
         } else {
             objectMapper.createObjectNode()
         }
         
-        // Merge new data
-        val newData = objectMapper.valueToTree<JsonNode>(data) as ObjectNode
-        existingData.setAll<JsonNode>(newData)
-        
-        // Update the appropriate field
-        val mergedJson = objectMapper.writeValueAsString(existingData)
-        when (dataType) {
-            DataType.ARBEIDSGIVER -> skjema.arbeidsgiverData = mergedJson
-            DataType.ARBEIDSTAKER -> skjema.arbeidstakerData = mergedJson
+        // Ensure the specific data type section exists
+        val dataTypeKey = when (dataType) {
+            DataType.ARBEIDSGIVER -> "arbeidsgiver"
+            DataType.ARBEIDSTAKER -> "arbeidstaker"
         }
+        
+        if (!existingData.has(dataTypeKey)) {
+            existingData.set<JsonNode>(dataTypeKey, objectMapper.createObjectNode())
+        }
+        
+        // Merge new data into the appropriate section
+        val newData = objectMapper.valueToTree<JsonNode>(data) as ObjectNode
+        val sectionData = existingData.get(dataTypeKey) as ObjectNode
+        sectionData.setAll<JsonNode>(newData)
+        
+        // Update the data field with merged JSON
+        skjema.data = objectMapper.writeValueAsString(existingData)
         
         skjema.endretAv = subjectHandler.getUserID() 
             ?: throw IllegalStateException("Unable to determine current user")

@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.domain
+package no.nav.melosys.skjema.entity
 
 import jakarta.persistence.*
 import java.time.Instant
@@ -25,11 +25,8 @@ class Skjema(
     @Column(name = "orgnr", nullable = false, length = 9)
     val orgnr: String,
 
-    @Column(name = "arbeidsgiver_data", columnDefinition = "jsonb")
-    var arbeidsgiverData: String? = null,
-
-    @Column(name = "arbeidstaker_data", columnDefinition = "jsonb")
-    var arbeidstakerData: String? = null,
+    @Column(name = "data", columnDefinition = "jsonb")
+    var data: String? = null,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),

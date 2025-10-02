@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.repository
 
-import no.nav.melosys.skjema.domain.Skjema
-import no.nav.melosys.skjema.domain.SkjemaStatus
+import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.entity.SkjemaStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.util.*
