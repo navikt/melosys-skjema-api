@@ -34,14 +34,14 @@ class SpringSubjectHandler(
         private const val JWT_TOKEN_CLAIM_CLIENT_AMR = "client_amr"
     }
 
-    override fun getOidcTokenString(): String? {
-        return if (hasValidToken()) tokenXToken()?.encodedToken else null
+    override fun getOidcTokenString(): String {
+        return tokenXToken().encodedToken
     }
 
-    override fun getUserID(): String? {
-        if (!hasValidToken()) return null
+    override fun getUserID(): String {
+        if (!hasValidToken()) throw IllegalStateException("Ingen gyldig token funnet")
 
-        val token = tokenXToken() ?: return null
+        val token = tokenXToken()
 
         // Sjekk om dette er en maskin-til-maskin token
         if (isM2MToken(token)) {
@@ -49,24 +49,20 @@ class SpringSubjectHandler(
         }
 
         // For person-tokens, bruk pid (personnummer/fødselsnummer)
-        // Fallback til sub hvis pid ikke er tilstede
-        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_PID)?.toString()
-            ?: token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_SUB)?.toString()
+        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_PID).toString()
     }
 
-    override fun getUserName(): String? {
-        if (!hasValidToken()) return null
+    override fun getUserName(): String {
+        if (!hasValidToken()) throw IllegalStateException("Ingen gyldig token funnet")
 
-        val token = tokenXToken() ?: return null
+        val token = tokenXToken()
 
         // Sjekk om dette er en maskin-til-maskin token
-        if (isM2MToken(token)) {
-            return getClientId(token)
-        }
-
         // TokenX tokens fra ID-porten har vanligvis ikke en name claim
         // Returner null eller eventuelt slå opp navnet fra en annen tjeneste ved bruk av pid
-        return null
+        if (isM2MToken(token)) {
+            return getClientId(token)
+        } else throw IllegalStateException("Kan ikke hente brukernavn fra token") //TODO er dette bra nok?
     }
 
     override fun getGroups(): List<String> {
@@ -80,36 +76,33 @@ class SpringSubjectHandler(
      * Hent autentiseringsnivået fra tokenet
      * ID-porten bruker Level3 og Level4 for forskjellige autentiseringsstyrker
      */
-    override fun getAuthenticationLevel(): String? {
-        if (!hasValidToken()) return null
-        return tokenXToken()?.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_ACR)?.toString()
+    override fun getAuthenticationLevel(): String {
+        if (!hasValidToken()) throw IllegalStateException("Ingen gyldig token funnet")
+        return tokenXToken().jwtTokenClaims.get(JWT_TOKEN_CLAIM_ACR).toString()
     }
 
     /**
      * Hent identitetsleverandøren som autentiserte brukeren
      */
-    override fun getIdentityProvider(): String? {
-        if (!hasValidToken()) return null
-        return tokenXToken()?.jwtTokenClaims?.get(JWT_TOKEN_CLAIM_IDP)?.toString()
+    override fun getIdentityProvider(): String {
+        if (!hasValidToken()) throw IllegalStateException("Ingen gyldig token funnet")
+        return tokenXToken().jwtTokenClaims.get(JWT_TOKEN_CLAIM_IDP).toString()
     }
 
     /**
      * Hent consumer-organisasjonsinformasjon hvis tilstede
      * Returnerer et par med (authority, ID) eller null
      */
-    override fun getConsumerInfo(): Pair<String, String>? {
-        if (!hasValidToken()) return null
+    override fun getConsumerInfo(): Pair<String, String> {
+        if (!hasValidToken()) throw IllegalStateException("Ingen gyldig token funnet")
 
-        val token = tokenXToken() ?: return null
-        val consumerClaim = token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CONSUMER) as? Map<*, *>
-            ?: return null
+        val token = tokenXToken()
+        val consumerClaim = token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CONSUMER) as? Map<*, *>?: throw IllegalStateException("Fant ikke consumer claim i token")
 
-        val authority = consumerClaim[JWT_TOKEN_CLAIM_CONSUMER_AUTHORITY]?.toString()
-        val id = consumerClaim[JWT_TOKEN_CLAIM_CONSUMER_ID]?.toString()
+        val authority = consumerClaim[JWT_TOKEN_CLAIM_CONSUMER_AUTHORITY].toString()
+        val id = consumerClaim[JWT_TOKEN_CLAIM_CONSUMER_ID].toString()
 
-        return if (authority != null && id != null) {
-            Pair(authority, id)
-        } else null
+        return Pair(authority, id)
     }
 
     /**
@@ -127,25 +120,18 @@ class SpringSubjectHandler(
     /**
      * Hent klient-ID fra tokenet
      */
-    private fun getClientId(token: JwtToken): String? {
-        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CLIENT_ID)?.toString()
+    private fun getClientId(token: JwtToken): String {
+        return token.jwtTokenClaims.get(JWT_TOKEN_CLAIM_CLIENT_ID).toString()
     }
 
     private fun hasValidToken(): Boolean {
-        return try {
-            RequestContextHolder.getRequestAttributes() != null &&
+        return RequestContextHolder.getRequestAttributes() != null &&
                     getValidationContext().hasTokenFor(TOKENX)
-        } catch (_: Exception) {
-            false
-        }
+
     }
 
-    private fun tokenXToken(): JwtToken? {
-        return try {
-            getValidationContext().getJwtToken(TOKENX)
-        } catch (_: Exception) {
-            null
-        }
+    private fun tokenXToken(): JwtToken {
+        return getValidationContext().getJwtToken(TOKENX)?: throw IllegalStateException("Fant ikke token i context")
     }
 
     private fun getValidationContext(): TokenValidationContext {
