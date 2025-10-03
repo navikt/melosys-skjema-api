@@ -26,12 +26,12 @@ class SkjemaService(
     private val subjectHandler: SubjectHandler
 ) {
 
-    fun createSkjema(fnr: String, orgnr: String): Skjema {
+    fun createSkjema(request: CreateSkjemaRequest): Skjema {
         val currentUser = subjectHandler.getUserID()
         val skjema = Skjema(
             status = SkjemaStatus.UTKAST,
-            fnr = fnr,
-            orgnr = orgnr,
+            fnr = request.fnr,
+            orgnr = request.orgnr,
             opprettetAv = currentUser,
             endretAv = currentUser
         )
@@ -106,7 +106,7 @@ class SkjemaService(
         return updateArbeidsgiverData(skjemaId, request)
     }
 
-    fun submitArbeidsgiverOppsummering(skjemaId: UUID, request: OppsummeringRequest): Skjema {
+    fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): Skjema {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 

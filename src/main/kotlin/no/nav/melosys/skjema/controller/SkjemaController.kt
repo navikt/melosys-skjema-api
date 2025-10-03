@@ -36,7 +36,7 @@ class SkjemaController(
     @Operation(summary = "Create new skjema")
     @ApiResponse(responseCode = "201", description = "Skjema created")
     fun createSkjema(@RequestBody request: CreateSkjemaRequest): ResponseEntity<Any> {
-        val skjema = skjemaService.createSkjema(request.fnr, request.orgnr)
+        val skjema = skjemaService.createSkjema(request)
         return ResponseEntity.status(201).body(skjema)
     }
 
@@ -123,9 +123,9 @@ class SkjemaController(
     @Operation(summary = "Submit arbeidsgiver oppsummering")
     @ApiResponse(responseCode = "200", description = "Oppsummering submitted")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun submitArbeidsgiverOppsummering(@PathVariable skjemaId: UUID, @RequestBody request: OppsummeringRequest): ResponseEntity<Any> {
+    fun submitArbeidsgiverRequest(@PathVariable skjemaId: UUID, @RequestBody request: SubmitSkjemaRequest): ResponseEntity<Any> {
         log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
-        val skjema = skjemaService.submitArbeidsgiverOppsummering(skjemaId, request)
+        val skjema = skjemaService.submitArbeidsgiver(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 
@@ -135,7 +135,6 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
-        log.info { "Registering arbeidstaker with fnr: ${request.fodselsnummer?.take(6)}******" }
         val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
