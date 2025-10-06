@@ -1,15 +1,15 @@
 package no.nav.melosys.skjema.sikkerhet.context
 
 interface SubjectHandler {
-    fun getOidcTokenString(): String?
-    fun getUserID(): String?
-    fun getUserName(): String?
+    fun getOidcTokenString(): String
+    fun getUserID(): String
+    fun getUserName(): String
     fun getGroups(): List<String>
 
     // Ekstra metoder for TokenX-spesifikk informasjon
-    fun getAuthenticationLevel(): String? = null
-    fun getIdentityProvider(): String? = null
-    fun getConsumerInfo(): Pair<String, String>? = null
+    fun getAuthenticationLevel(): String
+    fun getIdentityProvider(): String
+    fun getConsumerInfo(): Pair<String, String>
 
     companion object {
         private var subjectHandler: SubjectHandler? = null
@@ -20,14 +20,6 @@ interface SubjectHandler {
 
         fun set(handler: SubjectHandler) {
             subjectHandler = handler
-        }
-
-        /**
-         * Hent brukerens personnummer (fødselsnummer)
-         * Dette er primæridentifikatoren for brukere autentisert via ID-porten/TokenX
-         */
-        fun hentBrukerID(): String? {
-            return getInstance().getUserID()
         }
 
         /**

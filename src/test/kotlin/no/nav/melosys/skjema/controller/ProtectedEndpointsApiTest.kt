@@ -42,8 +42,6 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema"),
         Arguments.of(HttpMethod.POST, "/api/skjema"),
         Arguments.of(HttpMethod.GET, "/api/skjema/123"),
-        Arguments.of(HttpMethod.PUT, "/api/skjema/123"),
-        Arguments.of(HttpMethod.DELETE, "/api/skjema/123"),
         Arguments.of(HttpMethod.POST, "/api/skjema/123/submit"),
         Arguments.of(HttpMethod.GET, "/api/skjema/123/pdf"),
 

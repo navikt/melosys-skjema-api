@@ -62,13 +62,18 @@ spec:
         - host: ereg-services.prod-fss-pub.nais.io
         - host: altinn.no
         - host: nav-melding-api.intern.nav.no
+        - host: ag-notifikasjon-produsent-api.intern.dev.nav.no
       rules:
         - application: melosys-api
           namespace: teammelosys
   envFrom:
     - secret: melosys-skjema-api
   env:
-    - name: SPRING_PROFILES_ACTIVE
-      value: {{spring_profile}}
+    - name: ARBEIDSGIVER_NOTIFIKASJON_URL
+      value: https://ag-notifikasjon-produsent-api.intern.dev.nav.no/api/graphql
     - name: SPRING_FLYWAY_VALIDATE_ON_MIGRATE #TODO remove
       value: "false"
+    - name: MERKELAPP
+      value: test-fager
+    - name: RESSURS_ID
+      value: test-fager
