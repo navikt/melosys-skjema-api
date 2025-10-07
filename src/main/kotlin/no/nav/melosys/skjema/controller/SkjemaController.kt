@@ -49,7 +49,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @GetMapping("/arbeidsgiver/{id}")
+    @GetMapping("/arbeidstaker/{id}")
     @Operation(summary = "Get skjema by ID")
     @ApiResponse(responseCode = "200", description = "Skjema found")
     @ApiResponse(responseCode = "404", description = "Skjema not found")

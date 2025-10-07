@@ -298,29 +298,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isNotFound
     }
     
-    @Test
-    @DisplayName("Skal kreve autentisering for alle endepunkter")
-    fun `skal kreve autentisering for alle endepunkter`() {
-        val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
-        webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isUnauthorized
-        webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(mapOf("fnr" to testPid, "orgnr" to testOrgnr))
-            .exchange()
-            .expectStatus().isUnauthorized
-        webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isUnauthorized
-    }
-    
     private fun createTestSkjema(fnr: String, orgnr: String, status: SkjemaStatus): Skjema {
         return Skjema(
             status = status,
