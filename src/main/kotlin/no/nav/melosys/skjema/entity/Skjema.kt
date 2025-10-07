@@ -22,11 +22,11 @@ class Skjema(
     @Column(name = "type", nullable = false)
     val type: String = "A1",
 
-    @Column(name = "fnr", nullable = false, length = 11)
-    val fnr: String,
+    @Column(name = "fnr", length = 11)
+    val fnr: String? = null,
 
-    @Column(name = "orgnr", nullable = false, length = 9)
-    val orgnr: String,
+    @Column(name = "orgnr", length = 9)
+    val orgnr: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data")

@@ -50,7 +50,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema skal returnere liste over brukerens skjemaer")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker skal returnere liste over brukerens skjemaer")
     fun `GET skjema skal returnere liste over brukerens skjemaer`() {
         val skjema1 = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val skjema2 = createTestSkjema(testPid, "987654321", SkjemaStatus.SENDT)
@@ -60,7 +60,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         
         val token = createTokenForUser(testPid)
         webTestClient.get()
-            .uri("/api/skjema")
+            .uri("/api/skjema/utsendt-arbeidstaker")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -77,7 +77,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("POST /api/skjema skal opprette nytt skjema")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver skal opprette nytt skjema")
     fun `POST skjema skal opprette nytt skjema`() {
         val token = createTokenForUser(testPid)
         val createRequest = mapOf(
@@ -86,7 +86,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         webTestClient.post()
-            .uri("/api/skjema")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(createRequest)
@@ -97,7 +97,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .consumeWith { response ->
                 val responseBody = response.responseBody
                 responseBody.shouldNotBeNull()
-                responseBody["fnr"] shouldBe testPid
                 responseBody["orgnr"] shouldBe testOrgnr
                 responseBody["status"] shouldBe "UTKAST"
                 responseBody["id"].toString().shouldNotBeBlank()
@@ -105,7 +104,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere spesifikt skjema")
     fun `GET skjema by id skal returnere spesifikt skjema`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -113,7 +112,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(testPid)
         
         webTestClient.get()
-            .uri("/api/skjema/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -131,13 +130,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema/{id} skal returnere 404 for ikke-eksisterende skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(testPid)
         val nonExistentId = UUID.randomUUID()
         
         webTestClient.get()
-            .uri("/api/skjema/$nonExistentId")
+            .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -146,7 +145,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     
     
     @Test
-    @DisplayName("POST /api/skjema/{id}/submit skal sende skjema og trigge notifikasjoner")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/submit skal sende skjema og trigge notifikasjoner")
     fun `POST submit skjema skal sende skjema og trigge notifikasjoner`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -154,7 +153,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(testPid)
         
         webTestClient.post()
-            .uri("/api/skjema/${savedSkjema.id}/submit")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/submit")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
@@ -163,7 +162,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema/{id}/pdf skal returnere PDF response")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/pdf skal returnere PDF response")
     fun `GET pdf skal returnere PDF response`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.SENDT)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -171,14 +170,14 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(testPid)
         
         webTestClient.get()
-            .uri("/api/skjema/${savedSkjema.id}/pdf")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/pdf")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
     }
     
     @Test
-    @DisplayName("POST /api/skjema/{id}/arbeidsgiver/arbeidsgiveren skal lagre arbeidsgiver info")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren skal lagre arbeidsgiver info")
     fun `POST arbeidsgiver info skal lagre arbeidsgiver info`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -190,7 +189,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         webTestClient.post()
-            .uri("/api/skjema/${savedSkjema.id}/arbeidsgiver/arbeidsgiveren")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/arbeidsgiveren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(arbeidsgiverRequest)
@@ -207,7 +206,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("POST /api/skjema/{id}/arbeidsgiver/virksomhet-i-norge skal lagre virksomhet info")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/virksomhet-i-norge skal lagre virksomhet info")
     fun `POST virksomhet info skal lagre virksomhet info`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -220,7 +219,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         webTestClient.post()
-            .uri("/api/skjema/${savedSkjema.id}/arbeidsgiver/virksomhet-i-norge")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/virksomhet-i-norge")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(virksomhetRequest)
@@ -230,7 +229,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("POST /api/skjema/{id}/arbeidsgiver/oppsummering skal sende inn skjema")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit skal sende inn skjema")
     fun `POST oppsummering skal sende inn skjema`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -242,7 +241,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         webTestClient.post()
-            .uri("/api/skjema/${savedSkjema.id}/arbeidsgiver/oppsummering")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/submit")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(oppsummeringRequest)
@@ -258,7 +257,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("POST /api/skjema/{id}/arbeidstaker/arbeidstakeren skal lagre arbeidstaker info")
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren skal lagre arbeidstaker info")
     fun `POST arbeidstaker info skal lagre arbeidstaker info`() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -275,7 +274,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         webTestClient.post()
-            .uri("/api/skjema/${savedSkjema.id}/arbeidstaker/arbeidstakeren")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/arbeidstakeren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(arbeidstakerRequest)
@@ -292,7 +291,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         
         val token = createTokenForUser(testPid)
         webTestClient.get()
-            .uri("/api/skjema/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -305,18 +304,18 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val skjema = createTestSkjema(testPid, testOrgnr, SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
         webTestClient.get()
-            .uri("/api/skjema")
+            .uri("/api/skjema/utsendt-arbeidstaker")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isUnauthorized
         webTestClient.post()
-            .uri("/api/skjema")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf("fnr" to testPid, "orgnr" to testOrgnr))
             .exchange()
             .expectStatus().isUnauthorized
         webTestClient.get()
-            .uri("/api/skjema/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isUnauthorized

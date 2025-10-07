@@ -39,11 +39,19 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/auth/representasjoner"),
 
         // SkjemaController
-        Arguments.of(HttpMethod.GET, "/api/skjema"),
-        Arguments.of(HttpMethod.POST, "/api/skjema"),
-        Arguments.of(HttpMethod.GET, "/api/skjema/123"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/123/submit"),
-        Arguments.of(HttpMethod.GET, "/api/skjema/123/pdf"),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker"),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/submit"),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/pdf"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/arbeidsgiveren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/virksomhet-i-norge"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/utenlandsoppdraget"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/arbeidstakerens-lonn"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/submit"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/123/arbeidstakeren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/123/skatteforhold-og-inntekt"),
 
         // PrefillController
         Arguments.of(HttpMethod.POST, "/api/preutfyll/person"),
