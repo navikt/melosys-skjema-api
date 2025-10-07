@@ -9,7 +9,6 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
 import no.nav.melosys.skjema.*
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.NotificationService
@@ -23,7 +22,13 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.service.AltinnService
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SkjemaControllerIntegrationTest : ApiTestBase() {
     
     @Autowired
@@ -37,6 +42,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     
     @MockkBean
     private lateinit var notificationService: NotificationService
+
+    @MockkBean
+    private lateinit var altinnService: AltinnService
     
     private val testPid = "12345678901"
     private val testOrgnr = "123456789"
@@ -104,7 +112,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
@@ -126,6 +134,33 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 responseBody["fnr"] shouldBe testPid
                 responseBody["orgnr"] shouldBe testOrgnr
                 responseBody["status"] shouldBe "UTKAST"
+            }
+    }
+
+    @Test
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
+    fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
+        val skjema = skjemaMedDefaultVerdier(orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+
+        every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns true
+
+        val token = createTokenForUser(testPid)
+
+        webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .header("Authorization", "Bearer $token")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<Map<String, Any>>()
+            .consumeWith { response ->
+                val responseBody = response.responseBody
+                responseBody.shouldNotBeNull()
+                responseBody["id"] shouldBe savedSkjema.id.toString()
+                responseBody["orgnr"] shouldBe savedSkjema.orgnr
+                responseBody["status"] shouldBe savedSkjema.status.toString()
             }
     }
     
@@ -284,7 +319,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("Skal ikke kunne aksessere andres skjemaer")
+    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal ikke kunne aksessere andres skjemaer")
     fun `Get skjema som arbeidstaker skal ikke kunne aksessere andres skjemaer`() {
         val andresSkjema = skjemaMedDefaultVerdier(fnr = "99999999999", orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(andresSkjema)
@@ -297,6 +332,32 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isNotFound
     }
+
+    @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
+    @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
+    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
+    fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
+        val andresSkjema = skjemaMedDefaultVerdier(orgnr = orgnummer)
+        val savedSkjema = skjemaRepository.save(andresSkjema)
+
+        val token = createTokenForUser(testPid)
+
+        orgnummer?.let {
+            every { altinnService.harBrukerTilgang(it) } returns false
+        }
+
+        webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .header("Authorization", "Bearer $token")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    fun orgnummerHarVerdiOgOrgnnummerErNull(): List<Arguments> = listOf(
+        Arguments.of("123456789"),
+        Arguments.of(null)
+    )
     
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(
