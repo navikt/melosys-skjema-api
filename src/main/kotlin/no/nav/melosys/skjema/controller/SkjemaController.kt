@@ -16,7 +16,7 @@ import java.util.*
 private val log = KotlinLogging.logger { }
 
 @RestController
-@RequestMapping("/api/skjema")
+@RequestMapping("/api/skjema/utsendt-arbeidstaker")
 @Tag(name = "Skjema", description = "placeholder")
 @Protected
 class SkjemaController(
@@ -32,11 +32,11 @@ class SkjemaController(
         return ResponseEntity.ok(skjemaer)
     }
 
-    @PostMapping
+    @PostMapping("/arbeidsgiver")
     @Operation(summary = "Create new skjema")
     @ApiResponse(responseCode = "201", description = "Skjema created")
-    fun createSkjema(@RequestBody request: CreateSkjemaRequest): ResponseEntity<Any> {
-        val skjema = skjemaService.createSkjema(request)
+    fun createSkjemaArbeidsgiverDel(@RequestBody request: CreateArbeidsgiverSkjemaRequest): ResponseEntity<Any> {
+        val skjema = skjemaService.createSkjemaArbeidsgiverDel(request)
         return ResponseEntity.status(201).body(skjema)
     }
 
@@ -79,7 +79,7 @@ class SkjemaController(
     }
 
     // Arbeidsgiver Flow Endpoints
-    @PostMapping("/{skjemaId}/arbeidsgiver/arbeidsgiveren")
+    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiveren")
     @Operation(summary = "Register arbeidsgiver information")
     @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
@@ -89,7 +89,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/{skjemaId}/arbeidsgiver/virksomhet-i-norge")
+    @PostMapping("/arbeidsgiver/{skjemaId}/virksomhet-i-norge")
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
@@ -99,7 +99,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/{skjemaId}/arbeidsgiver/utenlandsoppdraget")
+    @PostMapping("/arbeidsgiver/{skjemaId}/utenlandsoppdraget")
     @Operation(summary = "Register utenlandsoppdrag information")
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
@@ -109,7 +109,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/{skjemaId}/arbeidsgiver/arbeidstakerens-lonn")
+    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidstakerens-lonn")
     @Operation(summary = "Register arbeidstaker lønn information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker lønn information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
@@ -119,9 +119,9 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/{skjemaId}/arbeidsgiver/oppsummering")
-    @Operation(summary = "Submit arbeidsgiver oppsummering")
-    @ApiResponse(responseCode = "200", description = "Oppsummering submitted")
+    @PostMapping("/arbeidsgiver/{skjemaId}/submit")
+    @Operation(summary = "Submit arbeidsgiver skjema")
+    @ApiResponse(responseCode = "200", description = "Skjema submitted")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun submitArbeidsgiverRequest(@PathVariable skjemaId: UUID, @RequestBody request: SubmitSkjemaRequest): ResponseEntity<Any> {
         log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
@@ -130,7 +130,15 @@ class SkjemaController(
     }
 
     // Arbeidstaker Flow Endpoints
-    @PostMapping("/{skjemaId}/arbeidstaker/arbeidstakeren")
+    @PostMapping("/arbeidstaker")
+    @Operation(summary = "Create new skjema")
+    @ApiResponse(responseCode = "201", description = "Skjema created")
+    fun createSkjemaArbeidstakerDel(@RequestBody request: CreateArbeidstakerSkjemaRequest): ResponseEntity<Any> {
+        val skjema = skjemaService.createSkjemaArbeidstakerDel(request)
+        return ResponseEntity.status(201).body(skjema)
+    }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/arbeidstakeren")
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
@@ -139,7 +147,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/{skjemaId}/arbeidstaker/skatteforhold-og-inntekt")
+    @PostMapping("/arbeidstaker/{skjemaId}/skatteforhold-og-inntekt")
     @Operation(summary = "Register skatteforhold og inntekt information")
     @ApiResponse(responseCode = "200", description = "Skatteforhold og inntekt information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")

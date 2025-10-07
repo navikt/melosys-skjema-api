@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.dto
 
-data class CreateSkjemaRequest(
-    val fnr: String,
+data class CreateArbeidsgiverSkjemaRequest(
     val orgnr: String
 )

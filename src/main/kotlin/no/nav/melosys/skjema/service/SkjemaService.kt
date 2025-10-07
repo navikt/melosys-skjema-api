@@ -26,12 +26,22 @@ class SkjemaService(
     private val subjectHandler: SubjectHandler
 ) {
 
-    fun createSkjema(request: CreateSkjemaRequest): Skjema {
+    fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): Skjema {
+        val currentUser = subjectHandler.getUserID()
+        val skjema = Skjema(
+            status = SkjemaStatus.UTKAST,
+            orgnr = request.orgnr,
+            opprettetAv = currentUser,
+            endretAv = currentUser
+        )
+        return skjemaRepository.save(skjema)
+    }
+
+    fun createSkjemaArbeidstakerDel(request: CreateArbeidstakerSkjemaRequest): Skjema {
         val currentUser = subjectHandler.getUserID()
         val skjema = Skjema(
             status = SkjemaStatus.UTKAST,
             fnr = request.fnr,
-            orgnr = request.orgnr,
             opprettetAv = currentUser,
             endretAv = currentUser
         )
