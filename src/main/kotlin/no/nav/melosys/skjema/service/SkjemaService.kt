@@ -11,6 +11,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.stereotype.Service
 import java.util.*
+import org.springframework.data.repository.findByIdOrNull
 
 private val log = KotlinLogging.logger { }
 
@@ -23,7 +24,8 @@ private enum class DataType {
 class SkjemaService(
     private val skjemaRepository: SkjemaRepository,
     private val objectMapper: ObjectMapper,
-    private val subjectHandler: SubjectHandler
+    private val subjectHandler: SubjectHandler,
+    private val altinnService: AltinnService
 ) {
 
     fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): Skjema {
@@ -48,11 +50,16 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun getSkjema(id: UUID): Skjema {
+    fun getSkjemaAsArbeidstaker(id: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByIdAndFnr(id, currentUser)
             ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
     }
+
+    fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
+        ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
+        ?: throw IllegalArgumentException("Skjema with id $id not found")
+
 
     private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
         val currentUser = subjectHandler.getUserID()
@@ -120,7 +127,7 @@ class SkjemaService(
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
-        val skjema = getSkjema(skjemaId)
+        val skjema = getSkjemaAsArbeidstaker(skjemaId)
         
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
