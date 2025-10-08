@@ -68,22 +68,30 @@ class SkjemaService(
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): Skjema {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
+        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+            dto.copy(arbeidsgiveren = request)
+        }
     }
 
     fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): Skjema {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
+        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+            dto.copy(arbeidsgiverensVirksomhetINorge = request)
+        }
     }
 
     fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): Skjema {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
+        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+            dto.copy(utenlandsoppdraget = request)
+        }
     }
 
     fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): Skjema {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
+        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+            dto.copy(arbeidstakerensLonn = request)
+        }
     }
 
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): Skjema {
@@ -141,6 +149,27 @@ class SkjemaService(
         // Update the data field with merged JSON
         skjema.data = existingData
 
+        return skjemaRepository.save(skjema)
+    }
+
+    private fun updateArbeidsgiverSkjemaData(
+        id: UUID,
+        updateFunction: (ArbeidsgiversSkjemaDto) -> ArbeidsgiversSkjemaDto
+    ): Skjema {
+        val skjema = getSkjemaAsArbeidsgiver(id)
+
+        // Read existing ArbeidsgiversSkjemaDto or create empty one
+        val existingDto = if (skjema.data == null) {
+            ArbeidsgiversSkjemaDto()
+        } else {
+            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDto::class.java)
+        }
+
+        // Apply the update function
+        val updatedDto = updateFunction(existingDto)
+
+        // Convert back to JSON and save
+        skjema.data = objectMapper.valueToTree(updatedDto)
         return skjemaRepository.save(skjema)
     }
 
