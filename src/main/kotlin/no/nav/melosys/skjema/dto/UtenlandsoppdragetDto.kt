@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.dto
 
 import java.time.LocalDate
 
-data class UtenlandsoppdragRequest(
+data class UtenlandsoppdragetDto(
     val utsendelseLand: String,
     val arbeidstakerUtsendelseFraDato: LocalDate,
     val arbeidstakerUtsendelseTilDato: LocalDate,

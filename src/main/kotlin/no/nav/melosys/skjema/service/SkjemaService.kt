@@ -66,22 +66,22 @@ class SkjemaService(
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $id not found")
 
-    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverRequest): Skjema {
+    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): Skjema {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
-    fun saveVirksomhetInfo(skjemaId: UUID, request: VirksomhetRequest): Skjema {
+    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): Skjema {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
-    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragRequest): Skjema {
+    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): Skjema {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
-    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerLonnRequest): Skjema {
+    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): Skjema {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
@@ -97,12 +97,12 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerRequest): Skjema {
+    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): Skjema {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
     }
 
-    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektRequest): Skjema {
+    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): Skjema {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
         return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
     }

@@ -91,7 +91,7 @@ class SkjemaController(
     @Operation(summary = "Register arbeidsgiver information")
     @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidsgiverRequest): ResponseEntity<Any> {
+    fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidsgiverenDto): ResponseEntity<Any> {
         log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
         val skjema = skjemaService.saveArbeidsgiverInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
@@ -101,7 +101,7 @@ class SkjemaController(
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody request: VirksomhetRequest): ResponseEntity<Any> {
+    fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidsgiverensVirksomhetINorgeDto): ResponseEntity<Any> {
         log.info { "Registering virksomhet information" }
         val skjema = skjemaService.saveVirksomhetInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
@@ -111,7 +111,7 @@ class SkjemaController(
     @Operation(summary = "Register utenlandsoppdrag information")
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragRequest): ResponseEntity<Any> {
+    fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragetDto): ResponseEntity<Any> {
         log.info { "Registering utenlandsoppdrag to ${request.utsendelseLand}" }
         val skjema = skjemaService.saveUtenlandsoppdragInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
@@ -121,7 +121,7 @@ class SkjemaController(
     @Operation(summary = "Register arbeidstaker lønn information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker lønn information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerLonnRequest): ResponseEntity<Any> {
+    fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerensLonnDto): ResponseEntity<Any> {
         log.info { "Registering arbeidstaker lønn information" }
         val skjema = skjemaService.saveArbeidstakerLonnInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
@@ -150,7 +150,7 @@ class SkjemaController(
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerRequest): ResponseEntity<Any> {
+    fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<Any> {
         val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
@@ -159,7 +159,7 @@ class SkjemaController(
     @Operation(summary = "Register skatteforhold og inntekt information")
     @ApiResponse(responseCode = "200", description = "Skatteforhold og inntekt information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody request: SkatteforholdOgInntektRequest): ResponseEntity<Any> {
+    fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody request: SkatteforholdOgInntektDto): ResponseEntity<Any> {
         log.info { "Registering skatteforhold og inntekt information" }
         val skjema = skjemaService.saveSkatteforholdOgInntektInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
