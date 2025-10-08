@@ -73,6 +73,8 @@ spec:
       value: https://ag-notifikasjon-produsent-api.intern.dev.nav.no/api/graphql
     - name: SPRING_FLYWAY_VALIDATE_ON_MIGRATE #TODO remove
       value: "false"
+    - name: FLYWAY_REPAIR_ON_MIGRATE
+      value: "true"
     - name: MERKELAPP
       value: test-fager
     - name: RESSURS_ID
