@@ -5,8 +5,8 @@ spring:
   datasource:
     url: ${DB_JDBC_URL}
     hikari:
-      maximum-pool-size: 8
-      minimum-idle: 2
+      maximum-pool-size: 4
+      minimum-idle: 1
 
   jpa:
     hibernate:
