@@ -66,67 +66,24 @@ class SkjemaService(
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $id not found")
 
-
-    private fun updateJsonData(id: UUID, data: Any, dataType: DataType): Skjema {
-        val currentUser = subjectHandler.getUserID()
-        
-        val skjema = skjemaRepository.findByIdAndFnr(id, currentUser)
-            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
-        
-        // Read existing JSON or create empty object
-        val existingData = if (skjema.data != null && !skjema.data!!.isNull && skjema.data!!.isObject) {
-            skjema.data!!.deepCopy() as ObjectNode
-        } else {
-            objectMapper.createObjectNode()
-        }
-        
-        // Ensure the specific data type section exists
-        val dataTypeKey = when (dataType) {
-            DataType.ARBEIDSGIVER -> "arbeidsgiver"
-            DataType.ARBEIDSTAKER -> "arbeidstaker"
-        }
-        
-        if (!existingData.has(dataTypeKey)) {
-            existingData.set<JsonNode>(dataTypeKey, objectMapper.createObjectNode())
-        }
-        
-        // Merge new data into the appropriate section
-        val newData = objectMapper.valueToTree<JsonNode>(data) as ObjectNode
-        val sectionData = existingData.get(dataTypeKey) as ObjectNode
-        sectionData.setAll<JsonNode>(newData)
-        
-        // Update the data field with merged JSON
-        skjema.data = existingData
-
-        return skjemaRepository.save(skjema)
-    }
-
-    fun updateArbeidsgiverData(id: UUID, data: Any): Skjema {
-        return updateJsonData(id, data, DataType.ARBEIDSGIVER)
-    }
-
-    fun updateArbeidstakerData(id: UUID, data: Any): Skjema {
-        return updateJsonData(id, data, DataType.ARBEIDSTAKER)
-    }
-
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverRequest): Skjema {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-        return updateArbeidsgiverData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
     fun saveVirksomhetInfo(skjemaId: UUID, request: VirksomhetRequest): Skjema {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        return updateArbeidsgiverData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
     fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragRequest): Skjema {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
-        return updateArbeidsgiverData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
     fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerLonnRequest): Skjema {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
-        return updateArbeidsgiverData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSGIVER, ::getSkjemaAsArbeidsgiver)
     }
 
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): Skjema {
@@ -142,17 +99,49 @@ class SkjemaService(
 
     fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerRequest): Skjema {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
-        return updateArbeidstakerData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
     }
 
     fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektRequest): Skjema {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
-        return updateArbeidstakerData(skjemaId, request)
+        return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
     }
 
     fun listSkjemaerByUser(): List<Skjema> {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByFnr(currentUser)
+    }
+
+
+    private fun updateJsonData(id: UUID, data: Any, dataType: DataType, skjemaRetriever: (UUID) -> Skjema): Skjema {
+        val skjema = skjemaRetriever(id)
+
+        // Read existing JSON or create empty object
+        val existingData = if (skjema.data != null && !skjema.data!!.isNull && skjema.data!!.isObject) {
+            skjema.data!!.deepCopy() as ObjectNode
+        } else {
+            objectMapper.createObjectNode()
+        }
+
+        // Ensure the specific data type section exists
+        val dataTypeKey = when (dataType) {
+            DataType.ARBEIDSGIVER -> "arbeidsgiver"
+            DataType.ARBEIDSTAKER -> "arbeidstaker"
+        }
+
+        if (!existingData.has(dataTypeKey)) {
+            existingData.set<JsonNode>(dataTypeKey, objectMapper.createObjectNode())
+        }
+
+        // Merge new data into the appropriate section
+        val newData = objectMapper.valueToTree<JsonNode>(data) as ObjectNode
+        val sectionData = existingData.get(dataTypeKey) as ObjectNode
+        sectionData.setAll<JsonNode>(newData)
+
+        // Update the data field with merged JSON
+        skjema.data = existingData
+
+        return skjemaRepository.save(skjema)
     }
 
 }
