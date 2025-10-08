@@ -33,18 +33,18 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     orgNrTilTilganger = emptyMap()
 )
 
-fun arbeidsgiverRequestMedDefaultVerdier() = ArbeidsgiverenDto(
+fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
     organisasjonsnummer = "123456789",
     organisasjonNavn = "Test Bedrift AS"
 )
 
-fun virksomhetRequestMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
+fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
     erArbeidsgiverenOffentligVirksomhet = true,
     erArbeidsgiverenBemanningsEllerVikarbyraa = false,
     opprettholderArbeidsgivereVanligDrift = true
 )
 
-fun utenlandsoppdragRequestMedDefaultVerdier() = UtenlandsoppdragetDto(
+fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
     utsendelseLand = "SE",
     arbeidstakerUtsendelseFraDato = LocalDate.of(2024, 1, 1),
     arbeidstakerUtsendelseTilDato = LocalDate.of(2024, 12, 31),
@@ -59,7 +59,7 @@ fun utenlandsoppdragRequestMedDefaultVerdier() = UtenlandsoppdragetDto(
     forrigeArbeidstakerUtsendelseTilDato = null
 )
 
-fun arbeidstakerLonnRequestMedDefaultVerdier() = ArbeidstakerensLonnDto(
+fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
     arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
     virksomheterSomUtbetalerLonnOgNaturalytelser = null
 )
