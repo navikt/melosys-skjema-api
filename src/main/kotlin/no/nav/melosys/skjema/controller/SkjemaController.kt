@@ -97,7 +97,7 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
-    @PostMapping("/arbeidsgiver/{skjemaId}/virksomhet-i-norge")
+    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiverens-virksomhet-i-norge")
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
