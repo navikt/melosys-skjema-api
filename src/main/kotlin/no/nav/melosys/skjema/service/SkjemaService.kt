@@ -56,6 +56,7 @@ class SkjemaService(
             ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
     }
 
+    // TODO: På et punkt i fremtiden så vil muligens ikke denne tilgangsjekken alene være nok
     fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $id not found")
