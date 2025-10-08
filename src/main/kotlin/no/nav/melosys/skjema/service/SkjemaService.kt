@@ -66,6 +66,16 @@ class SkjemaService(
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $id not found")
 
+    fun getSkjemaDataAsArbeidsgiver(id: UUID): ArbeidsgiversSkjemaDto {
+        val skjema = getSkjemaAsArbeidsgiver(id)
+        
+        return if (skjema.data == null) {
+            ArbeidsgiversSkjemaDto()
+        } else {
+            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDto::class.java)
+        }
+    }
+
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): Skjema {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
         return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
