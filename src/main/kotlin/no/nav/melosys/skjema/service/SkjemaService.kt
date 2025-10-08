@@ -30,6 +30,11 @@ class SkjemaService(
 
     fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): Skjema {
         val currentUser = subjectHandler.getUserID()
+
+        if (!altinnService.harBrukerTilgang(request.orgnr)) {
+            throw IllegalArgumentException("User does not have access to orgnr ${request.orgnr}")
+        }
+
         val skjema = Skjema(
             status = SkjemaStatus.UTKAST,
             orgnr = request.orgnr,

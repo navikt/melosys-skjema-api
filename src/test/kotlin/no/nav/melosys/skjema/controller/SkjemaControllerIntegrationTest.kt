@@ -89,9 +89,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun `POST skjema skal opprette nytt skjema`() {
         val token = createTokenForUser(testPid)
         val createRequest = mapOf(
-            "fnr" to testPid,
             "orgnr" to testOrgnr
         )
+
+        every { altinnService.harBrukerTilgang(testOrgnr) } returns true
         
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
@@ -109,6 +110,25 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 responseBody["status"] shouldBe "UTKAST"
                 responseBody["id"].toString().shouldNotBeBlank()
             }
+    }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver skal ikke tillate å opprette skjema for orgnr bruker ikke har tilgang til")
+    fun `POST skjema bruker kan ikke opprette hvis ikke tilgang`() {
+        val token = createTokenForUser(testPid)
+        val createRequest = mapOf(
+            "orgnr" to testOrgnr
+        )
+
+        every { altinnService.harBrukerTilgang(testOrgnr) } returns false
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(createRequest)
+            .exchange()
+            .expectStatus().isNotFound
     }
     
     @Test
