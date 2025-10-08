@@ -1,9 +1,13 @@
 package no.nav.melosys.skjema
 
+import com.fasterxml.jackson.databind.JsonNode
+import java.time.Instant
+import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 
-// NB! Endringer i defaultverdier i testdata skal aldri føre til at tester feiler.
+// NB! Endringer i defaultverdier i testdata skal ikke føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
 
 fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
@@ -22,3 +26,27 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     ),
     orgNrTilTilganger = emptyMap()
 )
+
+fun skjemaMedDefaultVerdier(
+    fnr: String? = "11111111111",
+    orgnr: String? = "123456789",
+    status: SkjemaStatus = SkjemaStatus.UTKAST,
+    type: String = "A1",
+    data: JsonNode? = null,
+    opprettetDato: Instant = Instant.now(),
+    endretDato: Instant = Instant.now(),
+    opprettetAv: String = fnr ?: "11111111111",
+    endretAv: String = fnr ?: "11111111111"
+): Skjema {
+    return Skjema(
+        status = status,
+        type = type,
+        fnr = fnr,
+        orgnr = orgnr,
+        data = data,
+        opprettetDato = opprettetDato,
+        endretDato = endretDato,
+        opprettetAv = opprettetAv,
+        endretAv = endretAv
+    )
+}

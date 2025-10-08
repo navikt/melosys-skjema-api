@@ -40,15 +40,23 @@ class SkjemaController(
         return ResponseEntity.status(201).body(skjema)
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/arbeidsgiver/{id}")
     @Operation(summary = "Get skjema by ID")
     @ApiResponse(responseCode = "200", description = "Skjema found")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun getSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
-        val skjema = skjemaService.getSkjema(id)
+    fun getSkjemaAsArbeidsgiver(@PathVariable id: UUID): ResponseEntity<Any> {
+        val skjema = skjemaService.getSkjemaAsArbeidsgiver(id)
         return ResponseEntity.ok(skjema)
     }
 
+    @GetMapping("/arbeidstaker/{id}")
+    @Operation(summary = "Get skjema by ID")
+    @ApiResponse(responseCode = "200", description = "Skjema found")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun getSkjemaAsArbeidstaker(@PathVariable id: UUID): ResponseEntity<Any> {
+        val skjema = skjemaService.getSkjemaAsArbeidstaker(id)
+        return ResponseEntity.ok(skjema)
+    }
 
     @PostMapping("/{id}/submit")
     @Operation(summary = "Submit skjema")
@@ -57,7 +65,7 @@ class SkjemaController(
     fun submitSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
         log.info { "Submitting skjema med id: $id" }
 
-        val skjema = skjemaService.getSkjema(id)
+        val skjema = skjemaService.getSkjemaAsArbeidstaker(id)
 
         try {
             notificationService.sendNotificationToArbeidstaker(id.toString(), "Skjema har blitt sendt til behandling")
