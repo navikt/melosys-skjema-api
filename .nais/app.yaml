@@ -38,7 +38,7 @@ spec:
     sqlInstances:
       - name: melosys-skjema-db
         type: POSTGRES_17
-        tier: db-f1-micro
+        tier: db-g1-small
         databases:
           - name: melosys-skjema
             envVarPrefix: DB
