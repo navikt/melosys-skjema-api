@@ -27,6 +27,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.http.HttpMethod
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SkjemaControllerIntegrationTest : ApiTestBase() {
@@ -52,7 +53,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @BeforeEach
     fun setUp() {
         clearMocks(notificationService)
+        clearMocks(altinnService)
         skjemaRepository.deleteAll()
+
+        every { altinnService.harBrukerTilgang(any()) } returns true
         every { notificationService.sendNotificationToArbeidstaker(any(), any()) } returns Unit
         every { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), any()) } returns "test-beskjed-id"
     }
@@ -91,8 +95,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val createRequest = mapOf(
             "orgnr" to testOrgnr
         )
-
-        every { altinnService.harBrukerTilgang(testOrgnr) } returns true
         
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
@@ -162,8 +164,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
         val skjema = skjemaMedDefaultVerdier(orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
         val savedSkjema = skjemaRepository.save(skjema)
-
-        every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns true
 
         val token = createTokenForUser(testPid)
 
@@ -272,7 +272,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "erArbeidsgiverenBemanningsEllerVikarbyraa" to false,
             "opprettholderArbeidsgivereVanligDrift" to true
         )
-        
+
+        every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns true
+
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/virksomhet-i-norge")
             .header("Authorization", "Bearer $token")
@@ -378,6 +380,61 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of("123456789"),
         Arguments.of(null)
     )
+
+    @ParameterizedTest(name = "{0} {1}")
+    @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
+    @DisplayName("Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang")
+    fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
+        val skjema = skjemaMedDefaultVerdier(orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+        
+        val token = createTokenForUser(testPid)
+        every { altinnService.harBrukerTilgang(testOrgnr) } returns false
+
+        val actualPath = path.replace("{id}", savedSkjema.id.toString())
+        
+        val request = webTestClient.method(httpMethod)
+            .uri(actualPath)
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            
+        requestBody?.let { request.bodyValue(it) }
+        
+        request.exchange()
+            .expectStatus().isNotFound
+    }
+
+    @ParameterizedTest(name = "{0} {1}")
+    @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
+    @DisplayName("Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr=null")
+    fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
+        val skjema = skjemaMedDefaultVerdier(orgnr = null, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+        
+        val token = createTokenForUser(testPid)
+
+        val actualPath = path.replace("{id}", savedSkjema.id.toString())
+        
+        val request = webTestClient.method(httpMethod)
+            .uri(actualPath)
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            
+        requestBody?.let { request.bodyValue(it) }
+        
+        request.exchange()
+            .expectStatus().isNotFound
+    }
+
+    fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren", arbeidsgiverRequestMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/virksomhet-i-norge", virksomhetRequestMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragRequestMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerLonnRequestMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit", submitSkjemaRequestMedDefaultVerdier())
+    )
+
     
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(

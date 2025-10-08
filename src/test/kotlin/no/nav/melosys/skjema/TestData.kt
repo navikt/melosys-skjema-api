@@ -2,6 +2,12 @@ package no.nav.melosys.skjema
 
 import com.fasterxml.jackson.databind.JsonNode
 import java.time.Instant
+import java.time.LocalDate
+import no.nav.melosys.skjema.dto.ArbeidsgiverRequest
+import no.nav.melosys.skjema.dto.VirksomhetRequest
+import no.nav.melosys.skjema.dto.UtenlandsoppdragRequest
+import no.nav.melosys.skjema.dto.ArbeidstakerLonnRequest
+import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -25,6 +31,42 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
         "annen-rolle" to setOf("123456789")
     ),
     orgNrTilTilganger = emptyMap()
+)
+
+fun arbeidsgiverRequestMedDefaultVerdier() = ArbeidsgiverRequest(
+    organisasjonsnummer = "123456789",
+    organisasjonNavn = "Test Bedrift AS"
+)
+
+fun virksomhetRequestMedDefaultVerdier() = VirksomhetRequest(
+    erArbeidsgiverenOffentligVirksomhet = true,
+    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
+    opprettholderArbeidsgivereVanligDrift = true
+)
+
+fun utenlandsoppdragRequestMedDefaultVerdier() = UtenlandsoppdragRequest(
+    utsendelseLand = "SE",
+    arbeidstakerUtsendelseFraDato = LocalDate.of(2024, 1, 1),
+    arbeidstakerUtsendelseTilDato = LocalDate.of(2024, 12, 31),
+    arbeidsgiverHarOppdragILandet = true,
+    arbeidstakerBleAnsattForUtenlandsoppdraget = false,
+    arbeidstakerForblirAnsattIHelePerioden = true,
+    arbeidstakerErstatterAnnenPerson = false,
+    arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget = true,
+    utenlandsoppholdetsBegrunnelse = "Prosjekt",
+    ansettelsesforholdBeskrivelse = "Samme stilling",
+    forrigeArbeidstakerUtsendelseFradato = null,
+    forrigeArbeidstakerUtsendelseTilDato = null
+)
+
+fun arbeidstakerLonnRequestMedDefaultVerdier() = ArbeidstakerLonnRequest(
+    arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
+    virksomheterSomUtbetalerLonnOgNaturalytelser = null
+)
+
+fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(
+    bekreftetRiktighet = true,
+    submittedAt = Instant.now()
 )
 
 fun skjemaMedDefaultVerdier(
