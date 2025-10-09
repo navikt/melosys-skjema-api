@@ -144,7 +144,6 @@ class SkjemaController(
     @Operation(summary = "Create new skjema")
     @ApiResponse(responseCode = "201", description = "Skjema created")
     fun createSkjemaArbeidstakerDel(@RequestBody request: CreateArbeidstakerSkjemaRequest): ResponseEntity<Any> {
-        log.info { "test: " + request.fnr }
         val skjema = skjemaService.createSkjemaArbeidstakerDel(request)
         return ResponseEntity.status(201).body(skjema)
     }
