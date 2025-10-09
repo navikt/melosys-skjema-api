@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.service.SkjemaService
+import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -21,7 +22,8 @@ private val log = KotlinLogging.logger { }
 @Protected
 class SkjemaController(
     private val notificationService: NotificationService,
-    private val skjemaService: SkjemaService
+    private val skjemaService: SkjemaService,
+    private val subjectHandler: SubjectHandler
 ) {
 
     @GetMapping
@@ -62,13 +64,13 @@ class SkjemaController(
     @Operation(summary = "Submit skjema")
     @ApiResponse(responseCode = "200", description = "Skjema submitted")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun submitSkjema(@PathVariable id: UUID): ResponseEntity<Any> {
+    fun submitSkjema(@PathVariable id: UUID): ResponseEntity<Any> { //TODO dette brukes kun som ett test endepunkt nå. Kommer sannsynligvis til å fjernes.
         log.info { "Submitting skjema med id: $id" }
 
         val skjema = skjemaService.getSkjemaAsArbeidstaker(id)
 
         try {
-            notificationService.sendNotificationToArbeidstaker(id.toString(), "Skjema har blitt sendt til behandling")
+            notificationService.sendNotificationToArbeidstaker(subjectHandler.getUserID(), "Skjema har blitt sendt til behandling")
             notificationService.sendNotificationToArbeidsgiver("test", "test", "test", skjema.orgnr)
             log.info { "Notifikasjon sendt for skjema med id: $id" }
             return ResponseEntity.ok().build()
