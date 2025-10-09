@@ -45,8 +45,8 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "Skjema data found")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun getSkjemaAsArbeidsgiver(@PathVariable id: UUID): ResponseEntity<ArbeidsgiversSkjemaDto> {
-        val skjemaData = skjemaService.getSkjemaDataAsArbeidsgiver(id)
-        return ResponseEntity.ok(skjemaData)
+        val dto = skjemaService.getSkjemaDtoAsArbeidsgiver(id)
+        return ResponseEntity.ok(dto)
     }
 
     @GetMapping("/arbeidstaker/{id}")

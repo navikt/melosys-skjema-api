@@ -62,18 +62,24 @@ class SkjemaService(
     }
 
     // TODO: På et punkt i fremtiden så vil muligens ikke denne tilgangsjekken alene være nok
-    fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
+    private fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $id not found")
 
-    fun getSkjemaDataAsArbeidsgiver(id: UUID): ArbeidsgiversSkjemaDto {
+    fun getSkjemaDtoAsArbeidsgiver(id: UUID): ArbeidsgiversSkjemaDto {
         val skjema = getSkjemaAsArbeidsgiver(id)
-        
-        return if (skjema.data == null) {
-            ArbeidsgiversSkjemaDto()
+        val data = if (skjema.data == null) {
+            ArbeidsgiversSkjemaDataDto()
         } else {
-            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDto::class.java)
+            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDataDto::class.java)
         }
+        
+        return ArbeidsgiversSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
+            status = skjema.status,
+            data = data
+        )
     }
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): Skjema {
@@ -164,15 +170,15 @@ class SkjemaService(
 
     private fun updateArbeidsgiverSkjemaData(
         id: UUID,
-        updateFunction: (ArbeidsgiversSkjemaDto) -> ArbeidsgiversSkjemaDto
+        updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
     ): Skjema {
         val skjema = getSkjemaAsArbeidsgiver(id)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
         val existingDto = if (skjema.data == null) {
-            ArbeidsgiversSkjemaDto()
+            ArbeidsgiversSkjemaDataDto()
         } else {
-            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDto::class.java)
+            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDataDto::class.java)
         }
 
         // Apply the update function

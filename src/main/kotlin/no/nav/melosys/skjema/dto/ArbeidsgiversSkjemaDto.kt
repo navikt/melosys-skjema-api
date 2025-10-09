@@ -1,8 +1,11 @@
 package no.nav.melosys.skjema.dto
 
+import no.nav.melosys.skjema.entity.SkjemaStatus
+import java.util.UUID
+
 data class ArbeidsgiversSkjemaDto(
-    val arbeidsgiveren: ArbeidsgiverenDto? = null,
-    val arbeidsgiverensVirksomhetINorge: ArbeidsgiverensVirksomhetINorgeDto? = null,
-    val utenlandsoppdraget: UtenlandsoppdragetDto? = null,
-    val arbeidstakerensLonn: ArbeidstakerensLonnDto? = null
+    val id: UUID,
+    val orgnr: String,
+    val status: SkjemaStatus,
+    val data: ArbeidsgiversSkjemaDataDto?
 )
