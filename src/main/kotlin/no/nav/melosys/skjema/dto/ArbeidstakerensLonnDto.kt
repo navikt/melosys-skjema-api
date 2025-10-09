@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.dto
 
-data class ArbeidstakerLonnRequest(
+data class ArbeidstakerensLonnDto(
     val arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden: Boolean,
     val virksomheterSomUtbetalerLonnOgNaturalytelser: VirksomheterSomUtbetalerLonnOgNaturalytelser?
 )

@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.dto
 
 import java.time.LocalDate
 
-data class ArbeidstakerRequest(
+data class ArbeidstakerenDto(
     val harNorskFodselsnummer: Boolean,
     val fodselsnummer: String?,
     val fornavn: String?,

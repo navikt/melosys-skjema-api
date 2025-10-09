@@ -3,10 +3,10 @@ package no.nav.melosys.skjema
 import com.fasterxml.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.LocalDate
-import no.nav.melosys.skjema.dto.ArbeidsgiverRequest
-import no.nav.melosys.skjema.dto.VirksomhetRequest
-import no.nav.melosys.skjema.dto.UtenlandsoppdragRequest
-import no.nav.melosys.skjema.dto.ArbeidstakerLonnRequest
+import no.nav.melosys.skjema.dto.ArbeidsgiverenDto
+import no.nav.melosys.skjema.dto.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.dto.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
@@ -33,18 +33,18 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     orgNrTilTilganger = emptyMap()
 )
 
-fun arbeidsgiverRequestMedDefaultVerdier() = ArbeidsgiverRequest(
+fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
     organisasjonsnummer = "123456789",
     organisasjonNavn = "Test Bedrift AS"
 )
 
-fun virksomhetRequestMedDefaultVerdier() = VirksomhetRequest(
+fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
     erArbeidsgiverenOffentligVirksomhet = true,
     erArbeidsgiverenBemanningsEllerVikarbyraa = false,
     opprettholderArbeidsgivereVanligDrift = true
 )
 
-fun utenlandsoppdragRequestMedDefaultVerdier() = UtenlandsoppdragRequest(
+fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
     utsendelseLand = "SE",
     arbeidstakerUtsendelseFraDato = LocalDate.of(2024, 1, 1),
     arbeidstakerUtsendelseTilDato = LocalDate.of(2024, 12, 31),
@@ -59,7 +59,7 @@ fun utenlandsoppdragRequestMedDefaultVerdier() = UtenlandsoppdragRequest(
     forrigeArbeidstakerUtsendelseTilDato = null
 )
 
-fun arbeidstakerLonnRequestMedDefaultVerdier() = ArbeidstakerLonnRequest(
+fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
     arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
     virksomheterSomUtbetalerLonnOgNaturalytelser = null
 )
