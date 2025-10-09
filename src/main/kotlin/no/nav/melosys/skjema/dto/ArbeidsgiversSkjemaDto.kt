@@ -7,5 +7,5 @@ data class ArbeidsgiversSkjemaDto(
     val id: UUID,
     val orgnr: String,
     val status: SkjemaStatus,
-    val data: ArbeidsgiversSkjemaDataDto?
+    val data: ArbeidsgiversSkjemaDataDto = ArbeidsgiversSkjemaDataDto()
 )
