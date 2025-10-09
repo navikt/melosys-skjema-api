@@ -212,7 +212,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
-        verify { notificationService.sendNotificationToArbeidstaker(savedSkjema.id.toString(), any()) }
+        verify { notificationService.sendNotificationToArbeidstaker(testPid, any()) }
         verify { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), testOrgnr) }
     }
     
