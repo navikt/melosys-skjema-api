@@ -114,7 +114,7 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragetDto): ResponseEntity<Any> {
-        log.info { "Registering utenlandsoppdrag to ${request.utsendelseLand}" }
+        log.info { "Registering utenlandsoppdrag" }
         val skjema = skjemaService.saveUtenlandsoppdragInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
@@ -164,6 +164,16 @@ class SkjemaController(
     fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody request: SkatteforholdOgInntektDto): ResponseEntity<Any> {
         log.info { "Registering skatteforhold og inntekt information" }
         val skjema = skjemaService.saveSkatteforholdOgInntektInfo(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/familiemedlemmer")
+    @Operation(summary = "Register familiemedlemmer information")
+    @ApiResponse(responseCode = "200", description = "Familiemedlemmer information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerFamiliemedlemmer(@PathVariable skjemaId: UUID, @RequestBody request: FamiliemedlemmerDto): ResponseEntity<Any> {
+        log.info { "Registering familiemedlemmer information" }
+        val skjema = skjemaService.saveFamiliemedlemmerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
     

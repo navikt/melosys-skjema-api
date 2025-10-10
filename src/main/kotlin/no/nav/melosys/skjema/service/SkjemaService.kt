@@ -137,6 +137,13 @@ class SkjemaService(
         }
     }
 
+    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): Skjema {
+        log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(familiemedlemmer = request)
+        }
+    }
+
     fun listSkjemaerByUser(): List<Skjema> {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByFnr(currentUser)
