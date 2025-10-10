@@ -52,12 +52,12 @@ class SkjemaController(
     }
 
     @GetMapping("/arbeidstaker/{id}")
-    @Operation(summary = "Get skjema by ID")
-    @ApiResponse(responseCode = "200", description = "Skjema found")
+    @Operation(summary = "Get skjema data by ID")
+    @ApiResponse(responseCode = "200", description = "Skjema data found")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun getSkjemaAsArbeidstaker(@PathVariable id: UUID): ResponseEntity<Any> {
-        val skjema = skjemaService.getSkjemaAsArbeidstaker(id)
-        return ResponseEntity.ok(skjema)
+    fun getSkjemaAsArbeidstaker(@PathVariable id: UUID): ResponseEntity<ArbeidstakersSkjemaDto> {
+        val dto = skjemaService.getSkjemaDtoAsArbeidstaker(id)
+        return ResponseEntity.ok(dto)
     }
 
     @PostMapping("/{id}/submit")

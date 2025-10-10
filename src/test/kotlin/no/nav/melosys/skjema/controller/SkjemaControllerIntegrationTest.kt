@@ -154,7 +154,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 responseBody.shouldNotBeNull()
                 responseBody["id"] shouldBe savedSkjema.id.toString()
                 responseBody["fnr"] shouldBe testPid
-                responseBody["orgnr"] shouldBe testOrgnr
                 responseBody["status"] shouldBe "UTKAST"
             }
     }
