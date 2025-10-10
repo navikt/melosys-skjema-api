@@ -8,6 +8,10 @@ import no.nav.melosys.skjema.dto.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.dto.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.FamiliemedlemmerDto
+import no.nav.melosys.skjema.dto.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -67,6 +71,37 @@ fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(
     bekreftetRiktighet = true,
     submittedAt = Instant.now()
+)
+
+fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
+    sokerForBarnUnder18SomSkalVaereMed = false,
+    harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad = false
+)
+
+fun arbeidstakerenDtoMedDefaultVerdier() = ArbeidstakerenDto(
+    harNorskFodselsnummer = true,
+    fodselsnummer = "11111111111",
+    fornavn = "Test",
+    etternavn = "Testesen",
+    fodselsdato = LocalDate.of(1990, 1, 1),
+    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
+    aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
+    skalJobbeForFlereVirksomheter = false,
+    norskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
+    utenlandskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode = null
+)
+
+fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
+    erSkattepliktigTilNorgeIHeleutsendingsperioden = true,
+    mottarPengestotteFraAnnetEosLandEllerSveits = false,
+    landSomUtbetalerPengestotte = null,
+    pengestotteSomMottasFraAndreLandBelop = null,
+    pengestotteSomMottasFraAndreLandBeskrivelse = null
+)
+
+fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
+    harFlereOpplysningerTilSoknaden = false,
+    tilleggsopplysningerTilSoknad = null
 )
 
 fun skjemaMedDefaultVerdier(
