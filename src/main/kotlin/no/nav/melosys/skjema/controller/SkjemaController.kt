@@ -176,6 +176,16 @@ class SkjemaController(
         val skjema = skjemaService.saveFamiliemedlemmerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/tilleggsopplysninger")
+    @Operation(summary = "Register tilleggsopplysninger information")
+    @ApiResponse(responseCode = "200", description = "Tilleggsopplysninger information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerTilleggsopplysninger(@PathVariable skjemaId: UUID, @RequestBody request: TilleggsopplysningerDto): ResponseEntity<Any> {
+        log.info { "Registering tilleggsopplysninger information" }
+        val skjema = skjemaService.saveTilleggsopplysningerInfo(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
     
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleNotFound(): ResponseEntity<Any> {

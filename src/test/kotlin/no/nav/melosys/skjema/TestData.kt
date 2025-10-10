@@ -11,6 +11,7 @@ import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -96,6 +97,11 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
     landSomUtbetalerPengestotte = null,
     pengestotteSomMottasFraAndreLandBelop = null,
     pengestotteSomMottasFraAndreLandBeskrivelse = null
+)
+
+fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
+    harFlereOpplysningerTilSoknaden = false,
+    tilleggsopplysningerTilSoknad = null
 )
 
 fun skjemaMedDefaultVerdier(

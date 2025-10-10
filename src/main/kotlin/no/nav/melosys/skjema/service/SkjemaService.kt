@@ -144,6 +144,13 @@ class SkjemaService(
         }
     }
 
+    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): Skjema {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
+    }
+
     fun listSkjemaerByUser(): List<Skjema> {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByFnr(currentUser)

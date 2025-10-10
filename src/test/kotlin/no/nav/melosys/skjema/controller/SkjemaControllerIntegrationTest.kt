@@ -361,6 +361,28 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
     }
 
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger skal lagre tilleggsopplysninger info")
+    fun `POST tilleggsopplysninger info skal lagre tilleggsopplysninger info`() {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+        
+        val token = createTokenForUser(testPid)
+        val tilleggsopplysningerRequest = mapOf(
+            "harFlereOpplysningerTilSoknaden" to true,
+            "tilleggsopplysningerTilSoknad" to "Ekstra informasjon om søknaden"
+        )
+        
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/tilleggsopplysninger")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(tilleggsopplysningerRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+    }
+
     @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
     @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
     @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
@@ -468,7 +490,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier())
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier())
     )
 
     
