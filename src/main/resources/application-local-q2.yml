@@ -12,7 +12,7 @@ FLYWAY_ENABLED: false
 NAIS_CLUSTER_NAME: dev-gcp
 NAIS_NAMESPACE: teammelosys
 NAIS_APP_NAME: melosys-skjema-api
-ARBEIDSGIVER_NOTIFIKASJON_URL: https://ag-notifikasjon-produsent-api.intern.dev.nav.no/api/graphql
+ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.dev.nav.no
 MERKELAPP: test-fager
 RESSURS_ID: test-fager
 SERVER_PORT: 8089
