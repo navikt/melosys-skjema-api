@@ -154,7 +154,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 responseBody.shouldNotBeNull()
                 responseBody["id"] shouldBe savedSkjema.id.toString()
                 responseBody["fnr"] shouldBe testPid
-                responseBody["orgnr"] shouldBe testOrgnr
                 responseBody["status"] shouldBe "UTKAST"
             }
     }
@@ -341,18 +340,47 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal ikke kunne aksessere andres skjemaer")
-    fun `Get skjema som arbeidstaker skal ikke kunne aksessere andres skjemaer`() {
-        val andresSkjema = skjemaMedDefaultVerdier(fnr = "99999999999", orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(andresSkjema)
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer skal lagre familiemedlemmer info")
+    fun `POST familiemedlemmer info skal lagre familiemedlemmer info`() {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
         
         val token = createTokenForUser(testPid)
-        webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}")
+        val familiemedlemmerRequest = mapOf(
+            "sokerForBarnUnder18SomSkalVaereMed" to true,
+            "harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad" to false
+        )
+        
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/familiemedlemmer")
             .header("Authorization", "Bearer $token")
-            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(familiemedlemmerRequest)
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+    }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger skal lagre tilleggsopplysninger info")
+    fun `POST tilleggsopplysninger info skal lagre tilleggsopplysninger info`() {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+        
+        val token = createTokenForUser(testPid)
+        val tilleggsopplysningerRequest = mapOf(
+            "harFlereOpplysningerTilSoknaden" to true,
+            "tilleggsopplysningerTilSoknad" to "Ekstra informasjon om søknaden"
+        )
+        
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/tilleggsopplysninger")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(tilleggsopplysningerRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
     }
 
     @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
@@ -433,6 +461,37 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit", submitSkjemaRequestMedDefaultVerdier())
+    )
+
+    @ParameterizedTest(name = "{0} {1}")
+    @MethodSource("arbeidstakerEndpointsSomKreverTilgang")
+    @DisplayName("Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet")
+    fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
+        val annenBrukerFnr = "99999999999"
+        val skjema = skjemaMedDefaultVerdier(fnr = annenBrukerFnr, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        val savedSkjema = skjemaRepository.save(skjema)
+        
+        val token = createTokenForUser(testPid) // testPid har ikke tilgang til skjemaet som tilhører annenBrukerFnr
+        
+        val actualPath = path.replace("{id}", savedSkjema.id.toString())
+        
+        val request = webTestClient.method(httpMethod)
+            .uri(actualPath)
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            
+        requestBody?.let { request.bodyValue(it) }
+        
+        request.exchange()
+            .expectStatus().isNotFound
+    }
+
+    fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier())
     )
 
     

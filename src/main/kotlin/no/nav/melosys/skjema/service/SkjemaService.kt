@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.service
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
@@ -14,11 +13,6 @@ import java.util.*
 import org.springframework.data.repository.findByIdOrNull
 
 private val log = KotlinLogging.logger { }
-
-private enum class DataType {
-    ARBEIDSGIVER,
-    ARBEIDSTAKER
-}
 
 @Service
 class SkjemaService(
@@ -55,28 +49,36 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun getSkjemaAsArbeidstaker(id: UUID): Skjema {
+    fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
-        return skjemaRepository.findByIdAndFnr(id, currentUser)
-            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
+        return skjemaRepository.findByIdAndFnr(skjemaId, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found or access denied")
     }
 
     // TODO: På et punkt i fremtiden så vil muligens ikke denne tilgangsjekken alene være nok
-    private fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
+    private fun getSkjemaAsArbeidsgiver(skjemaId: UUID): Skjema = skjemaRepository.findByIdOrNull(skjemaId)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
-        ?: throw IllegalArgumentException("Skjema with id $id not found")
+        ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
 
-    fun getSkjemaDtoAsArbeidsgiver(id: UUID): ArbeidsgiversSkjemaDto {
-        val skjema = getSkjemaAsArbeidsgiver(id)
-        val data = if (skjema.data == null) {
-            ArbeidsgiversSkjemaDataDto()
-        } else {
-            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDataDto::class.java)
-        }
+    fun getSkjemaDtoAsArbeidsgiver(skjemaId: UUID): ArbeidsgiversSkjemaDto {
+        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
+        val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
         
         return ArbeidsgiversSkjemaDto(
             id = skjema.id ?: error("Skjema ID is null"),
             orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
+            status = skjema.status,
+            data = data
+        )
+    }
+
+    fun getSkjemaDtoAsArbeidstaker(skjemaId: UUID): ArbeidstakersSkjemaDto {
+        val skjema = getSkjemaAsArbeidstaker(skjemaId)
+        val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
+        
+        return ArbeidstakersSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            fnr = skjema.fnr ?: error("Skjema fnr is null"),
             status = skjema.status,
             data = data
         )
@@ -123,12 +125,30 @@ class SkjemaService(
 
     fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): Skjema {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(arbeidstakeren = request)
+        }
     }
 
     fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): Skjema {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
-        return updateJsonData(skjemaId, request, DataType.ARBEIDSTAKER, ::getSkjemaAsArbeidstaker)
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(skatteforholdOgInntekt = request)
+        }
+    }
+
+    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): Skjema {
+        log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(familiemedlemmer = request)
+        }
+    }
+
+    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): Skjema {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
     }
 
     fun listSkjemaerByUser(): List<Skjema> {
@@ -136,50 +156,14 @@ class SkjemaService(
         return skjemaRepository.findByFnr(currentUser)
     }
 
-
-    private fun updateJsonData(id: UUID, data: Any, dataType: DataType, skjemaRetriever: (UUID) -> Skjema): Skjema {
-        val skjema = skjemaRetriever(id)
-
-        // Read existing JSON or create empty object
-        val existingData = if (skjema.data != null && !skjema.data!!.isNull && skjema.data!!.isObject) {
-            skjema.data!!.deepCopy() as ObjectNode
-        } else {
-            objectMapper.createObjectNode()
-        }
-
-        // Ensure the specific data type section exists
-        val dataTypeKey = when (dataType) {
-            DataType.ARBEIDSGIVER -> "arbeidsgiver"
-            DataType.ARBEIDSTAKER -> "arbeidstaker"
-        }
-
-        if (!existingData.has(dataTypeKey)) {
-            existingData.set<JsonNode>(dataTypeKey, objectMapper.createObjectNode())
-        }
-
-        // Merge new data into the appropriate section
-        val newData = objectMapper.valueToTree<JsonNode>(data) as ObjectNode
-        val sectionData = existingData.get(dataTypeKey) as ObjectNode
-        sectionData.setAll<JsonNode>(newData)
-
-        // Update the data field with merged JSON
-        skjema.data = existingData
-
-        return skjemaRepository.save(skjema)
-    }
-
     private fun updateArbeidsgiverSkjemaData(
-        id: UUID,
+        skjemaId: UUID,
         updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
     ): Skjema {
-        val skjema = getSkjemaAsArbeidsgiver(id)
+        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
-        val existingDto = if (skjema.data == null) {
-            ArbeidsgiversSkjemaDataDto()
-        } else {
-            objectMapper.treeToValue(skjema.data, ArbeidsgiversSkjemaDataDto::class.java)
-        }
+        val existingDto = convertToArbeidsgiversSkjemaDataDto(skjema.data)
 
         // Apply the update function
         val updatedDto = updateFunction(existingDto)
@@ -188,5 +172,39 @@ class SkjemaService(
         skjema.data = objectMapper.valueToTree(updatedDto)
         return skjemaRepository.save(skjema)
     }
+
+    private fun updateArbeidstakerSkjemaData(
+        skjemaId: UUID,
+        updateFunction: (ArbeidstakersSkjemaDataDto) -> ArbeidstakersSkjemaDataDto
+    ): Skjema {
+        val skjema = getSkjemaAsArbeidstaker(skjemaId)
+
+        // Read existing ArbeidstakersSkjemaDataDto or create empty one
+        val existingDto = convertToArbeidstakersSkjemaDataDto(skjema.data)
+
+        // Apply the update function
+        val updatedDto = updateFunction(existingDto)
+
+        // Convert back to JSON and save
+        skjema.data = objectMapper.valueToTree(updatedDto)
+        return skjemaRepository.save(skjema)
+    }
+
+    private fun convertToArbeidsgiversSkjemaDataDto(data: JsonNode?): ArbeidsgiversSkjemaDataDto {
+        return convertDataToDto(data, ArbeidsgiversSkjemaDataDto())
+    }
+
+    private fun convertToArbeidstakersSkjemaDataDto(data: JsonNode?): ArbeidstakersSkjemaDataDto {
+        return convertDataToDto(data, ArbeidstakersSkjemaDataDto())
+    }
+
+    private inline fun <reified T> convertDataToDto(data: JsonNode?, defaultValue: T): T {
+        return if (data == null) {
+            defaultValue
+        } else {
+            objectMapper.treeToValue(data, T::class.java)
+        }
+    }
+
 
 }
