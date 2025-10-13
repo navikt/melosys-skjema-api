@@ -9,7 +9,7 @@ data class ArbeidstakerenDto(
     val etternavn: String?,
     val fodselsdato: LocalDate?,
     val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean,
-    val aktivitetIMaanedenFoerUtsendingen: String,
+    val aktivitetIMaanedenFoerUtsendingen: String?,
     val skalJobbeForFlereVirksomheter: Boolean,
     val virksomheterArbeidstakerJobberForIutsendelsesPeriode: NorskeOgUtenlandskeVirksomheter?
 )
