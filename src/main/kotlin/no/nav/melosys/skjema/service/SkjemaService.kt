@@ -49,19 +49,19 @@ class SkjemaService(
         return skjemaRepository.save(skjema)
     }
 
-    fun getSkjemaAsArbeidstaker(id: UUID): Skjema {
+    fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
-        return skjemaRepository.findByIdAndFnr(id, currentUser)
-            ?: throw IllegalArgumentException("Skjema with id $id not found or access denied")
+        return skjemaRepository.findByIdAndFnr(skjemaId, currentUser)
+            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found or access denied")
     }
 
     // TODO: På et punkt i fremtiden så vil muligens ikke denne tilgangsjekken alene være nok
-    private fun getSkjemaAsArbeidsgiver(id: UUID): Skjema = skjemaRepository.findByIdOrNull(id)
+    private fun getSkjemaAsArbeidsgiver(skjemaId: UUID): Skjema = skjemaRepository.findByIdOrNull(skjemaId)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
-        ?: throw IllegalArgumentException("Skjema with id $id not found")
+        ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
 
-    fun getSkjemaDtoAsArbeidsgiver(id: UUID): ArbeidsgiversSkjemaDto {
-        val skjema = getSkjemaAsArbeidsgiver(id)
+    fun getSkjemaDtoAsArbeidsgiver(skjemaId: UUID): ArbeidsgiversSkjemaDto {
+        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
         val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
         
         return ArbeidsgiversSkjemaDto(
@@ -72,8 +72,8 @@ class SkjemaService(
         )
     }
 
-    fun getSkjemaDtoAsArbeidstaker(id: UUID): ArbeidstakersSkjemaDto {
-        val skjema = getSkjemaAsArbeidstaker(id)
+    fun getSkjemaDtoAsArbeidstaker(skjemaId: UUID): ArbeidstakersSkjemaDto {
+        val skjema = getSkjemaAsArbeidstaker(skjemaId)
         val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
         
         return ArbeidstakersSkjemaDto(
@@ -157,10 +157,10 @@ class SkjemaService(
     }
 
     private fun updateArbeidsgiverSkjemaData(
-        id: UUID,
+        skjemaId: UUID,
         updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
     ): Skjema {
-        val skjema = getSkjemaAsArbeidsgiver(id)
+        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
         val existingDto = convertToArbeidsgiversSkjemaDataDto(skjema.data)
@@ -174,10 +174,10 @@ class SkjemaService(
     }
 
     private fun updateArbeidstakerSkjemaData(
-        id: UUID,
+        skjemaId: UUID,
         updateFunction: (ArbeidstakersSkjemaDataDto) -> ArbeidstakersSkjemaDataDto
     ): Skjema {
-        val skjema = getSkjemaAsArbeidstaker(id)
+        val skjema = getSkjemaAsArbeidstaker(skjemaId)
 
         // Read existing ArbeidstakersSkjemaDataDto or create empty one
         val existingDto = convertToArbeidstakersSkjemaDataDto(skjema.data)
