@@ -87,8 +87,7 @@ fun arbeidstakerenDtoMedDefaultVerdier() = ArbeidstakerenDto(
     harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
     aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
     skalJobbeForFlereVirksomheter = false,
-    norskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
-    utenlandskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode = null
+    virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
 )
 
 fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(

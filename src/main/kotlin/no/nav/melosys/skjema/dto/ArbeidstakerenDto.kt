@@ -11,6 +11,5 @@ data class ArbeidstakerenDto(
     val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean,
     val aktivitetIMaanedenFoerUtsendingen: String,
     val skalJobbeForFlereVirksomheter: Boolean,
-    val norskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<NorskVirksomhet>?,
-    val utenlandskeVirksomheterArbeidstakerJobberForIutsendelsesPeriode: List<UtenlandskVirksomhet>?
+    val virksomheterArbeidstakerJobberForIutsendelsesPeriode: NorskeOgUtenlandskeVirksomheter?
 )
