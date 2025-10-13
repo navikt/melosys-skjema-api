@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.dto
 
-data class VirksomheterSomUtbetalerLonnOgNaturalytelser(
+data class NorskeOgUtenlandskeVirksomheter(
     val norskeVirksomheter: List<NorskVirksomhet>?,
     val utenlandskeVirksomheter: List<UtenlandskVirksomhet>?
 )
