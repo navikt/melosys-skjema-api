@@ -45,7 +45,7 @@ fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
     erArbeidsgiverenOffentligVirksomhet = true,
     erArbeidsgiverenBemanningsEllerVikarbyraa = false,
-    opprettholderArbeidsgivereVanligDrift = true
+    opprettholderArbeidsgiverenVanligDrift = true
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
