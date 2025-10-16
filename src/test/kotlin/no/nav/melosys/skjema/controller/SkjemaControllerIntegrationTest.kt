@@ -578,11 +578,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         
         val token = createTokenForUser(testPid)
         every { altinnService.harBrukerTilgang(testOrgnr) } returns false
-
-        val actualPath = path.replace("{id}", savedSkjema.id.toString())
         
         val request = webTestClient.method(httpMethod)
-            .uri(actualPath)
+            .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             
@@ -602,11 +600,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         ))
         
         val token = createTokenForUser(testPid)
-
-        val actualPath = path.replace("{id}", savedSkjema.id.toString())
         
         val request = webTestClient.method(httpMethod)
-            .uri(actualPath)
+            .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             
@@ -638,10 +634,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         
         val token = createTokenForUser(testPid) // testPid har ikke tilgang til skjemaet som tilhører annenBrukerFnr
         
-        val actualPath = path.replace("{id}", savedSkjema.id.toString())
-        
         val request = webTestClient.method(httpMethod)
-            .uri(actualPath)
+            .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             
