@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.LocalDate
 import no.nav.melosys.skjema.dto.ArbeidsgiverenDto
+import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.dto.ArbeidstakerensLonnDto
@@ -40,6 +42,13 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
 fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
     organisasjonsnummer = "123456789",
     organisasjonNavn = "Test Bedrift AS"
+)
+
+fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
+    arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier(),
+    arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+    utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
+    arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
@@ -101,6 +110,13 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
 fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
     harFlereOpplysningerTilSoknaden = false,
     tilleggsopplysningerTilSoknad = null
+)
+
+fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
+    arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier(),
+    skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
+    familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
+    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
 )
 
 fun skjemaMedDefaultVerdier(

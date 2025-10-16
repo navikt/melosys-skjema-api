@@ -1,8 +1,10 @@
 package no.nav.melosys.skjema.controller
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
@@ -46,6 +48,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
+    
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
     
     @MockkBean
     private lateinit var notificationService: NotificationService
@@ -111,9 +116,12 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.orgnr shouldBe createRequest.orgnr
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data shouldBe ArbeidsgiversSkjemaDataDto()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = this.id,
+                orgnr = createRequest.orgnr,
+                status = SkjemaStatus.UTKAST,
+                data = ArbeidsgiversSkjemaDataDto()
+            )
             skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
         }
     }
@@ -134,7 +142,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isNotFound
 
-        skjemaRepository.findByOrgnr(createRequest.orgnr).shouldBeNull()
+        skjemaRepository.findByOrgnr(createRequest.orgnr).shouldBeEmpty()
     }
     
     @Test
@@ -239,16 +247,23 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren skal lagre arbeidsgiver info")
     fun `POST arbeidsgiver info skal lagre arbeidsgiver info`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
+
         val arbeidsgiverenRequest = arbeidsgiverenDtoMedDefaultVerdier().copy(
             organisasjonsnummer = testOrgnr
         )
         
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/arbeidsgiveren")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidsgiveren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(arbeidsgiverenRequest)
@@ -260,26 +275,38 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.orgnr shouldBe savedSkjema.orgnr
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidsgiveren = arbeidsgiverenRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
     
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge skal lagre virksomhet info")
     fun `POST virksomhet info skal lagre virksomhet info`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
         val virksomhetRequest = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
 
-        every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns true
+        every { altinnService.harBrukerTilgang(existingSkjemaBeforePOST.orgnr!!) } returns true
 
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/arbeidsgiverens-virksomhet-i-norge")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidsgiverens-virksomhet-i-norge")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(virksomhetRequest)
@@ -291,24 +318,37 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.orgnr shouldBe testOrgnr
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidsgiverensVirksomhetINorge = virksomhetRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
     
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit skal sende inn skjema")
-    fun `POST oppsummering skal sende inn skjema`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+    fun `POST submit skal sende inn skjema`() {
+        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
         val submitRequest = submitSkjemaRequestMedDefaultVerdier()
         
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/submit")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/submit")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submitRequest)
@@ -320,9 +360,17 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.fnr shouldBe testPid
-            this.status shouldBe SkjemaStatus.SENDT
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                fnr = existingSkjemaBeforePOST.fnr!!,
+                status = SkjemaStatus.SENDT,
+                data = existingSkjemaDataBeforePOST
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
     
@@ -346,9 +394,12 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.fnr shouldBe createRequest.fnr
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data shouldBe ArbeidstakersSkjemaDataDto()
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = this.id,
+                fnr = createRequest.fnr,
+                status = SkjemaStatus.UTKAST,
+                data = ArbeidstakersSkjemaDataDto()
+            )
             skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
         }
     }
@@ -356,8 +407,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren skal lagre arbeidstaker info")
     fun `POST arbeidstaker info skal lagre arbeidstaker info`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
         val arbeidstakerRequest = arbeidstakerenDtoMedDefaultVerdier().copy(
@@ -365,7 +421,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
         
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/arbeidstakeren")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${existingSkjemaBeforePOST.id}/arbeidstakeren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(arbeidstakerRequest)
@@ -377,24 +433,36 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.fnr shouldBe savedSkjema.fnr
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data.shouldNotBeNull()
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                fnr = existingSkjemaBeforePOST.fnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidstakeren = arbeidstakerRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
     
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer skal lagre familiemedlemmer info")
     fun `POST familiemedlemmer info skal lagre familiemedlemmer info`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
         val familiemedlemmerRequest = familiemedlemmerDtoMedDefaultVerdier()
         
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/familiemedlemmer")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${existingSkjemaBeforePOST.id}/familiemedlemmer")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(familiemedlemmerRequest)
@@ -406,24 +474,36 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.fnr shouldBe testPid
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data.shouldNotBeNull()
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                fnr = existingSkjemaBeforePOST.fnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(familiemedlemmer = familiemedlemmerRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
 
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger skal lagre tilleggsopplysninger info")
     fun `POST tilleggsopplysninger info skal lagre tilleggsopplysninger info`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
         
         val token = createTokenForUser(testPid)
         val tilleggsopplysningerRequest = tilleggsopplysningerDtoMedDefaultVerdier()
         
         val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/tilleggsopplysninger")
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${existingSkjemaBeforePOST.id}/tilleggsopplysninger")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(tilleggsopplysningerRequest)
@@ -435,10 +515,17 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.fnr shouldBe testPid
-            this.status shouldBe SkjemaStatus.UTKAST
-            this.data.shouldNotBeNull()
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                fnr = existingSkjemaBeforePOST.fnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(tilleggsopplysninger = tilleggsopplysningerRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
 
@@ -558,5 +645,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         return mockOAuth2Server.getToken(
             claims = mapOf("pid" to pid)
         )
+    }
+
+    private inline fun <reified T> convertJsonToDto(jsonNode: JsonNode?): T? {
+        return jsonNode?.let { objectMapper.treeToValue(it, T::class.java) }
     }
 }

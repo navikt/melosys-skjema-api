@@ -65,26 +65,14 @@ class SkjemaService(
 
     fun getSkjemaDtoAsArbeidsgiver(skjemaId: UUID): ArbeidsgiversSkjemaDto {
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
-        val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
         
-        return ArbeidsgiversSkjemaDto(
-            id = skjema.id ?: error("Skjema ID is null"),
-            orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
-            status = skjema.status,
-            data = data
-        )
+        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
     fun getSkjemaDtoAsArbeidstaker(skjemaId: UUID): ArbeidstakersSkjemaDto {
         val skjema = getSkjemaAsArbeidstaker(skjemaId)
-        val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
-        
-        return ArbeidstakersSkjemaDto(
-            id = skjema.id ?: error("Skjema ID is null"),
-            fnr = skjema.fnr ?: error("Skjema fnr is null"),
-            status = skjema.status,
-            data = data
-        )
+
+        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
