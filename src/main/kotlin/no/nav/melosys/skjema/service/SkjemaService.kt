@@ -22,7 +22,7 @@ class SkjemaService(
     private val altinnService: AltinnService
 ) {
 
-    fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): Skjema {
+    fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): ArbeidsgiversSkjemaDto {
         val currentUser = subjectHandler.getUserID()
 
         if (!altinnService.harBrukerTilgang(request.orgnr)) {
@@ -35,10 +35,12 @@ class SkjemaService(
             opprettetAv = currentUser,
             endretAv = currentUser
         )
-        return skjemaRepository.save(skjema)
+        val createdSkjema = skjemaRepository.save(skjema)
+
+        return convertToArbeidsgiversSkjemaDto(createdSkjema)
     }
 
-    fun createSkjemaArbeidstakerDel(request: CreateArbeidstakerSkjemaRequest): Skjema {
+    fun createSkjemaArbeidstakerDel(request: CreateArbeidstakerSkjemaRequest): ArbeidstakersSkjemaDto {
         val currentUser = subjectHandler.getUserID()
         val skjema = Skjema(
             status = SkjemaStatus.UTKAST,
@@ -46,7 +48,8 @@ class SkjemaService(
             opprettetAv = currentUser,
             endretAv = currentUser
         )
-        return skjemaRepository.save(skjema)
+        val createdSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidstakersSkjemaDto(createdSkjema)
     }
 
     fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
@@ -84,35 +87,39 @@ class SkjemaService(
         )
     }
 
-    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): Skjema {
+    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
             dto.copy(arbeidsgiveren = request)
         }
+        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
-    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): Skjema {
+    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
             dto.copy(arbeidsgiverensVirksomhetINorge = request)
         }
+        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
-    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): Skjema {
+    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
-        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
             dto.copy(utenlandsoppdraget = request)
         }
+        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
-    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): Skjema {
+    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
-        return updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
             dto.copy(arbeidstakerensLonn = request)
         }
+        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
-    fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): Skjema {
+    fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
@@ -120,40 +127,46 @@ class SkjemaService(
         
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
-        return skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): Skjema {
+    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
-        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
             dto.copy(arbeidstakeren = request)
         }
+        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
-    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): Skjema {
+    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): ArbeidstakersSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
-        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
             dto.copy(skatteforholdOgInntekt = request)
         }
+        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
-    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): Skjema {
+    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): ArbeidstakersSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
-        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
             dto.copy(familiemedlemmer = request)
         }
+        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
-    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): Skjema {
+    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidstakersSkjemaDto {
         log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
-        return updateArbeidstakerSkjemaData(skjemaId) { dto ->
+        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
             dto.copy(tilleggsopplysninger = request)
         }
+        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
-    fun listSkjemaerByUser(): List<Skjema> {
+    fun listSkjemaerByUser(): List<ArbeidstakersSkjemaDto> {
         val currentUser = subjectHandler.getUserID()
-        return skjemaRepository.findByFnr(currentUser)
+        val skjemaer = skjemaRepository.findByFnr(currentUser)
+        return skjemaer.map { convertToArbeidstakersSkjemaDto(it) }
     }
 
     private fun updateArbeidsgiverSkjemaData(
@@ -204,6 +217,28 @@ class SkjemaService(
         } else {
             objectMapper.treeToValue(data, T::class.java)
         }
+    }
+
+    fun convertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
+        val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
+        
+        return ArbeidsgiversSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
+            status = skjema.status,
+            data = data
+        )
+    }
+
+    fun convertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
+        val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
+        
+        return ArbeidstakersSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            fnr = skjema.fnr ?: error("Skjema fnr is null"),
+            status = skjema.status,
+            data = data
+        )
     }
 
 
