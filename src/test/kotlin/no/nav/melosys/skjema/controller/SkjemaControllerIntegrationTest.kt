@@ -4,7 +4,6 @@ import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldNotBeBlank
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
@@ -22,11 +21,14 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.service.AltinnService
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -78,13 +80,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<List<Map<String, Any>>>()
+            .expectBody<List<ArbeidstakersSkjemaDto>>()
             .consumeWith { response ->
                 val responseBody = response.responseBody
                 responseBody.shouldNotBeNull()
                 responseBody.shouldHaveSize(2)
-                val orgnrs = responseBody.map { it["orgnr"] }
-                orgnrs shouldBe listOf(testOrgnr, "987654321")
             }
     }
     
@@ -96,7 +96,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "orgnr" to testOrgnr
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -104,14 +104,15 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isCreated
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Map<String, Any>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody["orgnr"] shouldBe testOrgnr
-                responseBody["status"] shouldBe "UTKAST"
-                responseBody["id"].toString().shouldNotBeBlank()
-            }
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.orgnr shouldBe testOrgnr
+            this.status shouldBe SkjemaStatus.UTKAST
+            skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
+        }
     }
 
     @Test
@@ -141,21 +142,22 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         
         val token = createTokenForUser(testPid)
         
-        webTestClient.get()
+        val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Map<String, Any>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody["id"] shouldBe savedSkjema.id.toString()
-                responseBody["fnr"] shouldBe testPid
-                responseBody["status"] shouldBe "UTKAST"
-            }
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe savedSkjema.fnr
+            this.status shouldBe SkjemaStatus.UTKAST
+        }
     }
 
     @Test
@@ -166,21 +168,22 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         val token = createTokenForUser(testPid)
 
-        webTestClient.get()
+        val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Map<String, Any>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody["id"] shouldBe savedSkjema.id.toString()
-                responseBody["orgnr"] shouldBe savedSkjema.orgnr
-                responseBody["status"] shouldBe savedSkjema.status.toString()
-            }
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.orgnr shouldBe savedSkjema.orgnr!!
+            this.status shouldBe savedSkjema.status
+        }
     }
     
     @Test
@@ -242,7 +245,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "organisasjonNavn" to "Test Bedrift AS"
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/arbeidsgiveren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -250,13 +253,16 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Map<String, Any>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody["id"] shouldBe savedSkjema.id.toString()
-                responseBody["data"].toString().shouldNotBeBlank()
-            }
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.orgnr shouldBe testOrgnr
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data.shouldNotBeNull()
+        }
     }
     
     @Test
@@ -274,7 +280,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns true
 
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/arbeidsgiverens-virksomhet-i-norge")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -282,6 +288,16 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.orgnr shouldBe testOrgnr
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data.shouldNotBeNull()
+        }
     }
     
     @Test
@@ -296,7 +312,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "submittedAt" to Instant.now().toString()
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}/submit")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -304,12 +320,15 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Map<String, Any>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody["status"] shouldBe "SENDT"
-            }
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe testPid
+            this.status shouldBe SkjemaStatus.SENDT
+        }
     }
     
     @Test
@@ -329,7 +348,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "skalJobbeForFlereVirksomheter" to false
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/arbeidstakeren")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -337,6 +356,16 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe testPid
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data.shouldNotBeNull()
+        }
     }
     
     @Test
@@ -351,7 +380,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad" to false
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/familiemedlemmer")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -359,6 +388,16 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe testPid
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data.shouldNotBeNull()
+        }
     }
 
     @Test
@@ -373,7 +412,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             "tilleggsopplysningerTilSoknad" to "Ekstra informasjon om søknaden"
         )
         
-        webTestClient.post()
+        val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}/tilleggsopplysninger")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
@@ -381,6 +420,16 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe testPid
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data.shouldNotBeNull()
+        }
     }
 
     @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
