@@ -148,8 +148,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
         
         val token = createTokenForUser(savedSkjema.fnr!!)
         
@@ -174,8 +177,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
-        val skjema = skjemaMedDefaultVerdier(orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
 
         val token = createTokenForUser(testPid)
 
@@ -215,8 +220,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/submit skal sende skjema og trigge notifikasjoner")
     fun `POST submit skjema skal sende skjema og trigge notifikasjoner`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
         
         val token = createTokenForUser(testPid)
         
@@ -232,8 +240,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/pdf skal returnere PDF response")
     fun `GET pdf skal returnere PDF response`() {
-        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.SENDT)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.SENDT
+        ))
         
         val token = createTokenForUser(testPid)
         
@@ -533,8 +544,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
     @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
     fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
-        val andresSkjema = skjemaMedDefaultVerdier(orgnr = orgnummer)
-        val savedSkjema = skjemaRepository.save(andresSkjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = orgnummer
+        ))
 
         val token = createTokenForUser(testPid)
 
@@ -559,8 +571,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
     @DisplayName("Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang")
     fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
-        val skjema = skjemaMedDefaultVerdier(orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
         
         val token = createTokenForUser(testPid)
         every { altinnService.harBrukerTilgang(testOrgnr) } returns false
@@ -582,8 +596,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
     @DisplayName("Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr=null")
     fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
-        val skjema = skjemaMedDefaultVerdier(orgnr = null, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = null,
+            status = SkjemaStatus.UTKAST
+        ))
         
         val token = createTokenForUser(testPid)
 
@@ -614,8 +630,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @DisplayName("Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet")
     fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
         val annenBrukerFnr = "99999999999"
-        val skjema = skjemaMedDefaultVerdier(fnr = annenBrukerFnr, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        val savedSkjema = skjemaRepository.save(skjema)
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = annenBrukerFnr,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
         
         val token = createTokenForUser(testPid) // testPid har ikke tilgang til skjemaet som tilhører annenBrukerFnr
         
