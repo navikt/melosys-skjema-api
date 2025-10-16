@@ -21,7 +21,9 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.service.AltinnService
 import org.junit.jupiter.api.TestInstance
@@ -111,6 +113,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             this.shouldNotBeNull()
             this.orgnr shouldBe testOrgnr
             this.status shouldBe SkjemaStatus.UTKAST
+            this.data shouldBe ArbeidsgiversSkjemaDataDto()
             skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
         }
     }
@@ -187,7 +190,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(testPid)
         val nonExistentId = UUID.randomUUID()
@@ -328,6 +331,34 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             this.id shouldBe savedSkjema.id!!
             this.fnr shouldBe testPid
             this.status shouldBe SkjemaStatus.SENDT
+        }
+    }
+    
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker skal opprette nytt skjema")
+    fun `POST arbeidstaker skjema skal opprette nytt skjema`() {
+        val token = createTokenForUser(testPid)
+        val createRequest = mapOf(
+            "fnr" to testPid
+        )
+        
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(createRequest)
+            .exchange()
+            .expectStatus().isCreated
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this.fnr shouldBe testPid
+            this.status shouldBe SkjemaStatus.UTKAST
+            this.data shouldBe ArbeidstakersSkjemaDataDto()
+            skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
         }
     }
     
