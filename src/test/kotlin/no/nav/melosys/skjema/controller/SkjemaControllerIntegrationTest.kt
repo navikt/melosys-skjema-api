@@ -148,10 +148,12 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
+        val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
             fnr = testPid,
             orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(skjemaData)
         ))
         
         val token = createTokenForUser(savedSkjema.fnr!!)
@@ -168,18 +170,23 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.fnr shouldBe savedSkjema.fnr
-            this.status shouldBe SkjemaStatus.UTKAST
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = savedSkjema.id!!,
+                fnr = savedSkjema.fnr!!,
+                status = SkjemaStatus.UTKAST,
+                data = skjemaData
+            )
         }
     }
 
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
+        val skjemaData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
             orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(skjemaData)
         ))
 
         val token = createTokenForUser(testPid)
@@ -196,9 +203,12 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         responseBody.run {
             this.shouldNotBeNull()
-            this.id shouldBe savedSkjema.id!!
-            this.orgnr shouldBe savedSkjema.orgnr!!
-            this.status shouldBe savedSkjema.status
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = savedSkjema.id!!,
+                orgnr = savedSkjema.orgnr!!,
+                status = savedSkjema.status,
+                data = skjemaData
+            )
         }
     }
     
