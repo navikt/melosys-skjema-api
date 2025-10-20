@@ -37,7 +37,7 @@ class SkjemaService(
         )
         val createdSkjema = skjemaRepository.save(skjema)
 
-        return convertToArbeidsgiversSkjemaDto(createdSkjema)
+        return saveAndConvertToArbeidsgiversSkjemaDto(createdSkjema)
     }
 
     fun createSkjemaArbeidstakerDel(request: CreateArbeidstakerSkjemaRequest): ArbeidstakersSkjemaDto {
@@ -49,7 +49,8 @@ class SkjemaService(
             endretAv = currentUser
         )
         val createdSkjema = skjemaRepository.save(skjema)
-        return convertToArbeidstakersSkjemaDto(createdSkjema)
+
+        return saveAndConvertToArbeidstakersSkjemaDto(createdSkjema)
     }
 
     fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
@@ -77,34 +78,34 @@ class SkjemaService(
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
             dto.copy(arbeidsgiveren = request)
         }
-        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
     fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
             dto.copy(arbeidsgiverensVirksomhetINorge = request)
         }
-        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
     fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
-        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
             dto.copy(utenlandsoppdraget = request)
         }
-        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
     fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
-        val skjema = updateArbeidsgiverSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
             dto.copy(arbeidstakerensLonn = request)
         }
-        return convertToArbeidsgiversSkjemaDto(skjema)
     }
 
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
@@ -121,34 +122,34 @@ class SkjemaService(
 
     fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
-        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(arbeidstakeren = request)
         }
-        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
     fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): ArbeidstakersSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
-        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(skatteforholdOgInntekt = request)
         }
-        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
     fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): ArbeidstakersSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
-        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(familiemedlemmer = request)
         }
-        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
     fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidstakersSkjemaDto {
         log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
-        val skjema = updateArbeidstakerSkjemaData(skjemaId) { dto ->
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(tilleggsopplysninger = request)
         }
-        return convertToArbeidstakersSkjemaDto(skjema)
     }
 
     fun listSkjemaerByUser(): List<ArbeidstakersSkjemaDto> {
@@ -157,10 +158,10 @@ class SkjemaService(
         return skjemaer.map { convertToArbeidstakersSkjemaDto(it) }
     }
 
-    private fun updateArbeidsgiverSkjemaData(
+    private fun updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(
         skjemaId: UUID,
         updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
-    ): Skjema {
+    ): ArbeidsgiversSkjemaDto {
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
@@ -171,13 +172,13 @@ class SkjemaService(
 
         // Convert back to JSON and save
         skjema.data = objectMapper.valueToTree(updatedDto)
-        return skjemaRepository.save(skjema)
+        return saveAndConvertToArbeidsgiversSkjemaDto(skjema)
     }
 
-    private fun updateArbeidstakerSkjemaData(
+    private fun updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(
         skjemaId: UUID,
         updateFunction: (ArbeidstakersSkjemaDataDto) -> ArbeidstakersSkjemaDataDto
-    ): Skjema {
+    ): ArbeidstakersSkjemaDto {
         val skjema = getSkjemaAsArbeidstaker(skjemaId)
 
         // Read existing ArbeidstakersSkjemaDataDto or create empty one
@@ -188,7 +189,17 @@ class SkjemaService(
 
         // Convert back to JSON and save
         skjema.data = objectMapper.valueToTree(updatedDto)
-        return skjemaRepository.save(skjema)
+        return saveAndConvertToArbeidstakersSkjemaDto(skjema)
+    }
+
+    private fun saveAndConvertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
+        val savedSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidsgiversSkjemaDto(savedSkjema)
+    }
+
+    private fun saveAndConvertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
+        val savedSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 
     private fun convertToArbeidsgiversSkjemaDataDto(data: JsonNode?): ArbeidsgiversSkjemaDataDto {
@@ -207,7 +218,7 @@ class SkjemaService(
         }
     }
 
-    fun convertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
+    private fun convertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
         val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
         
         return ArbeidsgiversSkjemaDto(
@@ -218,7 +229,7 @@ class SkjemaService(
         )
     }
 
-    fun convertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
+    private fun convertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
         val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
         
         return ArbeidstakersSkjemaDto(
