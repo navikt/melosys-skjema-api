@@ -172,7 +172,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             this.shouldNotBeNull()
             this shouldBe ArbeidstakersSkjemaDto(
                 id = savedSkjema.id!!,
-                fnr = savedSkjema.fnr!!,
+                fnr = savedSkjema.fnr,
                 status = SkjemaStatus.UTKAST,
                 data = skjemaData
             )
@@ -324,8 +324,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(testPid)
         val virksomhetRequest = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
 
-        every { altinnService.harBrukerTilgang(existingSkjemaBeforePOST.orgnr!!) } returns true
-
         val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidsgiverens-virksomhet-i-norge")
             .header("Authorization", "Bearer $token")
@@ -344,6 +342,88 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 orgnr = existingSkjemaBeforePOST.orgnr!!,
                 status = existingSkjemaBeforePOST.status,
                 data = existingSkjemaDataBeforePOST.copy(arbeidsgiverensVirksomhetINorge = virksomhetRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
+        }
+    }
+    
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget skal lagre utenlandsoppdrag info")
+    fun `POST utenlandsoppdrag info skal lagre utenlandsoppdrag info`() {
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
+        
+        val token = createTokenForUser(testPid)
+        val utenlandsoppdragRequest = utenlandsoppdragetDtoMedDefaultVerdier()
+
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/utenlandsoppdraget")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(utenlandsoppdragRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(utenlandsoppdraget = utenlandsoppdragRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
+        }
+    }
+    
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn skal lagre arbeidstaker lønn info")
+    fun `POST arbeidstaker lønn info skal lagre arbeidstaker lønn info`() {
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
+        
+        val token = createTokenForUser(testPid)
+        val arbeidstakerLonnRequest = arbeidstakerensLonnDtoMedDefaultVerdier()
+
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidstakerens-lonn")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(arbeidstakerLonnRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidstakerensLonn = arbeidstakerLonnRequest)
             )
 
             val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
@@ -459,6 +539,47 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 fnr = existingSkjemaBeforePOST.fnr!!,
                 status = existingSkjemaBeforePOST.status,
                 data = existingSkjemaDataBeforePOST.copy(arbeidstakeren = arbeidstakerRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
+        }
+    }
+    
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt skal lagre skatteforhold og inntekt info")
+    fun `POST skatteforhold og inntekt info skal lagre skatteforhold og inntekt info`() {
+        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
+        
+        val token = createTokenForUser(testPid)
+        val skatteforholdOgInntektRequest = skatteforholdOgInntektDtoMedDefaultVerdier()
+        
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${existingSkjemaBeforePOST.id}/skatteforhold-og-inntekt")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(skatteforholdOgInntektRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidstakersSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this shouldBe ArbeidstakersSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                fnr = existingSkjemaBeforePOST.fnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(skatteforholdOgInntekt = skatteforholdOgInntektRequest)
             )
 
             val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
