@@ -2,282 +2,247 @@
 
 ## Oversikt
 
-Dette dokumentet beskriver de ulike fullmaktscenarioene i søknadssystemet for utsendte arbeidstakere. Systemet håndterer komplekse relasjoner mellom flere aktører som kan opptre på vegne av hverandre.
+Dette dokumentet beskriver fullmaktløsningen for søknadssystemet for utsendte arbeidstakere. Systemet bruker **NAVs eksisterende fullmaktsløsning** for å håndtere fullmakter fra arbeidstaker til andre personer.
 
 ## Sentrale begreper og roller
 
 ### Primære roller
 - **Arbeidsgiver**: Norsk virksomhet som sender ut arbeidstaker
 - **Arbeidstaker**: Person som sendes ut for arbeid i EU/EØS-land
-- **Rådgiverfirma**: Konsulentfirma som bistår arbeidsgivere
-- **Fullmektig for arbeidstaker**: Person eller organisasjon som kan fylle inn på vegne av arbeidstaker
+- **Fullmektig**: Person som har fått fullmakt fra arbeidstaker via Nav.no
 
 ### Viktige distinksjoner
-- **Altinn-delegering**: Gir tilgang til å opptre på vegne av en organisasjon (brukes mellom rådgiverfirma og arbeidsgiver)
-- **Fullmakt for søknad**: Gir tilgang til å fylle inn arbeidstaker-delen av en spesifikk søknad
-- **Representasjon**: Når man logger inn og velger å opptre som en organisasjon
+- **Altinn-delegering**: Gir tilgang til å opptre på vegne av en organisasjon (arbeidsgiver-delen)
+- **Nav.no fullmakt**: Person-til-person fullmakt fra arbeidstaker (arbeidstaker-delen)
+- **Fullmaktstype**: "Søknad om medlemskap" eller lignende
 
 ---
 
-## Fullmaktscenarioer
+## Hvordan fullmaktsløsningen fungerer
 
-### Scenario 1: Rådgiverfirma → Arbeidsgiver → Arbeidstaker
+### 1. Arbeidstaker gir fullmakt
+1. Arbeidstaker går til https://www.nav.no/fullmakt
+2. Oppretter fullmakt av type "Søknad om medlemskap" (eller lignende)
+3. Oppgir personnummer til fullmektig (en person)
+4. Bestemmer varighet og omfang
 
-```mermaid
-sequenceDiagram
-    participant RF as Beta Rådgivning AS (Rådgiverfirma)
-    participant AG as Alfa Industri AS (Arbeidsgiver)
-    participant AT as Arbeidstaker
-    participant System as melosys-søknadsskjema
-    participant Altinn as Altinn
-    
-    Note over RF,Altinn: FORUTSETNING: Alfa Industri AS har delegert tilgang i Altinn
-    
-    RF->>System: Logger inn på nav.no
-    System->>Altinn: Henter representasjoner
-    Altinn-->>System: Returnerer Alfa Industri AS som valgbar rolle
-    RF->>System: Velger å opptre som Alfa Industri AS
-    
-    Note over RF,System: Beta Rådgivning AS opptrer nå som Alfa Industri AS
-    
-    RF->>System: Starter søknad for Alfa Industri AS
-    RF->>System: Fyller arbeidsgiver-del
-    RF->>System: Ønsker å fylle for arbeidstaker
-    
-    System->>AT: Fullmaktforespørsel
-    Note over System,AT: MÅ AVKLARES: Hvem får fullmakt?<br/>Alt 1: Kun Beta Rådgivning AS<br/>Alt 2: Både Beta Rådgivning AS og Alfa Industri AS<br/>Forespørsel MÅ presisere hvem som får tilgang<br/>og hvem som mottar brev
-    
-    alt Arbeidstaker godkjenner
-        AT->>System: Godkjenner fullmakt
-        RF->>System: Fyller arbeidstaker-del
-        RF->>System: Sender inn komplett søknad
-    else Arbeidstaker avslår
-        AT->>System: Avslår fullmakt
-        System->>AT: Varsler om å fylle selv
-        AT->>System: Fyller sin del selv
-    end
-```
+### 2. Vi verifiserer fullmakt
+- Vi kaller Nav.no fullmakts-API når person logger inn
+- API returnerer: hvem de har fullmakt fra, gyldighetsperiode (fra-dato, til-dato)
+- Vi sjekker fullmakt ved innlogging og ved hver relevant operasjon
+- Vi kaller API før HVER operasjon (i tilfelle fullmakt trekkes)
 
-**Viktige poenger:**
-- **AVKLARING PÅKREVD**: Hvem får fullmakten - kun rådgiverfirma eller både rådgiverfirma og arbeidsgiver?
-- Fullmaktforespørselen må tydelig presisere hvem som får tilgang og hvem som mottar brev
-- Altinn-delegeringen gir kun tilgang til å opptre som arbeidsgiver, ikke automatisk fullmakt for arbeidstaker
-- Fullmakten er knyttet til den spesifikke søknaden
+### 3. Fullmektig kan fylle søknad
+- Fullmektig logger inn med egen ID-porten
+- Ser søknader for de arbeidstakere de har fullmakt fra
+- Kan fylle/redigere/sende arbeidstaker-delen
+- Kan ofte også ha Altinn-delegering fra arbeidsgiver (fyller da begge deler)
 
 ---
 
-### Scenario 2: Arbeidsgiver → Arbeidstaker (uten rådgiverfirma)
+## Hovedscenarioer
+
+### Scenario 1: Arbeidsgiver ønsker å fylle for arbeidstaker
 
 ```mermaid
 sequenceDiagram
-    participant AG as Arbeidsgiver (Alfa Industri AS)
+    participant AG as Arbeidsgiver
     participant AT as Arbeidstaker
+    participant FM as Fullmektig (person)
     participant System as melosys-søknadsskjema
-    
-    AG->>System: Logger inn direkte
-    AG->>System: Starter søknad
+    participant NavAPI as Nav.no Fullmakt-API
+
+    AG->>System: Logger inn og starter søknad
     AG->>System: Fyller arbeidsgiver-del
-    AG->>System: Ønsker å fylle for arbeidstaker
-    
-    System->>AT: Fullmaktforespørsel fra Alfa Industri AS
-    
-    alt Arbeidstaker godkjenner
-        AT->>System: Godkjenner fullmakt
-        Note over AG,AT: Fullmakten går til Alfa Industri AS
-        AG->>System: Fyller arbeidstaker-del
-        AG->>System: Sender inn komplett søknad
-    else Arbeidstaker avslår
-        AT->>System: Avslår fullmakt
-        System->>AT: Varsler om å fylle selv
-        AT->>System: Fyller sin del selv
+    AG->>System: Velger "jeg vil fylle på vegne av arbeidstaker"
+
+    System->>AT: Viser veiledning til fullmaktsløsningen
+    Note over System,AT: Kan sende varsel med<br/>knapp for å gi fullmakt<br/>eller fylle selv
+
+    alt Arbeidstaker gir fullmakt til person
+        AT->>NavAPI: Oppretter fullmakt til fullmektig
+        FM->>System: Logger inn
+        System->>NavAPI: Sjekker fullmakter
+        NavAPI-->>System: Returnerer fullmakt fra arbeidstaker
+        FM->>System: Fyller arbeidstaker-del
+        FM->>System: Sender inn
+        System->>AT: Varsler om innsending (forslag)
+    else Arbeidstaker fyller selv
+        AT->>System: Logger inn og fyller selv
+        AT->>System: Sender inn
     end
 ```
 
 **Viktige poenger:**
-- Fullmakten går direkte til arbeidsgiver (Alfa Industri AS)
-- Hvis rådgiverfirma senere skulle få Altinn-delegering, kan de IKKE se arbeidstaker-delen for den søknaden
-- Fullmakten er knyttet til den spesifikke søknaden
+- Arbeidsgiver velger "jeg vil fylle for arbeidstaker"
+- System veileder til Nav.no fullmaktsløsning
+- **Nav.no fullmakt (arbeidstaker-delen)** gis til en PERSON (ikke til arbeidsgiver-organisasjonen)
+- **Altinn-delegering (arbeidsgiver-delen)** kan gis til samme person
+- Ofte er fullmektigen en person som også har Altinn-delegering fra arbeidsgiver
+- Samme person kan da fylle både arbeidsgiver- og arbeidstaker-delen
+
+---
+
+### Scenario 2: Arbeidsgiver fyller kun sin del
+
+```mermaid
+sequenceDiagram
+    participant AG as Arbeidsgiver
+    participant AT as Arbeidstaker
+    participant System as melosys-søknadsskjema
+
+    AG->>System: Logger inn og starter søknad
+    AG->>System: Fyller arbeidsgiver-del
+    AG->>System: Velger "jeg vil IKKE fylle på vegne av arbeidstaker"
+
+    System->>AT: Varsler arbeidstaker om å fylle sin del
+
+    alt Arbeidstaker fyller selv
+        AT->>System: Logger inn og fyller selv
+        AT->>System: Sender inn
+        Note over AT,System: Under utfylling informeres<br/>arbeidstaker om mulighet for<br/>å gi Nav.no fullmakt til andre
+    else Arbeidstaker gir fullmakt
+        AT->>System: Velger å gi fullmakt (veiledning til nav.no/fullmakt)
+        Note over AT,System: Arbeidstaker kan gi Nav.no fullmakt<br/>til en person som kan fylle<br/>arbeidstaker-delen
+    end
+```
 
 ---
 
 ### Scenario 3: Arbeidstaker-initiert søknad
 
 ```mermaid
-stateDiagram-v2
-    [*] --> ArbeidstakerStarter: Arbeidstaker logger inn
-    
-    ArbeidstakerStarter --> FyllerEgenDel: Fyller sin del
-    FyllerEgenDel --> OppgirArbeidsgiver: Oppgir organisasjonsnummer
-    
-    OppgirArbeidsgiver --> ValgFullmakt: Velger fullmaktstrategi
-    
-    ValgFullmakt --> GiFullmakt: Gi fullmakt til annen
-    ValgFullmakt --> IngenFullmakt: Fyll selv
-    
-    GiFullmakt --> OppgirFullmektig: Oppgir person/organisasjon
-    OppgirFullmektig --> FullmektigFyller: Fullmektig kan fylle
-    
-    IngenFullmakt --> VarslerArbeidsgiver: System varsler arbeidsgiver
-    
-    VarslerArbeidsgiver --> ArbeidsgiverFyller: Arbeidsgiver fyller sin del
-    FullmektigFyller --> ArbeidsgiverFyller
-    
-    ArbeidsgiverFyller --> Matching: System matcher delene
-    Matching --> SøknadKomplett: Begge deler mottatt
-    SøknadKomplett --> Journalføring: Arbeidstaker-del utløser alltid journalføring
-    
-    Journalføring --> [*]
+sequenceDiagram
+    participant AT as Arbeidstaker
+    participant FM as Fullmektig
+    participant AG as Arbeidsgiver
+    participant System as melosys-søknadsskjema
+    participant NavAPI as Nav.no Fullmakt-API
+
+    alt Arbeidstaker fyller selv
+        AT->>System: Logger inn og starter søknad
+        AT->>System: Fyller arbeidstaker-del og sender inn
+        System->>AG: Varsler arbeidsgiver om å fylle sin del
+    else Arbeidstaker gir fullmakt først
+        AT->>NavAPI: Oppretter fullmakt til person
+        FM->>System: Logger inn
+        System->>NavAPI: Sjekker fullmakter
+        NavAPI-->>System: Returnerer fullmakt fra arbeidstaker
+        FM->>System: Fyller arbeidstaker-del og sender inn
+        System->>AT: Varsler arbeidstaker om innsending (forslag)
+        System->>AG: Varsler arbeidsgiver om å fylle sin del
+    end
 ```
-
-**To mulige implementasjoner (ikke avklart):**
-
-#### Alternativ A: Arbeidstaker gir fullmakt proaktivt
-- Arbeidstaker kan oppgi en fullmektig (person/organisasjon)
-- Fullmektigen får varsel og kan fylle arbeidstaker-delen
-- Eksempler på fullmektig: advokat, familiemedlem, annen tredjepart
-
-#### Alternativ B: Fullmektig-initiert (mest sannsynlig)
-- En person/organisasjon logger inn
-- Starter arbeidstaker-del for annen person
-- Sender fullmaktforespørsel til arbeidstaker
-- Kan fylle inn hvis godkjent
-- Fullmektig kan være: advokat, annen privatperson, tredjeparts organisasjon
 
 ---
 
-### Scenario 4: Oversikt over mulige fullmaktrelasjoner
+## Tilgangsstyring - historiske søknader
 
-```mermaid
-graph TD
-    subgraph "Mulige fullmaktrelasjoner"
-        RÅD[Rådgiverfirma]
-        AG[Arbeidsgiver]
-        AT[Arbeidstaker]
-        FM[Fullmektig for arbeidstaker<br/>Advokat/Person/Organisasjon]
-        
-        RÅD -->|Altinn-delegering| AG
-        RÅD -.->|Fullmakt for søknad| AT
-        AG -.->|Fullmakt for søknad| AT
-        FM -.->|Fullmakt for søknad| AT
-    end
-    
-    style RÅD fill:#e1f5fe
-    style AG fill:#fff3e0
-    style AT fill:#f3e5f5
-    style FM fill:#e8f5e9
-```
+### Scenario 1: Fullmakt opprettet ETTER at søknad ble sendt inn
+- ❌ Fullmektig kan IKKE se søknader som ble sendt før fullmakten ble gitt
+- **Logikk**: Fullmakten gjelder kun fremover
 
-**Forklaring:**
-- Heltrukken linje = Altinn-delegering (organisatorisk tilgang)
-- Stiplet linje = Fullmakt for spesifikk søknad
-- Fullmektig for arbeidstaker kan være advokat, privatperson eller tredjeparts organisasjon
+### Scenario 2: Fullmakt trukket ETTER at søknad ble sendt inn
+- ✅ Fullmektig kan fortsatt SE (read-only) søknader som ble sendt mens fullmakten var aktiv
+- ❌ Fullmektig kan IKKE redigere eller sende nye søknader
+- **Logikk**: Søknaden ble lovlig sendt på vegne av arbeidstaker, så fullmektig bør kunne se hva de har sendt (sporbarhet/ansvarlighet)
+
+### Scenario 3: Utkast/påbegynte søknader når fullmakt trekkes
+- ❌ Fullmektig kan IKKE se eller fortsette med utkast når fullmakten trekkes
+- **Logikk**: Kun innsendte søknader "låses" til fullmektig
 
 ---
 
 ## Tilgangskontroll-matrise
 
-| Aktør | Rolle | Kan se/redigere | Forutsetning |
-|-------|-------|-----------------|--------------|
-| Rådgiverfirma | Opptrer som arbeidsgiver | Arbeidsgiver-del | Altinn-delegering |
-| Rådgiverfirma | Opptrer som arbeidsgiver | Arbeidstaker-del | Fullmakt fra arbeidstaker til RÅDGIVERFIRMA |
-| Arbeidsgiver | Seg selv | Arbeidsgiver-del | Alltid |
-| Arbeidsgiver | Seg selv | Arbeidstaker-del | Fullmakt fra arbeidstaker til ARBEIDSGIVER |
-| Arbeidstaker | Seg selv | Arbeidstaker-del | Alltid |
-| Arbeidstaker | Seg selv | Arbeidsgiver-del | Aldri |
-| Fullmektig | For arbeidstaker | Arbeidstaker-del | Fullmakt fra arbeidstaker |
+| Aktør | Tilgang til | Forutsetning | Kan redigere? |
+|-------|-------------|--------------|---------------|
+| Arbeidsgiver | Arbeidsgiver-del | Alltid (egen søknad) | Ja (før innsending) |
+| Arbeidsgiver | Arbeidstaker-del | Aldri | Nei |
+| Person med Altinn-delegering | Arbeidsgiver-del | Altinn-delegering fra arbeidsgiver | Ja (før innsending) |
+| Person med Altinn-delegering | Arbeidstaker-del | Nav.no fullmakt fra arbeidstaker | Ja (før innsending) |
+| Arbeidstaker | Arbeidstaker-del | Alltid (egen søknad) | Ja (før innsending) |
+| Arbeidstaker | Arbeidsgiver-del | Aldri | Nei |
+| Fullmektig | Arbeidstaker-del (utkast) | Aktiv Nav.no fullmakt | Ja |
+| Fullmektig | Arbeidstaker-del (innsendt) | Sendt inn mens fullmakt var aktiv | Nei (read-only) |
+| Fullmektig | Arbeidstaker-del (innsendt før fullmakt) | Aldri | Nei |
+
+---
+
+## Matching av søknadsdeler
+
+- **Matching skjer via**: FNR (arbeidstaker) + organisasjonsnummer (arbeidsgiver)
+- **Fullmektigens ID brukes KUN for**: Tilgangskontroll, IKKE for matching
+- **Innsendingsinfo lagres**: Hvem som sendte (FNR), når, via hvilken rolle
+
+---
+
+## Varsling
+
+### Ved fullmaktforespørsel (fra arbeidsgiver)
+- Arbeidstaker får varsel på Min side (nav.no)
+- Varsel inneholder:
+  - Link til Nav.no fullmaktsløsning
+  - Alternativ: Fylle selv
+  - Frist for å reagere (30 dager?)
+
+### Ved innsending av fullmektig (forslag)
+- Arbeidstaker får varsel om at fullmektig har sendt inn på deres vegne
+- Varsel inneholder:
+  - Hvem som sendte inn
+  - Når det ble sendt inn
+  - Link til søknaden
 
 ---
 
 ## Viktige prinsipper
 
-### 1. Fullmakt følger initiativtaker (MÅ AVKLARES)
-- Hvis rådgiverfirma (via arbeidsgiver-rolle) ber om fullmakt → fullmakt til rådgiverfirma (eller begge?)
-- Hvis arbeidsgiver (direkte) ber om fullmakt → fullmakt til arbeidsgiver
-- Fullmakten er IKKE transitiv gjennom Altinn-delegering
+### 1. Kun person-til-person fullmakt (arbeidstaker-delen)
+- ✅ Arbeidstaker kan gi **Nav.no fullmakt** til en PERSON for arbeidstaker-delen
+- ❌ Arbeidstaker kan IKKE gi Nav.no fullmakt til en organisasjon
+- Merk: Arbeidsgiver-delen håndteres via **Altinn-delegering** (kan gis til organisasjon eller person)
+- Vi bruker NAVs eksisterende fullmaktsløsning
 
-### 2. Uavhengighet
+### 2. Vi gir ikke fullmakt selv
+- Vi veileder brukere til Nav.no fullmaktsløsning
+- Vi verifiserer fullmakt via Nav.no API
+- Vi oppretter ikke fullmakter selv
+
+### 3. Fullmakt gjelder per søknad
+- Fullmakt fra Nav.no kan dekke flere søknader (generell fullmakt)
+- Men i praksis vil fullmektig kun se søknader de har tilgang til via vårt system
+- Vi kan evt. legge til begrensning per søknad senere
+
+### 4. Uavhengighet
 - Arbeidsgiver og arbeidstaker kan sende inn sine deler uavhengig
-- Ingen part må vente på den andre for å sende sin del
-- Se README.md for detaljer om matching av søknadsdeler
+- Matching skjer automatisk via FNR + orgnr
+- Journalføring starter når arbeidstaker-del sendes inn
 
-### 3. Søknadsspesifikk fullmakt
-- Fullmakt gjelder for én spesifikk søknad (bekreftet beslutning)
-- Ikke generell fullmakt for alle fremtidige søknader
-- Lettere å implementere og sikrere for brukeren
-- Gjelder for ALLE fullmaktscenarioer
-
-### 4. Synlighet
-- Altinn-delegering gir IKKE automatisk tilgang til arbeidstaker-delen
-- Hver fullmakt må eksplisitt godkjennes av arbeidstaker
-- **MÅ AVKLARES**: Kan rådgiverfirma som har fått fullmakt se arbeidstaker-delen når arbeidsgiver ikke kan?
+### 5. Alltid verifiser fullmakt
+- Kall Nav.no API før hver operasjon
+- Arbeidstaker kan trekke fullmakt når som helst
+- Cache IKKE fullmaktsstatus
 
 ---
 
-## Terminologi-ordbok
-
-For å unngå misforståelser, bruk disse begrepene konsekvent:
-
-| Term | Definisjon | Eksempel |
-|------|------------|----------|
-| **Altinn-delegering** | Organisatorisk tilgang via Altinn | Alfa Industri AS gir Beta Rådgivning AS tilgang |
-| **Fullmakt for søknad** | Tillatelse til å fylle arbeidstaker-del | Arbeidstaker gir fullmakt til Beta Rådgivning AS |
-| **Representasjon** | Å opptre på vegne av organisasjon | Beta Rådgivning-ansatt velger Alfa Industri AS-rolle |
-| **Fullmektig** | Den som har fått fullmakt | Beta Rådgivning AS er fullmektig for arbeidstaker |
-| **Fullmaktsgiver** | Den som gir fullmakt | Arbeidstaker er fullmaktsgiver |
-| **Initiativtaker** | Den som ber om fullmakt | Beta Rådgivning AS eller Alfa Industri AS |
-| **Matching** | Automatisk sammenkobling av søknadsdeler | System matcher via FNR + orgnr |
-
----
-
-## Åpne spørsmål og avklaringsbehov
+## Åpne spørsmål
 
 ### Må avklares
-1. **NAVs eksisterende fullmaktsløsning**: NAV har allerede en fullmaktsløsning for person-til-person representasjon. Skal vi:
-   - Bruke NAVs eksisterende løsning for person-til-person fullmakter?
-   - Bygge vår egen løsning for både person og organisasjon?
-   - *Merk: NAVs løsning støtter IKKE organisasjoner, kun personer*
-2. **Hvem får fullmakt i scenario 1**: Når rådgiverfirma ber om fullmakt - får kun de fullmakt, eller både rådgiverfirma og arbeidsgiver?
-3. **Synlighet for rådgiverfirma**: Kan rådgiverfirma med fullmakt se arbeidstaker-delen selv om arbeidsgiver ikke kan?
-4. **Arbeidstaker-initiert fullmakt**: Skal vi gå for alternativ A eller B? (Se scenario 3)
-5. **Tilbaketrekking**: Kan arbeidstaker trekke tilbake fullmakt etter den er gitt?
-6. **Historikk**: Skal fullmektig se historiske søknader?
-7. **Brev og kommunikasjon**: Hvem mottar brev når fullmakt er gitt?
+1. ✅ **Fullmaktsløsning**: Vi bruker NAVs eksisterende fullmaktsløsning (BESLUTTET)
+2. ✅ **Kun person-til-person**: Fullmakt gis kun til personer, ikke organisasjoner (BESLUTTET)
+3. 🟡 **Fullmaktstype-navn**: Hva skal den hete? "Søknad om medlemskap" eller noe annet?
+4. 🟡 **Varsling ved innsending**: Skal arbeidstaker varsles når fullmektig sender inn? (FORESLÅTT: Ja)
+5. 🟡 **Timeout for respons**: Hvor lenge skal arbeidstaker ha på å reagere på veiledning? (30 dager?)
+6. 🟡 **Tilgangsstyring detaljer**: Er forslaget for historiske søknader OK?
 
-### Tekniske beslutninger
-1. **Datamodell**: Fullmakt per søknad ✅ (BESLUTTET)
-2. **Timeout**: 30 dager (FORESLÅTT - må bekreftes)
-3. **Varsling**: ✅ Implementeres allerede:
-   - Personer får varsel på nav.no (Min side)
-   - Organisasjoner får varsel på Altinn
-   - Arbeidstaker får oppgave ved fullmaktforespørsel
-   - Arbeidstaker får melding når søknad er sendt inn
-4. **Implementeringsstrategi for fullmakt**: 🟡 UNDER AVKLARING
-   - Alternativ A: Integrere med NAVs eksisterende fullmaktsløsning (kun for person-til-person)
-   - Alternativ B: Bygge egen fullmaktsløsning (støtter både person og organisasjon)
-   - *Vurdering: Egen løsning gir mer fleksibilitet og kan utvides til organisasjoner*
+### Tekniske oppgaver
+- Avklare API-endepunkter for Nav.no fullmaktsløsning
+- Opprett vår egen fullmaktstype i Nav.no sitt system
+- Integrasjon med Nav.no fullmakts-API
+- Tilgangskontroll basert på fullmakt
+- Veiledning til fullmaktsløsningen i UI
+- Varsling til arbeidstaker
 
 ---
 
-## Kommunikasjonstips
-
-For å unngå forvirring i diskusjoner:
-
-1. **Vær eksplisitt om hvem som får fullmakten**
-   - ❌ "De får fullmakt"
-   - ✅ "Beta Rådgivning AS får fullmakt fra arbeidstaker"
-
-2. **Skill mellom Altinn-delegering og søknadsfullmakt**
-   - ❌ "Rådgiverfirma har fullmakt"
-   - ✅ "Beta Rådgivning AS har Altinn-delegering fra Alfa Industri AS OG fullmakt fra arbeidstaker"
-
-3. **Bruk konkrete eksempler med navn**
-   - ❌ "Rådgiverfirma sender for arbeidsgiver"
-   - ✅ "Beta Rådgivning AS sender søknad på vegne av Alfa Industri AS"
-
-4. **Vær tydelig på kontekst**
-   - ❌ "Han kan se søknaden"
-   - ✅ "Beta Rådgivning-ansatt kan se arbeidstaker-delen fordi arbeidstaker ga fullmakt til Beta Rådgivning AS"
-
----
-
-*Dette dokumentet er et levende dokument som oppdateres når flere detaljer avklares.*
+*Dette dokumentet er oppdatert 21. oktober 2025 med den nye fullmaktsløsningen basert på Nav.no.*

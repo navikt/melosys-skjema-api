@@ -29,7 +29,7 @@ Resten av dokumentasjonen vil ta utgangspunkt i A1-skjema, men vil være utvidba
 
 ### 1.3 Hovedfunksjoner
 - ✅ **Digital innsending** for arbeidsgivere og arbeidstakere (uavhengig av hverandre)
-- ✅ **Fullmakthåndtering** mellom ulike parter (per søknad)
+- ✅ **Fullmakthåndtering** via Nav.no fullmaktsløsning (person-til-person)
 - ✅ **Rådgiverfirma-støtte** som kan opptre på vegne av arbeidsgivere via Altinn-delegering
 - ✅ **Automatisk journalføring** når arbeidstaker sender inn sin del
 - ✅ **Status-sporing** for alle parter på oversiktssiden
@@ -76,12 +76,14 @@ graph TB
 
     subgraph "Eksterne tjenester"
         IDPorten[ID-porten<br/>Autentisering]
-        Altinn[Altinn<br/>Fullmakter]
+        Altinn[Altinn<br/>Representasjoner]
+        NavFullmakt[Nav.no Fullmakt<br/>Fullmakter]
         PDL[PDL<br/>Persondata]
         Areg[A-reg<br/>Arbeidsforhold]
         Enhetsreg[Enhetsregisteret<br/>Organisasjoner]
         style IDPorten fill:#e8f5e9
         style Altinn fill:#e8f5e9
+        style NavFullmakt fill:#e8f5e9
         style PDL fill:#e8f5e9
         style Areg fill:#e8f5e9
         style Enhetsreg fill:#e8f5e9
@@ -101,7 +103,8 @@ graph TB
     API -->|Hent data| PDL
     API -->|Hent data| Areg
     API -->|Hent data| Enhetsreg
-    API -->|Sjekk fullmakter| Altinn
+    API -->|Sjekk representasjoner| Altinn
+    API -->|Sjekk fullmakter| NavFullmakt
     API -->|Publiser hendelser| Kafka
     API -->|Send varsler| NavMelding
 
@@ -277,28 +280,35 @@ sequenceDiagram
 
 **Alternativ med fullmakt:**
 
+> **Merk:** Vi bruker Nav.no sin eksisterende fullmaktsløsning. Arbeidsgiver velger å fylle for arbeidstaker, og systemet veileder arbeidstaker til nav.no/fullmakt for å gi fullmakt til en person (ofte en person med Altinn-delegering fra arbeidsgiver).
+
 ```mermaid
 sequenceDiagram
     participant AT as Arbeidstaker
+    participant FM as Fullmektig (person)
     participant AG as Arbeidsgiver
     participant System as System
-    
+    participant NavFullmakt as Nav.no Fullmakt
+
     AG->>System: Starter søknad
     AG->>System: Fyller arbeidsgiver-del
     AG->>System: Velger "Ønsker å fylle for arbeidstaker"
-    AG->>System: Ber om fullmakt
-    System->>AT: Sender fullmaktforespørsel
-    
-    AT->>System: Logger inn
-    AT->>System: Avslår fullmakt
-    System->>AG: Varsler om avslag
-    System->>AT: Varsler om å fylle selv
-    
-    AT->>System: Fyller sin del
-    AT->>System: Sender inn
-    
+    System->>AT: Veiledning til nav.no/fullmakt
+
+    alt Arbeidstaker gir fullmakt
+        AT->>NavFullmakt: Oppretter fullmakt til person
+        FM->>System: Logger inn
+        System->>NavFullmakt: Sjekker fullmakt
+        NavFullmakt-->>System: Fullmakt bekreftet
+        FM->>System: Fyller arbeidstaker-del
+        FM->>System: Sender inn
+        System->>AT: Varsler om innsending
+    else Arbeidstaker fyller selv
+        AT->>System: Fyller sin del
+        AT->>System: Sender inn
+    end
+
     System->>AG: Varsler om komplett søknad
-    System->>AT: Kvittering
 ```
 
 ### 4.3 Rådgiverfirma - flyt
@@ -473,7 +483,8 @@ graph TB
 |--------|------|---------------|--------|
 | **ID-porten** | OAuth2 | Public client | Brukerautentisering (Nivå 4) |
 | **Maskinporten** | OAuth2 | Client credentials | System-til-system autentisering |
-| **Altinn** | REST | Maskinporten token | Hente fullmakter/representasjoner |
+| **Altinn** | REST | Maskinporten token | Hente representasjoner (Altinn-delegering) |
+| **Nav.no Fullmakt** | REST | Systembruker | Hente/verifisere fullmakter (person-til-person) |
 | **PDL** | GraphQL | Systembruker | Persondata (navn, adresse) |
 | **A-reg** | REST | Systembruker | Arbeidsforholdsinformasjon |
 | **Enhetsregisteret** | REST | Åpen API | Organisasjonsdata |
@@ -556,10 +567,8 @@ graph TD
 | POST | /skjema/{id}/submit | Send inn skjema | Ja |
 | GET | /skjema/{id}/pdf | Generer PDF | Ja |
 | **Fullmakt** | | | |
-| POST | /fullmakt | Be om fullmakt | Ja |
-| GET | /fullmakt/{id} | Hent fullmaktdetaljer | Ja |
-| POST | /fullmakt/{id}/godkjenn | Godkjenn fullmakt | Ja |
-| POST | /fullmakt/{id}/avslag | Avslå fullmakt | Ja |
+| GET | /fullmakt | Hent fullmakter for innlogget bruker | Ja |
+| GET | /fullmakt/sjekk/{fnr} | Sjekk om bruker har fullmakt fra person | Ja |
 | **Preutfyllingsdata** | | | |
 | POST | /preutfyll/person | Hent persondata | Ja |
 | GET | /preutfyll/org/{orgnr} | Hent organisasjonsdata | Ja |
@@ -578,11 +587,12 @@ graph TD
 
 | ID | Kategori | Beskrivelse | Status | Eier |
 |----|----------|-------------|--------|------|
-| F01 | 🔑 Fullmakt | Hvem får fullmakt når rådgiverfirma ber om det? | 🟡 Under avklaring | Produkteier |
-| F02 | ⏱️ Timeout | 30 dager foreslått - må bekreftes | 🟡 Under avklaring | Produkteier |
-| F03 | 🔔 Purring | Automatiske påminnelser - antall og timing? | 🔴 Ikke startet | Produkteier |
+| F01 | 🔑 Fullmakt | Fullmaktstype-navn i Nav.no sitt system | 🟡 Under avklaring | Produkteier |
+| F02 | 🔔 Varsling | Skal arbeidstaker varsles ved innsending av fullmektig? | 🟡 Foreslått: Ja | Produkteier |
+| F03 | ⏱️ Timeout | Veiledning fullmakt - hvor lang frist? | 🟡 Foreslått: 30 dager | Produkteier |
 | F04 | 📧 Kvittering | Er Nav.no standard kvittering juridisk tilstrekkelig? | 🟡 Under avklaring | Juridisk |
 | F05 | 🗑️ GDPR | Sletteregler for persondata | 🔴 Ikke startet | Juridisk |
+| F06 | 👁️ Tilgang | Historiske søknader - tilgangsregler ved trukket fullmakt | 🟡 Foreslått | Produkteier |
 
 ### 9.2 Tekniske avklaringer
 
