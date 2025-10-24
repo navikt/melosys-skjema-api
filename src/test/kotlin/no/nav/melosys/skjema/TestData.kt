@@ -14,6 +14,9 @@ import no.nav.melosys.skjema.dto.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
+import no.nav.melosys.skjema.dto.NorskVirksomhet
+import no.nav.melosys.skjema.dto.UtenlandskVirksomhet
+import no.nav.melosys.skjema.dto.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -110,6 +113,27 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
 fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
     harFlereOpplysningerTilSoknaden = false,
     tilleggsopplysningerTilSoknad = null
+)
+
+fun norskVirksomhetMedDefaultVerdier() = NorskVirksomhet(
+    organisasjonsnummer = "987654321"
+)
+
+fun utenlandskVirksomhetMedDefaultVerdier() = UtenlandskVirksomhet(
+    navn = "Foreign Company Ltd",
+    organisasjonsnummer = "ABC123",
+    vegnavnOgHusnummer = "Main Street 123",
+    bygning = "Building A",
+    postkode = "12345",
+    byStedsnavn = "Stockholm",
+    region = "Stockholm County",
+    land = "SE",
+    tilhorerSammeKonsern = true
+)
+
+fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirksomheter(
+    norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
+    utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
 )
 
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
