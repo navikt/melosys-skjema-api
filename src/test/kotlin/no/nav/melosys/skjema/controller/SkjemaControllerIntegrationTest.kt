@@ -10,32 +10,45 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
-import no.nav.melosys.skjema.*
-import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.service.NotificationService
-import no.nav.security.mock.oauth2.MockOAuth2Server
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.MediaType
-import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.expectBody
-import java.util.*
+import java.util.UUID
+import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.arbeidsgiverenDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakerenDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.CreateArbeidsgiverSkjemaRequest
 import no.nav.melosys.skjema.dto.CreateArbeidstakerSkjemaRequest
+import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
+import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
+import no.nav.melosys.skjema.service.NotificationService
+import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.submitSkjemaRequestMedDefaultVerdier
+import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
+import no.nav.security.mock.oauth2.MockOAuth2Server
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.expectBody
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SkjemaControllerIntegrationTest : ApiTestBase() {
@@ -782,6 +795,38 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier())
+    )
+
+    @ParameterizedTest(name = "{0} {1}")
+    @MethodSource("postEndpoints")
+    @DisplayName("POST-endepunkter skal returnere 400 tom JSON body")
+    fun `POST endpoints should return 400 for empty JSON body`(httpMethod: HttpMethod, path: String) {
+        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = testPid,
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST
+        ))
+
+        val token = createTokenForUser(testPid)
+
+        webTestClient.method(httpMethod)
+            .uri(path, savedSkjema.id)
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{}")
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    fun postEndpoints(): List<Arguments> = listOf(
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger")
     )
 
     

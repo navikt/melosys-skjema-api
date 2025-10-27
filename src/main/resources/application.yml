@@ -8,6 +8,12 @@ spring:
       maximum-pool-size: 4
       minimum-idle: 1
 
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+      fail-on-missing-creator-properties: true
+      fail-on-null-for-primitives: true
+
   jpa:
     hibernate:
       ddl-auto: validate
