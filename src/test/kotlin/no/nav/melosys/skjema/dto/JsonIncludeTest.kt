@@ -19,8 +19,10 @@ import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.TestInstance
 
 @JsonTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JsonIncludeTest {
 
     @Autowired
@@ -35,39 +37,57 @@ class JsonIncludeTest {
         json shouldNotContain "null"
     }
 
-    companion object {
-        @JvmStatic
-        fun dtoTestCases(): Stream<Arguments> = Stream.of(
-            Arguments.of(arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+    fun dtoTestCases(): Stream<Arguments> = Stream.of(
+        Arguments.of(
+            arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
                 arbeidsgiveren = null
-            )),
-            Arguments.of(arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
                 arbeidstakeren = null
-            )),
-            Arguments.of(arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 opprettholderArbeidsgiverenVanligDrift = null
-            )),
-            Arguments.of(utenlandsoppdragetDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            utenlandsoppdragetDtoMedDefaultVerdier().copy(
                 ansettelsesforholdBeskrivelse = null
-            )),
-            Arguments.of(arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                 virksomheterSomUtbetalerLonnOgNaturalytelser = null
-            )),
-            Arguments.of(arbeidstakerenDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            arbeidstakerenDtoMedDefaultVerdier().copy(
                 fornavn = null
-            )),
-            Arguments.of(skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            skatteforholdOgInntektDtoMedDefaultVerdier().copy(
                 landSomUtbetalerPengestotte = null
-            )),
-            Arguments.of(tilleggsopplysningerDtoMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 tilleggsopplysningerTilSoknad = null
-            )),
-            Arguments.of(norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
-               norskeVirksomheter = null
-            )),
-            Arguments.of(utenlandskVirksomhetMedDefaultVerdier().copy(
+            )
+        ),
+        Arguments.of(
+            norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                norskeVirksomheter = null
+            )
+        ),
+        Arguments.of(
+            utenlandskVirksomhetMedDefaultVerdier().copy(
                 bygning = null
-            ))
+            )
         )
-    }
+    )
+
 }
