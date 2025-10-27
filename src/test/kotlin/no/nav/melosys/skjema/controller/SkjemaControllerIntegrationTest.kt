@@ -798,8 +798,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     )
 
     @ParameterizedTest(name = "{0} {1}")
-    @MethodSource("endpointsThatShouldRejectEmptyBody")
-    @DisplayName("POST endpoints should return 400 for empty JSON body")
+    @MethodSource("postEndpoints")
+    @DisplayName("POST-endepunkter skal returnere 400 tom JSON body")
     fun `POST endpoints should return 400 for empty JSON body`(httpMethod: HttpMethod, path: String) {
         val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
             fnr = testPid,
@@ -818,7 +818,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isBadRequest
     }
 
-    fun endpointsThatShouldRejectEmptyBody(): List<Arguments> = listOf(
+    fun postEndpoints(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
