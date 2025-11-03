@@ -2,8 +2,10 @@ package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.OrganisasjonDto
+import no.nav.melosys.skjema.integrasjon.ereg.EregConsumer
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.security.token.support.core.api.Protected
+import no.nav.security.token.support.core.api.Unprotected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -11,15 +13,16 @@ private val log = KotlinLogging.logger { }
 
 @RestController
 @RequestMapping("/api")
-@Protected
+@Unprotected
 class AltinnController(
-    private val altinnService: AltinnService
+    private val altinnService: AltinnService,
+    private val eregConsumer: EregConsumer
 ) {
 
     @GetMapping("/hentTilganger")
     fun hentTilganger(): ResponseEntity<List<OrganisasjonDto>> {
         log.info { "Henter tilganger for innlogget bruker" }
-
+        eregConsumer.hentOrganisasjon("990983666")
         val tilganger = altinnService.hentBrukersTilganger()
 
         return ResponseEntity.ok(tilganger)

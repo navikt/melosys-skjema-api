@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.ereg
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -12,6 +13,7 @@ class EregConsumer(
     private val eregClient: WebClient
 ) {
 
+    @Cacheable("ereg", key = "#orgnummer + '_' + #inkluderHierarki")
     fun hentOrganisasjon(orgnummer: String, inkluderHierarki: Boolean = false): Organisasjon {
         log.info { "Henter organisasjon fra EREG: $orgnummer" }
 

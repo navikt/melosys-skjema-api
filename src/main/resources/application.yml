@@ -14,6 +14,10 @@ spring:
       fail-on-missing-creator-properties: true
       fail-on-null-for-primitives: true
 
+  cache:
+    caffeine:
+      spec: expireAfterWrite=10m,maximumSize=200
+
   jpa:
     hibernate:
       ddl-auto: validate

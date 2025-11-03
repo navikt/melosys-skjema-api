@@ -11,7 +11,8 @@ import java.time.LocalDate
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.PROPERTY,
-    property = "type"
+    property = "type",
+    visible = true
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = JuridiskEnhet::class, name = "JuridiskEnhet"),
