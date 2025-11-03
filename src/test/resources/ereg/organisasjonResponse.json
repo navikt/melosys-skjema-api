@@ -1,0 +1,245 @@
+{
+  "type": "Virksomhet",
+  "navn": {
+    "sammensattnavn": "NAV IKT",
+    "navnelinje1": "NAV IKT",
+    "navnelinje2": null,
+    "navnelinje3": null,
+    "navnelinje4": null,
+    "navnelinje5": null,
+    "bruksperiode": {
+      "fom": "2015-02-23T08:04:53.2",
+      "tom": null
+    },
+    "gyldighetsperiode": {
+      "fom": "2010-04-09",
+      "tom": null
+    }
+  },
+  "organisasjonsnummer": "990983666",
+  "organisasjonDetaljer": {
+    "registreringsdato": "2007-03-05T00:00:00",
+    "sistEndret": "2014-02-17",
+    "maalform": null,
+    "opphoersdato": null,
+    "dublettAv": null,
+    "dubletter": null,
+    "registrertMVA": null,
+    "telefaksnummer": null,
+    "telefonnummer": null,
+    "statuser": null,
+    "forretningsadresser": [
+      {
+        "adresselinje1": "Sannergata 2",
+        "adresselinje2": null,
+        "adresselinje3": null,
+        "bruksperiode": {
+          "fom": "2015-02-23T10:38:34.403",
+          "tom": null
+        },
+        "gyldighetsperiode": {
+          "fom": "2007-08-23",
+          "tom": null
+        },
+        "kommunenummer": "0301",
+        "landkode": "NO",
+        "postnummer": "0557",
+        "poststed": null
+      }
+    ],
+    "postadresser": [
+      {
+        "adresselinje1": "Postboks 5 St Olavs plass",
+        "adresselinje2": null,
+        "adresselinje3": null,
+        "bruksperiode": {
+          "fom": "2015-02-23T10:38:34.403",
+          "tom": null
+        },
+        "gyldighetsperiode": {
+          "fom": "2010-10-08",
+          "tom": null
+        },
+        "kommunenummer": "0301",
+        "landkode": "NO",
+        "postnummer": "0130",
+        "poststed": null
+      }
+    ],
+    "navSpesifikkInformasjon": {
+      "bruksperiode": {
+        "fom": "2015-01-27T16:01:18.562",
+        "tom": null
+      },
+      "gyldighetsperiode": {
+        "fom": "2015-01-27",
+        "tom": null
+      },
+      "erIA": true
+    },
+    "internettadresser": null,
+    "epostadresser": null,
+    "naeringer": [
+      {
+        "bruksperiode": {
+          "fom": "2014-05-22T01:18:10.661",
+          "tom": null
+        },
+        "gyldighetsperiode": {
+          "fom": "2006-07-01",
+          "tom": null
+        },
+        "naeringskode": "84.300",
+        "hjelpeenhet": false
+      }
+    ],
+    "underlagtHjemlandLovgivningForetaksform": null,
+    "navn": [
+      {
+        "sammensattnavn": "NAV IKT",
+        "navnelinje1": "NAV IKT",
+        "navnelinje2": null,
+        "navnelinje3": null,
+        "navnelinje4": null,
+        "navnelinje5": null,
+        "bruksperiode": {
+          "fom": "2015-02-23T08:04:53.2",
+          "tom": null
+        },
+        "gyldighetsperiode": {
+          "fom": "2010-04-09",
+          "tom": null
+        }
+      }
+    ],
+    "formaal": null,
+    "mobiltelefonnummer": null,
+    "stiftelsesdato": null,
+    "hjemlandregistre": null,
+    "enhetstyper": [
+      {
+        "bruksperiode": {
+          "fom": "2014-05-21T15:46:47.225",
+          "tom": null
+        },
+        "gyldighetsperiode": {
+          "fom": "2007-03-05",
+          "tom": null
+        },
+        "enhetstype": "BEDR"
+      }
+    ],
+    "ansatte": null
+  },
+  "bestaarAvOrganisasjonsledd": [
+    {
+      "bruksperiode": {
+        "fom": "2014-05-23T20:17:42.64",
+        "tom": null
+      },
+      "gyldighetsperiode": {
+        "fom": "2007-03-05",
+        "tom": null
+      },
+      "organisasjonsledd": {
+        "type": "Organisasjonsledd",
+        "navn": {
+          "sammensattnavn": "NAV IKT",
+          "navnelinje1": "NAV IKT",
+          "navnelinje2": null,
+          "navnelinje3": null,
+          "navnelinje4": null,
+          "navnelinje5": null,
+          "bruksperiode": {
+            "fom": "2015-02-23T08:04:53.2",
+            "tom": null
+          },
+          "gyldighetsperiode": {
+            "fom": "2010-04-09",
+            "tom": null
+          }
+        },
+        "organisasjonsnummer": "990983291",
+        "organisasjonDetaljer": null,
+        "organisasjonsleddUnder": null,
+        "organisasjonsleddOver": [
+          {
+            "bruksperiode": {
+              "fom": "2014-05-23T20:17:42.452",
+              "tom": null
+            },
+            "gyldighetsperiode": {
+              "fom": "2007-03-05",
+              "tom": null
+            },
+            "organisasjonsledd": {
+              "type": "Organisasjonsledd",
+              "navn": {
+                "sammensattnavn": "ARBEIDS- OG VELFERDSETATEN",
+                "navnelinje1": "ARBEIDS- OG VELFERDSETATEN",
+                "navnelinje2": null,
+                "navnelinje3": null,
+                "navnelinje4": null,
+                "navnelinje5": null,
+                "bruksperiode": {
+                  "fom": "2015-02-23T08:04:53.2",
+                  "tom": null
+                },
+                "gyldighetsperiode": {
+                  "fom": "2006-03-23",
+                  "tom": null
+                }
+              },
+              "organisasjonsnummer": "889640782",
+              "organisasjonDetaljer": null,
+              "organisasjonsleddUnder": null,
+              "organisasjonsleddOver": null,
+              "driverVirksomheter": null,
+              "inngaarIJuridiskEnheter": [
+                {
+                  "navn": {
+                    "sammensattnavn": "ARBEIDS- OG SOSIALDEPARTEMENTET",
+                    "navnelinje1": "ARBEIDS- OG SOSIALDEPARTEMENTET",
+                    "navnelinje2": null,
+                    "navnelinje3": null,
+                    "navnelinje4": null,
+                    "navnelinje5": null,
+                    "bruksperiode": {
+                      "fom": "2015-02-23T08:04:53.2",
+                      "tom": null
+                    },
+                    "gyldighetsperiode": {
+                      "fom": "2014-02-14",
+                      "tom": null
+                    }
+                  },
+                  "organisasjonsnummer": "983887457",
+                  "bruksperiode": {
+                    "fom": "2014-05-23T15:42:14.826",
+                    "tom": null
+                  },
+                  "gyldighetsperiode": {
+                    "fom": "2006-03-23",
+                    "tom": null
+                  }
+                }
+              ],
+              "organisasjonsleddDetaljer": null
+            }
+          }
+        ],
+        "driverVirksomheter": null,
+        "inngaarIJuridiskEnheter": null,
+        "organisasjonsleddDetaljer": null
+      }
+    }
+  ],
+  "inngaarIJuridiskEnheter": null,
+  "virksomhetDetaljer": {
+    "oppstartsdato": "2006-07-01",
+    "eierskiftedato": null,
+    "nedleggelsesdato": null,
+    "enhetstype": "BEDR",
+    "ubemannetVirksomhet": null
+  }
+}
