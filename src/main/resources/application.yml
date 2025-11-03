@@ -78,6 +78,9 @@ arbeidsgiver:
 altinn:
   ressurs: ${ALTINN_RESSURS}
 
+ereg:
+  url: ${EREG_URL}
+
 kafka:
   topic:
     brukervarsel: aapen-brukervarsel-v1
