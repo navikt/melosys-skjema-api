@@ -59,7 +59,7 @@ spec:
       external:
         - host: pdl-api.prod-fss-pub.nais.io
         - host: aareg-services.prod-fss-pub.nais.io  
-        - host: ereg-services.prod-fss-pub.nais.io
+        - host: https://ereg-services.intern.dev.nav.no
         - host: altinn.no
         - host: nav-melding-api.intern.nav.no
         - host: ag-notifikasjon-produsent-api.intern.dev.nav.no

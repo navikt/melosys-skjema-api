@@ -15,4 +15,4 @@ NAIS_APP_NAME: melosys-skjema-api
 ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.dev.nav.no
 MERKELAPP: foo123
 RESSURS_ID: foo123
-EREG_URL: https://ereg-services.dev.intern.nav.no
+EREG_URL: https://ereg-services.intern.dev.nav.no

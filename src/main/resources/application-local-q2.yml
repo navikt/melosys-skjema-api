@@ -16,4 +16,4 @@ ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.d
 MERKELAPP: test-fager
 RESSURS_ID: test-fager
 SERVER_PORT: 8089
-EREG_URL: https://ereg-services.dev.intern.nav.no
+EREG_URL: https://ereg-services.intern.dev.nav.no
