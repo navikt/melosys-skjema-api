@@ -33,7 +33,7 @@ val kotestVersion = "6.0.4"
 val mockkVersion = "1.14.6"
 val wiremockVersion = "3.13.1"
 val springMockkVersion = "4.0.2"
-val springdocVersion = "2.8.13"
+val springdocVersion = "2.8.14"
 
 repositories {
     mavenCentral()
