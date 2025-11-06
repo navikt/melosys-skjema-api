@@ -1,20 +1,20 @@
 package no.nav.melosys.skjema.integrasjon.ereg.dto
 
 /**
- * Finds the top-level juridisk enhet organisasjonsnummer by traversing the organization hierarchy.
+ * Finner organisasjonsnummeret til den øverste juridiske enheten ved å traversere organisasjonshierarkiet.
  *
  * For JuridiskEnhet:
- * - Returns its own organisasjonsnummer (already at the top)
+ * - Returnerer sitt eget organisasjonsnummer (allerede på toppen)
  *
  * For Virksomhet:
- * - If inngaarIJuridiskEnheter is present, return its organisasjonsnummer
- * - Otherwise, traverse up through bestaarAvOrganisasjonsledd and continue recursively
+ * - Hvis inngaarIJuridiskEnheter er tilstede, returner dets organisasjonsnummer
+ * - Ellers, traverser oppover gjennom bestaarAvOrganisasjonsledd og fortsett rekursivt
  *
  * For Organisasjonsledd:
- * - If inngaarIJuridiskEnheter is present, return its organisasjonsnummer
- * - Otherwise, traverse up through organisasjonsleddOver and continue recursively
+ * - Hvis inngaarIJuridiskEnheter er tilstede, returner dets organisasjonsnummer
+ * - Ellers, traverser oppover gjennom organisasjonsleddOver og fortsett rekursivt
  *
- * @return The organisasjonsnummer of the juridisk enhet at the top of the hierarchy, or null if not found
+ * @return Organisasjonsnummeret til den juridiske enheten på toppen av hierarkiet, eller null hvis ikke funnet
  */
 fun Organisasjon.finnJuridiskEnhetOrganisasjonsnummer(): String? {
     return when (this) {
