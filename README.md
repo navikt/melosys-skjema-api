@@ -729,6 +729,12 @@ Ved oppstart vil applikasjonen automatisk:
 #### Generere test-tokens
 For å teste endpoints som krever autentisering:
 
+##### Mot q2/dev-gcp
+
+Kall denne lenken i browser og kopier tokenet https://tokenx-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp:teammelosys:melosys-skjema-api
+
+##### Mot lokalt miljø
+
 ```bash
 # Generer token med standard PID (12345678910)
 ./scripts/get-local-access-token.sh
