@@ -84,6 +84,14 @@ class SkjemaService(
         }
     }
 
+    fun saveArbeidstakerInfoAsArbeidsgiver(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidstaker info from arbeidsgiver for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidstakeren = request)
+        }
+    }
+
     fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
 
@@ -120,7 +128,7 @@ class SkjemaService(
         return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
+    fun saveArbeidstakerenInfoAsArbeidstaker(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
 
         return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->

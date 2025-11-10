@@ -99,6 +99,16 @@ class SkjemaController(
         return ResponseEntity.ok(skjema)
     }
 
+    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidstakeren")
+    @Operation(summary = "Register arbeidstaker information")
+    @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+        log.info { "Registering arbeidstaker information from arbeidsgiver" }
+        val skjema = skjemaService.saveArbeidstakerInfoAsArbeidsgiver(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
     @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiverens-virksomhet-i-norge")
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
@@ -153,7 +163,7 @@ class SkjemaController(
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidstakersSkjemaDto> {
-        val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
+        val skjema = skjemaService.saveArbeidstakerenInfoAsArbeidstaker(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 

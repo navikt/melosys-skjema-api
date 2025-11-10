@@ -324,6 +324,50 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren skal lagre arbeidstaker info")
+    fun `POST arbeidstaker info fra arbeidsgiver skal lagre arbeidstaker info`() {
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
+
+        val token = createTokenForUser(testPid)
+
+        val arbeidstakerRequest = arbeidstakerenDtoMedDefaultVerdier().copy(
+            fodselsnummer = testPid
+        )
+
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidstakeren")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(arbeidstakerRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidstakeren = arbeidstakerRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
+        }
+    }
+
+    @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge skal lagre virksomhet info")
     fun `POST virksomhet info skal lagre virksomhet info`() {
         val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
@@ -759,6 +803,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren", arbeidsgiverenDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge", arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),
@@ -820,6 +865,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     fun postEndpoints(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
