@@ -103,7 +103,7 @@ class SkjemaController(
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenArbeidsgiversDelDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
         log.info { "Registering arbeidstaker information from arbeidsgiver" }
         val skjema = skjemaService.saveArbeidstakerInfoAsArbeidsgiver(skjemaId, request)
         return ResponseEntity.ok(skjema)

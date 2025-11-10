@@ -15,6 +15,7 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiverenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
@@ -336,7 +337,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         val token = createTokenForUser(testPid)
 
-        val arbeidstakerRequest = arbeidstakerenDtoMedDefaultVerdier().copy(
+        val arbeidstakerRequest = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(
             fodselsnummer = testPid
         )
 
@@ -803,7 +804,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren", arbeidsgiverenDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren", arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge", arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),

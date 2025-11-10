@@ -12,6 +12,7 @@ import no.nav.melosys.skjema.dto.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.ArbeidstakerenArbeidsgiversDelDto
 import no.nav.melosys.skjema.dto.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.NorskVirksomhet
@@ -101,6 +102,10 @@ fun arbeidstakerenDtoMedDefaultVerdier() = ArbeidstakerenDto(
     aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
     skalJobbeForFlereVirksomheter = false,
     virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
+)
+
+fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenArbeidsgiversDelDto(
+    fodselsnummer = "11111111111"
 )
 
 fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(

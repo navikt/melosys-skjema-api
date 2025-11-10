@@ -84,7 +84,7 @@ class SkjemaService(
         }
     }
 
-    fun saveArbeidstakerInfoAsArbeidsgiver(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidsgiversSkjemaDto {
+    fun saveArbeidstakerInfoAsArbeidsgiver(skjemaId: UUID, request: ArbeidstakerenArbeidsgiversDelDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidstaker info from arbeidsgiver for skjema: $skjemaId" }
 
         return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
