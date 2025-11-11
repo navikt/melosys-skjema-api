@@ -15,6 +15,7 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiverenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
@@ -490,7 +491,48 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
-    
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet skal lagre arbeidssted i utlandet info")
+    fun `POST arbeidssted i utlandet info skal lagre arbeidssted i utlandet info`() {
+        val existingSkjemaDataBeforePOST = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+
+        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
+            orgnr = testOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+        ))
+
+        val token = createTokenForUser(testPid)
+        val arbeidsstedIUtlandetRequest = arbeidsstedIUtlandetDtoMedDefaultVerdier()
+
+        val responseBody = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/arbeidssted-i-utlandet")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(arbeidsstedIUtlandetRequest)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<ArbeidsgiversSkjemaDto>()
+            .returnResult().responseBody
+
+        responseBody.run {
+            this.shouldNotBeNull()
+            this shouldBe ArbeidsgiversSkjemaDto(
+                id = existingSkjemaBeforePOST.id!!,
+                orgnr = existingSkjemaBeforePOST.orgnr!!,
+                status = existingSkjemaBeforePOST.status,
+                data = existingSkjemaDataBeforePOST.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetRequest)
+            )
+
+            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
+                skjemaRepository.getReferenceById(this.id).data
+            )
+            this.data shouldBe persistedSkjemaDataAfterPOST
+        }
+    }
+
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit skal sende inn skjema")
     fun `POST submit skal sende inn skjema`() {
@@ -808,6 +850,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge", arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet", arbeidsstedIUtlandetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit", submitSkjemaRequestMedDefaultVerdier())
     )
 
@@ -870,6 +913,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer"),

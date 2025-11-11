@@ -18,6 +18,11 @@ import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.NorskVirksomhet
 import no.nav.melosys.skjema.dto.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.dto.PaLandDto
+import no.nav.melosys.skjema.dto.PaLandFastArbeidsstedDto
+import no.nav.melosys.skjema.dto.ArbeidsstedType
+import no.nav.melosys.skjema.dto.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -80,6 +85,25 @@ fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
 fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
     arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
     virksomheterSomUtbetalerLonnOgNaturalytelser = null
+)
+
+fun paLandFastArbeidsstedDtoMedDefaultVerdier() = PaLandFastArbeidsstedDto(
+    vegadresse = "Test Street",
+    nummer = "123",
+    postkode = "12345",
+    bySted = "Stockholm"
+)
+
+fun paLandDtoMedDefaultVerdier() = PaLandDto(
+    fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
+    fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
+    beskrivelseVekslende = null,
+    erHjemmekontor = false
+)
+
+fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
+    arbeidsstedType = ArbeidsstedType.PA_LAND,
+    paLand = paLandDtoMedDefaultVerdier(),
 )
 
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(

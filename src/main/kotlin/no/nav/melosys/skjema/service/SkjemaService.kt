@@ -116,6 +116,14 @@ class SkjemaService(
         }
     }
 
+    fun saveArbeidsstedIUtlandetInfo(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidsstedIUtlandet = request)
+        }
+    }
+
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()

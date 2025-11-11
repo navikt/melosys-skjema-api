@@ -8,5 +8,6 @@ data class ArbeidsgiversSkjemaDataDto(
     val arbeidstakeren: ArbeidstakerenArbeidsgiversDelDto? = null,
     val arbeidsgiverensVirksomhetINorge: ArbeidsgiverensVirksomhetINorgeDto? = null,
     val utenlandsoppdraget: UtenlandsoppdragetDto? = null,
-    val arbeidstakerensLonn: ArbeidstakerensLonnDto? = null
+    val arbeidstakerensLonn: ArbeidstakerensLonnDto? = null,
+    val arbeidsstedIUtlandet: ArbeidsstedIUtlandetDto? = null
 )
