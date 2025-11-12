@@ -84,6 +84,14 @@ class SkjemaService(
         }
     }
 
+    fun saveArbeidstakerInfoAsArbeidsgiver(skjemaId: UUID, request: ArbeidstakerenArbeidsgiversDelDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidstaker info from arbeidsgiver for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidstakeren = request)
+        }
+    }
+
     fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
 
@@ -108,6 +116,22 @@ class SkjemaService(
         }
     }
 
+    fun saveArbeidsstedIUtlandetInfo(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidsstedIUtlandet = request)
+        }
+    }
+
+    fun saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
+    }
+
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
@@ -120,7 +144,7 @@ class SkjemaService(
         return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
+    fun saveArbeidstakerenInfoAsArbeidstaker(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidstakersSkjemaDto {
         log.info { "Saving arbeidstaker info for skjema: $skjemaId" }
 
         return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->

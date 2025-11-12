@@ -12,11 +12,17 @@ import no.nav.melosys.skjema.dto.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.ArbeidstakerenArbeidsgiversDelDto
 import no.nav.melosys.skjema.dto.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.NorskVirksomhet
 import no.nav.melosys.skjema.dto.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.dto.PaLandDto
+import no.nav.melosys.skjema.dto.PaLandFastArbeidsstedDto
+import no.nav.melosys.skjema.dto.ArbeidsstedType
+import no.nav.melosys.skjema.dto.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -81,6 +87,25 @@ fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
     virksomheterSomUtbetalerLonnOgNaturalytelser = null
 )
 
+fun paLandFastArbeidsstedDtoMedDefaultVerdier() = PaLandFastArbeidsstedDto(
+    vegadresse = "Test Street",
+    nummer = "123",
+    postkode = "12345",
+    bySted = "Stockholm"
+)
+
+fun paLandDtoMedDefaultVerdier() = PaLandDto(
+    fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
+    fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
+    beskrivelseVekslende = null,
+    erHjemmekontor = false
+)
+
+fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
+    arbeidsstedType = ArbeidsstedType.PA_LAND,
+    paLand = paLandDtoMedDefaultVerdier(),
+)
+
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(
     bekreftetRiktighet = true,
     submittedAt = Instant.now()
@@ -101,6 +126,10 @@ fun arbeidstakerenDtoMedDefaultVerdier() = ArbeidstakerenDto(
     aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
     skalJobbeForFlereVirksomheter = false,
     virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
+)
+
+fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenArbeidsgiversDelDto(
+    fodselsnummer = "11111111111"
 )
 
 fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
