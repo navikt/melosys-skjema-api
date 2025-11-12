@@ -493,6 +493,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet", arbeidsstedIUtlandetDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit", submitSkjemaRequestMedDefaultVerdier())
     )
 
@@ -556,6 +557,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer"),
@@ -612,6 +614,14 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                     requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
                     dataBeforePost = baseData,
                     expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture(
+                    stepKey = "tilleggsopplysninger",
+                    requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                    dataBeforePost = baseData,
+                    expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
                 )
             )
         )

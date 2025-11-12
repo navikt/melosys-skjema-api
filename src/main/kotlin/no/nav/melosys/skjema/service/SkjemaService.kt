@@ -124,6 +124,14 @@ class SkjemaService(
         }
     }
 
+    fun saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
+    }
+
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
