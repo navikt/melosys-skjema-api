@@ -16,7 +16,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
-import no.nav.melosys.skjema.dto.arbeidstaker.arbeidstakeren.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
@@ -118,16 +118,12 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
     harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad = false
 )
 
-fun arbeidstakerenDtoMedDefaultVerdier() = ArbeidstakerenDto(
+fun arbeidstakerenDtoMedDefaultVerdier() = DineOpplysningerDto(
     harNorskFodselsnummer = true,
     fodselsnummer = "11111111111",
     fornavn = "Test",
     etternavn = "Testesen",
     fodselsdato = LocalDate.of(1990, 1, 1),
-    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
-    aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
-    skalJobbeForFlereVirksomheter = false,
-    virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
 )
 
 fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenArbeidsgiversDelDto(

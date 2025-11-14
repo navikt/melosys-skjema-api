@@ -525,7 +525,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger", arbeidstakerenDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget", utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon", arbeidssituasjonDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
@@ -562,7 +562,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
@@ -639,7 +639,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         return listOf(
             Arguments.of(
                 SkjemaStegTestFixture(
-                    stepKey = "arbeidstakeren",
+                    stepKey = "dine-opplysninger",
                     requestBody = arbeidstakerenDtoMedDefaultVerdier(),
                     dataBeforePost = baseData,
                     expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
