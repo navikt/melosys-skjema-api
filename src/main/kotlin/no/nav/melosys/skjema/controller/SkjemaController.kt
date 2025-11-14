@@ -4,20 +4,23 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.CreateArbeidsgiverSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidstaker.CreateArbeidstakerSkjemaRequest
+import java.util.UUID
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.CreateArbeidsgiverSkjemaRequest
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenArbeidsgiversDelDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidstaker.arbeidstakeren.ArbeidstakerenDto
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.dto.arbeidstaker.CreateArbeidstakerSkjemaRequest
+import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.service.SkjemaService
@@ -25,8 +28,13 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
-import java.util.*
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 private val log = KotlinLogging.logger { }
 
@@ -117,9 +125,9 @@ class SkjemaController(
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenArbeidsgiversDelDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
         log.info { "Registering arbeidstaker information from arbeidsgiver" }
-        val skjema = skjemaService.saveArbeidstakerInfoAsArbeidsgiver(skjemaId, request)
+        val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 
@@ -192,12 +200,32 @@ class SkjemaController(
         return ResponseEntity.status(201).body(skjema)
     }
 
-    @PostMapping("/arbeidstaker/{skjemaId}/arbeidstakeren")
-    @Operation(summary = "Register arbeidstaker information")
-    @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
+    @PostMapping("/arbeidstaker/{skjemaId}/dine-opplysninger")
+    @Operation(summary = "Register dine opplysninger")
+    @ApiResponse(responseCode = "200", description = "Dine opplysninger registered")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidstakersSkjemaDto> {
-        val skjema = skjemaService.saveArbeidstakerenInfoAsArbeidstaker(skjemaId, request)
+    fun registerDineOpplysninger(@PathVariable skjemaId: UUID, @RequestBody request: DineOpplysningerDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+        val skjema = skjemaService.saveDineOpplysningerInfo(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/utenlandsoppdraget")
+    @Operation(summary = "Register utenlandsoppdraget information")
+    @ApiResponse(responseCode = "200", description = "Utenlandsoppdraget information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerUtenlandsoppdragetArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragetArbeidstakersDelDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+        log.info { "Registering utenlandsoppdraget information for arbeidstaker" }
+        val skjema = skjemaService.saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/arbeidssituasjon")
+    @Operation(summary = "Register arbeidssituasjon information")
+    @ApiResponse(responseCode = "200", description = "Arbeidssituasjon information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidssituasjon(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidssituasjonDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+        log.info { "Registering arbeidssituasjon information" }
+        val skjema = skjemaService.saveArbeidssituasjonInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 
