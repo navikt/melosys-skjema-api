@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedTy
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
@@ -137,6 +138,13 @@ fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = Utenlandsoppdrage
     utsendelsesLand = "SV",
     utsendelseFraDato = LocalDate.of(2024, 1, 1),
     utsendelseTilDato = LocalDate.of(2024, 12, 31)
+)
+
+fun arbeidssituasjonDtoMedDefaultVerdier() = ArbeidssituasjonDto(
+    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
+    aktivitetIMaanedenFoerUtsendingen = "LONNET_ARBEID",
+    skalJobbeForFlereVirksomheter = false,
+    virksomheterArbeidstakerJobberForIutsendelsesPeriode = null
 )
 
 fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(

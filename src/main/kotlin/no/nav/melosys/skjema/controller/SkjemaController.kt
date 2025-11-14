@@ -17,6 +17,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.Arbeidstakeren
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
@@ -209,6 +210,16 @@ class SkjemaController(
     fun registerUtenlandsoppdragetArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody request: UtenlandsoppdragetArbeidstakersDelDto): ResponseEntity<ArbeidstakersSkjemaDto> {
         log.info { "Registering utenlandsoppdraget information for arbeidstaker" }
         val skjema = skjemaService.saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/arbeidstaker/{skjemaId}/arbeidssituasjon")
+    @Operation(summary = "Register arbeidssituasjon information")
+    @ApiResponse(responseCode = "200", description = "Arbeidssituasjon information registered")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerArbeidssituasjon(@PathVariable skjemaId: UUID, @RequestBody request: ArbeidssituasjonDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+        log.info { "Registering arbeidssituasjon information" }
+        val skjema = skjemaService.saveArbeidssituasjonInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 

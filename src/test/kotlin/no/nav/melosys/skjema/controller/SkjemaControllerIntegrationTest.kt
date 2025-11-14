@@ -38,6 +38,7 @@ import no.nav.melosys.skjema.submitSkjemaRequestMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -526,6 +527,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren", arbeidstakerenDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget", utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon", arbeidssituasjonDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier()),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier())
@@ -562,6 +564,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidstakeren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger")
@@ -648,6 +651,14 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                     requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
                     dataBeforePost = baseData,
                     expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture(
+                    stepKey = "arbeidssituasjon",
+                    requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                    dataBeforePost = baseData,
+                    expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
                 )
             ),
             Arguments.of(

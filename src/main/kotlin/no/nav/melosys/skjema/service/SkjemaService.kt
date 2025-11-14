@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.Arbeidstakeren
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
@@ -174,6 +175,14 @@ class SkjemaService(
 
         return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(utenlandsoppdraget = request)
+        }
+    }
+
+    fun saveArbeidssituasjonInfo(skjemaId: UUID, request: ArbeidssituasjonDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidssituasjon = request)
         }
     }
 
