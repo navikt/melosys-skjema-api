@@ -57,8 +57,8 @@ import org.springframework.test.web.reactive.server.expectBody
 data class SkjemaStegTestFixture<T>(
     val stepKey: String,
     val requestBody: Any,
-    val dataBeforePost: T,
-    val expectedDataAfterPost: T
+    val dataBeforePost: T? = null,
+    val expectedDataAfterPost: T? = null
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -688,6 +688,97 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         )
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidArbeidsgiverRequestTestCases")
+    @DisplayName("POST arbeidsgiver endpoints should return 400 for invalid requests")
+    fun `POST arbeidsgiver endpoints should return 400 for invalid requests`(fixture: SkjemaStegTestFixture<Unit>) {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        skjemaRepository.save(skjema)
+
+        val token = createTokenForUser(testPid)
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${skjema.id}/${fixture.stepKey}")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(fixture.requestBody)
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    private fun invalidArbeidsgiverRequestTestCases(): List<Arguments> {
+        return listOf(
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "arbeidstakeren",
+                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = "1234567890A")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "arbeidstakeren",
+                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = "1234567890")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "arbeidstakeren",
+                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = "123456789012")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "arbeidstakeren",
+                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = "12345-67890")
+                )
+            )
+        )
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidArbeidstakerRequestTestCases")
+    @DisplayName("POST arbeidstaker endpoints should return 400 for invalid requests")
+    fun `POST arbeidstaker endpoints should return 400 for invalid requests`(fixture: SkjemaStegTestFixture<Unit>) {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        skjemaRepository.save(skjema)
+
+        val token = createTokenForUser(testPid)
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${skjema.id}/${fixture.stepKey}")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(fixture.requestBody)
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    private fun invalidArbeidstakerRequestTestCases(): List<Arguments> {
+        return listOf(
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "dine-opplysninger",
+                    requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = "1234567890A")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "dine-opplysninger",
+                    requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = "1234567890")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "dine-opplysninger",
+                    requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = "123456789012")
+                )
+            ),
+            Arguments.of(
+                SkjemaStegTestFixture<Unit>(
+                    stepKey = "dine-opplysninger",
+                    requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = "12345-67890")
+                )
+            )
+        )
+    }
 
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(
