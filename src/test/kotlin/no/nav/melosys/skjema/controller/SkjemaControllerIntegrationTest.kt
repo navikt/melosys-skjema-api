@@ -678,118 +678,105 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidsgiveren",
-                    requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidsgiveren",
+                requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidstakeren",
-                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidstakeren",
+                requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidsgiverens-virksomhet-i-norge",
-                    requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidsgiverens-virksomhet-i-norge",
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "utenlandsoppdraget",
-                    requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidstakerens-lonn",
-                    requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidstakerens-lonn",
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidssted-i-utlandet",
-                    requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidssted-i-utlandet",
+                requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "tilleggsopplysninger",
-                    requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
+
             )
-        )
+        ).map { Arguments.of(it) }
     }
 
     fun arbeidstakerStegTestFixtures(): List<Arguments> {
         val baseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "dine-opplysninger",
-                    requestBody = arbeidstakerenDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "dine-opplysninger",
+                requestBody = arbeidstakerenDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "utenlandsoppdraget",
-                    requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidssituasjon",
-                    requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidssituasjon",
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "skatteforhold-og-inntekt",
-                    requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "skatteforhold-og-inntekt",
+                requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "familiemedlemmer",
-                    requestBody = familiemedlemmerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "familiemedlemmer",
+                requestBody = familiemedlemmerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "tilleggsopplysninger",
-                    requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
+
             )
-        )
+        ).map { Arguments.of(it) }
     }
 
     @ParameterizedTest
