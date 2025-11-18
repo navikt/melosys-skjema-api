@@ -2,11 +2,19 @@ package no.nav.melosys.skjema.controller.validators
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-class FodselsnummerValidator : ConstraintValidator<ErFodselsnummer?, String?> {
+@Component
+class FodselsnummerValidator(
+    @Value("\${validation.fodselsnummer.valider-syntetisk}")
+    val validerSyntetiskFnr: Boolean
+) : ConstraintValidator<ErFodselsnummer?, String?> {
+
+
     override fun initialize(constraintAnnotation: ErFodselsnummer?) {}
 
     override fun isValid(
@@ -17,7 +25,7 @@ class FodselsnummerValidator : ConstraintValidator<ErFodselsnummer?, String?> {
         if (fodselsnummer == null) return true
 
         return try {
-            validerInput(fodselsnummer, erSyntetisk = false)
+            validerInput(fodselsnummer, erSyntetisk = validerSyntetiskFnr)
             true
         } catch (e: IllegalArgumentException) {
             false

@@ -98,3 +98,5 @@ logging:
     no.nav.melosys: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+validation.fodselsnummer.valider-syntetisk: ${BRUK_SYNTETISK_FNR}

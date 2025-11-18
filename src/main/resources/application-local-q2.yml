@@ -17,3 +17,4 @@ MERKELAPP: test-fager
 RESSURS_ID: test-fager
 SERVER_PORT: 8089
 EREG_URL: https://ereg-services.intern.dev.nav.no
+BRUK_SYNTETISK_FNR: true
