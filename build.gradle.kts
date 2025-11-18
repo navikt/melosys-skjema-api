@@ -31,7 +31,7 @@ val mockOAuth2ServerVersion = "3.0.1"
 val kotlinLoggingVersion = "7.0.13"
 val kotestVersion = "6.0.5"
 val mockkVersion = "1.14.6"
-val wiremockVersion = "3.13.1"
+val wiremockVersion = "3.13.2"
 val springMockkVersion = "4.0.2"
 val springdocVersion = "2.8.14"
 
