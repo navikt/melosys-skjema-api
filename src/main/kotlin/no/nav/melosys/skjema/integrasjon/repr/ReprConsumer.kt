@@ -1,8 +1,7 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.repr.dto.KanRepresentereResponse
-import no.nav.melosys.skjema.integrasjon.repr.dto.KanRepresenteresAvResponse
+import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -13,27 +12,16 @@ class ReprConsumer(
     private val reprClientTokenX: WebClient
 ) {
 
-    fun hentKanRepresentere(): KanRepresentereResponse {
-        log.info { "Kaller repr-api /eksternbruker/fullmakt/kan-representere" }
+    fun hentKanRepresentere(): List<Fullmakt> {
+        log.info { "Kaller repr-api /api/v2/eksternbruker/fullmakt/kan-representere" }
 
         val response = reprClientTokenX.get()
-            .uri("/eksternbruker/fullmakt/kan-representere")
+            .uri("/api/v2/eksternbruker/fullmakt/kan-representere")
             .retrieve()
-            .bodyToMono(KanRepresentereResponse::class.java)
+            .bodyToFlux(Fullmakt::class.java)
+            .collectList()
             .block()
 
-        return response ?: throw RuntimeException("Fikk null response fra repr-api")
-    }
-
-    fun hentKanRepresenteresAvForInnloggetBruker(): KanRepresenteresAvResponse {
-        log.info { "Kaller repr-api /eksternbruker/kan-representeres-av" }
-
-        val response = reprClientTokenX.get()
-            .uri("/eksternbruker/kan-representeres-av")
-            .retrieve()
-            .bodyToMono(KanRepresenteresAvResponse::class.java)
-            .block()
-
-        return response ?: throw RuntimeException("Fikk null response fra repr-api")
+        return response ?: emptyList()
     }
 }

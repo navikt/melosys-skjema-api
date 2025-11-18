@@ -23,6 +23,7 @@ class CacheConfig {
         cacheManager.setCacheNames(listOf("fullmakter"))
 
         // Konfigurasjon per cache
+        // fullmakter: hvem innlogget bruker kan representere (hvor bruker er fullmektig)
         cacheManager.registerCustomCache(
             "fullmakter",
             Caffeine.newBuilder()

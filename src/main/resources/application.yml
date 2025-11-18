@@ -94,6 +94,10 @@ repr:
   url: ${REPR_URL}
   cache:
     ttl-minutes: ${REPR_CACHE_TTL_MINUTES:5}
+  timeout:
+    connect-seconds: 10
+    read-seconds: 30
+    write-seconds: 30
 
 kafka:
   topic:

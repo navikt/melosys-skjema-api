@@ -24,10 +24,10 @@ class AuthController(
         summary = "Hent representasjoner for innlogget bruker",
         description = "Returnerer liste over personer som innlogget bruker kan representere (alias til /api/fullmakt/kan-representere)"
     )
-    @ApiResponse(responseCode = "200", description = "Liste over fullmakter")
+    @ApiResponse(responseCode = "200", description = "Liste over fullmakter hvor innlogget bruker er fullmektig")
     @ApiResponse(responseCode = "401", description = "Ikke autentisert")
     fun getRepresentasjoner(): ResponseEntity<List<Fullmakt>> {
-        val fullmakter = reprService.hentFullmakterForInnloggetBruker()
+        val fullmakter = reprService.hentKanRepresentere()
         return ResponseEntity.ok(fullmakter)
     }
 }

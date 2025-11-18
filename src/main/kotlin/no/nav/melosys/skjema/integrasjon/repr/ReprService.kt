@@ -13,28 +13,17 @@ class ReprService(
     private val reprConsumer: ReprConsumer
 ) {
 
-    @Cacheable(value = ["fullmakter"], key = "#root.target.getBrukerPid()")
-    fun hentFullmakterForInnloggetBruker(): List<Fullmakt> {
-        val pid = getBrukerPid()
-        log.info { "Henter fullmakter for innlogget bruker (PID: $pid) fra repr-api" }
+    /**
+     * Henter liste over personer som innlogget bruker kan representere gjennom fullmakt for MED-området.
+     * Bruker repr-api /api/v2/eksternbruker/fullmakt/kan-representere som returnerer fullmakter
+     * hvor innlogget bruker er fullmektig.
+     */
+    @Cacheable(value = ["fullmakter"], key = "@reprService.getBrukerPid()")
+    fun hentKanRepresentere(): List<Fullmakt> {
+        log.info { "Henter fullmakter for innlogget bruker fra repr-api" }
 
         return try {
-            reprConsumer.hentKanRepresentere().fullmakter
-                .filter { fullmakt ->
-                    fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP) ||
-                    fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-                }
-        } catch (e: Exception) {
-            log.error(e) { "Feil ved henting av fullmakter fra repr-api" }
-            throw RuntimeException("Kunne ikke hente fullmakter fra repr-api", e)
-        }
-    }
-
-    fun hentKanRepresenteresAvForInnloggetBruker(): List<Fullmakt> {
-        log.info { "Henter hvem som kan representere innlogget bruker fra repr-api" }
-
-        return try {
-            reprConsumer.hentKanRepresenteresAvForInnloggetBruker().fullmakter
+            reprConsumer.hentKanRepresentere()
                 .filter { fullmakt ->
                     fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP) ||
                     fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
@@ -58,18 +47,7 @@ class ReprService(
      */
     fun harSkriverettigheterForMedlemskap(fnr: String): Boolean {
         log.info { "Validerer skriverettigheter for medlemskap" }
-
-        return try {
-            val fullmakter = hentKanRepresenteresAvForInnloggetBruker()
-
-            fullmakter.any { fullmakt ->
-                fullmakt.fullmaktsgiver == fnr &&
-                fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-            }
-        } catch (e: Exception) {
-            log.error(e) { "Feil ved validering av skriverettigheter" }
-            false
-        }
+        return harRettigheter(fnr, RettighetsType.SKRIVE)
     }
 
     /**
@@ -84,18 +62,35 @@ class ReprService(
      */
     fun harLeserettigheterForMedlemskap(fnr: String): Boolean {
         log.info { "Validerer leserettigheter for medlemskap" }
+        return harRettigheter(fnr, RettighetsType.LESE)
+    }
 
+    /**
+     * Validerer om innlogget bruker har mottatt fullmakt fra gitt fnr med angitte rettigheter.
+     *
+     * Logikken: Vi henter fullmakter hvor innlogget bruker er fullmektig (kan representere andre).
+     * Hvis fullmaktsgiver (den som gir fullmakten) matcher angitt fnr, så har innlogget bruker
+     * fullmakt til å handle på vegne av denne personen.
+     */
+    private fun harRettigheter(fnr: String, rettighetsType: RettighetsType): Boolean {
         return try {
-            val fullmakter = hentKanRepresenteresAvForInnloggetBruker()
+            val fullmakter = hentKanRepresentere()
 
             fullmakter.any { fullmakt ->
-                fullmakt.fullmaktsgiver == fnr &&
-                fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                fullmakt.fullmaktsgiver == fnr && when (rettighetsType) {
+                    RettighetsType.LESE -> fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                    RettighetsType.SKRIVE -> fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                }
             }
         } catch (e: Exception) {
-            log.error(e) { "Feil ved validering av leserettigheter" }
+            log.error(e) { "Feil ved validering av ${rettighetsType.name.lowercase()}rettigheter" }
             false
         }
+    }
+
+    private enum class RettighetsType {
+        LESE,
+        SKRIVE
     }
 
     fun getBrukerPid(): String {
