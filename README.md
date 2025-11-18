@@ -484,7 +484,7 @@ graph TB
 | **ID-porten** | OAuth2 | Public client | Brukerautentisering (Nivå 4) |
 | **Maskinporten** | OAuth2 | Client credentials | System-til-system autentisering |
 | **Altinn** | REST | Maskinporten token | Hente representasjoner (Altinn-delegering) |
-| **Nav.no Fullmakt** | REST | Systembruker | Hente/verifisere fullmakter (person-til-person) |
+| **repr-api** | REST | TokenX OBO | Hente/verifisere fullmakter fra Nav.no fullmaktsløsning (person-til-person) |
 | **PDL** | GraphQL | Systembruker | Persondata (navn, adresse) |
 | **A-reg** | REST | Systembruker | Arbeidsforholdsinformasjon |
 | **Enhetsregisteret** | REST | Åpen API | Organisasjonsdata |
@@ -684,6 +684,10 @@ For detaljert dokumentasjon av fullmaktmodellen, se [fullmakt.md](fullmakt.md). 
 ---
 
 ## Utviklerdokumentasjon
+
+### repr-api integrasjon
+
+Applikasjonen integrerer med NAVs [repr-api](https://github.com/navikt/representasjon) for å hente fullmakter fra Nav.no fullmaktsløsning.
 
 ### Kjøre APIet lokalt mot ekte q1 og q2 miljø
 
