@@ -66,6 +66,8 @@ spec:
       rules:
         - application: melosys-api
           namespace: teammelosys
+        - application: repr-api
+          namespace: repr
   envFrom:
     - secret: melosys-skjema-api
   env:
