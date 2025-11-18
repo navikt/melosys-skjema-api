@@ -17,3 +17,6 @@ MERKELAPP: test-fager
 RESSURS_ID: test-fager
 SERVER_PORT: 8089
 EREG_URL: https://ereg-services.intern.dev.nav.no
+REPR_URL: https://repr-api.intern.dev.nav.no
+REPR_CACHE_TTL_MINUTES: 0
+TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api

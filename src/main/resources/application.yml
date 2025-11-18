@@ -14,10 +14,6 @@ spring:
       fail-on-missing-creator-properties: true
       fail-on-null-for-primitives: true
 
-  cache:
-    caffeine:
-      spec: expireAfterWrite=10m,maximumSize=200
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -69,6 +65,15 @@ no.nav.security.jwt:
           client-auth-method: private_key_jwt
         token-exchange:
           audience: ${TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON}
+      repr-api:
+        token-endpoint-url: ${TOKEN_X_TOKEN_ENDPOINT}
+        grant-type: urn:ietf:params:oauth:grant-type:token-exchange
+        authentication:
+          client-id: ${TOKEN_X_CLIENT_ID}
+          client-jwk: ${TOKEN_X_PRIVATE_JWK}
+          client-auth-method: private_key_jwt
+        token-exchange:
+          audience: ${TOKENX_AUDIENCE_REPR}
 
 arbeidsgiver:
   altinn:
@@ -84,6 +89,11 @@ altinn:
 
 ereg:
   url: ${EREG_URL}
+
+repr:
+  url: ${REPR_URL}
+  cache:
+    ttl-minutes: ${REPR_CACHE_TTL_MINUTES:5}
 
 kafka:
   topic:
