@@ -9,13 +9,13 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 @Component
-class FodselsnummerValidator(
-    @Value("\${validation.fodselsnummer.synthetic-mode}")
+class ErFodselsEllerDNummerValidator(
+    @param:Value("\${validation.fodselsnummer.synthetic-mode}")
     val validerSyntetiskFnr: Boolean
-) : ConstraintValidator<ErFodselsnummer?, String?> {
+) : ConstraintValidator<ErFodselsEllerDNummer?, String?> {
 
 
-    override fun initialize(constraintAnnotation: ErFodselsnummer?) {}
+    override fun initialize(constraintAnnotation: ErFodselsEllerDNummer?) {}
 
     override fun isValid(
         fodselsnummer: String?,
