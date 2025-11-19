@@ -9,6 +9,9 @@ ARBEIDSGIVER_NOTIFIKASJON_URL: ${wiremock.server.url}
 EREG_URL: ${wiremock.server.url}
 TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
 ALTINN_RESSURS: test-ressurs
+REPR_URL: ${wiremock.server.url}
+TOKENX_AUDIENCE_REPR: test:repr:repr-api
+REPR_CACHE_TTL_MINUTES: 0
 NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app
