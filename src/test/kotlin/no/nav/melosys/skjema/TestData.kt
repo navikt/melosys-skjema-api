@@ -31,28 +31,31 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 
-// NB! Endringer i defaultverdier i testdata skal ikke føre til at tester feiler.
+// NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
+
+val korrektSyntetiskFnr = "02837999890"
+val korrektSyntetiskOrgnr = "312587963"
 
 fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     isError = false,
     hierarki = listOf(
         AltinnTilgang(
-            orgnr = "123456789",
+            orgnr = korrektSyntetiskOrgnr,
             navn = "Test Org",
             organisasjonsform = "AS",
             altinn3Tilganger = setOf("test-fager", "annen-rolle")
         )
     ),
     tilgangTilOrgNr = mapOf(
-        "test-fager" to setOf("123456789", "987654321"),
-        "annen-rolle" to setOf("123456789")
+        "test-fager" to setOf(korrektSyntetiskOrgnr, korrektSyntetiskOrgnr),
+        "annen-rolle" to setOf(korrektSyntetiskOrgnr)
     ),
     orgNrTilTilganger = emptyMap()
 )
 
 fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     organisasjonNavn = "Test Bedrift AS"
 )
 
@@ -120,14 +123,14 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
 
 fun arbeidstakerenDtoMedDefaultVerdier() = DineOpplysningerDto(
     harNorskFodselsnummer = true,
-    fodselsnummer = "11111111111",
+    fodselsnummer = korrektSyntetiskFnr,
     fornavn = "Test",
     etternavn = "Testesen",
     fodselsdato = LocalDate.of(1990, 1, 1),
 )
 
 fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenDto(
-    fodselsnummer = "11111111111"
+    fodselsnummer = korrektSyntetiskFnr
 )
 
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
@@ -157,7 +160,7 @@ fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
 )
 
 fun norskVirksomhetMedDefaultVerdier() = NorskVirksomhet(
-    organisasjonsnummer = "987654321"
+    organisasjonsnummer = korrektSyntetiskOrgnr
 )
 
 fun utenlandskVirksomhetMedDefaultVerdier() = UtenlandskVirksomhet(
@@ -185,15 +188,15 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 )
 
 fun skjemaMedDefaultVerdier(
-    fnr: String? = "11111111111",
-    orgnr: String? = "123456789",
+    fnr: String? = korrektSyntetiskFnr,
+    orgnr: String? = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
-    opprettetAv: String = fnr ?: "11111111111",
-    endretAv: String = fnr ?: "11111111111"
+    opprettetAv: String = fnr ?: korrektSyntetiskFnr,
+    endretAv: String = fnr ?: korrektSyntetiskFnr
 ): Skjema {
     return Skjema(
         status = status,
@@ -232,24 +235,24 @@ fun gyldighetsperiodeMedDefaultVerdier() = Gyldighetsperiode(
 )
 
 fun inngaarIJuridiskEnhetMedDefaultVerdier() = InngaarIJuridiskEnhet(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier()
 )
 
 fun juridiskEnhetMedDefaultVerdier() = JuridiskEnhet(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "JuridiskEnhet"
 )
 
 fun virksomhetMedDefaultVerdier() = Virksomhet(
-    organisasjonsnummer = "987654321",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "Virksomhet"
 )
 
 fun organisasjonsleddMedDefaultVerdier() = Organisasjonsledd(
-    organisasjonsnummer = "555555555",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "Organisasjonsledd"
 )

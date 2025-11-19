@@ -39,6 +39,8 @@ import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -57,8 +59,8 @@ import org.springframework.test.web.reactive.server.expectBody
 data class SkjemaStegTestFixture<T>(
     val stepKey: String,
     val requestBody: Any,
-    val dataBeforePost: T,
-    val expectedDataAfterPost: T
+    val dataBeforePost: T? = null,
+    val expectedDataAfterPost: T? = null
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -66,25 +68,25 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var webTestClient: WebTestClient
-    
-    @Autowired 
+
+    @Autowired
     private lateinit var mockOAuth2Server: MockOAuth2Server
-    
+
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
-    
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
-    
+
     @MockkBean
     private lateinit var notificationService: NotificationService
 
     @MockkBean
     private lateinit var altinnService: AltinnService
-    
+
     private val testPid = "12345678901"
     private val testOrgnr = "123456789"
-    
+
     @BeforeEach
     fun setUp() {
         clearMocks(notificationService)
@@ -93,18 +95,25 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         every { altinnService.harBrukerTilgang(any()) } returns true
         every { notificationService.sendNotificationToArbeidstaker(any(), any()) } returns Unit
-        every { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), any()) } returns "test-beskjed-id"
+        every {
+            notificationService.sendNotificationToArbeidsgiver(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns "test-beskjed-id"
     }
-    
+
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker skal returnere liste over brukerens skjemaer")
     fun `GET skjema skal returnere liste over brukerens skjemaer`() {
         val skjema1 = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
         val skjema2 = skjemaMedDefaultVerdier(fnr = testPid, orgnr = "987654321", status = SkjemaStatus.SENDT)
         val skjema3 = skjemaMedDefaultVerdier(fnr = "99999999999", orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
-        
+
         skjemaRepository.saveAll(listOf(skjema1, skjema2, skjema3))
-        
+
         val token = createTokenForUser(testPid)
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker")
@@ -120,7 +129,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 responseBody.shouldHaveSize(2)
             }
     }
-    
+
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver skal opprette nytt skjema")
     fun `POST skjema skal opprette nytt skjema`() {
@@ -168,20 +177,22 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         skjemaRepository.findByOrgnr(createRequest.orgnr).shouldBeEmpty()
     }
-    
+
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST,
-            data = objectMapper.valueToTree(skjemaData)
-        ))
-        
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST,
+                data = objectMapper.valueToTree(skjemaData)
+            )
+        )
+
         val token = createTokenForUser(savedSkjema.fnr!!)
-        
+
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
@@ -207,11 +218,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST,
-            data = objectMapper.valueToTree(skjemaData)
-        ))
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST,
+                data = objectMapper.valueToTree(skjemaData)
+            )
+        )
 
         val token = createTokenForUser(testPid)
 
@@ -235,13 +248,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             )
         }
     }
-    
+
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(testPid)
         val nonExistentId = UUID.randomUUID()
-        
+
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
@@ -249,19 +262,21 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isNotFound
     }
-    
-    
+
+
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/submit skal sende skjema og trigge notifikasjoner")
     fun `POST submit skjema skal sende skjema og trigge notifikasjoner`() {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
-        ))
-        
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+
         val token = createTokenForUser(testPid)
-        
+
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/submit")
             .header("Authorization", "Bearer $token")
@@ -270,18 +285,20 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         verify { notificationService.sendNotificationToArbeidstaker(testPid, any()) }
         verify { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), testOrgnr) }
     }
-    
+
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/pdf skal returnere PDF response")
     fun `GET pdf skal returnere PDF response`() {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.SENDT
-        ))
-        
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.SENDT
+            )
+        )
+
         val token = createTokenForUser(testPid)
-        
+
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/pdf")
             .header("Authorization", "Bearer $token")
@@ -294,16 +311,18 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun `POST submit skal sende inn skjema`() {
         val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
 
-        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST,
-            data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
-        ))
-        
+        val existingSkjemaBeforePOST = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST,
+                data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+            )
+        )
+
         val token = createTokenForUser(testPid)
         val submitRequest = submitSkjemaRequestMedDefaultVerdier()
-        
+
         val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/submit")
             .header("Authorization", "Bearer $token")
@@ -330,14 +349,14 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             this.data shouldBe persistedSkjemaDataAfterPOST
         }
     }
-    
+
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker skal opprette nytt skjema")
     fun `POST arbeidstaker skjema skal opprette nytt skjema`() {
         val createRequest = CreateArbeidstakerSkjemaRequest(testPid)
 
         val token = createTokenForUser(createRequest.fnr)
-        
+
         val responseBody = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker")
             .header("Authorization", "Bearer $token")
@@ -365,11 +384,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @MethodSource("arbeidsgiverStegTestFixtures")
     @DisplayName("POST arbeidsgiver steg endpoints skal lagre data korrekt")
     fun `POST arbeidsgiver steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>) {
-        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST,
-            data = objectMapper.valueToTree(fixture.dataBeforePost)
-        ))
+        val existingSkjemaBeforePOST = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST,
+                data = objectMapper.valueToTree(fixture.dataBeforePost)
+            )
+        )
 
         val token = createTokenForUser(testPid)
 
@@ -392,11 +413,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @MethodSource("arbeidstakerStegTestFixtures")
     @DisplayName("POST arbeidstaker steg endpoints skal lagre data korrekt")
     fun `POST arbeidstaker steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>) {
-        val existingSkjemaBeforePOST = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            status = SkjemaStatus.UTKAST,
-            data = objectMapper.valueToTree(fixture.dataBeforePost)
-        ))
+        val existingSkjemaBeforePOST = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                status = SkjemaStatus.UTKAST,
+                data = objectMapper.valueToTree(fixture.dataBeforePost)
+            )
+        )
 
         val token = createTokenForUser(testPid)
 
@@ -419,9 +442,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
     @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
     fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            orgnr = orgnummer
-        ))
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                orgnr = orgnummer
+            )
+        )
 
         val token = createTokenForUser(testPid)
 
@@ -445,22 +470,28 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
     @DisplayName("Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang")
-    fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
-        ))
-        
+    fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(
+        httpMethod: HttpMethod,
+        path: String,
+        requestBody: Any?
+    ) {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+
         val token = createTokenForUser(testPid)
         every { altinnService.harBrukerTilgang(testOrgnr) } returns false
-        
+
         val request = webTestClient.method(httpMethod)
             .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
-            
+
         requestBody?.let { request.bodyValue(it) }
-        
+
         request.exchange()
             .expectStatus().isNotFound
     }
@@ -468,80 +499,150 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
     @DisplayName("Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr=null")
-    fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            orgnr = null,
-            status = SkjemaStatus.UTKAST
-        ))
-        
+    fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(
+        httpMethod: HttpMethod,
+        path: String,
+        requestBody: Any?
+    ) {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                orgnr = null,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+
         val token = createTokenForUser(testPid)
-        
+
         val request = webTestClient.method(httpMethod)
             .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
-            
+
         requestBody?.let { request.bodyValue(it) }
-        
+
         request.exchange()
             .expectStatus().isNotFound
     }
 
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren", arbeidsgiverenDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren", arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge", arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget", utenlandsoppdragetDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn", arbeidstakerensLonnDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet", arbeidsstedIUtlandetDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit", submitSkjemaRequestMedDefaultVerdier())
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren",
+            arbeidsgiverenDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren",
+            arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge",
+            arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget",
+            utenlandsoppdragetDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn",
+            arbeidstakerensLonnDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet",
+            arbeidsstedIUtlandetDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger",
+            tilleggsopplysningerDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit",
+            submitSkjemaRequestMedDefaultVerdier()
+        )
     )
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidstakerEndpointsSomKreverTilgang")
     @DisplayName("Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet")
-    fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(httpMethod: HttpMethod, path: String, requestBody: Any?) {
+    fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(
+        httpMethod: HttpMethod,
+        path: String,
+        requestBody: Any?
+    ) {
         val annenBrukerFnr = "99999999999"
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = annenBrukerFnr,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
-        ))
-        
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = annenBrukerFnr,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+
         val token = createTokenForUser(testPid) // testPid har ikke tilgang til skjemaet som tilhører annenBrukerFnr
-        
+
         val request = webTestClient.method(httpMethod)
             .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
-            
+
         requestBody?.let { request.bodyValue(it) }
-        
+
         request.exchange()
             .expectStatus().isNotFound
     }
 
     fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger", arbeidstakerenDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget", utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon", arbeidssituasjonDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt", skatteforholdOgInntektDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer", familiemedlemmerDtoMedDefaultVerdier()),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger", tilleggsopplysningerDtoMedDefaultVerdier())
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger",
+            arbeidstakerenDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget",
+            utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon",
+            arbeidssituasjonDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt",
+            skatteforholdOgInntektDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer",
+            familiemedlemmerDtoMedDefaultVerdier()
+        ),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger",
+            tilleggsopplysningerDtoMedDefaultVerdier()
+        )
     )
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("postEndpoints")
     @DisplayName("POST-endepunkter skal returnere 400 tom JSON body")
     fun `POST endpoints should return 400 for empty JSON body`(httpMethod: HttpMethod, path: String) {
-        val savedSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
-            fnr = testPid,
-            orgnr = testOrgnr,
-            status = SkjemaStatus.UTKAST
-        ))
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = testPid,
+                orgnr = testOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
 
         val token = createTokenForUser(testPid)
 
@@ -557,7 +658,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun postEndpoints(): List<Arguments> = listOf(
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"),
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"
+        ),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
@@ -574,120 +678,199 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidsgiveren",
-                    requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidsgiveren",
+                requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidstakeren",
-                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidstakeren",
+                requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidsgiverens-virksomhet-i-norge",
-                    requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidsgiverens-virksomhet-i-norge",
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "utenlandsoppdraget",
-                    requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidstakerens-lonn",
-                    requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidstakerens-lonn",
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidssted-i-utlandet",
-                    requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidssted-i-utlandet",
+                requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "tilleggsopplysninger",
-                    requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
+
             )
-        )
+        ).map { Arguments.of(it) }
     }
 
     fun arbeidstakerStegTestFixtures(): List<Arguments> {
         val baseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "dine-opplysninger",
-                    requestBody = arbeidstakerenDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "dine-opplysninger",
+                requestBody = arbeidstakerenDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "utenlandsoppdraget",
-                    requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "arbeidssituasjon",
-                    requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "arbeidssituasjon",
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "skatteforhold-og-inntekt",
-                    requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "skatteforhold-og-inntekt",
+                requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "familiemedlemmer",
-                    requestBody = familiemedlemmerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "familiemedlemmer",
+                requestBody = familiemedlemmerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier())
+
             ),
-            Arguments.of(
-                SkjemaStegTestFixture(
-                    stepKey = "tilleggsopplysninger",
-                    requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                    dataBeforePost = baseData,
-                    expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-                )
+            SkjemaStegTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                dataBeforePost = baseData,
+                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
+
             )
-        )
+        ).map { Arguments.of(it) }
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidArbeidsgiverRequestTestCases")
+    @DisplayName("POST arbeidsgiver endpoints should return 400 for invalid requests")
+    fun `POST arbeidsgiver endpoints should return 400 for invalid requests`(fixture: SkjemaStegTestFixture<Unit>) {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        skjemaRepository.save(skjema)
+
+        val token = createTokenForUser(testPid)
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${skjema.id}/${fixture.stepKey}")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(fixture.requestBody)
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    private fun invalidArbeidsgiverRequestTestCases(): List<Arguments> {
+        val invalidFodselsnummere = listOf("1234567890A", "1234567890", "123456789012", "12345-67890")
+        val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
+
+        val fodselsnummerTestCases = invalidFodselsnummere.map {
+            SkjemaStegTestFixture<Unit>(
+                stepKey = "arbeidstakeren",
+                requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = it)
+            )
+        }
+
+        val organisasjonsnummerArbeidsgiverenTestCases = invalidOrganisasjonsnummere.map {
+            SkjemaStegTestFixture<Unit>(
+                stepKey = "arbeidsgiveren",
+                requestBody = arbeidsgiverenDtoMedDefaultVerdier().copy(organisasjonsnummer = it)
+            )
+        }
+
+        val organisasjonsnummerArbeidstakerensLonnTestCases = invalidOrganisasjonsnummere.map {
+            SkjemaStegTestFixture<Unit>(
+                stepKey = "arbeidstakerens-lonn",
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+                    virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                        norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
+                    )
+                )
+            )
+        }
+
+        return (
+                fodselsnummerTestCases + organisasjonsnummerArbeidsgiverenTestCases + organisasjonsnummerArbeidstakerensLonnTestCases
+                ).map { Arguments.of(it) }
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidArbeidstakerRequestTestCases")
+    @DisplayName("POST arbeidstaker endpoints should return 400 for invalid requests")
+    fun `POST arbeidstaker endpoints should return 400 for invalid requests`(fixture: SkjemaStegTestFixture<Unit>) {
+        val skjema = skjemaMedDefaultVerdier(fnr = testPid, orgnr = testOrgnr, status = SkjemaStatus.UTKAST)
+        skjemaRepository.save(skjema)
+
+        val token = createTokenForUser(testPid)
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${skjema.id}/${fixture.stepKey}")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(fixture.requestBody)
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    private fun invalidArbeidstakerRequestTestCases(): List<Arguments> {
+        val invalidFodselsnummere = listOf("1234567890A", "1234567890", "123456789012", "12345-67890")
+        val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
+
+        val fodselsnummerTestCases = invalidFodselsnummere.map {
+            SkjemaStegTestFixture<Unit>(
+                stepKey = "dine-opplysninger",
+                requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = it)
+            )
+        }
+
+        val organisasjonsnummerTestCases = invalidOrganisasjonsnummere.map {
+            SkjemaStegTestFixture<Unit>(
+                stepKey = "arbeidssituasjon",
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                    virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                        norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
+                    )
+                )
+            )
+        }
+
+        return (fodselsnummerTestCases + organisasjonsnummerTestCases).map { Arguments.of(it) }
+    }
 
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(

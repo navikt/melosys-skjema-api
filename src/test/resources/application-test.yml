@@ -14,3 +14,4 @@ NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app
 MERKELAPP: foo123
 RESSURS_ID: test123
+BRUK_SYNTETISK_FNR: true
