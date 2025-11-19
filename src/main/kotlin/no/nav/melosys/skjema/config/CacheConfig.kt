@@ -20,7 +20,7 @@ class CacheConfig {
         val cacheManager = CaffeineCacheManager()
 
         // Registrer alle cache-navn
-        cacheManager.setCacheNames(listOf("fullmakter"))
+        cacheManager.setCacheNames(listOf("fullmakter", "ereg"))
 
         // Konfigurasjon per cache
         // fullmakter: hvem innlogget bruker kan representere (hvor bruker er fullmektig)
@@ -28,6 +28,15 @@ class CacheConfig {
             "fullmakter",
             Caffeine.newBuilder()
                 .expireAfterWrite(reprCacheTtlMinutes, TimeUnit.MINUTES)
+                .maximumSize(1000)
+                .build()
+        )
+
+        // ereg: organisasjonsinformasjon fra EREG
+        cacheManager.registerCustomCache(
+            "ereg",
+            Caffeine.newBuilder()
+                .expireAfterWrite(60, TimeUnit.MINUTES)
                 .maximumSize(1000)
                 .build()
         )
