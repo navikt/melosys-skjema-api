@@ -10,7 +10,7 @@ import java.time.format.DateTimeParseException
 
 @Component
 class FodselsnummerValidator(
-    @Value("\${validation.fodselsnummer.valider-syntetisk}")
+    @Value("\${validation.fodselsnummer.synthetic-mode}")
     val validerSyntetiskFnr: Boolean
 ) : ConstraintValidator<ErFodselsnummer?, String?> {
 
