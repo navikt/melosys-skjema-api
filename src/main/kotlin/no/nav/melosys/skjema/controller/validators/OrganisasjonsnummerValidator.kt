@@ -2,7 +2,9 @@ package no.nav.melosys.skjema.controller.validators
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import org.springframework.stereotype.Component
 
+@Component
 class OrganisasjonsnummerValidator : ConstraintValidator<ErOrganisasjonsnummer?, String?> {
     override fun initialize(constraintAnnotation: ErOrganisasjonsnummer?) {}
 
@@ -14,27 +16,34 @@ class OrganisasjonsnummerValidator : ConstraintValidator<ErOrganisasjonsnummer?,
         // Null values are handled by @NotNull annotation
         if (organisasjonsnummer == null) return true
 
-        // Must be exactly 9 digits
-        if (!organisasjonsnummer.matches(Regex("[0-9]{9}"))) return false
+        return validerOrganisasjonsnummerFormat(organisasjonsnummer)
+    }
 
-        // MOD11 validation
-        val weights = listOf(3, 2, 7, 6, 5, 4, 3, 2)
-        val digits = organisasjonsnummer.map { it.toString().toInt() }
+    companion object {
 
-        // Take first 8 digits and multiply with weights
-        val sum = digits.take(8).zip(weights).sumOf { (digit, weight) -> digit * weight }
+        fun validerOrganisasjonsnummerFormat(organisasjonsnummer: String): Boolean {
+            // Must be exactly 9 digits
+            if (!organisasjonsnummer.matches(Regex("[0-9]{9}"))) return false
 
-        // Calculate remainder
-        val remainder = sum % 11
-        val checkDigit = 11 - remainder
+            // MOD11 validation
+            val weights = listOf(3, 2, 7, 6, 5, 4, 3, 2)
+            val digits = organisasjonsnummer.map { it.toString().toInt() }
 
-        // If checkDigit is 10, the organization number is invalid
-        if (checkDigit == 10) return false
+            // Take first 8 digits and multiply with weights
+            val sum = digits.take(8).zip(weights).sumOf { (digit, weight) -> digit * weight }
 
-        // If checkDigit is 11, it should be 0
-        val expectedCheckDigit = if (checkDigit == 11) 0 else checkDigit
+            // Calculate remainder
+            val remainder = sum % 11
+            val checkDigit = 11 - remainder
 
-        // Compare with the 9th digit (last digit)
-        return expectedCheckDigit == digits[8]
+            // If checkDigit is 10, the organization number is invalid
+            if (checkDigit == 10) return false
+
+            // If checkDigit is 11, it should be 0
+            val expectedCheckDigit = if (checkDigit == 11) 0 else checkDigit
+
+            // Compare with the 9th digit (last digit)
+            return expectedCheckDigit == digits[8]
+        }
     }
 }
