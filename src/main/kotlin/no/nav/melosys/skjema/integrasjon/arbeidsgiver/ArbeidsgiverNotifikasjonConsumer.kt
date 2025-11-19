@@ -17,8 +17,8 @@ private val log = KotlinLogging.logger { }
 @Component
 class ArbeidsgiverNotifikasjonConsumer(
     private val arbeidsgiverNotifikasjonClient: WebClient,
-    @Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
-    @Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
+    @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
+    @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
 ) {
 
     private val nyBeskjedMutation: String by lazy {

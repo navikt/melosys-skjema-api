@@ -14,21 +14,21 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.UUID
+import java.util.*
 
 private val log = KotlinLogging.logger { }
 
 @Service
 class NotificationService(
-    @Autowired(required = false) private val arbeidsgiverNotifikasjonConsumer: ArbeidsgiverNotifikasjonConsumer?,
+    @param:Autowired(required = false) private val arbeidsgiverNotifikasjonConsumer: ArbeidsgiverNotifikasjonConsumer?,
     private val kafkaTemplate: KafkaTemplate<String, String>,
-    @Value("\${kafka.topic.brukervarsel}")
+    @param:Value("\${kafka.topic.brukervarsel}")
     private val topic: String,
-    @Value("\${kafka.producer.cluster}")
+    @param:Value("\${kafka.producer.cluster}")
     private val cluster: String,
-    @Value("\${kafka.producer.namespace}")
+    @param:Value("\${kafka.producer.namespace}")
     private val namespace: String,
-    @Value("\${kafka.producer.appname}")
+    @param:Value("\${kafka.producer.appname}")
     private val appName: String
 ) {
 
