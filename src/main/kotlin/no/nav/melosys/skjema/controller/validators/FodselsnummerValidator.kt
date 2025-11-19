@@ -32,7 +32,7 @@ class FodselsnummerValidator(
         }
     }
 
-    // Implementasjon hentet fra https://skatteetaten.github.io/folkeregisteret-api-dokumentasjon/dokumenter/foedselsEllerDNummerValidator.java
+    // Implementasjon hentet fra https://github.com/Skatteetaten/folkeregisteret-api-dokumentasjon/blob/master/src/dokumenter/foedselsEllerDNummerValidator.java
     companion object {
         private val vekterK1 = intArrayOf(3, 7, 6, 1, 8, 9, 4, 5, 2)
         private val vekterK2 = intArrayOf(5, 4, 3, 2, 7, 6, 5, 4, 3, 2)
@@ -169,7 +169,9 @@ class FodselsnummerValidator(
          * @return true hvis året er et skuddår, ellers false.
          */
         private fun erSkuddaar(aar: String): Boolean {
-            return aar.toInt() % 4 == 0
+            val aarIsMod4 = aar.toInt() % 4 == 0
+            val aarIsMod100 = aar.toInt() % 100 == 0
+            return aarIsMod4 && (!aarIsMod100  || aarIsMod4)
         }
     }
 }
