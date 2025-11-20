@@ -6,8 +6,12 @@ import reactor.core.publisher.Mono
 
 object WebClientConfig {
     fun errorFilter(feilmelding: String): ExchangeFilterFunction {
+        return errorFilter(feilmelding, emptySet())
+    }
+
+    fun errorFilter(feilmelding: String, ignoreStatuses: Set<Int>): ExchangeFilterFunction {
         return ExchangeFilterFunction.ofResponseProcessor { response ->
-            if (response.statusCode().isError) {
+            if (response.statusCode().isError && response.statusCode().value() !in ignoreStatuses) {
                 response.bodyToMono(String::class.java)
                     .defaultIfEmpty(response.statusCode().toString())
                     .flatMap { errorBody ->
@@ -18,7 +22,7 @@ object WebClientConfig {
             }
         }
     }
-    
+
     fun lagException(feilmelding: String, statusCode: HttpStatusCode, errorBody: String): Exception {
         return RuntimeException("$feilmelding $statusCode - $errorBody")
     }

@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
@@ -22,7 +23,12 @@ class EregConfig(
 
         return webClientBuilder
             .baseUrl(eregBaseUrl)
-            .filter(WebClientConfig.errorFilter("Kall mot EREG feilet"))
+            .filter(
+                WebClientConfig.errorFilter(
+                    feilmelding = "Kall mot EREG feilet",
+                    ignoreStatuses = setOf(HttpStatus.NOT_FOUND.value())
+                )
+            )
             .filter(headerFilter())
             .build()
     }

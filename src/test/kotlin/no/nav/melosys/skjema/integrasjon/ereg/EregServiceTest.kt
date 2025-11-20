@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -36,4 +37,27 @@ class EregServiceTest {
             )
         )
     }
+
+    @Test
+    fun `organisasjonsnummerEksisterer returnerer true når organisasjon eksisterer`() {
+        val organisasjon = juridiskEnhetMedDefaultVerdier()
+
+        every { eregConsumer.hentOrganisasjon(organisasjon.organisasjonsnummer) } returns organisasjon
+
+        val result = eregService.organisasjonsnummerEksisterer(organisasjon.organisasjonsnummer)
+
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `organisasjonsnummerEksisterer returnerer false når organisasjon ikke eksisterer`() {
+        val orgnr = "999999999"
+
+        every { eregConsumer.hentOrganisasjon(orgnr) } throws OrganisasjonEksistererIkkeException(orgnr)
+
+        val result = eregService.organisasjonsnummerEksisterer(orgnr)
+
+        assertThat(result).isFalse()
+    }
+
 }
