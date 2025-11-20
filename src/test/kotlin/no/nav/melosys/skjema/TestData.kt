@@ -35,6 +35,8 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
 
 val korrektSyntetiskFnr = "02837999890"
+val etAnnetKorrektSyntetiskFnr = "20925297314"
+
 val korrektSyntetiskOrgnr = "312587963"
 
 fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(

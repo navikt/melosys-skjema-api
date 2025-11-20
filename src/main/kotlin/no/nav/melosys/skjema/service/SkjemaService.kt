@@ -154,7 +154,7 @@ class SkjemaService(
         log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
-        val skjema = getSkjemaAsArbeidstaker(skjemaId)
+        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
         
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
