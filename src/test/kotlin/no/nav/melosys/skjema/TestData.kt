@@ -31,8 +31,11 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 
+// Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
+// Med unntak av tilfeller hvor defaultverdiene har ugyldige formater og kombinasjoner mtp validatorene (no/nav/melosys/skjema/controller/validators).
+
 
 val korrektSyntetiskFnr = "02837999890"
 val etAnnetKorrektSyntetiskFnr = "20925297314"
@@ -69,9 +72,7 @@ fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
-    erArbeidsgiverenOffentligVirksomhet = true,
-    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
-    opprettholderArbeidsgiverenVanligDrift = true
+    erArbeidsgiverenOffentligVirksomhet = true
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
