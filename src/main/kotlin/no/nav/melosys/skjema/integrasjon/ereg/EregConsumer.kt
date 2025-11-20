@@ -2,9 +2,11 @@ package no.nav.melosys.skjema.integrasjon.ereg
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
+import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 
 private val log = KotlinLogging.logger { }
 
@@ -25,6 +27,9 @@ class EregConsumer(
                     .build(orgnummer)
             }
             .retrieve()
+            .onStatus({ it.value() == 404 }) {
+                Mono.error(OrganisasjonEksistererIkkeException(orgnummer))
+            }
             .bodyToMono(Organisasjon::class.java)
             .block()
             ?: error("Fikk null response fra EREG for orgnummer: $orgnummer")

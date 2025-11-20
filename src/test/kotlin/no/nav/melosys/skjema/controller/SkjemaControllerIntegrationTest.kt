@@ -39,6 +39,7 @@ import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
@@ -84,6 +85,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     @MockkBean
     private lateinit var altinnService: AltinnService
 
+    @MockkBean
+    private lateinit var eregService: EregService
+
     private val testPid = "12345678901"
     private val testOrgnr = "123456789"
 
@@ -91,6 +95,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     fun setUp() {
         clearMocks(notificationService)
         clearMocks(altinnService)
+        clearMocks(eregService)
         skjemaRepository.deleteAll()
 
         every { altinnService.harBrukerTilgang(any()) } returns true
@@ -103,6 +108,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                 any()
             )
         } returns "test-beskjed-id"
+        every { eregService.organisasjonsnummerEksisterer(any()) } returns true
     }
 
     @Test

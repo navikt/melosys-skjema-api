@@ -2,10 +2,13 @@ package no.nav.melosys.skjema.controller.validators
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import org.springframework.stereotype.Component
 
 @Component
-class OrganisasjonsnummerValidator : ConstraintValidator<ErOrganisasjonsnummer?, String?> {
+class OrganisasjonsnummerValidator(
+    val eregService: EregService
+) : ConstraintValidator<ErOrganisasjonsnummer?, String?> {
     override fun initialize(constraintAnnotation: ErOrganisasjonsnummer?) {}
 
     // https://www.brreg.no/om-oss/registrene-vare/om-enhetsregisteret/organisasjonsnummeret/
@@ -16,12 +19,16 @@ class OrganisasjonsnummerValidator : ConstraintValidator<ErOrganisasjonsnummer?,
         // Null values are handled by @NotNull annotation
         if (organisasjonsnummer == null) return true
 
-        return validerOrganisasjonsnummerFormat(organisasjonsnummer)
+        if (organisasjonsnummerHarFormat(organisasjonsnummer)) {
+            return eregService.organisasjonsnummerEksisterer(organisasjonsnummer)
+        }
+
+        return false
     }
 
     companion object {
 
-        fun validerOrganisasjonsnummerFormat(organisasjonsnummer: String): Boolean {
+        fun organisasjonsnummerHarFormat(organisasjonsnummer: String): Boolean {
             // Must be exactly 9 digits
             if (!organisasjonsnummer.matches(Regex("[0-9]{9}"))) return false
 
