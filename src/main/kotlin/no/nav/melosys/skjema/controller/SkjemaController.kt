@@ -60,7 +60,7 @@ class SkjemaController(
     @PostMapping("/arbeidsgiver")
     @Operation(summary = "Create new skjema")
     @ApiResponse(responseCode = "201", description = "Skjema created")
-    fun createSkjemaArbeidsgiverDel(@RequestBody request: CreateArbeidsgiverSkjemaRequest): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun createSkjemaArbeidsgiverDel(@RequestBody @Valid request: CreateArbeidsgiverSkjemaRequest): ResponseEntity<ArbeidsgiversSkjemaDto> {
         val skjema = skjemaService.createSkjemaArbeidsgiverDel(request)
         return ResponseEntity.status(201).body(skjema)
     }
@@ -196,7 +196,7 @@ class SkjemaController(
     @PostMapping("/arbeidstaker")
     @Operation(summary = "Create new skjema")
     @ApiResponse(responseCode = "201", description = "Skjema created")
-    fun createSkjemaArbeidstakerDel(@RequestBody request: CreateArbeidstakerSkjemaRequest): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun createSkjemaArbeidstakerDel(@RequestBody @Valid request: CreateArbeidstakerSkjemaRequest): ResponseEntity<ArbeidstakersSkjemaDto> {
         val skjema = skjemaService.createSkjemaArbeidstakerDel(request)
         return ResponseEntity.status(201).body(skjema)
     }
