@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
+import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig.defaultRetry
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
@@ -31,6 +32,7 @@ class EregConsumer(
                 Mono.error(OrganisasjonEksistererIkkeException(orgnummer))
             }
             .bodyToMono(Organisasjon::class.java)
+            .retryWhen(defaultRetry())
             .block()
             ?: error("Fikk null response fra EREG for orgnummer: $orgnummer")
     }
