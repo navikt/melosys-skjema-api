@@ -84,6 +84,10 @@ altinn:
 
 ereg:
   url: ${EREG_URL}
+  timeout:
+    connect-seconds: 10
+    read-seconds: 30
+    write-seconds: 30
 
 kafka:
   topic:

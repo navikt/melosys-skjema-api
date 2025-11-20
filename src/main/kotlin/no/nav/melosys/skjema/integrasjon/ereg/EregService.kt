@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhet
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
 import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
 import no.nav.melosys.skjema.integrasjon.ereg.dto.finnJuridiskEnhetOrganisasjonsnummer
+import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
@@ -23,6 +24,15 @@ class EregService(
             organisasjon = organisasjon,
             juridiskEnhet = juridiskEnhet
         )
+    }
+
+    fun organisasjonsnummerEksisterer(organisasjonsnummer: String): Boolean {
+        return try {
+            eregConsumer.hentOrganisasjon(organisasjonsnummer)
+            true
+        } catch (_: OrganisasjonEksistererIkkeException) {
+            false
+        }
     }
 
     private fun hentJuridiskEnhetForOrganisasjon(organisasjon: Organisasjon): JuridiskEnhet {
