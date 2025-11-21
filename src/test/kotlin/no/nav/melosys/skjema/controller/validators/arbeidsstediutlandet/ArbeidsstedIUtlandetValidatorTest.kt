@@ -10,6 +10,8 @@ import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
 import no.nav.melosys.skjema.offshoreDtoMedDefaultVerdier
 import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
@@ -139,6 +141,63 @@ class ArbeidsstedIUtlandetValidatorTest {
                 omBordPaFly = omBordPaFlyDtoMedDefaultVerdier()
             )
         ).map { Arguments.of(it) }.stream()
+    }
+
+    @Test
+    fun `should be invalid when paLand has invalid nested data`() {
+        val dto = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+            arbeidsstedType = ArbeidsstedType.PA_LAND,
+            paLand = paLandDtoMedDefaultVerdier().copy(
+                fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
+                fastArbeidssted = null,
+                beskrivelseVekslende = null
+            ),
+            offshore = null,
+            paSkip = null,
+            omBordPaFly = null
+        )
+
+        val violations = validator.validate(dto)
+        violations.shouldHaveSize(1)
+        violations.first().message.shouldBe("Ugyldig på land")
+    }
+
+    @Test
+    fun `should be invalid when paSkip has invalid nested data`() {
+        val dto = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+            arbeidsstedType = ArbeidsstedType.PA_SKIP,
+            paLand = null,
+            offshore = null,
+            paSkip = paSkipDtoMedDefaultVerdier().copy(
+                seilerI = Farvann.INTERNASJONALT_FARVANN,
+                flaggland = null,
+                territorialfarvannLand = null
+            ),
+            omBordPaFly = null
+        )
+
+        val violations = validator.validate(dto)
+        violations.shouldHaveSize(1)
+        violations.first().message.shouldBe("Ugyldig på skip")
+    }
+
+    @Test
+    fun `should be invalid when omBordPaFly has invalid nested data`() {
+        val dto = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+            arbeidsstedType = ArbeidsstedType.OM_BORD_PA_FLY,
+            paLand = null,
+            offshore = null,
+            paSkip = null,
+            omBordPaFly = omBordPaFlyDtoMedDefaultVerdier().copy(
+                erVanligHjemmebase = false,
+                vanligHjemmebaseLand = null,
+                vanligHjemmebaseNavn = null
+            )
+        )
+
+        val violations = validator.validate(dto)
+        violations.shouldHaveSize(1)
+        violations.first().message.shouldBe("Ugyldig om bord på fly")
     }
 
 }
