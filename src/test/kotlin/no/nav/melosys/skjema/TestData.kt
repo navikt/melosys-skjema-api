@@ -16,6 +16,11 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
@@ -112,6 +117,28 @@ fun paLandDtoMedDefaultVerdier() = PaLandDto(
 fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
     arbeidsstedType = ArbeidsstedType.PA_LAND,
     paLand = paLandDtoMedDefaultVerdier(),
+)
+
+fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
+    navnPaInnretning = "Test Platform",
+    typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
+    sokkelLand = "NO"
+)
+
+fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
+    navnPaSkip = "MS Test Ship",
+    yrketTilArbeidstaker = "Skipsfører",
+    seilerI = Farvann.INTERNASJONALT_FARVANN,
+    flaggland = "NO",
+    territorialfarvannLand = null
+)
+
+fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
+    hjemmebaseLand = "NO",
+    hjemmebaseNavn = "Oslo Airport",
+    erVanligHjemmebase = true,
+    vanligHjemmebaseLand = null,
+    vanligHjemmebaseNavn = null
 )
 
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(

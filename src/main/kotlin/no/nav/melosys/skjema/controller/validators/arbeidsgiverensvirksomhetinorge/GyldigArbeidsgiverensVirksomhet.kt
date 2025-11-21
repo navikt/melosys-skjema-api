@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.controller.validators
+package no.nav.melosys.skjema.controller.validators.arbeidsgiverensvirksomhetinorge
 
 import jakarta.validation.Constraint
 import jakarta.validation.Payload

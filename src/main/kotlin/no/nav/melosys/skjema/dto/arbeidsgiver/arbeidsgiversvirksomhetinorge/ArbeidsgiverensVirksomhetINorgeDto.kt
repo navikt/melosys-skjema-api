@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import no.nav.melosys.skjema.controller.validators.GyldigArbeidsgiverensVirksomhet
+import no.nav.melosys.skjema.controller.validators.arbeidsgiverensvirksomhetinorge.GyldigArbeidsgiverensVirksomhet
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @GyldigArbeidsgiverensVirksomhet

@@ -1,12 +1,14 @@
-package no.nav.melosys.skjema.controller.validators
+package no.nav.melosys.skjema.controller.validators.arbeidsgiverensvirksomhetinorge
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.validators.arbeidsgiverensvirksomhetinorge.GyldigArbeidsgiverensVirksomhet
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import org.springframework.stereotype.Component
 
 @Component
-class ArbeidsgiverensVirksomhetINorgeValidator : ConstraintValidator<GyldigArbeidsgiverensVirksomhet, ArbeidsgiverensVirksomhetINorgeDto> {
+class ArbeidsgiverensVirksomhetINorgeValidator :
+    ConstraintValidator<GyldigArbeidsgiverensVirksomhet, ArbeidsgiverensVirksomhetINorgeDto> {
 
     override fun initialize(constraintAnnotation: GyldigArbeidsgiverensVirksomhet?) {}
 
