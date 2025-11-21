@@ -1,0 +1,89 @@
+package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
+
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import jakarta.validation.Validation
+import jakarta.validation.Validator
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
+import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class OmBordPaFlyValidatorTest {
+
+    private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
+
+    @Test
+    fun `OmBordPaFlyDto should be annotated with GyldigOmBordPaFly`() {
+        val annotation = OmBordPaFlyDto::class.java.getAnnotation(GyldigOmBordPaFly::class.java)
+        annotation.shouldNotBeNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("validCombinations")
+    fun `should be valid for valid combinations`(dto: OmBordPaFlyDto) {
+        val violations = validator.validate(dto)
+        violations.shouldBeEmpty()
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidCombinations")
+    fun `should be invalid for invalid combinations`(dto: OmBordPaFlyDto) {
+        val violations = validator.validate(dto)
+        violations.shouldHaveSize(1)
+        violations.first().message.shouldBe("Ugyldig om bord på fly")
+    }
+
+    fun validCombinations(): Stream<Arguments> = listOf(
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = true,
+            vanligHjemmebaseLand = null,
+            vanligHjemmebaseNavn = null
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = false,
+            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseNavn = "Stockholm Airport"
+        )
+    ).map { Arguments.of(it) }.stream()
+
+    fun invalidCombinations(): Stream<Arguments> = listOf(
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = true,
+            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseNavn = null
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = true,
+            vanligHjemmebaseLand = null,
+            vanligHjemmebaseNavn = "Stockholm Airport"
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = true,
+            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseNavn = "Stockholm Airport"
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = false,
+            vanligHjemmebaseLand = null,
+            vanligHjemmebaseNavn = null
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = false,
+            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseNavn = null
+        ),
+        omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = false,
+            vanligHjemmebaseLand = null,
+            vanligHjemmebaseNavn = "Stockholm Airport"
+        )
+    ).map { Arguments.of(it) }.stream()
+}
