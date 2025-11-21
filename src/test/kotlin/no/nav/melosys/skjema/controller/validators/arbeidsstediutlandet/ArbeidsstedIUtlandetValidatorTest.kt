@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import jakarta.validation.Validation
 import jakarta.validation.Validator
@@ -13,6 +14,7 @@ import no.nav.melosys.skjema.offshoreDtoMedDefaultVerdier
 import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paSkipDtoMedDefaultVerdier
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -22,6 +24,12 @@ import org.junit.jupiter.params.provider.MethodSource
 class ArbeidsstedIUtlandetValidatorTest {
 
     private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
+
+    @Test
+    fun `ArbeidsstedIUtlandetDto should be annotated with GyldigArbeidsstedIUtlandet`() {
+        val annotation = ArbeidsstedIUtlandetDto::class.java.getAnnotation(GyldigArbeidsstedIUtlandet::class.java)
+        annotation.shouldNotBeNull()
+    }
 
     @ParameterizedTest
     @MethodSource("validCombinations")

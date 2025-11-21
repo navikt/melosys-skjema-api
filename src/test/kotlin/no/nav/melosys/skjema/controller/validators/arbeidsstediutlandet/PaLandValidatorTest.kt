@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import jakarta.validation.Validation
 import jakarta.validation.Validator
@@ -9,6 +10,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVeks
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paLandFastArbeidsstedDtoMedDefaultVerdier
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -19,6 +21,12 @@ import org.junit.jupiter.api.TestInstance
 class PaLandValidatorTest {
 
     private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
+
+    @Test
+    fun `PaLandDto should be annotated with GyldigPaLand`() {
+        val annotation = PaLandDto::class.java.getAnnotation(GyldigPaLand::class.java)
+        annotation.shouldNotBeNull()
+    }
 
     @ParameterizedTest
     @MethodSource("validCombinations")
