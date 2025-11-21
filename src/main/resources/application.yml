@@ -89,6 +89,10 @@ altinn:
 
 ereg:
   url: ${EREG_URL}
+  timeout:
+    connect-seconds: 10
+    read-seconds: 30
+    write-seconds: 30
 
 repr:
   url: ${REPR_URL}
@@ -112,3 +116,7 @@ logging:
     no.nav.melosys: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+validation:
+  fodselsnummer:
+    synthetic-mode: ${BRUK_SYNTETISK_FNR}

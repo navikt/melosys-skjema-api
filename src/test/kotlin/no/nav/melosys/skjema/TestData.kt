@@ -16,6 +16,11 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
@@ -32,28 +37,36 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 
-// NB! Endringer i defaultverdier i testdata skal ikke føre til at tester feiler.
+// Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
+// NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
+// Med unntak av tilfeller hvor defaultverdiene har ugyldige formater og kombinasjoner mtp validatorene (no/nav/melosys/skjema/controller/validators).
+
+
+val korrektSyntetiskFnr = "02837999890"
+val etAnnetKorrektSyntetiskFnr = "20925297314"
+
+val korrektSyntetiskOrgnr = "312587963"
 
 fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     isError = false,
     hierarki = listOf(
         AltinnTilgang(
-            orgnr = "123456789",
+            orgnr = korrektSyntetiskOrgnr,
             navn = "Test Org",
             organisasjonsform = "AS",
             altinn3Tilganger = setOf("test-fager", "annen-rolle")
         )
     ),
     tilgangTilOrgNr = mapOf(
-        "test-fager" to setOf("123456789", "987654321"),
-        "annen-rolle" to setOf("123456789")
+        "test-fager" to setOf(korrektSyntetiskOrgnr, korrektSyntetiskOrgnr),
+        "annen-rolle" to setOf(korrektSyntetiskOrgnr)
     ),
     orgNrTilTilganger = emptyMap()
 )
 
 fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     organisasjonNavn = "Test Bedrift AS"
 )
 
@@ -65,9 +78,7 @@ fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
-    erArbeidsgiverenOffentligVirksomhet = true,
-    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
-    opprettholderArbeidsgiverenVanligDrift = true
+    erArbeidsgiverenOffentligVirksomhet = true
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
@@ -109,6 +120,28 @@ fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
     paLand = paLandDtoMedDefaultVerdier(),
 )
 
+fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
+    navnPaInnretning = "Test Platform",
+    typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
+    sokkelLand = "NO"
+)
+
+fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
+    navnPaSkip = "MS Test Ship",
+    yrketTilArbeidstaker = "Skipsfører",
+    seilerI = Farvann.INTERNASJONALT_FARVANN,
+    flaggland = "NO",
+    territorialfarvannLand = null
+)
+
+fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
+    hjemmebaseLand = "NO",
+    hjemmebaseNavn = "Oslo Airport",
+    erVanligHjemmebase = true,
+    vanligHjemmebaseLand = null,
+    vanligHjemmebaseNavn = null
+)
+
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(
     bekreftetRiktighet = true,
     submittedAt = Instant.now()
@@ -121,14 +154,14 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
 
 fun arbeidstakerenDtoMedDefaultVerdier() = DineOpplysningerDto(
     harNorskFodselsnummer = true,
-    fodselsnummer = "11111111111",
+    fodselsnummer = korrektSyntetiskFnr,
     fornavn = "Test",
     etternavn = "Testesen",
     fodselsdato = LocalDate.of(1990, 1, 1),
 )
 
 fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenDto(
-    fodselsnummer = "11111111111"
+    fodselsnummer = korrektSyntetiskFnr
 )
 
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
@@ -158,7 +191,7 @@ fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
 )
 
 fun norskVirksomhetMedDefaultVerdier() = NorskVirksomhet(
-    organisasjonsnummer = "987654321"
+    organisasjonsnummer = korrektSyntetiskOrgnr
 )
 
 fun utenlandskVirksomhetMedDefaultVerdier() = UtenlandskVirksomhet(
@@ -186,15 +219,15 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 )
 
 fun skjemaMedDefaultVerdier(
-    fnr: String? = "11111111111",
-    orgnr: String? = "123456789",
+    fnr: String? = korrektSyntetiskFnr,
+    orgnr: String? = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
-    opprettetAv: String = fnr ?: "11111111111",
-    endretAv: String = fnr ?: "11111111111"
+    opprettetAv: String = fnr ?: korrektSyntetiskFnr,
+    endretAv: String = fnr ?: korrektSyntetiskFnr
 ): Skjema {
     return Skjema(
         status = status,
@@ -233,24 +266,24 @@ fun gyldighetsperiodeMedDefaultVerdier() = Gyldighetsperiode(
 )
 
 fun inngaarIJuridiskEnhetMedDefaultVerdier() = InngaarIJuridiskEnhet(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier()
 )
 
 fun juridiskEnhetMedDefaultVerdier() = JuridiskEnhet(
-    organisasjonsnummer = "123456789",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "JuridiskEnhet"
 )
 
 fun virksomhetMedDefaultVerdier() = Virksomhet(
-    organisasjonsnummer = "987654321",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "Virksomhet"
 )
 
 fun organisasjonsleddMedDefaultVerdier() = Organisasjonsledd(
-    organisasjonsnummer = "555555555",
+    organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "Organisasjonsledd"
 )

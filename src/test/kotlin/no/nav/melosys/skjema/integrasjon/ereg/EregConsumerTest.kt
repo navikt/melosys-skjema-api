@@ -8,8 +8,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import java.nio.file.Files
@@ -49,5 +51,19 @@ class EregConsumerTest : ApiTestBase() {
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Nav-Consumer-Id", equalTo("melosys-skjema-api"))
         )
+    }
+
+    @Test
+    fun `hentOrganisasjon kaster OrganisasjonEksistererIkkeException når EREG returnerer 404`() {
+        wireMockServer.stubFor(get(urlPathMatching(".*"))
+            .willReturn(
+                aResponse()
+                    .withStatus(404)
+            )
+        )
+
+        assertThrows<OrganisasjonEksistererIkkeException> {
+            eregConsumer.hentOrganisasjon("999999999")
+        }
     }
 }

@@ -16,3 +16,4 @@ ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.d
 MERKELAPP: foo123
 RESSURS_ID: foo123
 EREG_URL: https://ereg-services.intern.dev.nav.no
+BRUK_SYNTETISK_FNR: true

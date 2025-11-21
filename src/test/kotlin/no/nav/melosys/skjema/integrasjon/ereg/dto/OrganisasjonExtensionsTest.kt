@@ -1,7 +1,9 @@
 package no.nav.melosys.skjema.integrasjon.ereg.dto
 
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.*
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class OrganisasjonExtensionsTest {
@@ -10,9 +12,10 @@ class OrganisasjonExtensionsTest {
     fun `finnJuridiskEnhetOrganisasjonsnummer returns organisasjonsnummer when organisasjon is JuridiskEnhet`() {
         val juridiskEnhet = juridiskEnhetMedDefaultVerdier()
 
-        val result = juridiskEnhet.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isEqualTo("123456789")
+        juridiskEnhet.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe(juridiskEnhet.organisasjonsnummer)
+        }
     }
 
     @Test
@@ -21,9 +24,10 @@ class OrganisasjonExtensionsTest {
             inngaarIJuridiskEnheter = listOf(inngaarIJuridiskEnhetMedDefaultVerdier())
         )
 
-        val result = virksomhet.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isEqualTo("123456789")
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe(virksomhet.inngaarIJuridiskEnheter?.first()?.organisasjonsnummer)
+        }
     }
 
     @Test
@@ -41,9 +45,10 @@ class OrganisasjonExtensionsTest {
             )
         )
 
-        val result = virksomhet.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isEqualTo("123456789")
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe(parentLedd.inngaarIJuridiskEnheter?.first()?.organisasjonsnummer)
+        }
     }
 
     @Test
@@ -52,9 +57,10 @@ class OrganisasjonExtensionsTest {
             inngaarIJuridiskEnheter = listOf(inngaarIJuridiskEnhetMedDefaultVerdier())
         )
 
-        val result = organisasjonsledd.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isEqualTo("123456789")
+        organisasjonsledd.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe(organisasjonsledd.inngaarIJuridiskEnheter?.first()?.organisasjonsnummer)
+        }
     }
 
     @Test
@@ -73,9 +79,10 @@ class OrganisasjonExtensionsTest {
             )
         )
 
-        val result = childLedd.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isEqualTo("123456789")
+        childLedd.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe(parentLedd.inngaarIJuridiskEnheter?.first()?.organisasjonsnummer)
+        }
     }
 
     @Test
@@ -85,9 +92,7 @@ class OrganisasjonExtensionsTest {
             bestaarAvOrganisasjonsledd = null
         )
 
-        val result = virksomhet.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isNull()
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer().shouldBeNull()
     }
 
     @Test
@@ -97,8 +102,6 @@ class OrganisasjonExtensionsTest {
             organisasjonsleddOver = null
         )
 
-        val result = organisasjonsledd.finnJuridiskEnhetOrganisasjonsnummer()
-
-        assertThat(result).isNull()
+        organisasjonsledd.finnJuridiskEnhetOrganisasjonsnummer().shouldBeNull()
     }
 }
