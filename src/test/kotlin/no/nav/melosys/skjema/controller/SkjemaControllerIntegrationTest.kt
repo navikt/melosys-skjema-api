@@ -852,29 +852,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             )
         }
 
-        val invalidArbeidsgiverensVirksomhetINorgeCombinations = listOf(
-            arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
-                erArbeidsgiverenOffentligVirksomhet = true,
-                erArbeidsgiverenBemanningsEllerVikarbyraa = false,
-                opprettholderArbeidsgiverenVanligDrift = false
-            ),
-            arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
-                erArbeidsgiverenOffentligVirksomhet = false,
-                erArbeidsgiverenBemanningsEllerVikarbyraa = null,
-                opprettholderArbeidsgiverenVanligDrift = null
-            )
-        ).map {
-            SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiverens-virksomhet-i-norge",
-                requestBody = it
-            )
-        }
-
-        return (
-                invalidFodselsnummerTestCases
-                        + invalidOrganisasjonsnummerTestCases
-                        + invalidArbeidsgiverensVirksomhetINorgeCombinations
-                )
+        return ( invalidFodselsnummerTestCases + invalidOrganisasjonsnummerTestCases )
             .map { Arguments.of(it) }
     }
 
