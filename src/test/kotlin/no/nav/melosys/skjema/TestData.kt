@@ -35,6 +35,7 @@ import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
+import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -285,4 +286,13 @@ fun organisasjonsleddMedDefaultVerdier() = Organisasjonsledd(
     organisasjonsnummer = korrektSyntetiskOrgnr,
     navn = navnMedDefaultVerdier(),
     type = "Organisasjonsledd"
+)
+
+// Repr/Fullmakt test data
+
+fun fullmaktMedDefaultVerdier() = Fullmakt(
+    fullmaktsgiver = "12345678901",
+    fullmektig = "98765432109",
+    leserettigheter = listOf("MED"),
+    skriverettigheter = listOf("MED")
 )

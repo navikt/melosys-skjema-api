@@ -35,9 +35,6 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
     }
 
     fun endepunkterSomKreverGyldigToken(): List<Arguments> = listOf(
-        // AuthController
-        Arguments.of(HttpMethod.GET, "/api/auth/representasjoner"),
-
         // SkjemaController
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver"),
@@ -65,11 +62,8 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/preutfyll/person"),
         Arguments.of(HttpMethod.GET, "/api/preutfyll/org/123456789"),
 
-        // FullmaktController
-        Arguments.of(HttpMethod.POST, "/api/fullmakt"),
-        Arguments.of(HttpMethod.GET, "/api/fullmakt/123"),
-        Arguments.of(HttpMethod.POST, "/api/fullmakt/123/godkjenn"),
-        Arguments.of(HttpMethod.POST, "/api/fullmakt/123/avslag"),
+        // RepresentasjonController
+        Arguments.of(HttpMethod.GET, "/api/representasjon"),
 
         // AltinnController
         Arguments.of(HttpMethod.GET, "/api/hentTilganger"),
