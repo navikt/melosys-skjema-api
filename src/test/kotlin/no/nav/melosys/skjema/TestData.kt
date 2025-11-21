@@ -30,6 +30,7 @@ import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
+import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 
 // NB! Endringer i defaultverdier i testdata skal ikke føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
@@ -252,4 +253,13 @@ fun organisasjonsleddMedDefaultVerdier() = Organisasjonsledd(
     organisasjonsnummer = "555555555",
     navn = navnMedDefaultVerdier(),
     type = "Organisasjonsledd"
+)
+
+// Repr/Fullmakt test data
+
+fun fullmaktMedDefaultVerdier() = Fullmakt(
+    fullmaktsgiver = "12345678901",
+    fullmektig = "98765432109",
+    leserettigheter = listOf("MED"),
+    skriverettigheter = listOf("MED")
 )

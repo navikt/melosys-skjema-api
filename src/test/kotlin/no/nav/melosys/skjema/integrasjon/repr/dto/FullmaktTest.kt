@@ -1,15 +1,20 @@
 package no.nav.melosys.skjema.integrasjon.repr.dto
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.JsonTest
 
-class FullmaktTest : FunSpec({
+@JsonTest
+class FullmaktTest {
 
-    val objectMapper = jacksonObjectMapper()
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
 
-    test("Fullmakt skal serialisere og deserialisere korrekt") {
+    @Test
+    fun `Fullmakt skal serialisere og deserialisere korrekt`() {
         val fullmakt = Fullmakt(
             fullmaktsgiver = "12345678901",
             fullmektig = "98765432109",
@@ -23,7 +28,8 @@ class FullmaktTest : FunSpec({
         deserialized shouldBe fullmakt
     }
 
-    test("Fullmakt skal ignorere ukjente felter ved deserialisering") {
+    @Test
+    fun `Fullmakt skal ignorere ukjente felter ved deserialisering`() {
         val jsonWithUnknownFields = """
             {
               "fullmaktsgiver": "12345678901",
@@ -45,7 +51,8 @@ class FullmaktTest : FunSpec({
         fullmakt.skriverettigheter shouldBe listOf("MED")
     }
 
-    test("Fullmakt skal håndtere tomme lister for rettigheter") {
+    @Test
+    fun `Fullmakt skal håndtere tomme lister for rettigheter`() {
         val json = """
             {
               "fullmaktsgiver": "12345678901",
@@ -60,4 +67,4 @@ class FullmaktTest : FunSpec({
         fullmakt.leserettigheter shouldBe emptyList()
         fullmakt.skriverettigheter shouldBe emptyList()
     }
-})
+}

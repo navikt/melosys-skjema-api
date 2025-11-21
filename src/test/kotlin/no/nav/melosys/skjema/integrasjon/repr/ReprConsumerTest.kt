@@ -8,7 +8,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.equals.shouldBeEqual
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenResponse
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
 import org.junit.jupiter.api.AfterEach
@@ -59,7 +59,7 @@ class ReprConsumerTest : ApiTestBase() {
         """.trimIndent()
 
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v2/eksternbruker/fullmakt/kan-representere"))
+            get(urlPathMatching(".*"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -72,17 +72,13 @@ class ReprConsumerTest : ApiTestBase() {
 
         fullmakter.shouldHaveSize(2)
         fullmakter[0].shouldBeEqual(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED", "DAG"),
-                skriverettigheter = listOf("MED")
+            fullmaktMedDefaultVerdier().copy(
+                leserettigheter = listOf("MED", "DAG")
             )
         )
         fullmakter[1].shouldBeEqual(
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "11111111111",
-                fullmektig = "98765432109",
                 leserettigheter = listOf("DAG", "FOS"),
                 skriverettigheter = listOf("DAG")
             )

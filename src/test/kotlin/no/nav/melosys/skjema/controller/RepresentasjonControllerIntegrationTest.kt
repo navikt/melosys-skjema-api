@@ -6,7 +6,9 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
-import no.nav.melosys.skjema.*
+import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
+import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.repr.ReprConsumer
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.security.mock.oauth2.MockOAuth2Server
@@ -38,16 +40,11 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
         clearMocks(reprConsumer)
 
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED", "DAG"),
-                skriverettigheter = listOf("MED")
+            fullmaktMedDefaultVerdier().copy(
+                leserettigheter = listOf("MED", "DAG")
             ),
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "11111111111",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
                 skriverettigheter = emptyList()
             )
         )
@@ -115,15 +112,9 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
         clearMocks(reprConsumer)
 
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            ),
-            Fullmakt(
+            fullmaktMedDefaultVerdier(),
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "22222222222",
-                fullmektig = "98765432109",
                 leserettigheter = listOf("DAG", "FOS"),
                 skriverettigheter = listOf("DAG")
             )

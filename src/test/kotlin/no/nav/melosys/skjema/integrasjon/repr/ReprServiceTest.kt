@@ -7,7 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
 
 class ReprServiceTest : FunSpec({
 
@@ -21,24 +21,18 @@ class ReprServiceTest : FunSpec({
     test("hentKanRepresentere skal returnere kun fullmakter med MED-området") {
         val fullmakter = listOf(
             // Fullmakt 1: har MED i både lese- og skriverettigheter
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED", "DAG"),
-                skriverettigheter = listOf("MED")
+            fullmaktMedDefaultVerdier().copy(
+                leserettigheter = listOf("MED", "DAG")
             ),
             // Fullmakt 2: har IKKE MED (skal filtreres bort)
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "22222222222",
-                fullmektig = "98765432109",
                 leserettigheter = listOf("DAG", "FOS"),
                 skriverettigheter = listOf("DAG")
             ),
             // Fullmakt 3: har MED kun i leserettigheter
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "33333333333",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
                 skriverettigheter = emptyList()
             )
         )
@@ -55,15 +49,12 @@ class ReprServiceTest : FunSpec({
 
     test("hentKanRepresentere skal returnere tom liste når ingen MED-fullmakter") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
+            fullmaktMedDefaultVerdier().copy(
                 leserettigheter = listOf("DAG", "FOS"),
                 skriverettigheter = listOf("DAG")
             ),
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "22222222222",
-                fullmektig = "98765432109",
                 leserettigheter = listOf("PEN"),
                 skriverettigheter = emptyList()
             )
@@ -94,14 +85,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harSkriverettigheterForMedlemskap skal returnere true når fullmakt finnes") {
-        val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            )
-        )
+        val fullmakter = listOf(fullmaktMedDefaultVerdier())
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
 
@@ -112,12 +96,7 @@ class ReprServiceTest : FunSpec({
 
     test("harSkriverettigheterForMedlemskap skal returnere false når kun leserettigheter") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = emptyList()
-            )
+            fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
         )
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
@@ -129,12 +108,7 @@ class ReprServiceTest : FunSpec({
 
     test("harSkriverettigheterForMedlemskap skal returnere false når fullmakt ikke finnes") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "11111111111",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            )
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "11111111111")
         )
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
@@ -154,12 +128,7 @@ class ReprServiceTest : FunSpec({
 
     test("harLeserettigheterForMedlemskap skal returnere true når fullmakt finnes") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = emptyList()
-            )
+            fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
         )
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
@@ -170,14 +139,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harLeserettigheterForMedlemskap skal returnere true når skriverettigheter finnes") {
-        val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            )
-        )
+        val fullmakter = listOf(fullmaktMedDefaultVerdier())
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
 
@@ -205,17 +167,10 @@ class ReprServiceTest : FunSpec({
     test("skal validere fullmaktsgiver matching korrekt") {
         val fullmakter = listOf(
             // Person A har gitt fullmakt med skriverettigheter
-            Fullmakt(
-                fullmaktsgiver = "11111111111",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            ),
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "11111111111"),
             // Person B har gitt fullmakt med kun leserettigheter
-            Fullmakt(
+            fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "22222222222",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
                 skriverettigheter = emptyList()
             )
         )
@@ -234,9 +189,7 @@ class ReprServiceTest : FunSpec({
 
     test("harSkriverettigheterForMedlemskap skal returnere false når MED ikke i skriverettigheter") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
+            fullmaktMedDefaultVerdier().copy(
                 leserettigheter = listOf("MED", "DAG"),
                 skriverettigheter = listOf("DAG") // MED IKKE i skriverettigheter
             )
@@ -251,9 +204,7 @@ class ReprServiceTest : FunSpec({
 
     test("harLeserettigheterForMedlemskap skal returnere false når MED ikke i leserettigheter") {
         val fullmakter = listOf(
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
+            fullmaktMedDefaultVerdier().copy(
                 leserettigheter = listOf("DAG", "FOS"), // MED IKKE i leserettigheter
                 skriverettigheter = listOf("DAG")
             )
@@ -269,18 +220,11 @@ class ReprServiceTest : FunSpec({
     test("skal håndtere flere fullmakter fra samme fullmaktsgiver") {
         val fullmakter = listOf(
             // Samme fullmaktsgiver, forskjellige områder
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
+            fullmaktMedDefaultVerdier().copy(
                 leserettigheter = listOf("DAG"),
                 skriverettigheter = listOf("DAG")
             ),
-            Fullmakt(
-                fullmaktsgiver = "12345678901",
-                fullmektig = "98765432109",
-                leserettigheter = listOf("MED"),
-                skriverettigheter = listOf("MED")
-            )
+            fullmaktMedDefaultVerdier()
         )
 
         every { mockConsumer.hentKanRepresentere() } returns fullmakter
