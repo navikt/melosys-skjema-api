@@ -16,6 +16,11 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
@@ -31,8 +36,11 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 
+// Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
 // Hvis endringer i verdier her skulle føre til at tester feiler, så fiks det ved å overstyre verdiene i de feilende testene, ikke verdiene i TestData.
+// Med unntak av tilfeller hvor defaultverdiene har ugyldige formater og kombinasjoner mtp validatorene (no/nav/melosys/skjema/controller/validators).
+
 
 val korrektSyntetiskFnr = "02837999890"
 val etAnnetKorrektSyntetiskFnr = "20925297314"
@@ -69,9 +77,7 @@ fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
-    erArbeidsgiverenOffentligVirksomhet = true,
-    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
-    opprettholderArbeidsgiverenVanligDrift = true
+    erArbeidsgiverenOffentligVirksomhet = true
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
@@ -111,6 +117,28 @@ fun paLandDtoMedDefaultVerdier() = PaLandDto(
 fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
     arbeidsstedType = ArbeidsstedType.PA_LAND,
     paLand = paLandDtoMedDefaultVerdier(),
+)
+
+fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
+    navnPaInnretning = "Test Platform",
+    typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
+    sokkelLand = "NO"
+)
+
+fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
+    navnPaSkip = "MS Test Ship",
+    yrketTilArbeidstaker = "Skipsfører",
+    seilerI = Farvann.INTERNASJONALT_FARVANN,
+    flaggland = "NO",
+    territorialfarvannLand = null
+)
+
+fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
+    hjemmebaseLand = "NO",
+    hjemmebaseNavn = "Oslo Airport",
+    erVanligHjemmebase = true,
+    vanligHjemmebaseLand = null,
+    vanligHjemmebaseNavn = null
 )
 
 fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(

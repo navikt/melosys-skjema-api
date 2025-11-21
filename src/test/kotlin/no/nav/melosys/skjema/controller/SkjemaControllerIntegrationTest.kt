@@ -806,7 +806,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val invalidFodselsnummere = listOf("1234567890A", "1234567890", "123456789012", "12345-67890")
         val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
 
-        val fodselsnummerTestCases = invalidFodselsnummere.flatMap {
+        val invalidFodselsnummerTestCases = invalidFodselsnummere.flatMap {
             listOf(
                 SkjemaStegTestFixture<Unit>(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker",
@@ -823,7 +823,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             )
         }
 
-        val organisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
+        val invalidOrganisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
             listOf(
                 SkjemaStegTestFixture<Unit>(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver",
@@ -852,7 +852,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             )
         }
 
-        return (fodselsnummerTestCases + organisasjonsnummerTestCases).map { Arguments.of(it) }
+        return ( invalidFodselsnummerTestCases + invalidOrganisasjonsnummerTestCases )
+            .map { Arguments.of(it) }
     }
 
     @ParameterizedTest
