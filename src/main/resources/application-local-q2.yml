@@ -21,3 +21,12 @@ BRUK_SYNTETISK_FNR: true
 REPR_URL: https://repr-api.intern.dev.nav.no
 REPR_CACHE_TTL_MINUTES: 0
 TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api
+
+kubernetes:
+  azure:
+    kubectl:
+      path: ${KUBECTL_PATH:/usr/local/bin}
+    kubelogin:
+      path: ${KUBELOGIN_PATH:/home/linuxbrew/.linuxbrew/bin}
+    gcloud:
+      path: ${GCLOUD_PATH}
