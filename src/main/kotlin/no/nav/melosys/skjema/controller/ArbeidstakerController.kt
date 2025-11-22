@@ -52,6 +52,8 @@ class ArbeidstakerController(
             etternavn = request.etternavn
         )
 
+        // TODO: Legg til auditlogs av personverifiseringen
+
         return ResponseEntity.ok(
             VerifiserPersonResponse(
                 navn = navn,
