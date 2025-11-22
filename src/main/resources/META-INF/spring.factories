@@ -1,1 +1,3 @@
-org.springframework.boot.env.EnvironmentPostProcessor=no.nav.melosys.skjema.config.LocalQ1AndQ1EnvironmentPostProcessor
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  no.nav.melosys.skjema.config.LocalQ1AndQ1EnvironmentPostProcessor,\
+  no.nav.melosys.skjema.config.KubernetesAzureSecretLoader
