@@ -140,3 +140,6 @@ rate-limit:
   organisasjonssok:
     max-requests: 15
     time-window-minutes: 1
+  personverifisering:
+    max-requests: 5
+    time-window-minutes: 1
