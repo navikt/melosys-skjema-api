@@ -5,11 +5,8 @@ import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
 
 private val log = KotlinLogging.logger { }
 
