@@ -154,4 +154,44 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isUnauthorized
     }
+
+    @Test
+    @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere 429 ved rate limit overskredet")
+    fun `POST verifiser-person skal returnere 429 ved rate limit overskredet`() {
+        clearMocks(pdlService)
+
+        val request = VerifiserPersonRequest(
+            fodselsnummer = korrektSyntetiskFnr,
+            etternavn = "Nordmann"
+        )
+
+        every {
+            pdlService.verifiserOgHentPerson(korrektSyntetiskFnr, "Nordmann")
+        } returns Pair("Ola Nordmann", LocalDate.of(1990, 1, 1))
+
+        val accessToken = mockOAuth2Server.getToken(
+            claims = mapOf("pid" to "12345678901")
+        )
+
+        // Send 5 requests (limit er 5 per minutt)
+        repeat(5) {
+            webTestClient.post()
+                .uri("/api/arbeidstaker/verifiser-person")
+                .header("Authorization", "Bearer $accessToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk
+        }
+
+        // Den 6. requesten skal feile med 429
+        webTestClient.post()
+            .uri("/api/arbeidstaker/verifiser-person")
+            .header("Authorization", "Bearer $accessToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isEqualTo(429)
+            .expectHeader().exists("Retry-After")
+    }
 }
