@@ -46,6 +46,9 @@ spec:
         cascadingDelete: false
   tokenx:
     enabled: true
+  azure:
+    application:
+      enabled: true
   accessPolicy:
     inbound:
       rules:
@@ -57,8 +60,8 @@ spec:
     outbound:
       # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
-        - host: pdl-api.prod-fss-pub.nais.io
-        - host: aareg-services.prod-fss-pub.nais.io  
+        - host: pdl-api.dev-fss-pub.nais.io
+        - host: aareg-services.prod-fss-pub.nais.io
         - host: ereg-services.dev-fss-pub.nais.io
         - host: altinn.no
         - host: nav-melding-api.intern.nav.no
@@ -68,6 +71,9 @@ spec:
           namespace: teammelosys
         - application: repr-api
           namespace: repr
+        - application: pdl-api
+          namespace: pdl
+          cluster: dev-fss
   envFrom:
     - secret: melosys-skjema-api
   env:
@@ -77,3 +83,7 @@ spec:
       value: test-fager
     - name: RESSURS_ID
       value: test-fager
+    - name: PDL_URL
+      value: https://pdl-api.dev-fss-pub.nais.io/graphql
+    - name: PDL_SCOPE
+      value: api://dev-fss.pdl.pdl-api/.default
