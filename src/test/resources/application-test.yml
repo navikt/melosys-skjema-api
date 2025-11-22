@@ -12,6 +12,11 @@ ALTINN_RESSURS: test-ressurs
 REPR_URL: ${wiremock.server.url}
 TOKENX_AUDIENCE_REPR: test:repr:repr-api
 REPR_CACHE_TTL_MINUTES: 0
+PDL_URL: ${wiremock.server.url}
+PDL_SCOPE: test:pdl:pdl-api
+AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: ${mock-oauth2-server.baseUrl}/azure/token
+AZURE_APP_CLIENT_ID: test-azure-client-id
+AZURE_APP_CLIENT_SECRET: test-azure-client-secret
 NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app

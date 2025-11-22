@@ -21,6 +21,9 @@ BRUK_SYNTETISK_FNR: true
 REPR_URL: https://repr-api.intern.dev.nav.no
 REPR_CACHE_TTL_MINUTES: 0
 TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api
+PDL_URL: https://pdl-api.dev.intern.nav.no/graphql
+PDL_SCOPE: api://dev-fss.pdl.pdl-api/.default
+AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/oauth2/v2.0/token
 
 kubernetes:
   azure:

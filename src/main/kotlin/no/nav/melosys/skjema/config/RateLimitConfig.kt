@@ -9,6 +9,7 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "rate-limit")
 class RateLimitConfig {
     var organisasjonssok: TypeConfig = TypeConfig()
+    var personverifisering: TypeConfig = TypeConfig()
 
     /**
      * Henter konfigurasjon for en gitt operasjonstype.
@@ -16,6 +17,7 @@ class RateLimitConfig {
     fun getConfigFor(type: RateLimitOperationType): TypeConfig {
         return when (type) {
             RateLimitOperationType.ORGANISASJONSSOK -> organisasjonssok
+            RateLimitOperationType.PERSONVERIFISERING -> personverifisering
         }
     }
 
