@@ -11,7 +11,6 @@ import java.util.*
 class MDCOperations {
     companion object {
         const val MDC_CALL_ID = "callId"
-        const val MDC_USER_ID = "userId"
         const val MDC_CONSUMER_ID = "consumerId"
         const val CORRELATION_ID = "correlation-id"
         const val X_CORRELATION_ID = "X-Correlation-ID"
