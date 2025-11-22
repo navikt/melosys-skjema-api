@@ -35,7 +35,7 @@ class PdlAuthFilterAzure(
         .build()
 
     /**
-     * PDL krever ALLTID M2M token (client credentials) og Nav-Consumer-Token header
+     * Skal alltid bruke M2M token (client credentials) og Nav-Consumer-Token header
      */
     override fun filter(clientRequest: ClientRequest, exchangeFunction: ExchangeFunction): Mono<ClientResponse> {
         val token = "Bearer ${oAuth2AccessTokenService.getAccessToken(clientPropertiesForM2M).access_token}"
