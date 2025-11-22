@@ -120,3 +120,8 @@ logging:
 validation:
   fodselsnummer:
     synthetic-mode: ${BRUK_SYNTETISK_FNR}
+# Rate limiting
+rate-limit:
+  organisasjonssok:
+    max-requests: 15
+    time-window-minutes: 1

@@ -3,6 +3,10 @@ package no.nav.melosys.skjema.controller
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.service.RateLimitOperationType
+import no.nav.melosys.skjema.service.RateLimiterService
+import no.nav.melosys.skjema.service.exception.RateLimitExceededException
+import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,14 +20,26 @@ private val log = KotlinLogging.logger { }
 @RequestMapping("/api/ereg")
 @Protected
 class EregController(
-    private val eregService: EregService
+    private val eregService: EregService,
+    private val rateLimiterService: RateLimiterService
 ) {
 
+    /**
+     * Henter organisasjon med juridisk enhet fra Enhetsregisteret.
+     * Inkluderer rate limiting (se RateLimitConfig for grenser).
+     *
+     * @param orgnummer 9-sifret organisasjonsnummer
+     * @return Organisasjon med juridisk enhet, inkludert navn, adresse, enhetstype, etc.
+     * @throws RateLimitExceededException hvis brukeren har overskredet rate limit
+     */
     @GetMapping("/organisasjon/{orgnummer}")
     fun hentOrganisasjonMedJuridiskEnhet(
-        @PathVariable orgnummer: String,
+        @PathVariable orgnummer: String
     ): ResponseEntity<OrganisasjonMedJuridiskEnhet> {
-        log.info { "Henter organisasjon fra EREG: $orgnummer" }
+        val userId = SubjectHandler.getInstance().getUserID()
+        if (rateLimiterService.isRateLimited(userId, RateLimitOperationType.ORGANISASJONSSOK)) {
+            throw RateLimitExceededException(RateLimitOperationType.ORGANISASJONSSOK)
+        }
 
         val organisasjon = eregService.hentOrganisasjonMedJuridiskEnhet(orgnummer)
 

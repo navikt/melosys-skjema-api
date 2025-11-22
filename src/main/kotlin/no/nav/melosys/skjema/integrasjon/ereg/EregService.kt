@@ -15,8 +15,15 @@ class EregService(
     private val eregConsumer: EregConsumer
 ) {
 
+    /**
+     * Henter organisasjon med juridisk enhet fra EREG.
+     *
+     * @param orgnummer 9-sifret organisasjonsnummer
+     * @return Organisasjon med juridisk enhet
+     */
     fun hentOrganisasjonMedJuridiskEnhet(orgnummer: String): OrganisasjonMedJuridiskEnhet {
-        log.info { "Henter organisasjon fra EREG: $orgnummer" }
+        log.info { "Henter organisasjon fra EREG: ${orgnummer.take(3)}***" }
+
         val organisasjon = eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = true)
         val juridiskEnhet = hentJuridiskEnhetForOrganisasjon(organisasjon)
 
