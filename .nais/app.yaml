@@ -71,6 +71,9 @@ spec:
           namespace: teammelosys
         - application: repr-api
           namespace: repr
+        - application: pdl-api
+          namespace: pdl
+          cluster: dev-fss
   envFrom:
     - secret: melosys-skjema-api
   env:
