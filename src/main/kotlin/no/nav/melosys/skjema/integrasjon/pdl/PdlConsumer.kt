@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLResponse
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlHentPersonResponse
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
@@ -19,12 +20,14 @@ class PdlConsumer(
 ) {
 
     /**
-     * Henter person fra PDL med navn og fødselsdato
+     * Henter person fra PDL med navn og fødselsdato.
+     * Resultatet caches i 5 minutter for å redusere belastning på PDL.
      *
      * @param ident Fødselsnummer eller d-nummer
      * @return PdlPerson med navn og fødselsdato
      * @throws IllegalArgumentException hvis person ikke finnes eller response er ugyldig
      */
+    @Cacheable(value = ["pdl-person"], key = "#ident")
     fun hentPerson(ident: String): PdlPerson {
         log.info { "Henter person fra PDL" }
 
