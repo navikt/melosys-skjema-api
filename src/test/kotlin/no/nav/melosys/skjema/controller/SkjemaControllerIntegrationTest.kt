@@ -24,8 +24,6 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.CreateArbeidsgiverSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidstaker.CreateArbeidstakerSkjemaRequest
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
@@ -101,6 +99,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.deleteAll()
 
         every { altinnService.harBrukerTilgang(any()) } returns true
+        every { altinnService.hentBrukersTilganger() } returns emptyList()
         every { notificationService.sendNotificationToArbeidstaker(any(), any()) } returns Unit
         every {
             notificationService.sendNotificationToArbeidsgiver(
@@ -140,56 +139,9 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             }
     }
 
-    @Test
-    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver skal opprette nytt skjema")
-    fun `POST skjema skal opprette nytt skjema`() {
-        val token = createTokenForUser(korrektSyntetiskFnr)
-        val createRequest = CreateArbeidsgiverSkjemaRequest(korrektSyntetiskOrgnr)
-
-        val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(createRequest)
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<ArbeidsgiversSkjemaDto>()
-            .returnResult().responseBody
-
-        responseBody.run {
-            this.shouldNotBeNull()
-            this shouldBe ArbeidsgiversSkjemaDto(
-                id = this.id,
-                orgnr = createRequest.orgnr,
-                status = SkjemaStatus.UTKAST,
-                data = ArbeidsgiversSkjemaDataDto()
-            )
-            skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
-        }
-    }
 
     @Test
-    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver skal ikke tillate å opprette skjema for orgnr bruker ikke har tilgang til")
-    fun `POST skjema bruker kan ikke opprette hvis ikke tilgang`() {
-        val token = createTokenForUser(korrektSyntetiskFnr)
-        val createRequest = CreateArbeidsgiverSkjemaRequest(korrektSyntetiskOrgnr)
-
-        every { altinnService.harBrukerTilgang(createRequest.orgnr) } returns false
-
-        webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(createRequest)
-            .exchange()
-            .expectStatus().isNotFound
-
-        skjemaRepository.findByOrgnr(createRequest.orgnr).shouldBeEmpty()
-    }
-
-    @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -203,7 +155,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(savedSkjema.fnr!!)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidstaker-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -224,7 +176,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal returnere spesifikt skjema")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -238,7 +190,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(korrektSyntetiskFnr)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -259,13 +211,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(korrektSyntetiskFnr)
         val nonExistentId = UUID.randomUUID()
 
         webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/$nonExistentId")
+            .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId/arbeidstaker-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -359,35 +311,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         }
     }
 
-    @Test
-    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidstaker skal opprette nytt skjema")
-    fun `POST arbeidstaker skjema skal opprette nytt skjema`() {
-        val createRequest = CreateArbeidstakerSkjemaRequest(korrektSyntetiskFnr)
-
-        val token = createTokenForUser(createRequest.fnr)
-
-        val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(createRequest)
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<ArbeidstakersSkjemaDto>()
-            .returnResult().responseBody
-
-        responseBody.run {
-            this.shouldNotBeNull()
-            this shouldBe ArbeidstakersSkjemaDto(
-                id = this.id,
-                fnr = createRequest.fnr,
-                status = SkjemaStatus.UTKAST,
-                data = ArbeidstakersSkjemaDataDto()
-            )
-            skjemaRepository.findByIdOrNull(this.id).shouldNotBeNull()
-        }
-    }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("arbeidsgiverStegTestFixtures")
@@ -449,7 +372,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
     @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
-    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
+    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal ikke kunne aksessere andres skjemaer")
     fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
@@ -464,11 +387,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun orgnummerHarVerdiOgOrgnnummerErNull(): List<Arguments> = listOf(
@@ -478,8 +401,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang")
-    fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(
+    @DisplayName("Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang")
+    fun `Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -502,13 +425,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr=null")
-    fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(
+    @DisplayName("Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr=null")
+    fun `Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr null`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -530,11 +453,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren",
@@ -579,8 +502,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidstakerEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet")
-    fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(
+    @DisplayName("Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet")
+    fun `Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -604,11 +527,11 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view", null),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger",
@@ -809,14 +732,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val invalidFodselsnummerTestCases = invalidFodselsnummere.flatMap {
             listOf(
                 SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker",
-                    requestBody = CreateArbeidstakerSkjemaRequest(fnr = it)
-                ),
-                SkjemaStegTestFixture(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakeren",
                     requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = it)
                 ),
-                SkjemaStegTestFixture(
+                SkjemaStegTestFixture<Unit>(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/dine-opplysninger",
                     requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = it)
                 )
@@ -826,10 +745,6 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val invalidOrganisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
             listOf(
                 SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver",
-                    requestBody = CreateArbeidsgiverSkjemaRequest(orgnr = it)
-                ),
-                SkjemaStegTestFixture(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/arbeidssituasjon",
                     requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
                         virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
@@ -837,7 +752,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                         )
                     )
                 ),
-                SkjemaStegTestFixture(
+                SkjemaStegTestFixture<Unit>(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
                     requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                         virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
@@ -845,7 +760,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                         )
                     )
                 ),
-                SkjemaStegTestFixture(
+                SkjemaStegTestFixture<Unit>(
                     uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
                     requestBody = arbeidsgiverenDtoMedDefaultVerdier().copy(organisasjonsnummer = it)
                 )
@@ -886,14 +801,10 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
         return listOf(
             SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver",
-                requestBody = CreateArbeidsgiverSkjemaRequest(orgnr = korrektSyntetiskOrgnr)
-            ),
-            SkjemaStegTestFixture(
                 uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
                 requestBody = arbeidsgiverenDtoMedDefaultVerdier()
             ),
-            SkjemaStegTestFixture(
+            SkjemaStegTestFixture<Unit>(
                 uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
                 requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                     virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
@@ -901,7 +812,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
                     )
                 )
             ),
-            SkjemaStegTestFixture(
+            SkjemaStegTestFixture<Unit>(
                 uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/arbeidssituasjon",
                 requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
                     virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
