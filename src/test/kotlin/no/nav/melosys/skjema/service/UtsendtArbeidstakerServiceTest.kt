@@ -364,4 +364,570 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             exception.message shouldContain "finnes ikke"
         }
     }
+
+    context("hentUtkast") {
+        test("skal hente utkast for DEG_SELV") {
+            val currentUser = "12345678910"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            val metadata1 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                harFullmakt = false
+            )
+            val metadata2 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                harFullmakt = false
+            )
+
+            val utkast1 = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadata1,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val utkast2 = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = "999888777",
+                metadata = metadata2,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 2
+            response.utkast.size shouldBe 2
+            response.utkast[0].id shouldBe skjemaId1
+            response.utkast[1].id shouldBe skjemaId2
+        }
+
+        test("skal hente utkast for ARBEIDSGIVER basert på Altinn-tilganger") {
+            val currentUser = "99999999999"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            val metadata1 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                arbeidsgiverNavn = "Bedrift A AS"
+            )
+            val metadata2 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                arbeidsgiverNavn = "Bedrift B AS"
+            )
+
+            // Utkast for to forskjellige bedrifter
+            val utkast1 = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = "12345678910",
+                orgnr = "111222333",
+                metadata = metadata1,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val utkast2 = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = "10987654321",
+                orgnr = "444555666",
+                metadata = metadata2,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast for bedrift uten Altinn-tilgang (skal ikke vises)
+            val utkast3 = Skjema(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.UTKAST,
+                fnr = "11111111111",
+                orgnr = "777888999",
+                metadata = metadata2,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val altinnTilganger = listOf(
+                no.nav.melosys.skjema.dto.OrganisasjonDto("111222333", "Bedrift A AS", "AS"),
+                no.nav.melosys.skjema.dto.OrganisasjonDto("444555666", "Bedrift B AS", "AS")
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 2
+            response.utkast.size shouldBe 2
+            response.utkast.map { it.id } shouldBe listOf(skjemaId1, skjemaId2)
+        }
+
+        test("skal hente utkast for RADGIVER basert på spesifikt rådgiverfirma") {
+            val currentUser = "99999999999"
+            val radgiverfirmaOrgnr = "987654321"
+            val skjemaId1 = UUID.randomUUID()
+
+            val metadata1 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.RADGIVER
+            )
+            // Legg til rådgiverfirma i metadata
+            (metadata1 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+                "radgiverfirma",
+                objectMapper.createObjectNode().apply {
+                    put("orgnr", radgiverfirmaOrgnr)
+                    put("navn", "Rådgiver AS")
+                }
+            )
+
+            val utkast1 = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = "12345678910",
+                orgnr = "111222333",
+                metadata = metadata1,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast med annet rådgiverfirma (skal ikke vises)
+            val metadata2 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.RADGIVER
+            )
+            (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+                "radgiverfirma",
+                objectMapper.createObjectNode().apply {
+                    put("orgnr", "111111111")
+                    put("navn", "Annen Rådgiver AS")
+                }
+            )
+
+            val utkast2 = Skjema(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.UTKAST,
+                fnr = "10987654321",
+                orgnr = "444555666",
+                metadata = metadata2,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirmaOrgnr = radgiverfirmaOrgnr
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 1
+            response.utkast.size shouldBe 1
+            response.utkast[0].id shouldBe skjemaId1
+        }
+
+        test("skal feile når radgiverfirmaOrgnr mangler for RADGIVER") {
+            val currentUser = "99999999999"
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirmaOrgnr = null
+            )
+
+            val exception = shouldThrow<IllegalArgumentException> {
+                service.hentUtkast(request)
+            }
+
+            exception.message shouldContain "radgiverfirmaOrgnr"
+        }
+
+        test("skal hente utkast for ANNEN_PERSON basert på fullmakter") {
+            val currentUser = "99999999999"
+            val person1Fnr = "12345678910"
+            val person2Fnr = "10987654321"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            val metadata1 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ANNEN_PERSON,
+                harFullmakt = true,
+                fullmektigFnr = currentUser
+            )
+            val metadata2 = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ANNEN_PERSON,
+                harFullmakt = true,
+                fullmektigFnr = currentUser
+            )
+
+            val utkast1 = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = person1Fnr,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadata1,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val utkast2 = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = person2Fnr,
+                orgnr = "999888777",
+                metadata = metadata2,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast for person uten fullmakt (skal ikke vises)
+            val utkast3 = Skjema(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.UTKAST,
+                fnr = "11111111111",
+                orgnr = "777888999",
+                metadata = metadata1,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val fullmakter = listOf(
+                no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt(
+                    fullmaktsgiver = person1Fnr,
+                    fullmektig = currentUser,
+                    leserettigheter = listOf("MELOSYS"),
+                    skriverettigheter = listOf("MELOSYS")
+                ),
+                no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt(
+                    fullmaktsgiver = person2Fnr,
+                    fullmektig = currentUser,
+                    leserettigheter = listOf("MELOSYS"),
+                    skriverettigheter = listOf("MELOSYS")
+                )
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockReprService.hentKanRepresentere() } returns fullmakter
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.ANNEN_PERSON
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 2
+            response.utkast.size shouldBe 2
+            // Verifiser at kun utkast for personer med fullmakt returneres
+            response.utkast.any { it.id == skjemaId1 } shouldBe true
+            response.utkast.any { it.id == skjemaId2 } shouldBe true
+        }
+
+        test("skal returnere tom liste når ingen utkast finnes") {
+            val currentUser = "12345678910"
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 0
+            response.utkast.size shouldBe 0
+        }
+
+        test("skal maskere fnr i utkast-oversikten") {
+            val currentUser = "12345678910"
+            val skjemaId = UUID.randomUUID()
+
+            val metadata = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                harFullmakt = false
+            )
+
+            val utkast = Skjema(
+                id = skjemaId,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadata,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.utkast[0].arbeidstakerFnrMaskert shouldBe "123456*****"
+        }
+
+        test("skal kun returnere utkast med riktig representasjonstype for DEG_SELV") {
+            val currentUser = "12345678910"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            // Utkast med DEG_SELV (skal returneres)
+            val metadataDegSelv = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+            val utkastDegSelv = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadataDegSelv,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast med ARBEIDSGIVER (skal ikke returneres)
+            val metadataArbeidsgiver = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER
+            )
+            val utkastArbeidsgiver = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadataArbeidsgiver,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastDegSelv, utkastArbeidsgiver)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 1
+            response.utkast.size shouldBe 1
+            response.utkast[0].id shouldBe skjemaId1
+        }
+
+        test("skal kun returnere utkast med riktig representasjonstype for ARBEIDSGIVER") {
+            val currentUser = "99999999999"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            // Utkast med ARBEIDSGIVER (skal returneres)
+            val metadataArbeidsgiver = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER
+            )
+            val utkastArbeidsgiver = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = "12345678910",
+                orgnr = "111222333",
+                metadata = metadataArbeidsgiver,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast med DEG_SELV (skal ikke returneres)
+            val metadataDegSelv = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+            val utkastDegSelv = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = currentUser,
+                orgnr = "111222333",
+                metadata = metadataDegSelv,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val altinnTilganger = listOf(
+                no.nav.melosys.skjema.dto.OrganisasjonDto("111222333", "Bedrift A AS", "AS")
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastArbeidsgiver, utkastDegSelv)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 1
+            response.utkast.size shouldBe 1
+            response.utkast[0].id shouldBe skjemaId1
+        }
+
+        test("skal kun returnere utkast med riktig representasjonstype for RADGIVER") {
+            val currentUser = "99999999999"
+            val radgiverfirmaOrgnr = "987654321"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            // Utkast med RADGIVER (skal returneres)
+            val metadataRadgiver = createDefaultMetadata(
+                representasjonstype = Representasjonstype.RADGIVER
+            )
+            (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+                "radgiverfirma",
+                objectMapper.createObjectNode().apply {
+                    put("orgnr", radgiverfirmaOrgnr)
+                    put("navn", "Rådgiver AS")
+                }
+            )
+            val utkastRadgiver = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = "12345678910",
+                orgnr = "111222333",
+                metadata = metadataRadgiver,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast med ARBEIDSGIVER (skal ikke returneres)
+            val metadataArbeidsgiver = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER
+            )
+            (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+                "radgiverfirma",
+                objectMapper.createObjectNode().apply {
+                    put("orgnr", radgiverfirmaOrgnr)
+                    put("navn", "Rådgiver AS")
+                }
+            )
+            val utkastArbeidsgiver = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = "10987654321",
+                orgnr = "444555666",
+                metadata = metadataArbeidsgiver,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastRadgiver, utkastArbeidsgiver)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirmaOrgnr = radgiverfirmaOrgnr
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 1
+            response.utkast.size shouldBe 1
+            response.utkast[0].id shouldBe skjemaId1
+        }
+
+        test("skal kun returnere utkast med riktig representasjonstype for ANNEN_PERSON") {
+            val currentUser = "99999999999"
+            val person1Fnr = "12345678910"
+            val skjemaId1 = UUID.randomUUID()
+            val skjemaId2 = UUID.randomUUID()
+
+            // Utkast med ANNEN_PERSON (skal returneres)
+            val metadataAnnenPerson = createDefaultMetadata(
+                representasjonstype = Representasjonstype.ANNEN_PERSON,
+                harFullmakt = true,
+                fullmektigFnr = currentUser
+            )
+            val utkastAnnenPerson = Skjema(
+                id = skjemaId1,
+                status = SkjemaStatus.UTKAST,
+                fnr = person1Fnr,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadataAnnenPerson,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            // Utkast med DEG_SELV (skal ikke returneres)
+            val metadataDegSelv = createDefaultMetadata(
+                representasjonstype = Representasjonstype.DEG_SELV
+            )
+            val utkastDegSelv = Skjema(
+                id = skjemaId2,
+                status = SkjemaStatus.UTKAST,
+                fnr = person1Fnr,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = metadataDegSelv,
+                opprettetAv = currentUser,
+                endretAv = currentUser
+            )
+
+            val fullmakter = listOf(
+                no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt(
+                    fullmaktsgiver = person1Fnr,
+                    fullmektig = currentUser,
+                    leserettigheter = listOf("MELOSYS"),
+                    skriverettigheter = listOf("MELOSYS")
+                )
+            )
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockReprService.hentKanRepresentere() } returns fullmakter
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastAnnenPerson, utkastDegSelv)
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.ANNEN_PERSON
+            )
+
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 1
+            response.utkast.size shouldBe 1
+            response.utkast[0].id shouldBe skjemaId1
+        }
+
+        test("skal håndtere feil ved henting av fullmakter for ANNEN_PERSON") {
+            val currentUser = "99999999999"
+
+            every { mockSubjectHandler.getUserID() } returns currentUser
+            every { mockReprService.hentKanRepresentere() } throws RuntimeException("Feil fra repr-api")
+            every { mockRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
+
+            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+                representasjonstype = Representasjonstype.ANNEN_PERSON
+            )
+
+            // Skal ikke kaste exception, men returnere tom liste
+            val response = service.hentUtkast(request)
+
+            response.antall shouldBe 0
+            response.utkast.size shouldBe 0
+        }
+    }
 })

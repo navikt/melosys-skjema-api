@@ -38,4 +38,12 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
         OR jsonb_extract_path_text(metadata, 'fullmektigFnr') = :fnr
     """, nativeQuery = true)
     fun findByFnrOrFullmektigFnr(@Param("fnr") fnr: String): List<Skjema>
+
+    // Utkast-queries for oversikt
+    fun findByFnrAndStatus(fnr: String, status: SkjemaStatus): List<Skjema>
+
+    fun findByOpprettetAvAndStatus(
+        opprettetAv: String,
+        status: SkjemaStatus
+    ): List<Skjema>
 }
