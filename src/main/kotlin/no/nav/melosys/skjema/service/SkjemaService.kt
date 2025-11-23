@@ -9,7 +9,12 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.CreateArbeidsgiverSkjemaRequest
 import no.nav.melosys.skjema.dto.arbeidstaker.CreateArbeidstakerSkjemaRequest
+import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
+import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -24,6 +29,7 @@ import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerD
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.stereotype.Service
@@ -71,6 +77,17 @@ class SkjemaService(
         return saveAndConvertToArbeidstakersSkjemaDto(createdSkjema)
     }
 
+    /**
+     * @deprecated Bruk UtsendtArbeidstakerService.opprettMedKontekst() i stedet.
+     * Denne metoden mangler omfattende validering og vil bli fjernet.
+     */
+    @Deprecated("Bruk UtsendtArbeidstakerService.opprettMedKontekst() for komplett validering")
+    fun opprettSoknadMedKontekst(request: OpprettSoknadMedKontekstRequest): OpprettSoknadMedKontekstResponse {
+        throw UnsupportedOperationException(
+            "Denne metoden er deprecated. Bruk UtsendtArbeidstakerService.opprettMedKontekst() i stedet."
+        )
+    }
+
     fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
         return skjemaRepository.findByIdAndFnr(skjemaId, currentUser)
@@ -92,6 +109,36 @@ class SkjemaService(
         val skjema = getSkjemaAsArbeidstaker(skjemaId)
 
         return convertToArbeidstakersSkjemaDto(skjema)
+    }
+
+    /**
+     * Henter skjema som UtsendtArbeidstakerSkjema med type-safe metadata.
+     * Kun for internal bruk i service-laget.
+     */
+    private fun getUtsendtArbeidstakerSkjema(skjemaId: UUID, currentUser: String): UtsendtArbeidstakerSkjema {
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
+
+        // Sjekk tilgang basert på rolle
+        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+        val metadata = utsendtSkjema.metadata
+
+        // Sjekk om bruker har tilgang
+        val harTilgang = when {
+            // Arbeidstaker selv (DEG_SELV) eller fullmektig
+            skjema.fnr == currentUser -> true
+            // Fullmektig
+            metadata.fullmektigFnr == currentUser -> true
+            // Arbeidsgiver/rådgiver med Altinn-tilgang
+            skjema.orgnr != null && altinnService.harBrukerTilgang(skjema.orgnr) -> true
+            else -> false
+        }
+
+        if (!harTilgang) {
+            throw IllegalArgumentException("User does not have access to skjema $skjemaId")
+        }
+
+        return utsendtSkjema
     }
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {

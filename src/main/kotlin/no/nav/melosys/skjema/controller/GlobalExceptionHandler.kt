@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.RateLimitConfig
+import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
@@ -46,5 +47,14 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(mapOf("message" to "Finner ikke person med oppgitt fødselsnummer og etternavn"))
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDenied(e: AccessDeniedException): ResponseEntity<Map<String, String>> {
+        log.warn { "Tilgang nektet: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
+            .body(mapOf("message" to "Ingen tilgang"))
     }
 }

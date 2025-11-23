@@ -32,6 +32,10 @@ class Skjema(
     @Column(name = "data")
     var data: JsonNode? = null,
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata")
+    var metadata: JsonNode? = null,
+
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 
