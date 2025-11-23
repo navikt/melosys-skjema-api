@@ -5,5 +5,6 @@ package no.nav.melosys.skjema.service
  */
 enum class RateLimitOperationType {
     ORGANISASJONSSOK,
-    PERSONVERIFISERING
+    PERSONVERIFISERING,
+    HENT_PERSONER_MED_FULLMAKT
 }

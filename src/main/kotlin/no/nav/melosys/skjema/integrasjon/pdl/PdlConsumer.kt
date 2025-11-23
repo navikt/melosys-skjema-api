@@ -68,10 +68,12 @@ class PdlConsumer(
      * Henter flere personer fra PDL i én request (bulk).
      * Returnerer et map hvor key er fnr og value er PdlPerson.
      * Personer som ikke finnes eller har ugyldig ident blir ikke inkludert i resultatet.
+     * Resultatet caches basert på den sorterte listen av identer for å gi cache-treff på samme sett av personer.
      *
      * @param identer Liste med fødselsnummer/d-nummer
      * @return Map med fnr som key og PdlPerson som value (kun for personer som ble funnet)
      */
+    @Cacheable(value = ["pdl-personer-bulk"], key = "#identer.sorted().toString()")
     fun hentPersonerBolk(identer: List<String>): Map<String, PdlPerson> {
         if (identer.isEmpty()) {
             return emptyMap()
@@ -109,10 +111,10 @@ class PdlConsumer(
             .filter { it.code == "ok" && it.person != null }
             .associate { it.ident to it.person!! }
             .also { result ->
-                log.info { "Hentet ${result.size} av ${identer.size} personer fra PDL" }
+                log.debug { "Hentet ${result.size} av ${identer.size} personer fra PDL" }
                 val notFound = entries.filter { it.code == "not_found" }.map { it.ident }
                 if (notFound.isNotEmpty()) {
-                    log.warn { "Fant ikke ${notFound.size} personer i PDL: $notFound" }
+                    log.debug { "Fant ikke ${notFound.size} personer i PDL: $notFound" }
                 }
             }
     }

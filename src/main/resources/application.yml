@@ -143,3 +143,6 @@ rate-limit:
   personverifisering:
     max-requests: 5
     time-window-minutes: 1
+  hent-personer-med-fullmakt:
+    max-requests: 15
+    time-window-minutes: 1

@@ -102,7 +102,7 @@ class ReprService(
      * @return Liste med PersonMedFullmaktDto (kun personer som finnes i PDL)
      */
     fun hentPersonerMedFullmakt(): List<PersonMedFullmaktDto> {
-        log.info { "Henter personer med fullmakt for innlogget bruker" }
+        log.debug { "Henter personer med fullmakt for innlogget bruker" }
 
         val fullmakter = hentKanRepresentere().filter {
             // skriverettigheter med MED
@@ -110,7 +110,7 @@ class ReprService(
         }
 
         if (fullmakter.isEmpty()) {
-            log.info { "Ingen fullmakter funnet for bruker" }
+            log.debug { "Ingen fullmakter funnet for bruker" }
             return emptyList()
         }
 
@@ -129,21 +129,25 @@ class ReprService(
                 if (person != null) {
                     val navn = person.navn.firstOrNull()?.fulltNavn() ?: return@mapNotNull null
                     val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato ?: return@mapNotNull null
-                    val fodselsdato =
+                    val fodselsdato = try {
                         LocalDate.parse(fodselsdatoString)
+                    } catch (e: Exception) {
+                        log.warn { "Ugyldig fødselsdato for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
+                        return@mapNotNull null
+                    }
 
                     PersonMedFullmaktDto(
-                        fnr = fullmakt.fullmaktsgiver, // TODO: Avklar hvorvidt dette er trygt å returnere til frontend.
+                        fnr = fullmakt.fullmaktsgiver,
                         navn = navn,
                         fodselsdato = fodselsdato
                     )
                 } else {
-                    log.warn { "Fant ikke person i PDL for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
+                    log.debug { "Fant ikke person i PDL for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
                     null
                 }
             }
             .also { result ->
-                log.info { "Returnerer ${result.size} personer med fullmakt (${fullmakter.size - result.size} personer ikke funnet i PDL)" }
+                log.debug { "Returnerer ${result.size} personer med fullmakt (${fullmakter.size - result.size} personer ikke funnet i PDL)" }
             }
     }
 
