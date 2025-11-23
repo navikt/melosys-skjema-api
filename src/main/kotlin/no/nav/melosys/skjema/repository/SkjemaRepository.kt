@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.repository
 
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -46,4 +48,27 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
         opprettetAv: String,
         status: SkjemaStatus
     ): List<Skjema>
+
+    // Innsendte søknader queries - DEG_SELV (arbeidstaker)
+    fun findByFnrAndStatusIn(fnr: String, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
+
+    // Innsendte søknader queries - ARBEIDSGIVER
+    fun findByOrgnrInAndStatusIn(orgnrs: List<String>, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
+
+    // Innsendte søknader queries - RADGIVER
+    @Query("""
+        SELECT s FROM Skjema s
+        WHERE s.orgnr IN :orgnrs
+        AND s.status IN :statuses
+        AND jsonb_extract_path_text(s.metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+    """)
+    fun findInnsendteForRadgiver(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<SkjemaStatus>,
+        @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    // Innsendte søknader queries - ANNEN_PERSON (fullmektig)
+    fun findByFnrInAndStatusIn(fnrs: List<String>, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
 }

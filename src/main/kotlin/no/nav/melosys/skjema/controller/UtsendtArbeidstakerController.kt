@@ -83,6 +83,18 @@ class UtsendtArbeidstakerController(
         return ResponseEntity.ok(response)
     }
 
+    @PostMapping("/innsendte")
+    @Operation(summary = "Hent innsendte søknader basert på representasjonskontekst med paginering, søk og sortering")
+    @ApiResponse(responseCode = "200", description = "Paginert liste over innsendte søknader hentet")
+    @ApiResponse(responseCode = "400", description = "Ugyldig forespørsel")
+    fun hentInnsendteSoknader(
+        @RequestBody @Valid request: no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
+    ): ResponseEntity<no.nav.melosys.skjema.dto.InnsendteSoknaderResponse> {
+        log.info { "Henter innsendte søknader for representasjonstype: ${request.representasjonstype}, side: ${request.side}" }
+        val response = utsendtArbeidstakerService.hentInnsendteSoknader(request)
+        return ResponseEntity.ok(response)
+    }
+
     @GetMapping("/{id}/arbeidsgiver-view")
     @Operation(summary = "Hent skjema med arbeidsgiver-visning")
     @ApiResponse(responseCode = "200", description = "Skjema hentet")
