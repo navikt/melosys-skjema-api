@@ -54,16 +54,25 @@ class GlobalExceptionHandler(
         log.warn { "Tilgang nektet: ${e.message}" }
 
         return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
+            .status(HttpStatus.FORBIDDEN)
             .body(mapOf("message" to "Ingen tilgang"))
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgument(e: IllegalArgumentException): ResponseEntity<Any> {
+    fun handleIllegalArgument(e: IllegalArgumentException): ResponseEntity<Map<String, String>> {
         log.warn { "Ugyldig forespørsel: ${e.message}" }
 
         return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(mapOf("message" to (e.message ?: "Ugyldig forespørsel")))
+    }
+
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNotFound(e: NoSuchElementException): ResponseEntity<Map<String, String>> {
+        log.warn { "Ressurs ikke funnet: ${e.message}" }
+
+        return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
-            .build()
+            .body(mapOf("message" to (e.message ?: "Ressurs ikke funnet")))
     }
 }

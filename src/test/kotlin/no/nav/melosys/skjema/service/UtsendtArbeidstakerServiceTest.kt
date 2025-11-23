@@ -357,7 +357,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockRepository.findByIdOrNull(skjemaId) } returns null
 
-            val exception = shouldThrow<IllegalArgumentException> {
+            val exception = shouldThrow<NoSuchElementException> {
                 service.hentSkjema(skjemaId)
             }
 

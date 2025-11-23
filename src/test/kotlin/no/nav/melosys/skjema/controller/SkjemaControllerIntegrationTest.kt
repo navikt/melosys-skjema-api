@@ -391,7 +391,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun orgnummerHarVerdiOgOrgnnummerErNull(): List<Arguments> = listOf(
@@ -401,8 +401,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang")
-    fun `Arbeidsgiver endpoints skal returnere 404 når bruker ikke har Altinn-tilgang`(
+    @DisplayName("Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang")
+    fun `Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -425,13 +425,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr=null")
-    fun `Arbeidsgiver endpoints skal returnere 404 for skjemaer med orgnr null`(
+    @DisplayName("Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr=null")
+    fun `Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr null`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -453,7 +453,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
@@ -502,8 +502,8 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("arbeidstakerEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet")
-    fun `Arbeidstaker endpoints skal returnere 404 når bruker ikke har tilgang til skjemaet`(
+    @DisplayName("Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet")
+    fun `Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet`(
         httpMethod: HttpMethod,
         path: String,
         requestBody: Any?
@@ -527,7 +527,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         requestBody?.let { request.bodyValue(it) }
 
         request.exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isForbidden
     }
 
     fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(

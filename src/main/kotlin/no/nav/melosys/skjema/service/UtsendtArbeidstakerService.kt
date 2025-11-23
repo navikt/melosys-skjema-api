@@ -110,14 +110,15 @@ class UtsendtArbeidstakerService(
      *
      * @param skjemaId ID til skjemaet
      * @return UtsendtArbeidstakerSkjema med type-safe metadata
-     * @throws IllegalArgumentException hvis skjema ikke finnes eller tilgang nektes
+     * @throws NoSuchElementException hvis skjema ikke finnes
+     * @throws AccessDeniedException hvis tilgang nektes
      */
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjema {
         val currentUser = subjectHandler.getUserID()
         log.debug { "Henter Utsendt Arbeidstaker skjema: $skjemaId" }
 
         val skjema = skjemaRepository.findByIdOrNull(skjemaId)
-            ?: throw IllegalArgumentException("Skjema med id $skjemaId finnes ikke")
+            ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
 
         // Valider tilgang
         validerTilgangTilSkjema(skjema, currentUser)
