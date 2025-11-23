@@ -67,7 +67,7 @@ data class SkjemaStegTestFixture<T>(
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SkjemaControllerIntegrationTest : ApiTestBase() {
+class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var webTestClient: WebTestClient
