@@ -312,7 +312,10 @@ class UtsendtArbeidstakerService(
                     innloggetBrukerFnr,
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
-                    skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
+                    // Sjekk at representasjonstype er ARBEIDSGIVER
+                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
+                        skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
                 }
             }
 
@@ -326,9 +329,10 @@ class UtsendtArbeidstakerService(
                     innloggetBrukerFnr,
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
-                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma
+                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
                     val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
+                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.RADGIVER &&
+                        utsendtSkjema.metadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
                 }
             }
 
@@ -342,13 +346,17 @@ class UtsendtArbeidstakerService(
                     emptyList()
                 }
 
-                val personerMedFullmakt = fullmakter.map { it.fullmaktsgiver }.toSet()
+                val personerMedFullmaktFnr = fullmakter.map { it.fullmaktsgiver }.toSet()
 
                 // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
                 skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
                     .filter { skjema ->
-                    skjema.fnr != null && personerMedFullmakt.contains(skjema.fnr)
-                }
+                        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+
+                        // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
+                        utsendtSkjema.metadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
+                            skjema.fnr != null && personerMedFullmaktFnr.contains(skjema.fnr)
+                    }
             }
         }
 
