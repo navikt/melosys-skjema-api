@@ -55,16 +55,7 @@ class UtsendtArbeidstakerValidator(
     private fun validerDegSelv(request: OpprettSoknadMedKontekstRequest, innloggetBrukerFnr: String) {
         log.debug { "Validerer DEG_SELV scenario" }
 
-        // 1. Innlogget person er arbeidstaker
-        if (request.arbeidstaker == null) {
-            throw IllegalArgumentException("Arbeidstaker må oppgis for DEG_SELV")
-        }
-
-        if (request.arbeidstaker.fnr != innloggetBrukerFnr) {
-            throw IllegalArgumentException("For DEG_SELV må arbeidstaker være innlogget bruker")
-        }
-
-        // 2. Arbeidsgiver finnes
+        // 1. Arbeidsgiver finnes
         if (request.arbeidsgiver == null) {
             throw IllegalArgumentException("Arbeidsgiver må oppgis")
         }

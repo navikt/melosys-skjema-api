@@ -66,40 +66,6 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             verify { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) }
         }
 
-        test("skal feile når arbeidstaker mangler") {
-            val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
-                representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = null,
-                harFullmakt = false
-            )
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request, currentUser)
-            }
-
-            exception.message shouldContain "Arbeidstaker må oppgis"
-        }
-
-        test("skal feile når arbeidstaker ikke er innlogget bruker") {
-            val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
-                representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
-            )
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request, currentUser)
-            }
-
-            exception.message shouldContain "arbeidstaker være innlogget bruker"
-        }
-
         test("skal feile når arbeidsgiver mangler") {
             val currentUser = "12345678910"
             val request = OpprettSoknadMedKontekstRequest(
