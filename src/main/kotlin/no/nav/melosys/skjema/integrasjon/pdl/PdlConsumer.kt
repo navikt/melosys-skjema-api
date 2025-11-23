@@ -73,7 +73,7 @@ class PdlConsumer(
      * @param identer Liste med fødselsnummer/d-nummer
      * @return Map med fnr som key og PdlPerson som value (kun for personer som ble funnet)
      */
-    @Cacheable(value = ["pdl-personer-bulk"], key = "#identer.sorted().toString()")
+    @Cacheable(value = ["pdl-personer-bulk"], keyGenerator = "pdlBolkKeyGenerator")
     fun hentPersonerBolk(identer: List<String>): Map<String, PdlPerson> {
         if (identer.isEmpty()) {
             return emptyMap()
