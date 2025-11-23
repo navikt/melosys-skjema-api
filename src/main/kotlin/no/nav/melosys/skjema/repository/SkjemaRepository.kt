@@ -21,21 +21,21 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
 
     // Metadata-based queries (JSONB)
     @Query("""
-        SELECT s FROM Skjema s
-        WHERE jsonb_extract_path_text(s.metadata, 'fullmektigFnr') = :fnr
+        SELECT * FROM skjema
+        WHERE jsonb_extract_path_text(metadata, 'fullmektigFnr') = :fnr
     """, nativeQuery = true)
     fun findByFullmektigFnr(@Param("fnr") fnr: String): List<Skjema>
 
     @Query("""
-        SELECT s FROM Skjema s
-        WHERE jsonb_extract_path_text(s.metadata, 'representasjonstype') = :type
+        SELECT * FROM skjema
+        WHERE jsonb_extract_path_text(metadata, 'representasjonstype') = :type
     """, nativeQuery = true)
     fun findByRepresentasjonstype(@Param("type") representasjonstype: String): List<Skjema>
 
     @Query("""
-        SELECT s FROM Skjema s
-        WHERE s.fnr = :fnr
-        OR jsonb_extract_path_text(s.metadata, 'fullmektigFnr') = :fnr
+        SELECT * FROM skjema
+        WHERE fnr = :fnr
+        OR jsonb_extract_path_text(metadata, 'fullmektigFnr') = :fnr
     """, nativeQuery = true)
     fun findByFnrOrFullmektigFnr(@Param("fnr") fnr: String): List<Skjema>
 }

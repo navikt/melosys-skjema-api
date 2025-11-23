@@ -10,6 +10,7 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.melosys.skjema.createDefaultMetadata
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
@@ -208,11 +209,10 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = objectMapper.createObjectNode().apply {
-                put("representasjonstype", "DEG_SELV")
-                put("harFullmakt", false)
-                put("arbeidstakerNavn", "Test Testesen")
-            }
+            val metadata = createDefaultMetadata(
+                representasjonstype = no.nav.melosys.skjema.dto.Representasjonstype.DEG_SELV,
+                harFullmakt = false
+            )
 
             val skjema = Skjema(
                 id = skjemaId,
@@ -238,11 +238,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             // Metadata med fullmektigFnr
-            val metadata = objectMapper.createObjectNode()
-            metadata.put("representasjonstype", "ANNEN_PERSON")
-            metadata.put("harFullmakt", true)
-            metadata.put("fullmektigFnr", currentUser)
-            metadata.put("arbeidstakerNavn", "Test Testesen")
+            val metadata = createDefaultMetadata(
+                representasjonstype = no.nav.melosys.skjema.dto.Representasjonstype.ANNEN_PERSON,
+                harFullmakt = true,
+                fullmektigFnr = currentUser
+            )
 
             val skjema = Skjema(
                 id = skjemaId,

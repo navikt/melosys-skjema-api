@@ -99,6 +99,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.deleteAll()
 
         every { altinnService.harBrukerTilgang(any()) } returns true
+        every { altinnService.hentBrukersTilganger() } returns emptyList()
         every { notificationService.sendNotificationToArbeidstaker(any(), any()) } returns Unit
         every {
             notificationService.sendNotificationToArbeidsgiver(
@@ -140,7 +141,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere spesifikt skjema")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -154,7 +155,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(savedSkjema.fnr!!)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidstaker-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -175,7 +176,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal returnere spesifikt skjema")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -189,7 +190,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(korrektSyntetiskFnr)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -210,13 +211,13 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(korrektSyntetiskFnr)
         val nonExistentId = UUID.randomUUID()
 
         webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/$nonExistentId")
+            .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId/arbeidstaker-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -371,7 +372,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
 
     @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
     @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
-    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id} skal ikke kunne aksessere andres skjemaer")
+    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal ikke kunne aksessere andres skjemaer")
     fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
@@ -386,7 +387,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${savedSkjema.id}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -456,7 +457,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}", null),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren",
@@ -530,7 +531,7 @@ class SkjemaControllerIntegrationTest : ApiTestBase() {
     }
 
     fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}", null),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view", null),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger",

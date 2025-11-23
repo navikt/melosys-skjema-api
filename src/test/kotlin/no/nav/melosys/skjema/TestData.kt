@@ -1,8 +1,12 @@
 package no.nav.melosys.skjema
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.Instant
 import java.time.LocalDate
+import no.nav.melosys.skjema.dto.Representasjonstype
+import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
@@ -218,12 +222,30 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
 )
 
+fun createDefaultMetadata(
+    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
+    harFullmakt: Boolean = false,
+    arbeidsgiverNavn: String? = null,
+    fullmektigFnr: String? = null
+): JsonNode {
+    val objectMapper = jacksonObjectMapper()
+    val metadata = UtsendtArbeidstakerMetadata(
+        representasjonstype = representasjonstype,
+        harFullmakt = harFullmakt,
+        radgiverfirma = null,
+        arbeidsgiverNavn = arbeidsgiverNavn,
+        fullmektigFnr = fullmektigFnr
+    )
+    return objectMapper.valueToTree(metadata)
+}
+
 fun skjemaMedDefaultVerdier(
     fnr: String? = korrektSyntetiskFnr,
     orgnr: String? = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
+    metadata: JsonNode? = createDefaultMetadata(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr ?: korrektSyntetiskFnr,
@@ -235,6 +257,7 @@ fun skjemaMedDefaultVerdier(
         fnr = fnr,
         orgnr = orgnr,
         data = data,
+        metadata = metadata,
         opprettetDato = opprettetDato,
         endretDato = endretDato,
         opprettetAv = opprettetAv,

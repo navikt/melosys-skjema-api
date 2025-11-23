@@ -50,7 +50,8 @@ class SkjemaController(
     private val utsendtArbeidstakerService: no.nav.melosys.skjema.service.UtsendtArbeidstakerService,
     private val altinnService: no.nav.melosys.skjema.service.AltinnService,
     private val reprService: no.nav.melosys.skjema.integrasjon.repr.ReprService,
-    private val subjectHandler: SubjectHandler
+    private val subjectHandler: SubjectHandler,
+    private val objectMapper: com.fasterxml.jackson.databind.ObjectMapper
 ) {
 
     @GetMapping
@@ -296,11 +297,6 @@ class SkjemaController(
         val skjema = skjemaService.saveTilleggsopplysningerInfo(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
-    
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun handleNotFound(): ResponseEntity<Any> {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-    }
 
     // Helper metoder for tilgangskontroll
     private fun validerArbeidsgiverTilgang(skjemaId: UUID) {
@@ -330,7 +326,7 @@ class SkjemaController(
     // Helper metoder for konvertering
     private fun convertToArbeidsgiversSkjemaDto(skjema: no.nav.melosys.skjema.entity.Skjema): ArbeidsgiversSkjemaDto {
         val data = skjema.data?.let {
-            com.fasterxml.jackson.databind.ObjectMapper().treeToValue(it, no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto::class.java)
+            objectMapper.treeToValue(it, no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto::class.java)
         } ?: no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto()
 
         return ArbeidsgiversSkjemaDto(
@@ -343,7 +339,7 @@ class SkjemaController(
 
     private fun convertToArbeidstakersSkjemaDto(skjema: no.nav.melosys.skjema.entity.Skjema): ArbeidstakersSkjemaDto {
         val data = skjema.data?.let {
-            com.fasterxml.jackson.databind.ObjectMapper().treeToValue(it, no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto::class.java)
+            objectMapper.treeToValue(it, no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto::class.java)
         } ?: no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto()
 
         return ArbeidstakersSkjemaDto(

@@ -54,7 +54,16 @@ class GlobalExceptionHandler(
         log.warn { "Tilgang nektet: ${e.message}" }
 
         return ResponseEntity
-            .status(HttpStatus.FORBIDDEN)
+            .status(HttpStatus.NOT_FOUND)
             .body(mapOf("message" to "Ingen tilgang"))
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(e: IllegalArgumentException): ResponseEntity<Any> {
+        log.warn { "Ugyldig forespørsel: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .build()
     }
 }
