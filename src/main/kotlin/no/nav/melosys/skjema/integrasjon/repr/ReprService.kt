@@ -132,7 +132,7 @@ class ReprService(
                     val fodselsdato = try {
                         LocalDate.parse(fodselsdatoString)
                     } catch (e: Exception) {
-                        log.warn { "Ugyldig fødselsdato for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
+                        log.warn { "Ugyldig fødselsdato for fullmaktsgiver" }
                         return@mapNotNull null
                     }
 
@@ -142,7 +142,6 @@ class ReprService(
                         fodselsdato = fodselsdato
                     )
                 } else {
-                    log.debug { "Fant ikke person i PDL for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
                     null
                 }
             }

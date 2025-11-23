@@ -10,12 +10,13 @@ import org.springframework.stereotype.Component
 @Component("cacheKeyProvider")
 class CacheKeyProvider {
 
-    fun getUserId(): String {
+    fun getUserId(): String? {
         return try {
             SubjectHandler.getInstance().getUserID()
         } catch (e: IllegalStateException) {
             // SubjectHandler ikke initialisert (f.eks. i tester eller før autentisering)
-            "no-user"
+            // Returnerer null for å unngå caching
+            null
         }
     }
 }

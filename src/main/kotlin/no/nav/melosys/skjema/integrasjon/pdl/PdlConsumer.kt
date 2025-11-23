@@ -112,9 +112,9 @@ class PdlConsumer(
             .associate { it.ident to it.person!! }
             .also { result ->
                 log.debug { "Hentet ${result.size} av ${identer.size} personer fra PDL" }
-                val notFound = entries.filter { it.code == "not_found" }.map { it.ident }
+                val notFound = entries.filter { it.code == "not_found" }
                 if (notFound.isNotEmpty()) {
-                    log.debug { "Fant ikke ${notFound.size} personer i PDL: $notFound" }
+                    log.debug { "Fant ikke ${notFound.size} personer i PDL" }
                 }
             }
     }
