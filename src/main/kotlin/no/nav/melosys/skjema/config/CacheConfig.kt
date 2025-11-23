@@ -20,7 +20,7 @@ class CacheConfig {
         val cacheManager = CaffeineCacheManager()
 
         // Registrer alle cache-navn
-        cacheManager.setCacheNames(listOf("fullmakter", "ereg", "pdl-person"))
+        cacheManager.setCacheNames(listOf("fullmakter", "ereg", "pdl-person", "pdl-personer-bulk"))
 
         // Konfigurasjon per cache
         // fullmakter: hvem innlogget bruker kan representere (hvor bruker er fullmektig)
@@ -47,6 +47,15 @@ class CacheConfig {
             Caffeine.newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
                 .maximumSize(1000)
+                .build()
+        )
+
+        // pdl-personer-bulk: bulk-henting av personer fra PDL
+        cacheManager.registerCustomCache(
+            "pdl-personer-bulk",
+            Caffeine.newBuilder()
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .maximumSize(500)
                 .build()
         )
 

@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -12,6 +13,7 @@ class ReprConsumer(
     private val reprClientTokenX: WebClient
 ) {
 
+    @Cacheable(value = ["fullmakter"], key = "@cacheKeyProvider.getUserId()", condition = "@cacheKeyProvider.getUserId() != null")
     fun hentKanRepresentere(): List<Fullmakt> {
         log.info { "Kaller repr-api /api/v2/eksternbruker/fullmakt/kan-representere" }
 

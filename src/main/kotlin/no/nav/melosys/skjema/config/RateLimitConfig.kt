@@ -10,6 +10,7 @@ import java.time.Duration
 class RateLimitConfig {
     var organisasjonssok: TypeConfig = TypeConfig()
     var personverifisering: TypeConfig = TypeConfig()
+    var hentPersonerMedFullmakt: TypeConfig = TypeConfig()
 
     /**
      * Henter konfigurasjon for en gitt operasjonstype.
@@ -18,6 +19,7 @@ class RateLimitConfig {
         return when (type) {
             RateLimitOperationType.ORGANISASJONSSOK -> organisasjonssok
             RateLimitOperationType.PERSONVERIFISERING -> personverifisering
+            RateLimitOperationType.HENT_PERSONER_MED_FULLMAKT -> hentPersonerMedFullmakt
         }
     }
 

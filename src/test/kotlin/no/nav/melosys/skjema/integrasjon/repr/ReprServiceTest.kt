@@ -8,11 +8,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
+import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
 
 class ReprServiceTest : FunSpec({
 
     val mockConsumer = mockk<ReprConsumer>()
-    val service = ReprService(mockConsumer)
+    val mockPdlConsumer = mockk<PdlConsumer>()
+    val service = ReprService(mockConsumer, mockPdlConsumer)
 
     beforeEach {
         io.mockk.clearAllMocks()
