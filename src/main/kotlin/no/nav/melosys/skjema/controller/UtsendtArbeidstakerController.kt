@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 private val log = KotlinLogging.logger { }
@@ -61,6 +62,25 @@ class UtsendtArbeidstakerController(
         val skjemaer = utsendtArbeidstakerService.listAlleSkjemaerForBruker()
         val dtos = skjemaer.map { convertToArbeidstakersSkjemaDto(it.skjema) }
         return ResponseEntity.ok(dtos)
+    }
+
+    @GetMapping("/utkast")
+    @Operation(summary = "Hent utkast basert på representasjonskontekst")
+    @ApiResponse(responseCode = "200", description = "Liste over utkast hentet")
+    @ApiResponse(responseCode = "400", description = "Ugyldig forespørsel")
+    fun hentUtkast(
+        @RequestParam representasjonstype: no.nav.melosys.skjema.dto.Representasjonstype,
+        @RequestParam(required = false) radgiverfirmaOrgnr: String?
+    ): ResponseEntity<no.nav.melosys.skjema.dto.UtkastListeResponse> {
+        log.info { "Henter utkast for representasjonstype: $representasjonstype" }
+
+        val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            representasjonstype = representasjonstype,
+            radgiverfirmaOrgnr = radgiverfirmaOrgnr
+        )
+
+        val response = utsendtArbeidstakerService.hentUtkast(request)
+        return ResponseEntity.ok(response)
     }
 
     @GetMapping("/{id}/arbeidsgiver-view")

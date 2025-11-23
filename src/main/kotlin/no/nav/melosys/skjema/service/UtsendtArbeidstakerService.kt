@@ -3,11 +3,7 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
-import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
@@ -67,6 +63,7 @@ class UtsendtArbeidstakerService(
                     endretAv = innloggetBrukerFnr
                 )
             }
+
             Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
                 // Arbeidsgiver eller rådgiver fyller ut på vegne av arbeidstaker
                 Skjema(
@@ -78,6 +75,7 @@ class UtsendtArbeidstakerService(
                     endretAv = innloggetBrukerFnr
                 )
             }
+
             Representasjonstype.ANNEN_PERSON -> {
                 // Fullmektig fyller ut på vegne av arbeidstaker
                 Skjema(
@@ -153,8 +151,8 @@ class UtsendtArbeidstakerService(
 
             // 2. Fullmektig - VIKTIG: Alltid verifiser via repr-api!
             metadata.fullmektigFnr != null &&
-            metadata.fullmektigFnr == currentUser &&
-            skjema.fnr != null -> {
+                    metadata.fullmektigFnr == currentUser &&
+                    skjema.fnr != null -> {
                 // Sjekk at fullmakten fortsatt er aktiv
                 val harAktivFullmakt = try {
                     reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
@@ -273,5 +271,132 @@ class UtsendtArbeidstakerService(
             arbeidsgiverNavn = request.arbeidsgiver?.navn,
             fullmektigFnr = fullmektigFnr
         )
+    }
+
+    /**
+     * Henter utkast basert på representasjonskontekst.
+     *
+     * Filtrerer søknader med status UTKAST basert på:
+     * - DEG_SELV: fnr = innlogget bruker
+     * - ARBEIDSGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
+     * - RADGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
+     * - ANNEN_PERSON: opprettetAv = innlogget bruker OG fnr i fullmaktsliste
+     *
+     * @param request Kun representasjonstype - filtreringen gjøres basert på brukerens tilganger
+     * @return Liste med utkast
+     */
+    fun hentUtkast(request: HentUtkastRequest): UtkastListeResponse {
+        val innloggetBrukerFnr = subjectHandler.getUserID()
+        log.debug { "Henter utkast for representasjonstype: ${request.representasjonstype}" }
+
+        val utkastSkjemaer = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> {
+                // Arbeidstaker fyller ut for seg selv
+                skjemaRepository.findByFnrAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    // Sikre at representasjonstype i metadata er DEG_SELV
+                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.DEG_SELV
+                }
+            }
+
+            Representasjonstype.ARBEIDSGIVER -> {
+                // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
+                val tilganger = altinnService.hentBrukersTilganger()
+                val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
+
+                // Hent alle utkast opprettet av bruker og filtrer på tilganger
+                skjemaRepository.findByOpprettetAvAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
+                }
+            }
+
+            Representasjonstype.RADGIVER -> {
+                // Rådgiver - kun utkast for det spesifikke rådgiverfirmaet
+                val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
+                    ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
+
+                // Hent utkast opprettet av innlogget bruker som tilhører rådgiverfirmaet
+                skjemaRepository.findByOpprettetAvAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma
+                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+                    utsendtSkjema.metadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
+                }
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                // Fullmektig på vegne av alle personer bruker har fullmakt for
+                // Hent alle personer innlogget bruker har fullmakt for
+                val fullmakter = try {
+                    reprService.hentKanRepresentere()
+                } catch (e: Exception) {
+                    log.warn(e) { "Feil ved henting av fullmakter for bruker" }
+                    emptyList()
+                }
+
+                val personerMedFullmakt = fullmakter.map { it.fullmaktsgiver }.toSet()
+
+                // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
+                skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
+                    .filter { skjema ->
+                    skjema.fnr != null && personerMedFullmakt.contains(skjema.fnr)
+                }
+            }
+        }
+
+        // Konverter til DTO
+        val utkastDtos = utkastSkjemaer.map { skjema ->
+            konverterTilUtkastDto(skjema)
+        }
+
+        log.debug { "Fant ${utkastDtos.size} utkast for representasjonstype ${request.representasjonstype}" }
+
+        return UtkastListeResponse(
+            utkast = utkastDtos,
+            antall = utkastDtos.size
+        )
+    }
+
+    /**
+     * Konverterer Skjema til UtkastOversiktDto.
+     * Maskerer fnr og henter nødvendige metadata-verdier.
+     */
+    private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
+        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
+        val metadata = utsendtSkjema.metadata
+
+        return UtkastOversiktDto(
+            id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
+            arbeidsgiverNavn = metadata.arbeidsgiverNavn,
+            arbeidsgiverOrgnr = skjema.orgnr,
+            arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
+            arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
+            opprettetDato = skjema.opprettetDato,
+            sistEndretDato = skjema.endretDato,
+            status = skjema.status
+        )
+    }
+
+    /**
+     * Maskerer fødselsnummer for visning.
+     * Viser kun de første 6 sifrene (fødselsdato) og skjuler resten.
+     *
+     * @param fnr Fødselsnummer (11 siffer)
+     * @return Maskert fnr (f.eks. "010190*****")
+     */
+    private fun maskerFnr(fnr: String): String {
+        return if (fnr.length == 11) {
+            fnr.substring(0, 6) + "*****"
+        } else {
+            "***********"
+        }
     }
 }
