@@ -1,16 +1,19 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.melosys.skjema.controller.dto.PersonMedFullmaktDto
+import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
-import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 
 private val log = KotlinLogging.logger { }
 
 @Service
 class ReprService(
-    private val reprConsumer: ReprConsumer
+    private val reprConsumer: ReprConsumer,
+    private val pdlConsumer: PdlConsumer
 ) {
 
     /**
@@ -18,7 +21,6 @@ class ReprService(
      * Bruker repr-api /api/v2/eksternbruker/fullmakt/kan-representere som returnerer fullmakter
      * hvor innlogget bruker er fullmektig.
      */
-    @Cacheable(value = ["fullmakter"], key = "@reprService.getBrukerPid()")
     fun hentKanRepresentere(): List<Fullmakt> {
         log.info { "Henter fullmakter for innlogget bruker fra repr-api" }
 
@@ -26,7 +28,7 @@ class ReprService(
             reprConsumer.hentKanRepresentere()
                 .filter { fullmakt ->
                     fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP) ||
-                    fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                            fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
                 }
         } catch (e: Exception) {
             log.error(e) { "Feil ved henting av fullmakter fra repr-api" }
@@ -91,6 +93,58 @@ class ReprService(
     private enum class RettighetsType {
         LESE,
         SKRIVE
+    }
+
+    /**
+     * Henter personer som innlogget bruker har fullmakt fra, beriket med navn og fødselsdato fra PDL.
+     * Bruker bulk-query til PDL for å hente alle personer på én gang.
+     *
+     * @return Liste med PersonMedFullmaktDto (kun personer som finnes i PDL)
+     */
+    fun hentPersonerMedFullmakt(): List<PersonMedFullmaktDto> {
+        log.info { "Henter personer med fullmakt for innlogget bruker" }
+
+        val fullmakter = hentKanRepresentere().filter {
+            // skriverettigheter med MED
+            it.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+        }
+
+        if (fullmakter.isEmpty()) {
+            log.info { "Ingen fullmakter funnet for bruker" }
+            return emptyList()
+        }
+
+        // Hent alle unike fnr fra fullmaktsgivere
+        val fnrListe = fullmakter
+            .map { it.fullmaktsgiver }
+            .distinct()
+
+        // Hent alle personer fra PDL i én bulk-query
+        val personerMap = pdlConsumer.hentPersonerBolk(fnrListe)
+
+        // Map til PersonMedFullmaktDto, kun for personer vi fikk fra PDL
+        return fullmakter
+            .mapNotNull { fullmakt ->
+                val person = personerMap[fullmakt.fullmaktsgiver]
+                if (person != null) {
+                    val navn = person.navn.firstOrNull()?.fulltNavn() ?: return@mapNotNull null
+                    val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato ?: return@mapNotNull null
+                    val fodselsdato =
+                        LocalDate.parse(fodselsdatoString)
+
+                    PersonMedFullmaktDto(
+                        fnr = fullmakt.fullmaktsgiver, // TODO: Avklar hvorvidt dette er trygt å returnere til frontend.
+                        navn = navn,
+                        fodselsdato = fodselsdato
+                    )
+                } else {
+                    log.warn { "Fant ikke person i PDL for fullmaktsgiver: ${fullmakt.fullmaktsgiver}" }
+                    null
+                }
+            }
+            .also { result ->
+                log.info { "Returnerer ${result.size} personer med fullmakt (${fullmakter.size - result.size} personer ikke funnet i PDL)" }
+            }
     }
 
     fun getBrukerPid(): String {
