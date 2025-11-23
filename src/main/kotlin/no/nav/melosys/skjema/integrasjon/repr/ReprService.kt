@@ -124,30 +124,36 @@ class ReprService(
 
         // Map til PersonMedFullmaktDto, kun for personer vi fikk fra PDL
         return fullmakter
-            .mapNotNull { fullmakt ->
-                val person = personerMap[fullmakt.fullmaktsgiver]
-                if (person != null) {
-                    val navn = person.navn.firstOrNull()?.fulltNavn() ?: return@mapNotNull null
-                    val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato ?: return@mapNotNull null
-                    val fodselsdato = try {
-                        LocalDate.parse(fodselsdatoString)
-                    } catch (e: Exception) {
-                        log.warn { "Ugyldig fødselsdato for fullmaktsgiver" }
-                        return@mapNotNull null
-                    }
-
-                    PersonMedFullmaktDto(
-                        fnr = fullmakt.fullmaktsgiver,
-                        navn = navn,
-                        fodselsdato = fodselsdato
-                    )
-                } else {
-                    null
-                }
-            }
+            .mapNotNull { mapTilPersonMedFullmakt(it, personerMap) }
             .also { result ->
                 log.debug { "Returnerer ${result.size} personer med fullmakt (${fullmakter.size - result.size} personer ikke funnet i PDL)" }
             }
+    }
+
+    /**
+     * Mapper en fullmakt til PersonMedFullmaktDto ved å berike med persondata fra PDL.
+     * Returnerer null hvis person ikke finnes i PDL eller har ugyldig data.
+     */
+    private fun mapTilPersonMedFullmakt(
+        fullmakt: Fullmakt,
+        personerMap: Map<String, no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson>
+    ): PersonMedFullmaktDto? {
+        val person = personerMap[fullmakt.fullmaktsgiver] ?: return null
+        val navn = person.navn.firstOrNull()?.fulltNavn() ?: return null
+        val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato ?: return null
+
+        val fodselsdato = try {
+            LocalDate.parse(fodselsdatoString)
+        } catch (e: Exception) {
+            log.warn { "Ugyldig fødselsdato for fullmaktsgiver" }
+            return null
+        }
+
+        return PersonMedFullmaktDto(
+            fnr = fullmakt.fullmaktsgiver,
+            navn = navn,
+            fodselsdato = fodselsdato
+        )
     }
 
     fun getBrukerPid(): String {
