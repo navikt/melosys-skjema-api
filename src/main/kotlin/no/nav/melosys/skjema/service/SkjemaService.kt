@@ -7,14 +7,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.CreateArbeidsgiverSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidstaker.CreateArbeidstakerSkjemaRequest
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
-import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
-import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -46,47 +39,6 @@ class SkjemaService(
     private val altinnService: AltinnService
 ) {
 
-    fun createSkjemaArbeidsgiverDel(request: CreateArbeidsgiverSkjemaRequest): ArbeidsgiversSkjemaDto {
-        val currentUser = subjectHandler.getUserID()
-
-        if (!altinnService.harBrukerTilgang(request.orgnr)) {
-            throw IllegalArgumentException("User does not have access to orgnr ${request.orgnr}")
-        }
-
-        val skjema = Skjema(
-            status = SkjemaStatus.UTKAST,
-            orgnr = request.orgnr,
-            opprettetAv = currentUser,
-            endretAv = currentUser
-        )
-        val createdSkjema = skjemaRepository.save(skjema)
-
-        return saveAndConvertToArbeidsgiversSkjemaDto(createdSkjema)
-    }
-
-    fun createSkjemaArbeidstakerDel(request: CreateArbeidstakerSkjemaRequest): ArbeidstakersSkjemaDto {
-        val currentUser = subjectHandler.getUserID()
-        val skjema = Skjema(
-            status = SkjemaStatus.UTKAST,
-            fnr = request.fnr,
-            opprettetAv = currentUser,
-            endretAv = currentUser
-        )
-        val createdSkjema = skjemaRepository.save(skjema)
-
-        return saveAndConvertToArbeidstakersSkjemaDto(createdSkjema)
-    }
-
-    /**
-     * @deprecated Bruk UtsendtArbeidstakerService.opprettMedKontekst() i stedet.
-     * Denne metoden mangler omfattende validering og vil bli fjernet.
-     */
-    @Deprecated("Bruk UtsendtArbeidstakerService.opprettMedKontekst() for komplett validering")
-    fun opprettSoknadMedKontekst(request: OpprettSoknadMedKontekstRequest): OpprettSoknadMedKontekstResponse {
-        throw UnsupportedOperationException(
-            "Denne metoden er deprecated. Bruk UtsendtArbeidstakerService.opprettMedKontekst() i stedet."
-        )
-    }
 
     fun getSkjemaAsArbeidstaker(skjemaId: UUID): Skjema {
         val currentUser = subjectHandler.getUserID()
@@ -98,48 +50,6 @@ class SkjemaService(
     private fun getSkjemaAsArbeidsgiver(skjemaId: UUID): Skjema = skjemaRepository.findByIdOrNull(skjemaId)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
-
-    fun getSkjemaDtoAsArbeidsgiver(skjemaId: UUID): ArbeidsgiversSkjemaDto {
-        val skjema = getSkjemaAsArbeidsgiver(skjemaId)
-        
-        return convertToArbeidsgiversSkjemaDto(skjema)
-    }
-
-    fun getSkjemaDtoAsArbeidstaker(skjemaId: UUID): ArbeidstakersSkjemaDto {
-        val skjema = getSkjemaAsArbeidstaker(skjemaId)
-
-        return convertToArbeidstakersSkjemaDto(skjema)
-    }
-
-    /**
-     * Henter skjema som UtsendtArbeidstakerSkjema med type-safe metadata.
-     * Kun for internal bruk i service-laget.
-     */
-    private fun getUtsendtArbeidstakerSkjema(skjemaId: UUID, currentUser: String): UtsendtArbeidstakerSkjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
-            ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
-
-        // Sjekk tilgang basert på rolle
-        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-        val metadata = utsendtSkjema.metadata
-
-        // Sjekk om bruker har tilgang
-        val harTilgang = when {
-            // Arbeidstaker selv (DEG_SELV) eller fullmektig
-            skjema.fnr == currentUser -> true
-            // Fullmektig
-            metadata.fullmektigFnr == currentUser -> true
-            // Arbeidsgiver/rådgiver med Altinn-tilgang
-            skjema.orgnr != null && altinnService.harBrukerTilgang(skjema.orgnr) -> true
-            else -> false
-        }
-
-        if (!harTilgang) {
-            throw IllegalArgumentException("User does not have access to skjema $skjemaId")
-        }
-
-        return utsendtSkjema
-    }
 
     fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
@@ -255,12 +165,6 @@ class SkjemaService(
         return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
             dto.copy(tilleggsopplysninger = request)
         }
-    }
-
-    fun listSkjemaerByUser(): List<ArbeidstakersSkjemaDto> {
-        val currentUser = subjectHandler.getUserID()
-        val skjemaer = skjemaRepository.findByFnr(currentUser)
-        return skjemaer.map { convertToArbeidstakersSkjemaDto(it) }
     }
 
     private fun updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(
