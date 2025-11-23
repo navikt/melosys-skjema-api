@@ -13,7 +13,7 @@ class ReprConsumer(
     private val reprClientTokenX: WebClient
 ) {
 
-    @Cacheable(value = ["fullmakter"], key = "@reprService.getBrukerPid()")
+    @Cacheable(value = ["fullmakter"], key = "@cacheKeyProvider.getUserId()")
     fun hentKanRepresentere(): List<Fullmakt> {
         log.info { "Kaller repr-api /api/v2/eksternbruker/fullmakt/kan-representere" }
 
