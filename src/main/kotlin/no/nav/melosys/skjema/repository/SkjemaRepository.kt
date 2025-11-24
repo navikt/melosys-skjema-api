@@ -52,23 +52,79 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
     // Innsendte søknader queries - DEG_SELV (arbeidstaker)
     fun findByFnrAndStatusIn(fnr: String, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
 
+    @Query("""
+        SELECT s FROM Skjema s
+        WHERE s.fnr = :fnr
+        AND s.status IN :statuses
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """)
+    fun findByFnrAndStatusInWithSearch(
+        @Param("fnr") fnr: String,
+        @Param("statuses") statuses: List<SkjemaStatus>,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
     // Innsendte søknader queries - ARBEIDSGIVER
     fun findByOrgnrInAndStatusIn(orgnrs: List<String>, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
 
-    // Innsendte søknader queries - RADGIVER
     @Query("""
         SELECT s FROM Skjema s
         WHERE s.orgnr IN :orgnrs
         AND s.status IN :statuses
-        AND jsonb_extract_path_text(s.metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+        AND (LOWER(s.fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """)
-    fun findInnsendteForRadgiver(
+    fun findByOrgnrInAndStatusInWithSearch(
         @Param("orgnrs") orgnrs: List<String>,
         @Param("statuses") statuses: List<SkjemaStatus>,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    // Innsendte søknader queries - RADGIVER
+    @Query("""
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+    """, nativeQuery = true)
+    fun findInnsendteForRadgiver(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
         @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    @Query("""
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+        AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """, nativeQuery = true)
+    fun findInnsendteForRadgiverWithSearch(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
+        @Param("searchTerm") searchTerm: String,
         pageable: Pageable
     ): Page<Skjema>
 
     // Innsendte søknader queries - ANNEN_PERSON (fullmektig)
     fun findByFnrInAndStatusIn(fnrs: List<String>, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
+
+    @Query("""
+        SELECT s FROM Skjema s
+        WHERE s.fnr IN :fnrs
+        AND s.status IN :statuses
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """)
+    fun findByFnrInAndStatusInWithSearch(
+        @Param("fnrs") fnrs: List<String>,
+        @Param("statuses") statuses: List<SkjemaStatus>,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
 }

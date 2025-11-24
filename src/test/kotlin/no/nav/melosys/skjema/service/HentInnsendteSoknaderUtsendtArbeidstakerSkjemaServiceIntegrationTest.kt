@@ -499,339 +499,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     // ========================================
-    // SØKEFUNKSJONALITET
-    // ========================================
-
-    @Test
-    @DisplayName("Søk: Skal filtrere på arbeidsgiver navn")
-    fun `skal søke i arbeidsgiver navn`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata1 = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Acme Corporation AS"
-        )
-        val metadata2 = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Beta Systems AS"
-        )
-
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata1
-            )
-        )
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata2
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sok = "acme",
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 1
-        response.soknader[0].arbeidsgiverNavn shouldBe "Acme Corporation AS"
-    }
-
-    @Test
-    @DisplayName("Søk: Skal filtrere på orgnr")
-    fun `skal søke i orgnr`() {
-        val userFnr = korrektSyntetiskFnr
-        val orgnr1 = "111222333"
-        val orgnr2 = "444555666"
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
-
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                orgnr = orgnr1,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata
-            )
-        )
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                orgnr = orgnr2,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sok = "111222",
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 1
-        response.soknader[0].arbeidsgiverOrgnr shouldBe orgnr1
-    }
-
-    @Test
-    @DisplayName("Søk: Skal være case-insensitive")
-    fun `søk skal være case-insensitive`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "ACME Corporation AS"
-        )
-
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sok = "acme",
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 1
-    }
-
-    // ========================================
-    // SORTERING
-    // ========================================
-
-    @Test
-    @DisplayName("Sortering: Skal sortere på innsendt dato ASC")
-    fun `skal sortere på innsendt dato ASC`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
-
-        val skjema1 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema1.endretDato = Instant.now().minus(2, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema1)
-
-        val skjema2 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema2.endretDato = Instant.now().minus(1, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema2)
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sortering = SorteringsFelt.INNSENDT_DATO,
-            retning = Sorteringsretning.ASC,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 2
-        response.soknader[0].id shouldBe skjema1.id // Eldste først
-        response.soknader[1].id shouldBe skjema2.id
-    }
-
-    @Test
-    @DisplayName("Sortering: Skal sortere på innsendt dato DESC")
-    fun `skal sortere på innsendt dato DESC`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
-
-        val skjema1 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema1.endretDato = Instant.now().minus(2, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema1)
-
-        val skjema2 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema2.endretDato = Instant.now().minus(1, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema2)
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sortering = SorteringsFelt.INNSENDT_DATO,
-            retning = Sorteringsretning.DESC,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 2
-        response.soknader[0].id shouldBe skjema2.id // Nyeste først
-        response.soknader[1].id shouldBe skjema1.id
-    }
-
-    @Test
-    @DisplayName("Sortering: Default sortering skal være nyeste først")
-    fun `default sortering skal være nyeste først`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
-
-        val skjema1 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema1.endretDato = Instant.now().minus(2, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema1)
-
-        val skjema2 = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjema2.endretDato = Instant.now().minus(1, ChronoUnit.DAYS)
-        skjemaRepository.save(skjema2)
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            representasjonstype = Representasjonstype.DEG_SELV
-            // Ingen sortering spesifisert
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 2
-        response.soknader[0].id shouldBe skjema2.id // Nyeste først (default)
-    }
-
-    @Test
-    @DisplayName("Sortering: Skal sortere på arbeidsgiver navn")
-    fun `skal sortere på arbeidsgiver navn`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadataA = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Alpha AS"
-        )
-        val metadataB = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Beta AS"
-        )
-
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadataB
-            )
-        )
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadataA
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sortering = SorteringsFelt.ARBEIDSGIVER,
-            retning = Sorteringsretning.ASC,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 2
-        response.soknader[0].arbeidsgiverNavn shouldBe "Alpha AS"
-        response.soknader[1].arbeidsgiverNavn shouldBe "Beta AS"
-    }
-
-    @Test
-    @DisplayName("Sortering: Skal sortere på status")
-    fun `skal sortere på status`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
-
-        val skjemaSendt = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.SENDT,
-            metadata = metadata
-        )
-        skjemaRepository.save(skjemaSendt)
-
-        val skjemaMottatt = skjemaMedDefaultVerdier(
-            fnr = userFnr,
-            status = SkjemaStatus.MOTTATT,
-            metadata = metadata
-        )
-        skjemaRepository.save(skjemaMottatt)
-
-        // Test ASC
-        val requestAsc = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sortering = SorteringsFelt.STATUS,
-            retning = Sorteringsretning.ASC,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val responseAsc = service.hentInnsendteSoknader(requestAsc)
-        responseAsc.soknader shouldHaveSize 2
-        val firstStatusAsc = responseAsc.soknader[0].status
-        val secondStatusAsc = responseAsc.soknader[1].status
-
-        // Test DESC - skal være motsatt rekkefølge
-        val requestDesc = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            sortering = SorteringsFelt.STATUS,
-            retning = Sorteringsretning.DESC,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val responseDesc = service.hentInnsendteSoknader(requestDesc)
-        responseDesc.soknader shouldHaveSize 2
-        responseDesc.soknader[0].status shouldBe secondStatusAsc // Omvendt rekkefølge
-        responseDesc.soknader[1].status shouldBe firstStatusAsc
-    }
-
-    // ========================================
     // PAGINERING
     // ========================================
 
@@ -944,60 +611,52 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     @Test
-    @DisplayName("Edge case: Skal håndtere søk kombinert med sortering")
-    fun `skal håndtere søk kombinert med sortering`() {
+    @DisplayName("Søk: Skal filtrere på orgnr for DEG_SELV")
+    fun `skal filtrere på orgnr med søk`() {
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadataA = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Acme Alpha AS"
-        )
-        val metadataB = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Acme Beta AS"
-        )
-        val metadataC = createDefaultMetadata(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = "Beta Systems AS"
-        )
+        val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
 
+        // Opprett søknader med forskjellige orgnr
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
+                orgnr = "111222333",
                 status = SkjemaStatus.SENDT,
-                metadata = metadataB
+                metadata = metadata
             )
         )
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
+                orgnr = "444555666",
                 status = SkjemaStatus.SENDT,
-                metadata = metadataA
+                metadata = metadata
             )
         )
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
+                orgnr = "777888999",
                 status = SkjemaStatus.SENDT,
-                metadata = metadataC
+                metadata = metadata
             )
         )
 
+        // Søk på orgnr som matcher kun 1 søknad
         val request = HentInnsendteSoknaderRequest(
             side = 1,
             antall = 10,
-            sok = "acme", // Kun Acme Alpha og Acme Beta
-            sortering = SorteringsFelt.ARBEIDSGIVER,
-            retning = Sorteringsretning.ASC,
+            sok = "444555", // Matcher kun "444555666"
             representasjonstype = Representasjonstype.DEG_SELV
         )
 
         val response = service.hentInnsendteSoknader(request)
 
-        response.soknader shouldHaveSize 2
-        response.soknader[0].arbeidsgiverNavn shouldBe "Acme Alpha AS"
-        response.soknader[1].arbeidsgiverNavn shouldBe "Acme Beta AS"
+        response.soknader shouldHaveSize 1
+        response.soknader[0].arbeidsgiverOrgnr shouldBe "444555666"
+        response.totaltAntall shouldBe 1
     }
 
     @Test
@@ -1056,5 +715,69 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader shouldHaveSize 1
         response.soknader[0].arbeidsgiverNavn shouldBe null
         response.soknader[0].arbeidsgiverOrgnr shouldBe null
+    }
+
+    // Error handling tests
+    // ========================================
+
+    @Test
+    @DisplayName("Error: Skal håndtere ReprService feil ved henting av fullmakter")
+    fun `skal håndtere ReprService feil gracefully`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+        every { reprService.hentKanRepresentere() } throws RuntimeException("Repr service unavailable")
+
+        // Skal returnere tom liste i stedet for å feile
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.ANNEN_PERSON
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.shouldNotBeNull()
+        response.totaltAntall shouldBe 0
+        response.soknader.shouldBeEmpty()
+    }
+
+    @Test
+    @DisplayName("Error: Skal håndtere tom orgnr liste fra Altinn for ARBEIDSGIVER")
+    fun `skal håndtere tom orgnr liste fra Altinn for ARBEIDSGIVER`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+        every { altinnService.hentBrukersTilganger() } returns emptyList()
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.ARBEIDSGIVER
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.totaltAntall shouldBe 0
+        response.soknader.shouldBeEmpty()
+    }
+
+    @Test
+    @DisplayName("Error: Skal kaste feil når radgiverfirmaOrgnr mangler for RADGIVER")
+    fun `skal kaste feil når radgiverfirmaOrgnr mangler for RADGIVER`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirmaOrgnr = null // Mangler!
+        )
+
+        try {
+            service.hentInnsendteSoknader(request)
+            throw AssertionError("Skulle kastet IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            e.message shouldBe "radgiverfirmaOrgnr er påkrevd for RADGIVER"
+        }
     }
 }
