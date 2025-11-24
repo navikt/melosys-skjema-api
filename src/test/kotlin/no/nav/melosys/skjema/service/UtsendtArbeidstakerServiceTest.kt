@@ -31,6 +31,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val objectMapper: ObjectMapper = jacksonObjectMapper()
+    val mockHentInnsendteSoknaderService = mockk<HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService>()
 
     val service = UtsendtArbeidstakerService(
         mockRepository,
@@ -38,7 +39,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockAltinnService,
         mockReprService,
         objectMapper,
-        mockSubjectHandler
+        mockSubjectHandler,
+        mockHentInnsendteSoknaderService
     )
 
     val testArbeidsgiver = SimpleOrganisasjonDto(

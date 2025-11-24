@@ -27,7 +27,8 @@ class UtsendtArbeidstakerService(
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val objectMapper: ObjectMapper,
-    private val subjectHandler: SubjectHandler
+    private val subjectHandler: SubjectHandler,
+    private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 ) {
 
     /**
@@ -406,5 +407,17 @@ class UtsendtArbeidstakerService(
         } else {
             "***********"
         }
+    }
+
+    /**
+     * Henter innsendte søknader basert på representasjonskontekst med paginering, søk og sortering.
+     *
+     * Delegerer til dedikert service for bedre separasjon av ansvar.
+     *
+     * @param request Forespørsel med søk-, sorterings- og pagineringsparametere
+     * @return Paginert liste med innsendte søknader
+     */
+    fun hentInnsendteSoknader(request: HentInnsendteSoknaderRequest): InnsendteSoknaderResponse {
+        return hentInnsendteSoknaderService.hentInnsendteSoknader(request)
     }
 }
