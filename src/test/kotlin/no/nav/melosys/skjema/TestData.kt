@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.Instant
 import java.time.LocalDate
@@ -10,8 +9,6 @@ import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
@@ -25,7 +22,6 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretnin
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
-import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
@@ -69,13 +65,7 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     orgNrTilTilganger = emptyMap()
 )
 
-fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
-    organisasjonsnummer = korrektSyntetiskOrgnr,
-    organisasjonNavn = "Test Bedrift AS"
-)
-
 fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
-    arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier(),
     arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
     utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
     arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
@@ -156,18 +146,6 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
     harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad = false
 )
 
-fun arbeidstakerenDtoMedDefaultVerdier() = DineOpplysningerDto(
-    harNorskFodselsnummer = true,
-    fodselsnummer = korrektSyntetiskFnr,
-    fornavn = "Test",
-    etternavn = "Testesen",
-    fodselsdato = LocalDate.of(1990, 1, 1),
-)
-
-fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenDto(
-    fodselsnummer = korrektSyntetiskFnr
-)
-
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
     utsendelsesLand = "SV",
     utsendelseFraDato = LocalDate.of(2024, 1, 1),
@@ -216,7 +194,6 @@ fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirk
 )
 
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
-    arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier(),
     skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
     familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()

@@ -3,7 +3,6 @@ package no.nav.melosys.skjema.controller
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -12,12 +11,10 @@ import io.mockk.every
 import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.arbeidsgiverenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidstakerenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
@@ -25,8 +22,14 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
+import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.korrektSyntetiskOrgnr
+import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.service.NotificationService
@@ -34,15 +37,8 @@ import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.submitSkjemaRequestMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
-import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
-import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
-import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.korrektSyntetiskFnr
-import no.nav.melosys.skjema.korrektSyntetiskOrgnr
-import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
-import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -52,7 +48,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -460,16 +455,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
         Arguments.of(
             HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren",
-            arbeidsgiverenDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren",
-            arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge",
             arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
         ),
@@ -534,11 +519,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view", null),
         Arguments.of(
             HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger",
-            arbeidstakerenDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget",
             utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()
         ),
@@ -588,8 +568,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun postEndpoints(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren"),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"
@@ -598,7 +576,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/dine-opplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
@@ -610,20 +587,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            SkjemaStegTestFixture(
-                stepKey = "arbeidsgiveren",
-                requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
-
-            ),
-            SkjemaStegTestFixture(
-                stepKey = "arbeidstakeren",
-                requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
-
-            ),
             SkjemaStegTestFixture(
                 stepKey = "arbeidsgiverens-virksomhet-i-norge",
                 requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
@@ -666,13 +629,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            SkjemaStegTestFixture(
-                stepKey = "dine-opplysninger",
-                requestBody = arbeidstakerenDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier())
-
-            ),
             SkjemaStegTestFixture(
                 stepKey = "utenlandsoppdraget",
                 requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
@@ -726,21 +682,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     private fun invalidRequestTestCases(): List<Arguments> {
-        val invalidFodselsnummere = listOf("1234567890A", "1234567890", "123456789012", "12345-67890")
         val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
-
-        val invalidFodselsnummerTestCases = invalidFodselsnummere.flatMap {
-            listOf(
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakeren",
-                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = it)
-                ),
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/dine-opplysninger",
-                    requestBody = arbeidstakerenDtoMedDefaultVerdier().copy(fodselsnummer = it)
-                )
-            )
-        }
 
         val invalidOrganisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
             listOf(
@@ -759,16 +701,11 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                             norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
                         )
                     )
-                ),
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
-                    requestBody = arbeidsgiverenDtoMedDefaultVerdier().copy(organisasjonsnummer = it)
                 )
             )
         }
 
-        return ( invalidFodselsnummerTestCases + invalidOrganisasjonsnummerTestCases )
-            .map { Arguments.of(it) }
+        return invalidOrganisasjonsnummerTestCases.map { Arguments.of(it) }
     }
 
     @ParameterizedTest
@@ -800,10 +737,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private fun endepunktMedOrganisasjonsnummerIRequestBody(): List<Arguments> {
 
         return listOf(
-            SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
-                requestBody = arbeidsgiverenDtoMedDefaultVerdier()
-            ),
             SkjemaStegTestFixture<Unit>(
                 uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
                 requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(

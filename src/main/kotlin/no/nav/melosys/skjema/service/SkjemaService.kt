@@ -3,31 +3,27 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
+import java.util.UUID
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
-import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
-import org.springframework.stereotype.Service
-import java.util.*
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
 
@@ -50,22 +46,6 @@ class SkjemaService(
     private fun getSkjemaAsArbeidsgiver(skjemaId: UUID): Skjema = skjemaRepository.findByIdOrNull(skjemaId)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
-
-    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
-        log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-
-        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidsgiveren = request)
-        }
-    }
-
-    fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidsgiversSkjemaDto {
-        log.info { "Saving arbeidstaker info from arbeidsgiver for skjema: $skjemaId" }
-
-        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidstakeren = request)
-        }
-    }
 
     fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
@@ -112,19 +92,11 @@ class SkjemaService(
         val currentUser = subjectHandler.getUserID()
 
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
-        
+
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
         val savedSkjema = skjemaRepository.save(skjema)
         return convertToArbeidstakersSkjemaDto(savedSkjema)
-    }
-
-    fun saveDineOpplysningerInfo(skjemaId: UUID, request: DineOpplysningerDto): ArbeidstakersSkjemaDto {
-        log.info { "Saving dine opplysninger info for skjema: $skjemaId" }
-
-        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidstakeren = request)
-        }
     }
 
     fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): ArbeidstakersSkjemaDto {

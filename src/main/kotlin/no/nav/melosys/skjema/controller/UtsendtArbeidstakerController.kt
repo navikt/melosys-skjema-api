@@ -10,15 +10,12 @@ import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
@@ -161,30 +158,6 @@ class UtsendtArbeidstakerController(
     }
 
     // Arbeidsgiver Flow Endpoints
-    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiveren")
-    @Operation(summary = "Register arbeidsgiver information")
-    @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
-    @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @Valid @RequestBody request: ArbeidsgiverenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
-        log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
-        validerArbeidsgiverTilgang(skjemaId)
-        val skjema = skjemaService.saveArbeidsgiverInfo(skjemaId, request)
-        return ResponseEntity.ok(skjema)
-    }
-
-    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidstakeren")
-    @Operation(summary = "Register arbeidstaker information")
-    @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
-    @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstakerFromArbeidsgiver(@PathVariable skjemaId: UUID, @Valid @RequestBody request: ArbeidstakerenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
-        log.info { "Registering arbeidstaker information from arbeidsgiver" }
-        validerArbeidsgiverTilgang(skjemaId)
-        val skjema = skjemaService.saveArbeidstakerInfo(skjemaId, request)
-        return ResponseEntity.ok(skjema)
-    }
-
     @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiverens-virksomhet-i-norge")
     @Operation(summary = "Register virksomhet information")
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
@@ -258,17 +231,6 @@ class UtsendtArbeidstakerController(
     }
 
     // Arbeidstaker Flow Endpoints
-    @PostMapping("/arbeidstaker/{skjemaId}/dine-opplysninger")
-    @Operation(summary = "Register dine opplysninger")
-    @ApiResponse(responseCode = "200", description = "Dine opplysninger registered")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
-    @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerDineOpplysninger(@PathVariable skjemaId: UUID, @Valid @RequestBody request: DineOpplysningerDto): ResponseEntity<ArbeidstakersSkjemaDto> {
-        validerArbeidstakerTilgang(skjemaId)
-        val skjema = skjemaService.saveDineOpplysningerInfo(skjemaId, request)
-        return ResponseEntity.ok(skjema)
-    }
-
     @PostMapping("/arbeidstaker/{skjemaId}/utenlandsoppdraget")
     @Operation(summary = "Register utenlandsoppdraget information")
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdraget information registered")
