@@ -15,7 +15,6 @@ import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
@@ -456,11 +455,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
         Arguments.of(
             HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren",
-            arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge",
             arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
         ),
@@ -574,7 +568,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun postEndpoints(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren"),
         Arguments.of(
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"
@@ -594,13 +587,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            SkjemaStegTestFixture(
-                stepKey = "arbeidstakeren",
-                requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidstakeren = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier())
-
-            ),
             SkjemaStegTestFixture(
                 stepKey = "arbeidsgiverens-virksomhet-i-norge",
                 requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
@@ -696,17 +682,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     private fun invalidRequestTestCases(): List<Arguments> {
-        val invalidFodselsnummere = listOf("1234567890A", "1234567890", "123456789012", "12345-67890")
         val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
-
-        val invalidFodselsnummerTestCases = invalidFodselsnummere.flatMap {
-            listOf(
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakeren",
-                    requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier().copy(fodselsnummer = it)
-                )
-            )
-        }
 
         val invalidOrganisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
             listOf(
@@ -729,8 +705,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             )
         }
 
-        return ( invalidFodselsnummerTestCases + invalidOrganisasjonsnummerTestCases )
-            .map { Arguments.of(it) }
+        return invalidOrganisasjonsnummerTestCases.map { Arguments.of(it) }
     }
 
     @ParameterizedTest
