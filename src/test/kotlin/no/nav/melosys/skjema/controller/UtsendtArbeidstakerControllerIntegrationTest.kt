@@ -12,7 +12,6 @@ import io.mockk.every
 import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.arbeidsgiverenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
@@ -460,11 +459,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
         Arguments.of(
             HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren",
-            arbeidsgiverenDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren",
             arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier()
         ),
@@ -588,7 +582,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun postEndpoints(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiveren"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakeren"),
         Arguments.of(
             HttpMethod.POST,
@@ -610,13 +603,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
         return listOf(
-            SkjemaStegTestFixture(
-                stepKey = "arbeidsgiveren",
-                requestBody = arbeidsgiverenDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier())
-
-            ),
             SkjemaStegTestFixture(
                 stepKey = "arbeidstakeren",
                 requestBody = arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier(),
@@ -759,10 +745,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                             norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
                         )
                     )
-                ),
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
-                    requestBody = arbeidsgiverenDtoMedDefaultVerdier().copy(organisasjonsnummer = it)
                 )
             )
         }
@@ -800,10 +782,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private fun endepunktMedOrganisasjonsnummerIRequestBody(): List<Arguments> {
 
         return listOf(
-            SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidsgiveren",
-                requestBody = arbeidsgiverenDtoMedDefaultVerdier()
-            ),
             SkjemaStegTestFixture<Unit>(
                 uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
                 requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(

@@ -8,7 +8,6 @@ import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
@@ -50,14 +49,6 @@ class SkjemaService(
     private fun getSkjemaAsArbeidsgiver(skjemaId: UUID): Skjema = skjemaRepository.findByIdOrNull(skjemaId)
         ?.takeIf { it.orgnr != null && altinnService.harBrukerTilgang(it.orgnr) }
         ?: throw IllegalArgumentException("Skjema with id $skjemaId not found")
-
-    fun saveArbeidsgiverInfo(skjemaId: UUID, request: ArbeidsgiverenDto): ArbeidsgiversSkjemaDto {
-        log.info { "Saving arbeidsgiver info for skjema: $skjemaId" }
-
-        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidsgiveren = request)
-        }
-    }
 
     fun saveArbeidstakerInfo(skjemaId: UUID, request: ArbeidstakerenDto): ArbeidsgiversSkjemaDto {
         log.info { "Saving arbeidstaker info from arbeidsgiver for skjema: $skjemaId" }

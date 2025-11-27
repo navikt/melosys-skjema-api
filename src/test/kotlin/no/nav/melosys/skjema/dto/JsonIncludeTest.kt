@@ -39,11 +39,6 @@ class JsonIncludeTest {
 
     fun dtoTestCases(): Stream<Arguments> = Stream.of(
         Arguments.of(
-            arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                arbeidsgiveren = null
-            )
-        ),
-        Arguments.of(
             arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
                 arbeidstakeren = null
             )

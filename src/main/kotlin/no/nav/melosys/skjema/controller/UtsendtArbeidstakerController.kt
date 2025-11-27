@@ -10,7 +10,6 @@ import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
@@ -161,18 +160,6 @@ class UtsendtArbeidstakerController(
     }
 
     // Arbeidsgiver Flow Endpoints
-    @PostMapping("/arbeidsgiver/{skjemaId}/arbeidsgiveren")
-    @Operation(summary = "Register arbeidsgiver information")
-    @ApiResponse(responseCode = "200", description = "Arbeidsgiver information registered")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
-    @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidsgiver(@PathVariable skjemaId: UUID, @Valid @RequestBody request: ArbeidsgiverenDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
-        log.info { "Registering arbeidsgiver: ${request.organisasjonsnummer}" }
-        validerArbeidsgiverTilgang(skjemaId)
-        val skjema = skjemaService.saveArbeidsgiverInfo(skjemaId, request)
-        return ResponseEntity.ok(skjema)
-    }
-
     @PostMapping("/arbeidsgiver/{skjemaId}/arbeidstakeren")
     @Operation(summary = "Register arbeidstaker information")
     @ApiResponse(responseCode = "200", description = "Arbeidstaker information registered")

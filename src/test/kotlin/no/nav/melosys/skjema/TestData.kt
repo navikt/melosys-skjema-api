@@ -10,7 +10,6 @@ import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiveren.ArbeidsgiverenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakeren.ArbeidstakerenDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
@@ -69,13 +68,7 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     orgNrTilTilganger = emptyMap()
 )
 
-fun arbeidsgiverenDtoMedDefaultVerdier() = ArbeidsgiverenDto(
-    organisasjonsnummer = korrektSyntetiskOrgnr,
-    organisasjonNavn = "Test Bedrift AS"
-)
-
 fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
-    arbeidsgiveren = arbeidsgiverenDtoMedDefaultVerdier(),
     arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
     utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
     arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
