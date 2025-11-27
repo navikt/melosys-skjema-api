@@ -2,17 +2,9 @@ package no.nav.melosys.skjema.dto
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.matchers.string.shouldNotContain
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.json.JsonTest
 import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidstakerenDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
-import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
@@ -20,6 +12,11 @@ import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.JsonTest
 
 @JsonTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -39,11 +36,6 @@ class JsonIncludeTest {
 
     fun dtoTestCases(): Stream<Arguments> = Stream.of(
         Arguments.of(
-            arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                arbeidstakeren = null
-            )
-        ),
-        Arguments.of(
             arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 opprettholderArbeidsgiverenVanligDrift = null
             )
@@ -56,11 +48,6 @@ class JsonIncludeTest {
         Arguments.of(
             arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                 virksomheterSomUtbetalerLonnOgNaturalytelser = null
-            )
-        ),
-        Arguments.of(
-            arbeidstakerenDtoMedDefaultVerdier().copy(
-                fornavn = null
             )
         ),
         Arguments.of(

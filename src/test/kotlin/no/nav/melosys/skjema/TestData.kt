@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.Instant
 import java.time.LocalDate
@@ -24,7 +23,6 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretnin
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
-import no.nav.melosys.skjema.dto.arbeidstaker.dineopplysninger.DineOpplysningerDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
@@ -149,14 +147,6 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
     harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad = false
 )
 
-fun arbeidstakerenDtoMedDefaultVerdier() = DineOpplysningerDto(
-    harNorskFodselsnummer = true,
-    fodselsnummer = korrektSyntetiskFnr,
-    fornavn = "Test",
-    etternavn = "Testesen",
-    fodselsdato = LocalDate.of(1990, 1, 1),
-)
-
 fun arbeidstakerenArbeidsgiversDelDtoMedDefaultVerdier() = ArbeidstakerenDto(
     fodselsnummer = korrektSyntetiskFnr
 )
@@ -209,7 +199,6 @@ fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirk
 )
 
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
-    arbeidstakeren = arbeidstakerenDtoMedDefaultVerdier(),
     skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
     familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()

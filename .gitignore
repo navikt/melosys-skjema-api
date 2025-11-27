@@ -49,3 +49,4 @@ logs/
 # Environment files
 .env
 .env.local
+/.kotlin/sessions/
