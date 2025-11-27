@@ -4,7 +4,9 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
+import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
@@ -14,8 +16,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.stream.Stream
-import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ArbeidssituasjonValidatorTest: BaseValidatorTest() {
