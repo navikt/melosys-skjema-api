@@ -1,9 +1,11 @@
 package no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import no.nav.melosys.skjema.controller.validators.utenlandsoppdraget.GyldigUtenlandsoppdrag
 import java.time.LocalDate
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@GyldigUtenlandsoppdrag
 data class UtenlandsoppdragetDto(
     val utsendelseLand: String,
     val arbeidstakerUtsendelseFraDato: LocalDate,

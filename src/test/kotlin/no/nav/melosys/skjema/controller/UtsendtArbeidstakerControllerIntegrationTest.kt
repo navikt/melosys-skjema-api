@@ -19,6 +19,7 @@ import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.entity.SkjemaStatus
@@ -28,7 +29,6 @@ import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
-import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
@@ -58,7 +58,8 @@ data class SkjemaStegTestFixture<T>(
     val uri: String = "",
     val requestBody: Any,
     val dataBeforePost: T? = null,
-    val expectedDataAfterPost: T? = null
+    val expectedDataAfterPost: T? = null,
+    val httpMethod: HttpMethod? = null
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -667,13 +668,14 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         ).map { Arguments.of(it) }
     }
 
-    @ParameterizedTest
-    @MethodSource("invalidRequestTestCases")
-    @DisplayName("POST endpoints should return 400 for invalid requests")
-    fun `POST endpoints should return 400 for invalid requests`(fixture: SkjemaStegTestFixture<Unit>) {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("endepunkterMedUgyldigData")
+    fun `Påse at kjøres validering på alle request bodies`(fixture: SkjemaStegTestFixture<*>) {
         val token = createTokenForUser(korrektSyntetiskFnr)
+        val testId = UUID.randomUUID()
+
         webTestClient.post()
-            .uri(fixture.uri)
+            .uri(fixture.uri, testId)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(fixture.requestBody)
@@ -681,81 +683,73 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isBadRequest
     }
 
-    private fun invalidRequestTestCases(): List<Arguments> {
-        val invalidOrganisasjonsnummere = listOf("12345678A", "12345678", "1234567890", "123456789")
-
-        val invalidOrganisasjonsnummerTestCases = invalidOrganisasjonsnummere.flatMap {
-            listOf(
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/arbeidssituasjon",
-                    requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
-                        virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
-                            norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
-                        )
-                    )
-                ),
-                SkjemaStegTestFixture<Unit>(
-                    uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
-                    requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
-                        virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
-                            norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = it))
-                        )
-                    )
-                )
+    fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
+        // Arbeidsgiver endpoints
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidsgiverens-virksomhet-i-norge",
+            requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
+                erArbeidsgiverenOffentligVirksomhet = false,
+                erArbeidsgiverenBemanningsEllerVikarbyraa = null,
             )
-        }
-
-        return invalidOrganisasjonsnummerTestCases.map { Arguments.of(it) }
-    }
-
-    @ParameterizedTest
-    @MethodSource("endepunktMedOrganisasjonsnummerIRequestBody")
-    @DisplayName("Returnerer 400 når organisasjon ikke eksisterer")
-    fun `Returnerer 400 når organisasjon ikke eksisterer`(fixture: SkjemaStegTestFixture<Unit>) {
-
-        every { eregService.organisasjonsnummerEksisterer(any()) } returns false
-
-        val token = createTokenForUser(korrektSyntetiskFnr)
-
-        val existingSkjema = skjemaRepository.save(skjemaMedDefaultVerdier())
-
-        val uri = if (fixture.stepKey == "") {
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver"
-        } else {
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjema.id}/${fixture.stepKey}"
-        }
-
-        webTestClient.post()
-            .uri(fixture.uri)
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(fixture.requestBody)
-            .exchange()
-            .expectStatus().isBadRequest
-    }
-
-    private fun endepunktMedOrganisasjonsnummerIRequestBody(): List<Arguments> {
-
-        return listOf(
-            SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/550e8400-e29b-41d4-a716-446655440000/arbeidstakerens-lonn",
-                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
-                    virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
-                        norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier())
-                    )
-                )
-            ),
-            SkjemaStegTestFixture<Unit>(
-                uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/550e8400-e29b-41d4-a716-446655440000/arbeidssituasjon",
-                requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
-                    virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
-                        norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier())
-                    )
-                )
+        ),
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
+            requestBody = utenlandsoppdragetDtoMedDefaultVerdier().copy(
+                arbeidstakerUtsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
+                arbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
+            requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+                arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
+                virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
+            requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                arbeidsstedType = ArbeidsstedType.PA_LAND,
+                paLand = null,
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
+            requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
+                harFlereOpplysningerTilSoknaden = true,
+                tilleggsopplysningerTilSoknad = null
+            )
+        ),
+        // Arbeidstaker endpoints
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
+            requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
+                utsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
+                utsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
+            requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
+                aktivitetIMaanedenFoerUtsendingen = null
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
+            requestBody = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+                mottarPengestotteFraAnnetEosLandEllerSveits = true,
+                landSomUtbetalerPengestotte = null
+            )
+        ),
+        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
+            requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
+                harFlereOpplysningerTilSoknaden = true,
+                tilleggsopplysningerTilSoknad = null
             )
         )
-            .map { Arguments.of(it) }
-    }
+    ).map { Arguments.of(it) }
 
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(

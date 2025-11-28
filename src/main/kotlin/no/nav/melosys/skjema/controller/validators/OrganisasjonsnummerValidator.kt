@@ -19,7 +19,7 @@ class OrganisasjonsnummerValidator(
         // Null values are handled by @NotNull annotation
         if (organisasjonsnummer == null) return true
 
-        if (organisasjonsnummerHarFormat(organisasjonsnummer)) {
+        if (organisasjonsnummerHarGyldigFormat(organisasjonsnummer)) {
             return eregService.organisasjonsnummerEksisterer(organisasjonsnummer)
         }
 
@@ -28,7 +28,7 @@ class OrganisasjonsnummerValidator(
 
     companion object {
 
-        fun organisasjonsnummerHarFormat(organisasjonsnummer: String): Boolean {
+        fun organisasjonsnummerHarGyldigFormat(organisasjonsnummer: String): Boolean {
             // Must be exactly 9 digits
             if (!organisasjonsnummer.matches(Regex("[0-9]{9}"))) return false
 
