@@ -721,6 +721,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             )
         ),
         // Arbeidstaker endpoints
+        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
+            requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
+                utsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
+                utsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
+            )
+        ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
             requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
