@@ -60,7 +60,6 @@ data class Organisasjonsledd(
     val organisasjonsleddDetaljer: OrganisasjonsleddDetaljer? = null,
     val driverVirksomheter: List<DriverVirksomhet>? = null,
     val inngaarIJuridiskEnheter: List<InngaarIJuridiskEnhet>? = null,
-    val organisasjonsleddUnder: List<BestaarAvOrganisasjonsledd>? = null,
     val organisasjonsleddOver: List<BestaarAvOrganisasjonsledd>? = null
 ) : Organisasjon()
 
@@ -143,24 +142,6 @@ data class Adresse(
     val poststed: String? = null,
     val landkode: String? = null,
     val kommunenummer: String? = null
-)
-
-/**
- * Key information about an organization (simplified response)
- */
-data class OrganisasjonNoekkelinfo(
-    val organisasjonsnummer: String,
-    val navn: Navn? = null,
-    val enhetstype: String? = null,
-    val adresse: Adresse? = null,
-    val opphoersdato: LocalDate? = null
-)
-
-/**
- * Error response from EREG service
- */
-data class TjenestefeilResponse(
-    val melding: String? = null
 )
 
 /**
