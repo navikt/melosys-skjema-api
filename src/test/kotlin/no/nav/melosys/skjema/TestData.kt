@@ -30,6 +30,7 @@ import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -75,10 +76,14 @@ fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirks
     erArbeidsgiverenOffentligVirksomhet = true
 )
 
+fun periodeDtoMedDefaultVerdier() = PeriodeDto(
+    fraDato = LocalDate.of(2024, 1, 1),
+    tilDato = LocalDate.of(2024, 12, 31)
+)
+
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
     utsendelseLand = "SE",
-    arbeidstakerUtsendelseFraDato = LocalDate.of(2024, 1, 1),
-    arbeidstakerUtsendelseTilDato = LocalDate.of(2024, 12, 31),
+    arbeidstakerUtsendelsePeriode = periodeDtoMedDefaultVerdier(),
     arbeidsgiverHarOppdragILandet = true,
     arbeidstakerBleAnsattForUtenlandsoppdraget = false,
     arbeidstakerForblirAnsattIHelePerioden = true,
@@ -86,8 +91,7 @@ fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
     arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget = true,
     utenlandsoppholdetsBegrunnelse = "Prosjekt",
     ansettelsesforholdBeskrivelse = "Samme stilling",
-    forrigeArbeidstakerUtsendelseFradato = null,
-    forrigeArbeidstakerUtsendelseTilDato = null
+    forrigeArbeidstakerUtsendelsePeriode = null
 )
 
 fun arbeidstakerensLonnDtoMedDefaultVerdier() = ArbeidstakerensLonnDto(
@@ -148,8 +152,7 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
 
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
     utsendelsesLand = "SV",
-    utsendelseFraDato = LocalDate.of(2024, 1, 1),
-    utsendelseTilDato = LocalDate.of(2024, 12, 31)
+    utsendelsePeriode = periodeDtoMedDefaultVerdier()
 )
 
 fun arbeidssituasjonDtoMedDefaultVerdier() = ArbeidssituasjonDto(

@@ -20,10 +20,6 @@ class UtenlandsoppdragetArbeidstakerValidator : ConstraintValidator<GyldigUtenla
             return false
         }
 
-        if (dto.utsendelseFraDato.isAfter(dto.utsendelseTilDato)) {
-            return false
-        }
-
         return true
     }
 }
