@@ -4,9 +4,11 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import jakarta.validation.Valid
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -19,8 +21,10 @@ class UtenlandsoppdragetValidatorTest : BaseValidatorTest() {
 
     private val utenlandsoppdragetDtoMedGyldigeVerdier = utenlandsoppdragetDtoMedDefaultVerdier().copy(
         utsendelseLand = "SE",
-        arbeidstakerUtsendelseFraDato = java.time.LocalDate.of(2024, 1, 1),
-        arbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2024, 12, 31),
+        arbeidstakerUtsendelsePeriode = PeriodeDto(
+            fraDato = java.time.LocalDate.of(2024, 1, 1),
+            tilDato = java.time.LocalDate.of(2024, 12, 31)
+        ),
         arbeidsgiverHarOppdragILandet = true,
         arbeidstakerBleAnsattForUtenlandsoppdraget = false,
         arbeidstakerForblirAnsattIHelePerioden = true,
@@ -28,13 +32,26 @@ class UtenlandsoppdragetValidatorTest : BaseValidatorTest() {
         arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget = null,
         utenlandsoppholdetsBegrunnelse = null,
         ansettelsesforholdBeskrivelse = null,
-        forrigeArbeidstakerUtsendelseFradato = null,
-        forrigeArbeidstakerUtsendelseTilDato = null
+        forrigeArbeidstakerUtsendelsePeriode = null
     )
 
     @Test
     fun `UtenlandsoppdragetDto should be annotated with GyldigUtenlandsoppdrag`() {
         val annotation = UtenlandsoppdragetDto::class.java.getAnnotation(GyldigUtenlandsoppdrag::class.java)
+        annotation.shouldNotBeNull()
+    }
+
+    @Test
+    fun `arbeidstakerUtsendelsePeriode field should be annotated with Valid`() {
+        val field = UtenlandsoppdragetDto::class.java.getDeclaredField("arbeidstakerUtsendelsePeriode")
+        val annotation = field.getAnnotation(Valid::class.java)
+        annotation.shouldNotBeNull()
+    }
+
+    @Test
+    fun `forrigeArbeidstakerUtsendelsePeriode field should be annotated with Valid`() {
+        val field = UtenlandsoppdragetDto::class.java.getDeclaredField("forrigeArbeidstakerUtsendelsePeriode")
+        val annotation = field.getAnnotation(Valid::class.java)
         annotation.shouldNotBeNull()
     }
 
@@ -94,23 +111,19 @@ class UtenlandsoppdragetValidatorTest : BaseValidatorTest() {
         // Arbeidstaker erstatter annen person - begge datoer er satt og gyldige
         utenlandsoppdragetDtoMedGyldigeVerdier.copy(
             arbeidstakerErstatterAnnenPerson = true,
-            forrigeArbeidstakerUtsendelseFradato = java.time.LocalDate.of(2023, 1, 1),
-            forrigeArbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2023, 12, 31)
+            forrigeArbeidstakerUtsendelsePeriode = PeriodeDto(
+                fraDato = java.time.LocalDate.of(2023, 1, 1),
+                tilDato = java.time.LocalDate.of(2023, 12, 31)
+            )
         ),
         // Arbeidstaker erstatter ikke annen person - datoer kan være null
         utenlandsoppdragetDtoMedGyldigeVerdier.copy(
             arbeidstakerErstatterAnnenPerson = false,
-            forrigeArbeidstakerUtsendelseFradato = null,
-            forrigeArbeidstakerUtsendelseTilDato = null
+            forrigeArbeidstakerUtsendelsePeriode = null
         )
     ).map { Arguments.of(it) }.stream()
 
     fun invalidCombinations(): Stream<Arguments> = listOf<UtenlandsoppdragetDto>(
-        // FraDato er etter tilDato
-        utenlandsoppdragetDtoMedGyldigeVerdier.copy(
-            arbeidstakerUtsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
-            arbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
-        ),
         // Arbeidsgiver har ikke oppdrag, men begrunnelse er null
         utenlandsoppdragetDtoMedGyldigeVerdier.copy(
             arbeidsgiverHarOppdragILandet = false,
@@ -146,29 +159,10 @@ class UtenlandsoppdragetValidatorTest : BaseValidatorTest() {
             arbeidstakerForblirAnsattIHelePerioden = false,
             ansettelsesforholdBeskrivelse = "   "
         ),
-        // Arbeidstaker erstatter annen person, men fraDato er null
+        // Arbeidstaker erstatter annen person, men periode er null
         utenlandsoppdragetDtoMedGyldigeVerdier.copy(
             arbeidstakerErstatterAnnenPerson = true,
-            forrigeArbeidstakerUtsendelseFradato = null,
-            forrigeArbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2023, 12, 31)
-        ),
-        // Arbeidstaker erstatter annen person, men tilDato er null
-        utenlandsoppdragetDtoMedGyldigeVerdier.copy(
-            arbeidstakerErstatterAnnenPerson = true,
-            forrigeArbeidstakerUtsendelseFradato = java.time.LocalDate.of(2023, 1, 1),
-            forrigeArbeidstakerUtsendelseTilDato = null
-        ),
-        // Arbeidstaker erstatter annen person, men begge datoer er null
-        utenlandsoppdragetDtoMedGyldigeVerdier.copy(
-            arbeidstakerErstatterAnnenPerson = true,
-            forrigeArbeidstakerUtsendelseFradato = null,
-            forrigeArbeidstakerUtsendelseTilDato = null
-        ),
-        // Arbeidstaker erstatter annen person, men fraDato er etter tilDato
-        utenlandsoppdragetDtoMedGyldigeVerdier.copy(
-            arbeidstakerErstatterAnnenPerson = true,
-            forrigeArbeidstakerUtsendelseFradato = java.time.LocalDate.of(2023, 12, 31),
-            forrigeArbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2023, 1, 1)
+            forrigeArbeidstakerUtsendelsePeriode = null
         )
     ).map { Arguments.of(it) }.stream()
 }

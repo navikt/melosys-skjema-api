@@ -16,10 +16,6 @@ class UtenlandsoppdragetValidator : ConstraintValidator<GyldigUtenlandsoppdrag, 
     ): Boolean {
         if (dto == null) return true
 
-        if (dto.arbeidstakerUtsendelseFraDato.isAfter(dto.arbeidstakerUtsendelseTilDato)) {
-            return false
-        }
-
         if (!dto.arbeidsgiverHarOppdragILandet) {
             return !dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()
         }
@@ -33,12 +29,7 @@ class UtenlandsoppdragetValidator : ConstraintValidator<GyldigUtenlandsoppdrag, 
         }
 
         if (dto.arbeidstakerErstatterAnnenPerson) {
-            if (dto.forrigeArbeidstakerUtsendelseFradato == null || dto.forrigeArbeidstakerUtsendelseTilDato == null) {
-                return false
-            }
-            if (dto.forrigeArbeidstakerUtsendelseFradato.isAfter(dto.forrigeArbeidstakerUtsendelseTilDato)) {
-                return false
-            }
+            return dto.forrigeArbeidstakerUtsendelsePeriode != null
         }
 
         return true

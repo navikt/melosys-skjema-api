@@ -22,6 +22,7 @@ import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
@@ -695,8 +696,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
             requestBody = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-                arbeidstakerUtsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
-                arbeidstakerUtsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
+                arbeidstakerUtsendelsePeriode = PeriodeDto(
+                    fraDato = java.time.LocalDate.of(2024, 12, 31),
+                    tilDato = java.time.LocalDate.of(2024, 1, 1)
+                )
             )
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
@@ -724,8 +727,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
             requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
-                utsendelseFraDato = java.time.LocalDate.of(2024, 12, 31),
-                utsendelseTilDato = java.time.LocalDate.of(2024, 1, 1)
+                utsendelsePeriode = PeriodeDto(
+                    fraDato = java.time.LocalDate.of(2024, 12, 31),
+                    tilDato = java.time.LocalDate.of(2024, 1, 1)
+                )
             )
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
