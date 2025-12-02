@@ -16,6 +16,17 @@ class EregService(
 ) {
 
     /**
+     * Henter organisasjon fra EREG uten hierarki.
+     *
+     * @param orgnummer 9-sifret organisasjonsnummer
+     * @return Organisasjon
+     */
+    fun hentOrganisasjon(orgnummer: String): Organisasjon {
+        log.info { "Henter organisasjon fra EREG (uten hierarki): ${orgnummer.take(3)}***" }
+        return eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = false)
+    }
+
+    /**
      * Henter organisasjon med juridisk enhet fra EREG.
      *
      * @param orgnummer 9-sifret organisasjonsnummer
