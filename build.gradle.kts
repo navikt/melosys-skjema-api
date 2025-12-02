@@ -32,7 +32,7 @@ val kotlinLoggingVersion = "7.0.13"
 val kotestVersion = "6.0.5"
 val mockkVersion = "1.14.6"
 val wiremockVersion = "3.13.2"
-val springMockkVersion = "4.0.2"
+val springMockkVersion = "5.0.1"
 val springdocVersion = "2.8.14"
 
 repositories {
