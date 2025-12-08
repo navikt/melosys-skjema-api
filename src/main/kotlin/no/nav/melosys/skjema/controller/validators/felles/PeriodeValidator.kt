@@ -20,7 +20,6 @@ class PeriodeValidator : ConstraintValidator<GyldigPeriode, PeriodeDto> {
         if (dto.fraDato.isAfter(dto.tilDato)) {
             context.addViolation(
                 "Fra-dato må være før eller lik til-dato",
-                "fraDato"
             )
             return false
         }

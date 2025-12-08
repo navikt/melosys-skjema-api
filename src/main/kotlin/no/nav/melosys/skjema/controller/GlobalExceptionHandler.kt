@@ -35,7 +35,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
-        val errors = mutableMapOf<String, Any>()
+        val errors = mutableMapOf<String, String>()
 
         // Get all constraint violations to extract property paths
         val violations = ex.bindingResult.allErrors.mapNotNull { error ->
