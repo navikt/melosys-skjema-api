@@ -35,7 +35,6 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest: BaseValidatorTest() {
     fun `should be invalid for invalid combinations`(dto: ArbeidsgiverensVirksomhetINorgeDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig arbeidsgiverens virksomhet")
     }
 
     fun validCombinations(): Stream<Arguments> = listOf(

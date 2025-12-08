@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller.validators.utenlandsoppdraget
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import org.springframework.stereotype.Component
 
@@ -17,19 +18,31 @@ class UtenlandsoppdragetValidator : ConstraintValidator<GyldigUtenlandsoppdrag, 
         if (dto == null) return true
 
         if (!dto.arbeidsgiverHarOppdragILandet) {
-            return !dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()
+            if (dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()) {
+                context.addViolation("Du må oppgi begrunnelse for utenlandsoppholdet", "utenlandsoppholdetsBegrunnelse")
+                return false
+            }
         }
 
         if (dto.arbeidstakerBleAnsattForUtenlandsoppdraget) {
-            return dto.arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget != null
+            if (dto.arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget == null) {
+                context.addViolation("Du må oppgi om arbeidstaker vil jobbe for virksomhet i Norge etter oppdraget", "arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget")
+                return false
+            }
         }
 
         if (!dto.arbeidstakerForblirAnsattIHelePerioden) {
-            return !dto.ansettelsesforholdBeskrivelse.isNullOrBlank()
+            if (dto.ansettelsesforholdBeskrivelse.isNullOrBlank()) {
+                context.addViolation("Du må oppgi beskrivelse av ansettelsesforholdet", "ansettelsesforholdBeskrivelse")
+                return false
+            }
         }
 
         if (dto.arbeidstakerErstatterAnnenPerson) {
-            return dto.forrigeArbeidstakerUtsendelsePeriode != null
+            if (dto.forrigeArbeidstakerUtsendelsePeriode == null) {
+                context.addViolation("Du må oppgi forrige arbeidstakers utsendelseperiode", "forrigeArbeidstakerUtsendelsePeriode")
+                return false
+            }
         }
 
         return true
