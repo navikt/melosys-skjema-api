@@ -28,6 +28,7 @@ class ErFodselsEllerDNummerValidator(
             validerInput(fodselsnummer, erSyntetisk = validerSyntetiskFnr)
             true
         } catch (e: IllegalArgumentException) {
+            cxt.addViolation("Ugyldig fødsels- eller D-nummer")
             false
         }
     }

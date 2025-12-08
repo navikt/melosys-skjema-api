@@ -21,8 +21,7 @@ class OrganisasjonsnummerValidator(
 
         if (!organisasjonsnummerHarGyldigFormat(organisasjonsnummer)) {
             context.addViolation(
-                "Organisasjonsnummer har ugyldig format",
-                "organisasjonsnummer"
+                "Organisasjonsnummer har ugyldig format"
             )
             return false
         }

@@ -15,3 +15,11 @@ fun ConstraintValidatorContext.addViolation(message: String, propertyName: Strin
         .addPropertyNode(propertyName)
         .addConstraintViolation()
 }
+
+
+fun ConstraintValidatorContext.addViolation(message: String) {
+    disableDefaultConstraintViolation()
+
+    buildConstraintViolationWithTemplate(message)
+        .addConstraintViolation()
+}
