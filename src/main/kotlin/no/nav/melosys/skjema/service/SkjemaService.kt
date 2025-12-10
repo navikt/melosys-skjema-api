@@ -3,8 +3,11 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.util.UUID
+import no.nav.melosys.skjema.domain.InnsendingMetadata
+import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
+import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -32,7 +35,8 @@ class SkjemaService(
     private val skjemaRepository: SkjemaRepository,
     private val objectMapper: ObjectMapper,
     private val subjectHandler: SubjectHandler,
-    private val altinnService: AltinnService
+    private val altinnService: AltinnService,
+    private val innsendingProsesseringService: InnsendingProsesseringService
 ) {
 
 
@@ -88,14 +92,34 @@ class SkjemaService(
     }
 
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
-        log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
+        log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
+        // 1. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
+
+        // 2. Sett innsendingStatus = MOTTATT i metadata
+        val eksisterendeMetadata = skjema.metadata?.let {
+            objectMapper.treeToValue(it, UtsendtArbeidstakerMetadata::class.java)
+        }
+
+        val oppdatertMetadata = eksisterendeMetadata?.copy(
+            innsending = InnsendingMetadata(status = InnsendingStatus.MOTTATT)
+        )
+        if (oppdatertMetadata != null) {
+            skjema.metadata = objectMapper.valueToTree(oppdatertMetadata)
+        }
+
+        // 3. Lagre
         val savedSkjema = skjemaRepository.save(skjema)
+
+        // 4. Start async prosessering (returnerer umiddelbart)
+        innsendingProsesseringService.prosesserInnsendingAsync(skjemaId)
+
+        // 5. Returner kvittering til bruker
         return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 
