@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidstakerenslonn
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ArbeidstakerensLonnTranslation
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import org.springframework.stereotype.Component
@@ -19,16 +21,28 @@ class ArbeidstakerensLonnValidator : ConstraintValidator<GyldigArbeidstakerensLo
 
         if (dto.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden) {
             if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser != null) {
-                context.addViolation("Virksomheter som utbetaler lønn skal ikke oppgis når arbeidsgiver betaler alt", ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name)
+                context.addViolation(
+                    translationFieldName(ArbeidstakerensLonnTranslation::virksomheterSkalIkkeOppgis.name),
+                    ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name
+                )
                 return false
             }
         } else {
             if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser == null) {
-                context.addViolation("Du må oppgi virksomheter som utbetaler lønn og naturalytelser", ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name)
+                context.addViolation(
+                    translationFieldName(ArbeidstakerensLonnTranslation::maaOppgiVirksomheter.name),
+                    ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name
+                )
                 return false
             }
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::arbeidstakerensLonnTranslation.name}.$fieldName"
+        }
     }
 }

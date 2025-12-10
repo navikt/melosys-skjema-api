@@ -694,14 +694,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
-        // Arbeidsgiver endpoints
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidsgiverens-virksomhet-i-norge",
             requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 erArbeidsgiverenOffentligVirksomhet = false,
                 erArbeidsgiverenBemanningsEllerVikarbyraa = null,
             ),
-            expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå")
+            expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "arbeidsgiverensVirksomhetINorgeTranslation.maaOppgiOmBemanningsbyraa")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
@@ -711,7 +710,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     tilDato = java.time.LocalDate.of(2024, 1, 1)
                 )
             ),
-            expectedValidationError = mapOf("arbeidstakerUtsendelsePeriode" to "Fra-dato må være før eller lik til-dato")
+            expectedValidationError = mapOf("arbeidstakerUtsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
@@ -719,7 +718,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
                 virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
             ),
-            expectedValidationError = mapOf("virksomheterSomUtbetalerLonnOgNaturalytelser" to "Virksomheter som utbetaler lønn skal ikke oppgis når arbeidsgiver betaler alt")
+            expectedValidationError = mapOf("virksomheterSomUtbetalerLonnOgNaturalytelser" to "arbeidstakerensLonnTranslation.virksomheterSkalIkkeOppgis")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
@@ -727,7 +726,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 arbeidsstedType = ArbeidsstedType.PA_LAND,
                 paLand = null,
             ),
-            expectedValidationError = mapOf("paLand" to "Du må oppgi arbeidssted på land")
+            expectedValidationError = mapOf("paLand" to "arbeidsstedIUtlandetTranslation.maaOppgiArbeidsstedPaLand")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
@@ -735,7 +734,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
             ),
-            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "Du må oppgi tilleggsopplysninger")
+            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "tilleggsopplysningerTranslation.maaOppgiTilleggsopplysninger")
         ),
         // Arbeidstaker endpoints
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
@@ -746,7 +745,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     tilDato = java.time.LocalDate.of(2024, 1, 1)
                 )
             ),
-            expectedValidationError = mapOf("utsendelsePeriode" to "Fra-dato må være før eller lik til-dato")
+            expectedValidationError = mapOf("utsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
@@ -754,7 +753,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
                 aktivitetIMaanedenFoerUtsendingen = null
             ),
-            expectedValidationError = mapOf("aktivitetIMaanedenFoerUtsendingen" to "Aktivitet i måneden før utsendingen må oppgis når arbeidstaker ikke har vært i lønnet arbeid")
+            expectedValidationError = mapOf("aktivitetIMaanedenFoerUtsendingen" to "arbeidssituasjonTranslation.maaOppgiAktivitetFoerUtsending")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
@@ -762,7 +761,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 mottarPengestotteFraAnnetEosLandEllerSveits = true,
                 landSomUtbetalerPengestotte = null
             ),
-            expectedValidationError = mapOf("landSomUtbetalerPengestotte" to "Du må oppgi land som utbetaler pengestøtte")
+            expectedValidationError = mapOf("landSomUtbetalerPengestotte" to "skatteforholdOgInntektTranslation.maaOppgiLandSomUtbetalerPengestotte")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
@@ -770,7 +769,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
             ),
-            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "Du må oppgi tilleggsopplysninger")
+            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "tilleggsopplysningerTranslation.maaOppgiTilleggsopplysninger")
         )
     ).map { Arguments.of(it) }
 

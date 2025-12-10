@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidsgiverensvirksomhetino
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ArbeidsgiverensVirksomhetINorgeTranslation
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import org.springframework.stereotype.Component
@@ -21,14 +23,14 @@ class ArbeidsgiverensVirksomhetINorgeValidator :
         if (dto.erArbeidsgiverenOffentligVirksomhet) {
             if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa != null) {
                 context.addViolation(
-                    "Offentlige virksomheter skal ikke oppgi bemanningsbyrå",
+                    translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiBemanningsbyraa.name),
                     ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name
                 )
                 return false
             }
             if (dto.opprettholderArbeidsgiverenVanligDrift != null) {
                 context.addViolation(
-                    "Offentlige virksomheter skal ikke oppgi vanlig drift",
+                    translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiVanligDrift.name),
                     ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name
                 )
                 return false
@@ -36,20 +38,25 @@ class ArbeidsgiverensVirksomhetINorgeValidator :
         } else {
             if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa == null) {
                 context.addViolation(
-                    "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå",
-                    "erArbeidsgiverenBemanningsEllerVikarbyraa"
+                    translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name),
+                    ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name
                 )
                 return false
             }
             if (dto.opprettholderArbeidsgiverenVanligDrift == null) {
                 context.addViolation(
-                    "Du må oppgi om arbeidsgiver opprettholder vanlig drift",
-                    "opprettholderArbeidsgiverenVanligDrift"
+                    translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmVanligDrift.name),
+                    ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name
                 )
                 return false
             }
         }
 
         return true
+    }
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::arbeidsgiverensVirksomhetINorgeTranslation.name}.$fieldName"
+        }
     }
 }

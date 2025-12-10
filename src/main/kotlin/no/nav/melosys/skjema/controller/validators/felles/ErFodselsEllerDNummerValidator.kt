@@ -1,7 +1,10 @@
-package no.nav.melosys.skjema.controller.validators
+package no.nav.melosys.skjema.controller.validators.felles
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
+import no.nav.melosys.skjema.controller.dto.translations.FellesTranslation
+import no.nav.melosys.skjema.controller.validators.addViolation
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -28,13 +31,17 @@ class ErFodselsEllerDNummerValidator(
             validerInput(fodselsnummer, erSyntetisk = validerSyntetiskFnr)
             true
         } catch (e: IllegalArgumentException) {
-            cxt.addViolation("Ugyldig fødsels- eller D-nummer")
+            cxt.addViolation(translationFieldName(FellesTranslation::ugyldigFodselsellerDNummer.name))
             false
         }
     }
 
     // Implementasjon hentet fra https://github.com/Skatteetaten/folkeregisteret-api-dokumentasjon/blob/master/src/dokumenter/foedselsEllerDNummerValidator.java
     companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return "${ErrorMessageTranslation::fellesTranslation.name}.$fieldName"
+        }
+
         private val vekterK1 = intArrayOf(3, 7, 6, 1, 8, 9, 4, 5, 2)
         private val vekterK2 = intArrayOf(5, 4, 3, 2, 7, 6, 5, 4, 3, 2)
         private val gyldigRestK1 = intArrayOf(0, 1, 2, 3)

@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.felles
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
+import no.nav.melosys.skjema.controller.dto.translations.PeriodeTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import org.springframework.stereotype.Component
@@ -19,11 +21,17 @@ class PeriodeValidator : ConstraintValidator<GyldigPeriode, PeriodeDto> {
 
         if (dto.fraDato.isAfter(dto.tilDato)) {
             context.addViolation(
-                "Fra-dato må være før eller lik til-dato",
+                translationFieldName(PeriodeTranslation::fraDatoMaaVaereFoerTilDato.name),
             )
             return false
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::periodeTranslation.name}.$fieldName"
+        }
     }
 }

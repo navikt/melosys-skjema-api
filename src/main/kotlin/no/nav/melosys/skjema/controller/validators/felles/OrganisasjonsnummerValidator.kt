@@ -1,7 +1,10 @@
-package no.nav.melosys.skjema.controller.validators
+package no.nav.melosys.skjema.controller.validators.felles
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
+import no.nav.melosys.skjema.controller.dto.translations.FellesTranslation
+import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import org.springframework.stereotype.Component
 
@@ -21,14 +24,14 @@ class OrganisasjonsnummerValidator(
 
         if (!organisasjonsnummerHarGyldigFormat(organisasjonsnummer)) {
             context.addViolation(
-                "Organisasjonsnummer har ugyldig format"
+                translationFieldName(FellesTranslation::organisasjonsnummerHarUgyldigFormat.name)
             )
             return false
         }
 
         if (!eregService.organisasjonsnummerEksisterer(organisasjonsnummer)) {
             context.addViolation(
-                "Organisasjonsnummer finnes ikke i Enhetsregisteret"
+                translationFieldName(FellesTranslation::organisasjonsnummerFinnesIkke.name)
             )
             return false
         }
@@ -37,6 +40,9 @@ class OrganisasjonsnummerValidator(
     }
 
     companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return "${ErrorMessageTranslation::fellesTranslation.name}.$fieldName"
+        }
 
         fun organisasjonsnummerHarGyldigFormat(organisasjonsnummer: String): Boolean {
             // Must be exactly 9 digits

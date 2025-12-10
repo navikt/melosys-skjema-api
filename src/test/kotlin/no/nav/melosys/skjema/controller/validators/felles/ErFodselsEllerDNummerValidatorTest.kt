@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.controller.validators
+package no.nav.melosys.skjema.controller.validators.felles
 
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -6,6 +6,7 @@ import io.mockk.mockk
 import jakarta.validation.ConstraintValidatorContext
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonRequest
+import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance

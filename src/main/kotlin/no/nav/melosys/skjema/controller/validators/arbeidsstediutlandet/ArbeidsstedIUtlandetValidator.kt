@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.dto.translations.ArbeidsstedIUtlandetTranslation
+import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -21,28 +23,46 @@ class ArbeidsstedIUtlandetValidator : ConstraintValidator<GyldigArbeidsstedIUtla
         return when(dto.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> {
                 if (dto.paLand == null || dto.offshore != null || dto.paSkip != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi arbeidssted på land", ArbeidsstedIUtlandetDto::paLand.name)
+                    context.addViolation(
+                        translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiArbeidsstedPaLand.name),
+                        ArbeidsstedIUtlandetDto::paLand.name
+                    )
                     false
                 } else true
             }
             ArbeidsstedType.OFFSHORE -> {
                 if (dto.offshore == null || dto.paLand != null || dto.paSkip != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi offshore arbeidssted", ArbeidsstedIUtlandetDto::offshore.name)
+                    context.addViolation(
+                        translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiOffshoreArbeidssted.name),
+                        ArbeidsstedIUtlandetDto::offshore.name
+                    )
                     false
                 } else true
             }
             ArbeidsstedType.PA_SKIP -> {
                 if (dto.paSkip == null || dto.paLand != null || dto.offshore != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi arbeidssted på skip", ArbeidsstedIUtlandetDto::paSkip.name)
+                    context.addViolation(
+                        translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiArbeidsstedPaSkip.name),
+                        ArbeidsstedIUtlandetDto::paSkip.name
+                    )
                     false
                 } else true
             }
             ArbeidsstedType.OM_BORD_PA_FLY -> {
                 if (dto.omBordPaFly == null || dto.paLand != null || dto.offshore != null || dto.paSkip != null) {
-                    context.addViolation("Du må oppgi arbeidssted om bord på fly", ArbeidsstedIUtlandetDto::omBordPaFly.name)
+                    context.addViolation(
+                        translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiArbeidsstedOmBordPaFly.name),
+                        ArbeidsstedIUtlandetDto::omBordPaFly.name
+                    )
                     false
                 } else true
             }
+        }
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::arbeidsstedIUtlandetTranslation.name}.$fieldName"
         }
     }
 }
