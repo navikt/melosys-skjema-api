@@ -4,16 +4,17 @@ import io.kotest.core.spec.style.FunSpec
 import io.mockk.*
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.service.InnsendingProsesseringService
 import java.time.Instant
 import java.util.*
 
 class InnsendingRetrySchedulerTest : FunSpec({
 
-    val mockRepository = mockk<SkjemaRepository>()
+    val mockRepository = mockk<InnsendingRepository>()
     val mockProsesseringService = mockk<InnsendingProsesseringService>()
     val retryConfig = InnsendingRetryConfig().apply {
         fixedDelayMinutes = 5
@@ -39,30 +40,30 @@ class InnsendingRetrySchedulerTest : FunSpec({
         }
 
         test("skal kalle prosesserInnsendingAsync for hver kandidat") {
-            val skjema1 = createTestSkjema(UUID.randomUUID())
-            val skjema2 = createTestSkjema(UUID.randomUUID())
+            val innsending1 = createTestInnsending()
+            val innsending2 = createTestInnsending()
 
-            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(skjema1, skjema2)
+            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(innsending1, innsending2)
             every { mockProsesseringService.prosesserInnsendingAsync(any()) } just runs
 
             scheduler.retryFeiledeInnsendinger()
 
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema1.id!!) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema2.id!!) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) }
         }
 
         test("skal fortsette med neste kandidat selv om en feiler") {
-            val skjema1 = createTestSkjema(UUID.randomUUID())
-            val skjema2 = createTestSkjema(UUID.randomUUID())
+            val innsending1 = createTestInnsending()
+            val innsending2 = createTestInnsending()
 
-            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(skjema1, skjema2)
-            every { mockProsesseringService.prosesserInnsendingAsync(skjema1.id!!) } throws RuntimeException("Test error")
-            every { mockProsesseringService.prosesserInnsendingAsync(skjema2.id!!) } just runs
+            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(innsending1, innsending2)
+            every { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) } throws RuntimeException("Test error")
+            every { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) } just runs
 
             scheduler.retryFeiledeInnsendinger()
 
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema1.id!!) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema2.id!!) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) }
         }
 
         test("skal bruke maxAttempts fra config") {
@@ -75,16 +76,20 @@ class InnsendingRetrySchedulerTest : FunSpec({
     }
 })
 
-private fun createTestSkjema(id: UUID): Skjema {
-    return Skjema(
-        id = id,
+private fun createTestInnsending(): Innsending {
+    val skjema = Skjema(
+        id = UUID.randomUUID(),
         status = SkjemaStatus.SENDT,
         fnr = "12345678901",
         orgnr = "123456789",
         opprettetAv = "12345678901",
-        endretAv = "12345678901",
-        innsendingStatus = InnsendingStatus.JOURNALFORING_FEILET,
-        innsendingAntallForsok = 1,
-        innsendingSisteForsoek = Instant.now().minusSeconds(600)
+        endretAv = "12345678901"
+    )
+    return Innsending(
+        id = UUID.randomUUID(),
+        skjema = skjema,
+        status = InnsendingStatus.JOURNALFORING_FEILET,
+        antallForsok = 1,
+        sisteForsoek = Instant.now().minusSeconds(600)
     )
 }

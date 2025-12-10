@@ -3,7 +3,6 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
@@ -99,14 +98,14 @@ class SkjemaService(
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
 
-        // 2. Sett innsendingStatus = MOTTATT
-        skjema.innsendingStatus = InnsendingStatus.MOTTATT
-
-        // 3. Lagre
+        // 2. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
+        // 3. Opprett innsending-rad for prosesseringsstatus
+        innsendingProsesseringService.opprettInnsending(savedSkjema)
+
         // 4. Start async prosessering (returnerer umiddelbart)
-        innsendingProsesseringService.prosesserInnsendingAsync(skjemaId)
+        innsendingProsesseringService.prosesserInnsendingAsync(savedSkjema)
 
         // 5. Returner kvittering til bruker
         return convertToArbeidstakersSkjemaDto(savedSkjema)

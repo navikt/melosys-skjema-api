@@ -8,113 +8,125 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import java.util.*
 
 class InnsendingProsesseringServiceTest : FunSpec({
 
-    val mockRepository = mockk<SkjemaRepository>()
+    val mockInnsendingRepository = mockk<InnsendingRepository>()
+    val mockSkjemaRepository = mockk<SkjemaRepository>()
 
-    val service = InnsendingProsesseringService(mockRepository)
+    val service = InnsendingProsesseringService(mockInnsendingRepository, mockSkjemaRepository)
 
-    val testSkjemaId = UUID.randomUUID()
     val testFnr = "12345678901"
     val testOrgnr = "123456789"
+
+    context("opprettInnsending") {
+
+        test("skal opprette innsending med status MOTTATT") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsendingSlot = slot<Innsending>()
+
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
+
+            service.opprettInnsending(skjema)
+
+            verify { mockInnsendingRepository.save(any()) }
+
+            innsendingSlot.captured.skjema shouldBe skjema
+            innsendingSlot.captured.status shouldBe InnsendingStatus.MOTTATT
+            innsendingSlot.captured.antallForsok shouldBe 0
+        }
+    }
 
     context("oppdaterStatus") {
 
         test("skal oppdatere status til FERDIG") {
-            val skjema = createTestSkjema(testSkjemaId, testFnr, testOrgnr)
-            val skjemaSlot = slot<Skjema>()
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+            val innsendingSlot = slot<Innsending>()
 
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjema)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
 
-            service.oppdaterStatus(testSkjemaId, InnsendingStatus.FERDIG)
+            service.oppdaterStatus(skjema, InnsendingStatus.FERDIG)
 
-            verify { mockRepository.save(any()) }
+            verify { mockInnsendingRepository.save(any()) }
 
-            skjemaSlot.captured.innsendingStatus shouldBe InnsendingStatus.FERDIG
-            skjemaSlot.captured.innsendingAntallForsok shouldBe 1
-            skjemaSlot.captured.innsendingSisteForsoek shouldNotBe null
+            innsendingSlot.captured.status shouldBe InnsendingStatus.FERDIG
+            innsendingSlot.captured.antallForsok shouldBe 1
+            innsendingSlot.captured.sisteForsoek shouldNotBe null
         }
 
         test("skal oppdatere status med feilmelding") {
-            val skjema = createTestSkjema(testSkjemaId, testFnr, testOrgnr)
-            val skjemaSlot = slot<Skjema>()
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+            val innsendingSlot = slot<Innsending>()
 
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjema)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
 
             service.oppdaterStatus(
-                testSkjemaId,
+                skjema,
                 InnsendingStatus.JOURNALFORING_FEILET,
                 feilmelding = "Joark er nede"
             )
 
-            skjemaSlot.captured.innsendingStatus shouldBe InnsendingStatus.JOURNALFORING_FEILET
-            skjemaSlot.captured.innsendingFeilmelding shouldBe "Joark er nede"
+            innsendingSlot.captured.status shouldBe InnsendingStatus.JOURNALFORING_FEILET
+            innsendingSlot.captured.feilmelding shouldBe "Joark er nede"
         }
 
         test("skal inkrementere antallForsok ved gjentatte oppdateringer") {
-            val skjema = createTestSkjema(testSkjemaId, testFnr, testOrgnr)
-            val skjemaSlot = slot<Skjema>()
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+            val innsendingSlot = slot<Innsending>()
 
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjema)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
 
             // Første oppdatering
-            service.oppdaterStatus(testSkjemaId, InnsendingStatus.JOURNALFORING_FEILET)
-            skjemaSlot.captured.innsendingAntallForsok shouldBe 1
+            service.oppdaterStatus(skjema, InnsendingStatus.JOURNALFORING_FEILET)
+            innsendingSlot.captured.antallForsok shouldBe 1
 
-            // Andre oppdatering - skjema har nå antallForsok=1
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjemaSlot.captured)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
+            // Andre oppdatering - innsending har nå antallForsok=1
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsendingSlot.captured
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
 
-            service.oppdaterStatus(testSkjemaId, InnsendingStatus.JOURNALFORING_FEILET)
-            skjemaSlot.captured.innsendingAntallForsok shouldBe 2
+            service.oppdaterStatus(skjema, InnsendingStatus.JOURNALFORING_FEILET)
+            innsendingSlot.captured.antallForsok shouldBe 2
         }
+    }
 
-        test("skal bevare journalpostId ved statusoppdatering") {
-            val skjema = createTestSkjema(testSkjemaId, testFnr, testOrgnr).apply {
-                innsendingStatus = InnsendingStatus.JOURNALFORT
-                journalpostId = "12345"
-            }
+    context("oppdaterSkjemaJournalpostId") {
+
+        test("skal sette journalpostId på skjema") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
             val skjemaSlot = slot<Skjema>()
 
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjema)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
+            every { mockSkjemaRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
 
-            service.oppdaterStatus(testSkjemaId, InnsendingStatus.FERDIG)
-
-            skjemaSlot.captured.journalpostId shouldBe "12345"
-            skjemaSlot.captured.innsendingStatus shouldBe InnsendingStatus.FERDIG
-        }
-
-        test("skal sette journalpostId når den oppgis") {
-            val skjema = createTestSkjema(testSkjemaId, testFnr, testOrgnr)
-            val skjemaSlot = slot<Skjema>()
-
-            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjema)
-            every { mockRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
-
-            service.oppdaterStatus(testSkjemaId, InnsendingStatus.JOURNALFORT, journalpostId = "67890")
+            service.oppdaterSkjemaJournalpostId(skjema, "67890")
 
             skjemaSlot.captured.journalpostId shouldBe "67890"
-            skjemaSlot.captured.innsendingStatus shouldBe InnsendingStatus.JOURNALFORT
         }
     }
 })
 
-private fun createTestSkjema(
-    id: UUID,
-    fnr: String,
-    orgnr: String
-): Skjema {
+private fun createTestInnsending(skjema: Skjema): Innsending {
+    return Innsending(
+        id = UUID.randomUUID(),
+        skjema = skjema,
+        status = InnsendingStatus.MOTTATT
+    )
+}
+
+private fun createTestSkjema(fnr: String, orgnr: String): Skjema {
     return Skjema(
-        id = id,
+        id = UUID.randomUUID(),
         status = SkjemaStatus.SENDT,
         fnr = fnr,
         orgnr = orgnr,

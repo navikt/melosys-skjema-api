@@ -1,19 +1,27 @@
--- Legg til kolonner for innsendingsstatus (flyttes fra metadata JSONB til egne felt)
+-- Egen tabell for innsendingsprosessering (retry, feilhåndtering)
+-- Skjema beholder referanse_id og journalpost_id som tilhører selve skjemaet
 
-ALTER TABLE skjema ADD COLUMN innsending_status VARCHAR(50);
+-- Legg til referanse_id og journalpost_id på skjema
 ALTER TABLE skjema ADD COLUMN journalpost_id VARCHAR(255);
 ALTER TABLE skjema ADD COLUMN referanse_id VARCHAR(50);
-ALTER TABLE skjema ADD COLUMN innsending_feilmelding TEXT;
-ALTER TABLE skjema ADD COLUMN innsending_antall_forsok INTEGER DEFAULT 0;
-ALTER TABLE skjema ADD COLUMN innsending_siste_forsoek TIMESTAMP WITH TIME ZONE;
+
+-- Opprett innsending-tabell for prosesseringsstatus
+CREATE TABLE innsending (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    skjema_id UUID NOT NULL UNIQUE REFERENCES skjema(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL,
+    feilmelding TEXT,
+    antall_forsok INTEGER NOT NULL DEFAULT 0,
+    siste_forsoek TIMESTAMP WITH TIME ZONE,
+    opprettet_dato TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Indeks for scheduler-query (findRetryKandidater)
-CREATE INDEX idx_skjema_innsending_status ON skjema(innsending_status);
+CREATE INDEX idx_innsending_status ON innsending(status);
+CREATE INDEX idx_innsending_status_forsok ON innsending(status, antall_forsok);
 
--- Migrer eksisterende MOTTATT til SENDT før vi endrer constraint
--- MOTTATT var tidligere en SkjemaStatus, men vi bruker nå kun UTKAST og SENDT
--- MOTTATT-status flyttes til innsending_status = 'FERDIG' (antar allerede prosessert)
-UPDATE skjema SET status = 'SENDT', innsending_status = 'FERDIG' WHERE status = 'MOTTATT';
+-- Migrer eksisterende MOTTATT-status til SENDT
+UPDATE skjema SET status = 'SENDT' WHERE status = 'MOTTATT';
 
 -- Oppdater constraint til kun å tillate UTKAST og SENDT
 ALTER TABLE skjema DROP CONSTRAINT IF EXISTS skjema_status_check;
