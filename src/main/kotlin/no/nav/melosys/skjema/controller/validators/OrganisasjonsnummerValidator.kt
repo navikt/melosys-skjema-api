@@ -28,8 +28,7 @@ class OrganisasjonsnummerValidator(
 
         if (!eregService.organisasjonsnummerEksisterer(organisasjonsnummer)) {
             context.addViolation(
-                "Organisasjonsnummer finnes ikke i Enhetsregisteret",
-                "organisasjonsnummer"
+                "Organisasjonsnummer finnes ikke i Enhetsregisteret"
             )
             return false
         }
