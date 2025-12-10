@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.domain
 /**
  * Status for asynkron bakgrunnsprosessering av innsendte søknader.
  *
- * Lagres i skjema.metadata.innsending og sporer fremdrift gjennom:
+ * Lagres på [no.nav.melosys.skjema.entity.Skjema.innsendingStatus] og sporer fremdrift gjennom:
  * 1. Journalføring til Joark
  * 2. Kafka-sending til melosys-api
  * 3. Varsling til arbeidstaker (best effort)

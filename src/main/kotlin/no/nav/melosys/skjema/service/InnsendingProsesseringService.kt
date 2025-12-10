@@ -1,10 +1,7 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.domain.InnsendingMetadata
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -21,8 +18,7 @@ private val log = KotlinLogging.logger {}
  */
 @Service
 class InnsendingProsesseringService(
-    private val skjemaRepository: SkjemaRepository,
-    private val objectMapper: ObjectMapper
+    private val skjemaRepository: SkjemaRepository
 ) {
 
     /**
@@ -59,7 +55,7 @@ class InnsendingProsesseringService(
     }
 
     /**
-     * Oppdaterer innsendingsstatus i skjemaets metadata.
+     * Oppdaterer innsendingsstatus på skjemaet.
      */
     fun oppdaterStatus(
         skjemaId: UUID,
@@ -71,24 +67,17 @@ class InnsendingProsesseringService(
             IllegalArgumentException("Skjema $skjemaId ikke funnet")
         }
 
-        val eksisterendeMetadata = skjema.metadata?.let {
-            objectMapper.treeToValue(it, UtsendtArbeidstakerMetadata::class.java)
-        } ?: throw IllegalStateException("Skjema $skjemaId mangler metadata")
-
-        val eksisterendeInnsending = eksisterendeMetadata.innsending
-
-        val oppdatertInnsending = InnsendingMetadata(
-            status = status,
-            journalpostId = journalpostId ?: eksisterendeInnsending?.journalpostId,
-            referanseId = eksisterendeInnsending?.referanseId,
-            feilmelding = feilmelding,
-            antallForsok = (eksisterendeInnsending?.antallForsok ?: 0) + 1,
-            sisteForsoek = Instant.now()
-        )
-
-        val oppdatertMetadata = eksisterendeMetadata.copy(innsending = oppdatertInnsending)
-        skjema.metadata = objectMapper.valueToTree(oppdatertMetadata)
+        skjema.innsendingStatus = status
+        skjema.innsendingAntallForsok += 1
+        skjema.innsendingSisteForsoek = Instant.now()
         skjema.endretDato = Instant.now()
+
+        if (journalpostId != null) {
+            skjema.journalpostId = journalpostId
+        }
+        if (feilmelding != null) {
+            skjema.innsendingFeilmelding = feilmelding
+        }
 
         skjemaRepository.save(skjema)
         log.debug { "Oppdatert innsendingStatus til $status for skjema $skjemaId" }

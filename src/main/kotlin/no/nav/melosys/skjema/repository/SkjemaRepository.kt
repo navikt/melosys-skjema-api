@@ -133,19 +133,17 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
      * Finner søknader som er kandidater for retry av asynkron prosessering.
      *
      * Inkluderer:
-     * - Søknader med status MOTTATT som er eldre enn grensen (aldri startet, eller app krasjet)
+     * - Søknader med innsendingStatus MOTTATT som er eldre enn grensen (aldri startet, eller app krasjet)
      * - Søknader med feilstatus (JOURNALFORING_FEILET, KAFKA_FEILET) med færre enn 5 forsøk
      */
     @Query("""
-        SELECT * FROM skjema
-        WHERE status = 'SENDT'
+        SELECT s FROM Skjema s
+        WHERE s.status = 'SENDT'
         AND (
-            (jsonb_extract_path_text(metadata, 'innsending', 'status') = 'MOTTATT'
-             AND endret_dato < :grense)
+            (s.innsendingStatus = 'MOTTATT' AND s.endretDato < :grense)
             OR
-            (jsonb_extract_path_text(metadata, 'innsending', 'status') IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET')
-             AND CAST(jsonb_extract_path_text(metadata, 'innsending', 'antallForsok') AS INTEGER) < 5)
+            (s.innsendingStatus IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND s.innsendingAntallForsok < 5)
         )
-    """, nativeQuery = true)
+    """)
     fun findRetryKandidater(@Param("grense") grense: Instant): List<Skjema>
 }

@@ -3,10 +3,8 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.domain.InnsendingMetadata
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
@@ -101,15 +99,8 @@ class SkjemaService(
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
 
-        // 2. Sett innsendingStatus = MOTTATT i metadata
-        val eksisterendeMetadata = skjema.metadata?.let {
-            objectMapper.treeToValue(it, UtsendtArbeidstakerMetadata::class.java)
-        } ?: throw IllegalStateException("Skjema $skjemaId mangler metadata")
-
-        val oppdatertMetadata = eksisterendeMetadata.copy(
-            innsending = InnsendingMetadata(status = InnsendingStatus.MOTTATT)
-        )
-        skjema.metadata = objectMapper.valueToTree(oppdatertMetadata)
+        // 2. Sett innsendingStatus = MOTTATT
+        skjema.innsendingStatus = InnsendingStatus.MOTTATT
 
         // 3. Lagre
         val savedSkjema = skjemaRepository.save(skjema)

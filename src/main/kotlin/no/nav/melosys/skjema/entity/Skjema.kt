@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.entity
 
 import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.*
+import no.nav.melosys.skjema.domain.InnsendingStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.Instant
@@ -34,7 +35,6 @@ class Skjema(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata")
-    //TODO: Vurder om vi skal ha dette nonnull, og sørge for å sette riktig metadata-objekt når man lager skjemainstans.
     var metadata: JsonNode? = null,
 
     @Column(name = "opprettet_dato", nullable = false)
@@ -47,15 +47,41 @@ class Skjema(
     val opprettetAv: String,
 
     @Column(name = "endret_av", nullable = false, length = 11)
-    var endretAv: String
+    var endretAv: String,
+
+    // === Innsendingsstatus (felles for alle skjematyper) ===
+
+    /** Status for asynkron bakgrunnsprosessering (journalføring, Kafka, varsling) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "innsending_status")
+    var innsendingStatus: InnsendingStatus? = null,
+
+    /** Journalpost-ID fra Joark etter vellykket journalføring */
+    @Column(name = "journalpost_id")
+    var journalpostId: String? = null,
+
+    /** Brukervennlig referanse-ID (f.eks. "MEL-AB12CD") */
+    @Column(name = "referanse_id")
+    var referanseId: String? = null,
+
+    /** Feilmelding ved feilet prosessering */
+    @Column(name = "innsending_feilmelding")
+    var innsendingFeilmelding: String? = null,
+
+    /** Antall prosesseringsforsøk */
+    @Column(name = "innsending_antall_forsok")
+    var innsendingAntallForsok: Int = 0,
+
+    /** Tidspunkt for siste prosesseringsforsøk */
+    @Column(name = "innsending_siste_forsoek")
+    var innsendingSisteForsoek: Instant? = null
 )
 
 /**
  * Status for et skjema i søknadsprosessen.
  *
  * Dette er den overordnede statusen som vises til bruker i skjema-web.
- * For detaljert sporing av asynkron prosessering (journalføring, Kafka),
- * se [no.nav.melosys.skjema.domain.InnsendingStatus] i metadata.
+ * For detaljert sporing av asynkron prosessering, se [Skjema.innsendingStatus].
  */
 enum class SkjemaStatus {
     /** Bruker jobber med søknaden - ikke sendt ennå */
