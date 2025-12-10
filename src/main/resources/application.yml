@@ -135,6 +135,13 @@ logging:
 validation:
   fodselsnummer:
     synthetic-mode: ${BRUK_SYNTETISK_FNR}
+
+innsending:
+  retry:
+    fixed-delay-minutes: ${INNSENDING_RETRY_DELAY_MINUTES:5}
+    initial-delay-seconds: ${INNSENDING_RETRY_INITIAL_DELAY_SECONDS:60}
+    max-attempts: ${INNSENDING_RETRY_MAX_ATTEMPTS:5}
+    stale-threshold-minutes: ${INNSENDING_RETRY_STALE_THRESHOLD_MINUTES:5}
 # Rate limiting
 rate-limit:
   organisasjonssok:

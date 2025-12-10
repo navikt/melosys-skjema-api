@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.*
 
@@ -134,16 +135,17 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
      *
      * Inkluderer:
      * - Søknader med innsendingStatus MOTTATT som er eldre enn grensen (aldri startet, eller app krasjet)
-     * - Søknader med feilstatus (JOURNALFORING_FEILET, KAFKA_FEILET) med færre enn 5 forsøk
+     * - Søknader med feilstatus (JOURNALFORING_FEILET, KAFKA_FEILET) med færre enn maxAttempts forsøk
      */
+    @Transactional(readOnly = true)
     @Query("""
         SELECT s FROM Skjema s
         WHERE s.status = 'SENDT'
         AND (
             (s.innsendingStatus = 'MOTTATT' AND s.endretDato < :grense)
             OR
-            (s.innsendingStatus IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND s.innsendingAntallForsok < 5)
+            (s.innsendingStatus IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND s.innsendingAntallForsok < :maxAttempts)
         )
     """)
-    fun findRetryKandidater(@Param("grense") grense: Instant): List<Skjema>
+    fun findRetryKandidater(@Param("grense") grense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Skjema>
 }

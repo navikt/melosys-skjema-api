@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.scheduler
 
 import io.kotest.core.spec.style.FunSpec
 import io.mockk.*
+import no.nav.melosys.skjema.config.InnsendingRetryConfig
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
@@ -13,9 +14,15 @@ import java.util.*
 class InnsendingRetrySchedulerTest : FunSpec({
 
     val mockRepository = mockk<SkjemaRepository>()
-    val mockProsesseringService = mockk<InnsendingProsesseringService>(relaxed = true)
+    val mockProsesseringService = mockk<InnsendingProsesseringService>()
+    val retryConfig = InnsendingRetryConfig().apply {
+        fixedDelayMinutes = 5
+        initialDelaySeconds = 60
+        maxAttempts = 5
+        staleThresholdMinutes = 5
+    }
 
-    val scheduler = InnsendingRetryScheduler(mockRepository, mockProsesseringService)
+    val scheduler = InnsendingRetryScheduler(mockRepository, mockProsesseringService, retryConfig)
 
     afterTest {
         clearMocks(mockRepository, mockProsesseringService)
@@ -24,7 +31,7 @@ class InnsendingRetrySchedulerTest : FunSpec({
     context("retryFeiledeInnsendinger") {
 
         test("skal ikke kalle prosesserInnsendingAsync når ingen kandidater finnes") {
-            every { mockRepository.findRetryKandidater(any()) } returns emptyList()
+            every { mockRepository.findRetryKandidater(any(), any()) } returns emptyList()
 
             scheduler.retryFeiledeInnsendinger()
 
@@ -35,7 +42,8 @@ class InnsendingRetrySchedulerTest : FunSpec({
             val skjema1 = createTestSkjema(UUID.randomUUID())
             val skjema2 = createTestSkjema(UUID.randomUUID())
 
-            every { mockRepository.findRetryKandidater(any()) } returns listOf(skjema1, skjema2)
+            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(skjema1, skjema2)
+            every { mockProsesseringService.prosesserInnsendingAsync(any()) } just runs
 
             scheduler.retryFeiledeInnsendinger()
 
@@ -47,13 +55,22 @@ class InnsendingRetrySchedulerTest : FunSpec({
             val skjema1 = createTestSkjema(UUID.randomUUID())
             val skjema2 = createTestSkjema(UUID.randomUUID())
 
-            every { mockRepository.findRetryKandidater(any()) } returns listOf(skjema1, skjema2)
+            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(skjema1, skjema2)
             every { mockProsesseringService.prosesserInnsendingAsync(skjema1.id!!) } throws RuntimeException("Test error")
+            every { mockProsesseringService.prosesserInnsendingAsync(skjema2.id!!) } just runs
 
             scheduler.retryFeiledeInnsendinger()
 
             verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema1.id!!) }
             verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(skjema2.id!!) }
+        }
+
+        test("skal bruke maxAttempts fra config") {
+            every { mockRepository.findRetryKandidater(any(), eq(5)) } returns emptyList()
+
+            scheduler.retryFeiledeInnsendinger()
+
+            verify { mockRepository.findRetryKandidater(any(), eq(5)) }
         }
     }
 })

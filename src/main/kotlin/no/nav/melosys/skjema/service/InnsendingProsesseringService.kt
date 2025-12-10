@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.*
 
@@ -57,6 +58,7 @@ class InnsendingProsesseringService(
     /**
      * Oppdaterer innsendingsstatus på skjemaet.
      */
+    @Transactional
     fun oppdaterStatus(
         skjemaId: UUID,
         status: InnsendingStatus,
