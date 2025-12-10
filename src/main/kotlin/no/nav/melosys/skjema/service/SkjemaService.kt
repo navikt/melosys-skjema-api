@@ -108,7 +108,7 @@ class SkjemaService(
         innsendingStatusService.opprettInnsending(savedSkjema)
 
         // 4. Start async prosessering (returnerer umiddelbart)
-        innsendingProsesseringService.prosesserInnsendingAsync(savedSkjema)
+        innsendingProsesseringService.prosesserInnsendingAsync(savedSkjema.id!!)
 
         // 5. Returner kvittering til bruker
         return convertToArbeidstakersSkjemaDto(savedSkjema)

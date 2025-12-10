@@ -39,7 +39,7 @@ class InnsendingRetrySchedulerTest : FunSpec({
             verify(exactly = 0) { mockProsesseringService.prosesserInnsendingAsync(any()) }
         }
 
-        test("skal kalle prosesserInnsendingAsync for hver kandidat") {
+        test("skal kalle prosesserInnsendingAsync for hver kandidat med skjemaId") {
             val innsending1 = createTestInnsending()
             val innsending2 = createTestInnsending()
 
@@ -48,8 +48,8 @@ class InnsendingRetrySchedulerTest : FunSpec({
 
             scheduler.retryFeiledeInnsendinger()
 
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) }
         }
 
         test("skal fortsette med neste kandidat selv om en feiler") {
@@ -57,13 +57,13 @@ class InnsendingRetrySchedulerTest : FunSpec({
             val innsending2 = createTestInnsending()
 
             every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(innsending1, innsending2)
-            every { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) } throws RuntimeException("Test error")
-            every { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) } just runs
+            every { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) } throws RuntimeException("Test error")
+            every { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) } just runs
 
             scheduler.retryFeiledeInnsendinger()
 
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) }
+            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) }
         }
 
         test("skal bruke maxAttempts fra config") {

@@ -9,6 +9,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
@@ -41,43 +42,47 @@ class InnsendingStatusService(
      */
     @Transactional
     fun oppdaterStatus(
-        skjema: Skjema,
+        skjemaId: UUID,
         status: InnsendingStatus,
         feilmelding: String? = null
     ) {
-        val innsending = innsendingRepository.findBySkjema(skjema)
-            ?: throw IllegalArgumentException("Innsending for skjema ${skjema.id} ikke funnet")
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw IllegalArgumentException("Innsending for skjema $skjemaId ikke funnet")
 
         innsending.status = status
         innsending.antallForsok += 1
         innsending.sisteForsoek = Instant.now()
 
         if (feilmelding != null) {
-            innsending.feilmelding = feilmelding
+            innsending.feilmelding = feilmelding.take(2000)
         }
 
         innsendingRepository.save(innsending)
-        log.debug { "Oppdatert innsendingStatus til $status for skjema ${skjema.id}" }
+        log.debug { "Oppdatert innsendingStatus til $status for skjema $skjemaId" }
     }
 
     /**
-     * Oppdaterer innsendingsstatus uten å inkrementere antallForsok.
+     * Setter status til UNDER_BEHANDLING for å markere at prosessering er startet.
+     * Oppdaterer også sisteForsoek for å kunne detektere "hengende" prosesseringer.
      */
     @Transactional
-    fun oppdaterStatusUtenInkrementForsok(skjema: Skjema, status: InnsendingStatus) {
-        val innsending = innsendingRepository.findBySkjema(skjema)
-            ?: throw IllegalArgumentException("Innsending for skjema ${skjema.id} ikke funnet")
+    fun startProsessering(skjemaId: UUID) {
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw IllegalArgumentException("Innsending for skjema $skjemaId ikke funnet")
 
-        innsending.status = status
+        innsending.status = InnsendingStatus.UNDER_BEHANDLING
+        innsending.sisteForsoek = Instant.now()
         innsendingRepository.save(innsending)
-        log.debug { "Oppdatert innsendingStatus til $status for skjema ${skjema.id}" }
+        log.debug { "Startet prosessering av skjema $skjemaId" }
     }
 
     /**
      * Oppdaterer journalpostId på skjemaet.
      */
     @Transactional
-    fun oppdaterSkjemaJournalpostId(skjema: Skjema, journalpostId: String) {
+    fun oppdaterSkjemaJournalpostId(skjemaId: UUID, journalpostId: String) {
+        val skjema = skjemaRepository.findById(skjemaId)
+            .orElseThrow { IllegalArgumentException("Skjema $skjemaId ikke funnet") }
         skjema.journalpostId = journalpostId
         skjemaRepository.save(skjema)
     }

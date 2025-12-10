@@ -34,6 +34,7 @@ val mockkVersion = "1.14.6"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
 val springdocVersion = "2.8.14"
+val shedlockVersion = "7.2.1"
 
 repositories {
     mavenCentral()
@@ -65,6 +66,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:$shedlockVersion")
 
     runtimeOnly("org.postgresql:postgresql")
     

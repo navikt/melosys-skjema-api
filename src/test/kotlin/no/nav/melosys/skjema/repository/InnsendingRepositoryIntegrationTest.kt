@@ -212,6 +212,54 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             val kandidaterMed4 = innsendingRepository.findRetryKandidater(grense, maxAttempts = 4)
             kandidaterMed4 shouldHaveSize 2
         }
+
+        @Test
+        @DisplayName("Skal finne UNDER_BEHANDLING med NULL sisteForsoek (kritisk edge case)")
+        fun `skal finne UNDER_BEHANDLING med NULL sisteForsoek`() {
+            val skjema = opprettSkjema()
+            val innsending = innsendingRepository.save(Innsending(
+                skjema = skjema,
+                status = InnsendingStatus.UNDER_BEHANDLING,
+                sisteForsoek = null  // App krasjet før første oppdatering
+            ))
+
+            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
+
+            kandidater shouldHaveSize 1
+            kandidater[0].id shouldBe innsending.id
+        }
+
+        @Test
+        @DisplayName("Skal finne UNDER_BEHANDLING med gammel sisteForsoek")
+        fun `skal finne UNDER_BEHANDLING med gammel sisteForsoek`() {
+            val gammelSisteForsoek = Instant.now().minus(10, ChronoUnit.MINUTES)
+            val innsending = opprettInnsending(
+                status = InnsendingStatus.UNDER_BEHANDLING,
+                sisteForsoek = gammelSisteForsoek
+            )
+
+            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
+
+            kandidater shouldHaveSize 1
+            kandidater[0].id shouldBe innsending.id
+        }
+
+        @Test
+        @DisplayName("Skal IKKE finne UNDER_BEHANDLING med fersk sisteForsoek")
+        fun `skal ikke finne UNDER_BEHANDLING med fersk sisteForsoek`() {
+            val ferskSisteForsoek = Instant.now().minus(1, ChronoUnit.MINUTES)
+            opprettInnsending(
+                status = InnsendingStatus.UNDER_BEHANDLING,
+                sisteForsoek = ferskSisteForsoek
+            )
+
+            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
+
+            kandidater.shouldBeEmpty()
+        }
     }
 
     @Nested
@@ -259,14 +307,16 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
     private fun opprettInnsending(
         status: InnsendingStatus,
         antallForsok: Int = 0,
-        opprettetDato: Instant = Instant.now()
+        opprettetDato: Instant = Instant.now(),
+        sisteForsoek: Instant? = null
     ): Innsending {
         val skjema = opprettSkjema()
         val innsending = Innsending(
             skjema = skjema,
             status = status,
             antallForsok = antallForsok,
-            opprettetDato = opprettetDato
+            opprettetDato = opprettetDato,
+            sisteForsoek = sisteForsoek
         )
         return innsendingRepository.save(innsending)
     }
