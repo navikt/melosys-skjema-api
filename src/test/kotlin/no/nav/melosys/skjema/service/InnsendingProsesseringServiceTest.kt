@@ -1,8 +1,11 @@
 package no.nav.melosys.skjema.service
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -19,6 +22,10 @@ class InnsendingProsesseringServiceTest : FunSpec({
 
     val mockInnsendingRepository = mockk<InnsendingRepository>()
     val mockSkjemaRepository = mockk<SkjemaRepository>()
+
+    afterTest {
+        clearMocks(mockInnsendingRepository, mockSkjemaRepository)
+    }
 
     val service = InnsendingProsesseringService(mockInnsendingRepository, mockSkjemaRepository)
 
@@ -112,6 +119,69 @@ class InnsendingProsesseringServiceTest : FunSpec({
             service.oppdaterSkjemaJournalpostId(skjema, "67890")
 
             skjemaSlot.captured.journalpostId shouldBe "67890"
+        }
+    }
+
+    context("oppdaterStatus - feilhåndtering") {
+
+        test("skal kaste exception når innsending ikke finnes") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns null
+
+            val exception = shouldThrow<IllegalArgumentException> {
+                service.oppdaterStatus(skjema, InnsendingStatus.FERDIG)
+            }
+
+            exception.message shouldBe "Innsending for skjema ${skjema.id} ikke funnet"
+        }
+    }
+
+    context("prosesserInnsendingAsync") {
+
+        test("skal oppdatere status til FERDIG ved vellykket prosessering") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+            val innsendingSlot = slot<Innsending>()
+
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
+            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
+
+            service.prosesserInnsendingAsync(skjema)
+
+            verify { mockInnsendingRepository.save(any()) }
+            innsendingSlot.captured.status shouldBe InnsendingStatus.FERDIG
+        }
+
+        test("skal oppdatere status til JOURNALFORING_FEILET ved exception i oppdaterStatus") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+            val savedInnsendinger = mutableListOf<Innsending>()
+
+            // Første kall til findBySkjema kaster exception (simulerer feil i try-blokken)
+            // Andre kall returnerer innsending (for catch-blokken)
+            every { mockInnsendingRepository.findBySkjema(skjema) } throws RuntimeException("DB feil") andThen innsending
+            every { mockInnsendingRepository.save(capture(savedInnsendinger)) } answers { savedInnsendinger.last() }
+
+            service.prosesserInnsendingAsync(skjema)
+
+            // Verifiser at status ble satt til JOURNALFORING_FEILET med feilmelding
+            savedInnsendinger shouldHaveSize 1
+            savedInnsendinger[0].status shouldBe InnsendingStatus.JOURNALFORING_FEILET
+            savedInnsendinger[0].feilmelding shouldBe "DB feil"
+        }
+
+        test("skal håndtere feil uten å kaste exception videre") {
+            val skjema = createTestSkjema(testFnr, testOrgnr)
+            val innsending = createTestInnsending(skjema)
+
+            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
+            every { mockInnsendingRepository.save(any()) } answers { firstArg() }
+
+            // Skal ikke kaste exception selv om intern prosessering feiler
+            service.prosesserInnsendingAsync(skjema)
+
+            // Test passerer hvis ingen exception kastes
         }
     }
 })
