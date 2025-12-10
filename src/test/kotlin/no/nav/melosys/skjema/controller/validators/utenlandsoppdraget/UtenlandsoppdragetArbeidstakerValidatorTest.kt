@@ -53,7 +53,6 @@ class UtenlandsoppdragetArbeidstakerValidatorTest : BaseValidatorTest() {
     fun `should be invalid for invalid combinations`(dto: UtenlandsoppdragetArbeidstakersDelDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
     fun validCombinations(): Stream<Arguments> = listOf(

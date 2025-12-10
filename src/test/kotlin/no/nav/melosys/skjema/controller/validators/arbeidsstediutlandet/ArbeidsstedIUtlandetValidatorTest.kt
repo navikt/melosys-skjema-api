@@ -42,7 +42,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
     fun `should be invalid for invalid combinations`(dto: ArbeidsstedIUtlandetDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
 
@@ -156,7 +155,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
     @Test
@@ -175,7 +173,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
     @Test
@@ -194,7 +191,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
 }

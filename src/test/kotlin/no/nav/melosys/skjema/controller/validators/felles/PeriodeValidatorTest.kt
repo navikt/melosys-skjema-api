@@ -35,7 +35,6 @@ class PeriodeValidatorTest : BaseValidatorTest() {
     fun `should be invalid for invalid periods`(dto: PeriodeDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        // Message assertion removed
     }
 
     fun validPerioder(): Stream<Arguments> = listOf(
