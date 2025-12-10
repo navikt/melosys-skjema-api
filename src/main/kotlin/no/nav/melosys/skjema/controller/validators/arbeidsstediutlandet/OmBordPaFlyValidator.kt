@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import org.springframework.stereotype.Component
 
@@ -16,9 +17,26 @@ class OmBordPaFlyValidator : ConstraintValidator<GyldigOmBordPaFly, OmBordPaFlyD
     ): Boolean {
         if (dto == null) return true
 
-        return if (dto.erVanligHjemmebase) {
-            dto.vanligHjemmebaseLand == null && dto.vanligHjemmebaseNavn == null
-        } else dto.vanligHjemmebaseLand != null && dto.vanligHjemmebaseNavn != null
+        if (dto.erVanligHjemmebase) {
+            if (dto.vanligHjemmebaseLand != null) {
+                context.addViolation("Vanlig hjemmebase land skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseLand.name)
+                return false
+            }
+            if (dto.vanligHjemmebaseNavn != null) {
+                context.addViolation("Vanlig hjemmebase navn skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
+                return false
+            }
+        } else {
+            if (dto.vanligHjemmebaseLand == null) {
+                context.addViolation("Du må oppgi vanlig hjemmebase land", OmBordPaFlyDto::vanligHjemmebaseLand.name)
+                return false
+            }
+            if (dto.vanligHjemmebaseNavn == null) {
+                context.addViolation("Du må oppgi vanlig hjemmebase navn", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
+                return false
+            }
+        }
 
+        return true
     }
 }

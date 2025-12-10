@@ -14,16 +14,26 @@ class OrganisasjonsnummerValidator(
     // https://www.brreg.no/om-oss/registrene-vare/om-enhetsregisteret/organisasjonsnummeret/
     override fun isValid(
         organisasjonsnummer: String?,
-        cxt: ConstraintValidatorContext
+        context: ConstraintValidatorContext
     ): Boolean {
         // Null values are handled by @NotNull annotation
         if (organisasjonsnummer == null) return true
 
-        if (organisasjonsnummerHarGyldigFormat(organisasjonsnummer)) {
-            return eregService.organisasjonsnummerEksisterer(organisasjonsnummer)
+        if (!organisasjonsnummerHarGyldigFormat(organisasjonsnummer)) {
+            context.addViolation(
+                "Organisasjonsnummer har ugyldig format"
+            )
+            return false
         }
 
-        return false
+        if (!eregService.organisasjonsnummerEksisterer(organisasjonsnummer)) {
+            context.addViolation(
+                "Organisasjonsnummer finnes ikke i Enhetsregisteret"
+            )
+            return false
+        }
+
+        return true
     }
 
     companion object {

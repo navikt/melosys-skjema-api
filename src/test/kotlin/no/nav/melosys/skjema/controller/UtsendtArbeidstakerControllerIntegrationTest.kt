@@ -17,6 +17,7 @@ import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -60,7 +61,8 @@ data class SkjemaStegTestFixture<T>(
     val requestBody: Any,
     val dataBeforePost: T? = null,
     val expectedDataAfterPost: T? = null,
-    val httpMethod: HttpMethod? = null
+    val httpMethod: HttpMethod? = null,
+    val expectedValidationError: Map<String, String>? = null
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -682,6 +684,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .bodyValue(fixture.requestBody)
             .exchange()
             .expectStatus().isBadRequest
+            .expectBody(ErrorResponse::class.java)
+            .returnResult().responseBody.run {
+                this.shouldNotBeNull()
+                this.errors.shouldNotBeNull()
+                this.errors shouldBe fixture.expectedValidationError
+            }
+
     }
 
     fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
@@ -691,7 +700,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 erArbeidsgiverenOffentligVirksomhet = false,
                 erArbeidsgiverenBemanningsEllerVikarbyraa = null,
-            )
+            ),
+            expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
@@ -700,28 +710,32 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     fraDato = java.time.LocalDate.of(2024, 12, 31),
                     tilDato = java.time.LocalDate.of(2024, 1, 1)
                 )
-            )
+            ),
+            expectedValidationError = mapOf("arbeidstakerUtsendelsePeriode" to "Fra-dato må være før eller lik til-dato")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
             requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
                 virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
-            )
+            ),
+            expectedValidationError = mapOf("virksomheterSomUtbetalerLonnOgNaturalytelser" to "Virksomheter som utbetaler lønn skal ikke oppgis når arbeidsgiver betaler alt")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
             requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
                 arbeidsstedType = ArbeidsstedType.PA_LAND,
                 paLand = null,
-            )
+            ),
+            expectedValidationError = mapOf("paLand" to "Du må oppgi arbeidssted på land")
         ),
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
-            )
+            ),
+            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "Du må oppgi tilleggsopplysninger")
         ),
         // Arbeidstaker endpoints
         SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
@@ -731,28 +745,32 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     fraDato = java.time.LocalDate.of(2024, 12, 31),
                     tilDato = java.time.LocalDate.of(2024, 1, 1)
                 )
-            )
+            ),
+            expectedValidationError = mapOf("utsendelsePeriode" to "Fra-dato må være før eller lik til-dato")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
             requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
                 harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
                 aktivitetIMaanedenFoerUtsendingen = null
-            )
+            ),
+            expectedValidationError = mapOf("aktivitetIMaanedenFoerUtsendingen" to "Aktivitet i måneden før utsendingen må oppgis når arbeidstaker ikke har vært i lønnet arbeid")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
             requestBody = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
                 mottarPengestotteFraAnnetEosLandEllerSveits = true,
                 landSomUtbetalerPengestotte = null
-            )
+            ),
+            expectedValidationError = mapOf("landSomUtbetalerPengestotte" to "Du må oppgi land som utbetaler pengestøtte")
         ),
         SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
-            )
+            ),
+            expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "Du må oppgi tilleggsopplysninger")
         )
     ).map { Arguments.of(it) }
 

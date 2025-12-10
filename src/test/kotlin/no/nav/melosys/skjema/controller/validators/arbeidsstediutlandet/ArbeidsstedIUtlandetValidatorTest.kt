@@ -42,7 +42,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
     fun `should be invalid for invalid combinations`(dto: ArbeidsstedIUtlandetDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig arbeidssted i utlandet")
     }
 
 
@@ -156,7 +155,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig på land")
     }
 
     @Test
@@ -175,7 +173,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig på skip")
     }
 
     @Test
@@ -194,7 +191,6 @@ class ArbeidsstedIUtlandetValidatorTest: BaseValidatorTest() {
 
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig om bord på fly")
     }
 
 }

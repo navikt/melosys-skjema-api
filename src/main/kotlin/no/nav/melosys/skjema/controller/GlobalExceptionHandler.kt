@@ -2,12 +2,14 @@ package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.RateLimitConfig
+import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -29,6 +31,25 @@ class GlobalExceptionHandler(
             .status(HttpStatus.TOO_MANY_REQUESTS)
             .header("Retry-After", retryAfterSeconds.toString())
             .body(mapOf("message" to "For mange søk. Prøv igjen senere."))
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        val errors = mutableMapOf<String, String>()
+
+        // Get all constraint violations to extract property paths
+        val violations = ex.bindingResult.allErrors.mapNotNull { error ->
+            error.unwrap(jakarta.validation.ConstraintViolation::class.java)
+        }
+
+        violations.forEach { violation ->
+            val fieldName = violation.propertyPath.toString().takeIf { it.isNotEmpty() } ?: "global"
+            errors[fieldName] = violation.message
+        }
+
+        return ResponseEntity
+            .badRequest()
+            .body(ErrorResponse(message = "Valideringsfeil", errors = errors))
     }
 
     @ExceptionHandler(OrganisasjonEksistererIkkeException::class)

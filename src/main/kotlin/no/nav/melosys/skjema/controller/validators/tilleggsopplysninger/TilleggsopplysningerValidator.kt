@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller.validators.tilleggsopplysninger
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import org.springframework.stereotype.Component
 
@@ -17,9 +18,17 @@ class TilleggsopplysningerValidator : ConstraintValidator<GyldigTilleggsopplysni
         if (dto == null) return true
 
         if (dto.harFlereOpplysningerTilSoknaden) {
-            return !dto.tilleggsopplysningerTilSoknad.isNullOrBlank()
+            if (dto.tilleggsopplysningerTilSoknad.isNullOrBlank()) {
+                context.addViolation("Du må oppgi tilleggsopplysninger", TilleggsopplysningerDto::tilleggsopplysningerTilSoknad.name)
+                return false
+            }
+        } else {
+            if (dto.tilleggsopplysningerTilSoknad != null) {
+                context.addViolation("Tilleggsopplysninger skal ikke oppgis", TilleggsopplysningerDto::tilleggsopplysningerTilSoknad.name)
+                return false
+            }
         }
 
-        return dto.tilleggsopplysningerTilSoknad == null
+        return true
     }
 }

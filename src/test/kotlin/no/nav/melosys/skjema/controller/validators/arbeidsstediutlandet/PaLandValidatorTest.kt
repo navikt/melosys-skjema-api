@@ -37,7 +37,6 @@ class PaLandValidatorTest: BaseValidatorTest() {
     fun `should be invalid for invalid combinations`(dto: PaLandDto) {
         val violations = validator.validate(dto)
         violations.shouldHaveSize(1)
-        violations.first().message.shouldBe("Ugyldig på land")
     }
 
 
