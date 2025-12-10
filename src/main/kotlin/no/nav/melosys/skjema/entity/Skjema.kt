@@ -50,8 +50,17 @@ class Skjema(
     var endretAv: String
 )
 
+/**
+ * Status for et skjema i søknadsprosessen.
+ *
+ * Dette er den overordnede statusen som vises til bruker i skjema-web.
+ * For detaljert sporing av asynkron prosessering (journalføring, Kafka),
+ * se [no.nav.melosys.skjema.domain.InnsendingStatus] i metadata.
+ */
 enum class SkjemaStatus {
+    /** Bruker jobber med søknaden - ikke sendt ennå */
     UTKAST,
-    SENDT,
-    MOTTATT
+
+    /** Bruker har sendt inn søknaden. Asynkron prosessering pågår eller er fullført. */
+    SENDT
 }

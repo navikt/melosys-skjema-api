@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 private val log = KotlinLogging.logger { }
 
 /**
- * Service for henting av innsendte søknader (SENDT/MOTTATT) for Utsendt Arbeidstaker.
+ * Service for henting av innsendte søknader for Utsendt Arbeidstaker.
  *
  * Håndterer:
  * - Databasepaginering med Spring Data Pageable
@@ -35,13 +35,13 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 ) {
 
     companion object {
-        private val INNSENDT_STATUSES = listOf(SkjemaStatus.SENDT, SkjemaStatus.MOTTATT)
+        private val INNSENDT_STATUSES = listOf(SkjemaStatus.SENDT)
     }
 
     /**
      * Henter innsendte søknader basert på representasjonskontekst med paginering, søk og sortering.
      *
-     * Filtrerer søknader med status SENDT eller MOTTATT basert på:
+     * Filtrerer søknader med status SENDT basert på:
      * - DEG_SELV: fnr = innlogget bruker
      * - ARBEIDSGIVER: ALLE søknader for arbeidsgivere bruker har Altinn-tilgang til
      * - RADGIVER: ALLE søknader for det spesifikke rådgiverfirmaet

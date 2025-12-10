@@ -130,14 +130,14 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     @Test
-    @DisplayName("DEG_SELV: Skal inkludere både SENDT og MOTTATT status")
-    fun `skal inkludere både SENDT og MOTTATT status for DEG_SELV`() {
+    @DisplayName("DEG_SELV: Skal ikke inkludere UTKAST status")
+    fun `skal ikke inkludere UTKAST status for DEG_SELV`() {
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
         val metadata = createDefaultMetadata(representasjonstype = Representasjonstype.DEG_SELV)
 
-        // Opprett SENDT
+        // Opprett SENDT - skal inkluderes
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
@@ -147,11 +147,11 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             )
         )
 
-        // Opprett MOTTATT
+        // Opprett UTKAST - skal IKKE inkluderes
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
-                status = SkjemaStatus.MOTTATT,
+                status = SkjemaStatus.UTKAST,
                 metadata = metadata,
                 opprettetAv = userFnr
             )
@@ -165,8 +165,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
         val response = service.hentInnsendteSoknader(request)
 
-        response.totaltAntall shouldBe 2
-        response.soknader shouldHaveSize 2
+        response.totaltAntall shouldBe 1
+        response.soknader shouldHaveSize 1
     }
 
     @Test
@@ -304,7 +304,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             skjemaMedDefaultVerdier(
                 fnr = etAnnetKorrektSyntetiskFnr,
                 orgnr = orgnr2,
-                status = SkjemaStatus.MOTTATT,
+                status = SkjemaStatus.SENDT,
                 metadata = metadata,
                 opprettetAv = korrektSyntetiskFnr // Må være gyldig fnr
             )
