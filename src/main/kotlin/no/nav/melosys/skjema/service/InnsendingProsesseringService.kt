@@ -73,7 +73,7 @@ class InnsendingProsesseringService(
 
         val eksisterendeMetadata = skjema.metadata?.let {
             objectMapper.treeToValue(it, UtsendtArbeidstakerMetadata::class.java)
-        } ?: return
+        } ?: throw IllegalStateException("Skjema $skjemaId mangler metadata")
 
         val eksisterendeInnsending = eksisterendeMetadata.innsending
 

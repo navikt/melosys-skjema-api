@@ -104,14 +104,12 @@ class SkjemaService(
         // 2. Sett innsendingStatus = MOTTATT i metadata
         val eksisterendeMetadata = skjema.metadata?.let {
             objectMapper.treeToValue(it, UtsendtArbeidstakerMetadata::class.java)
-        }
+        } ?: throw IllegalStateException("Skjema $skjemaId mangler metadata")
 
-        val oppdatertMetadata = eksisterendeMetadata?.copy(
+        val oppdatertMetadata = eksisterendeMetadata.copy(
             innsending = InnsendingMetadata(status = InnsendingStatus.MOTTATT)
         )
-        if (oppdatertMetadata != null) {
-            skjema.metadata = objectMapper.valueToTree(oppdatertMetadata)
-        }
+        skjema.metadata = objectMapper.valueToTree(oppdatertMetadata)
 
         // 3. Lagre
         val savedSkjema = skjemaRepository.save(skjema)

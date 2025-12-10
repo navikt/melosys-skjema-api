@@ -34,6 +34,7 @@ class Skjema(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata")
+    //TODO: Vurder om vi skal ha dette nonnull, og sørge for å sette riktig metadata-objekt når man lager skjemainstans.
     var metadata: JsonNode? = null,
 
     @Column(name = "opprettet_dato", nullable = false)

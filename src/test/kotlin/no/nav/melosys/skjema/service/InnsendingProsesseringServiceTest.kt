@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -125,6 +127,27 @@ class InnsendingProsesseringServiceTest : FunSpec({
             )
             lagretMetadata.innsending!!.journalpostId shouldBe "12345"
             lagretMetadata.innsending!!.status shouldBe InnsendingStatus.FERDIG
+        }
+
+        test("skal kaste exception når skjema mangler metadata") {
+            val skjemaUtenMetadata = Skjema(
+                id = testSkjemaId,
+                status = SkjemaStatus.SENDT,
+                fnr = testFnr,
+                orgnr = testOrgnr,
+                metadata = null,
+                opprettetAv = testFnr,
+                endretAv = testFnr
+            )
+
+            every { mockRepository.findById(testSkjemaId) } returns Optional.of(skjemaUtenMetadata)
+
+            val exception = shouldThrow<IllegalStateException> {
+                service.oppdaterStatus(testSkjemaId, InnsendingStatus.FERDIG)
+            }
+
+            exception.message shouldContain testSkjemaId.toString()
+            exception.message shouldContain "mangler metadata"
         }
     }
 })
