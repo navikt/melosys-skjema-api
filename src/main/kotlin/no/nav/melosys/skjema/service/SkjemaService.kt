@@ -24,6 +24,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 private val log = KotlinLogging.logger { }
 
@@ -33,6 +34,7 @@ class SkjemaService(
     private val objectMapper: ObjectMapper,
     private val subjectHandler: SubjectHandler,
     private val altinnService: AltinnService,
+    private val innsendingStatusService: InnsendingStatusService,
     private val innsendingProsesseringService: InnsendingProsesseringService
 ) {
 
@@ -88,6 +90,7 @@ class SkjemaService(
         }
     }
 
+    @Transactional
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
@@ -102,7 +105,7 @@ class SkjemaService(
         val savedSkjema = skjemaRepository.save(skjema)
 
         // 3. Opprett innsending-rad for prosesseringsstatus
-        innsendingProsesseringService.opprettInnsending(savedSkjema)
+        innsendingStatusService.opprettInnsending(savedSkjema)
 
         // 4. Start async prosessering (returnerer umiddelbart)
         innsendingProsesseringService.prosesserInnsendingAsync(savedSkjema)

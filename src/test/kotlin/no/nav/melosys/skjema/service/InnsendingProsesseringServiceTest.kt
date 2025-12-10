@@ -1,198 +1,63 @@
 package no.nav.melosys.skjema.service
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import io.mockk.clearMocks
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
+import io.mockk.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.repository.SkjemaRepository
 import java.util.*
 
 class InnsendingProsesseringServiceTest : FunSpec({
 
-    val mockInnsendingRepository = mockk<InnsendingRepository>()
-    val mockSkjemaRepository = mockk<SkjemaRepository>()
+    val mockInnsendingStatusService = mockk<InnsendingStatusService>()
 
     afterTest {
-        clearMocks(mockInnsendingRepository, mockSkjemaRepository)
+        clearMocks(mockInnsendingStatusService)
     }
 
-    val service = InnsendingProsesseringService(mockInnsendingRepository, mockSkjemaRepository)
+    val service = InnsendingProsesseringService(mockInnsendingStatusService)
 
     val testFnr = "12345678901"
     val testOrgnr = "123456789"
 
-    context("opprettInnsending") {
-
-        test("skal opprette innsending med status MOTTATT") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsendingSlot = slot<Innsending>()
-
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
-
-            service.opprettInnsending(skjema)
-
-            verify { mockInnsendingRepository.save(any()) }
-
-            innsendingSlot.captured.skjema shouldBe skjema
-            innsendingSlot.captured.status shouldBe InnsendingStatus.MOTTATT
-            innsendingSlot.captured.antallForsok shouldBe 0
-        }
-    }
-
-    context("oppdaterStatus") {
-
-        test("skal oppdatere status til FERDIG") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
-            val innsendingSlot = slot<Innsending>()
-
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
-
-            service.oppdaterStatus(skjema, InnsendingStatus.FERDIG)
-
-            verify { mockInnsendingRepository.save(any()) }
-
-            innsendingSlot.captured.status shouldBe InnsendingStatus.FERDIG
-            innsendingSlot.captured.antallForsok shouldBe 1
-            innsendingSlot.captured.sisteForsoek shouldNotBe null
-        }
-
-        test("skal oppdatere status med feilmelding") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
-            val innsendingSlot = slot<Innsending>()
-
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
-
-            service.oppdaterStatus(
-                skjema,
-                InnsendingStatus.JOURNALFORING_FEILET,
-                feilmelding = "Joark er nede"
-            )
-
-            innsendingSlot.captured.status shouldBe InnsendingStatus.JOURNALFORING_FEILET
-            innsendingSlot.captured.feilmelding shouldBe "Joark er nede"
-        }
-
-        test("skal inkrementere antallForsok ved gjentatte oppdateringer") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
-            val innsendingSlot = slot<Innsending>()
-
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
-
-            // Første oppdatering
-            service.oppdaterStatus(skjema, InnsendingStatus.JOURNALFORING_FEILET)
-            innsendingSlot.captured.antallForsok shouldBe 1
-
-            // Andre oppdatering - innsending har nå antallForsok=1
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsendingSlot.captured
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
-
-            service.oppdaterStatus(skjema, InnsendingStatus.JOURNALFORING_FEILET)
-            innsendingSlot.captured.antallForsok shouldBe 2
-        }
-    }
-
-    context("oppdaterSkjemaJournalpostId") {
-
-        test("skal sette journalpostId på skjema") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-            val skjemaSlot = slot<Skjema>()
-
-            every { mockSkjemaRepository.save(capture(skjemaSlot)) } answers { skjemaSlot.captured }
-
-            service.oppdaterSkjemaJournalpostId(skjema, "67890")
-
-            skjemaSlot.captured.journalpostId shouldBe "67890"
-        }
-    }
-
-    context("oppdaterStatus - feilhåndtering") {
-
-        test("skal kaste exception når innsending ikke finnes") {
-            val skjema = createTestSkjema(testFnr, testOrgnr)
-
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns null
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                service.oppdaterStatus(skjema, InnsendingStatus.FERDIG)
-            }
-
-            exception.message shouldBe "Innsending for skjema ${skjema.id} ikke funnet"
-        }
-    }
-
     context("prosesserInnsendingAsync") {
 
-        test("skal oppdatere status til FERDIG ved vellykket prosessering") {
+        test("skal sette UNDER_BEHANDLING og deretter FERDIG ved vellykket prosessering") {
             val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
-            val innsendingSlot = slot<Innsending>()
+            val statusUpdates = mutableListOf<InnsendingStatus>()
 
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
-            every { mockInnsendingRepository.save(capture(innsendingSlot)) } answers { innsendingSlot.captured }
+            every { mockInnsendingStatusService.oppdaterStatusUtenInkrementForsok(skjema, capture(statusUpdates)) } just Runs
+            every { mockInnsendingStatusService.oppdaterStatus(skjema, capture(statusUpdates), any()) } just Runs
 
             service.prosesserInnsendingAsync(skjema)
 
-            verify { mockInnsendingRepository.save(any()) }
-            innsendingSlot.captured.status shouldBe InnsendingStatus.FERDIG
+            verify(exactly = 1) { mockInnsendingStatusService.oppdaterStatusUtenInkrementForsok(skjema, InnsendingStatus.UNDER_BEHANDLING) }
+            verify(exactly = 1) { mockInnsendingStatusService.oppdaterStatus(skjema, InnsendingStatus.FERDIG, null) }
         }
 
-        test("skal oppdatere status til JOURNALFORING_FEILET ved exception i oppdaterStatus") {
+        test("skal oppdatere status til JOURNALFORING_FEILET ved exception") {
             val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
-            val savedInnsendinger = mutableListOf<Innsending>()
 
-            // Første kall til findBySkjema kaster exception (simulerer feil i try-blokken)
-            // Andre kall returnerer innsending (for catch-blokken)
-            every { mockInnsendingRepository.findBySkjema(skjema) } throws RuntimeException("DB feil") andThen innsending
-            every { mockInnsendingRepository.save(capture(savedInnsendinger)) } answers { savedInnsendinger.last() }
+            every { mockInnsendingStatusService.oppdaterStatusUtenInkrementForsok(skjema, any()) } throws RuntimeException("DB feil")
+            every { mockInnsendingStatusService.oppdaterStatus(skjema, any(), any()) } just Runs
 
             service.prosesserInnsendingAsync(skjema)
 
-            // Verifiser at status ble satt til JOURNALFORING_FEILET med feilmelding
-            savedInnsendinger shouldHaveSize 1
-            savedInnsendinger[0].status shouldBe InnsendingStatus.JOURNALFORING_FEILET
-            savedInnsendinger[0].feilmelding shouldBe "DB feil"
+            verify { mockInnsendingStatusService.oppdaterStatus(skjema, InnsendingStatus.JOURNALFORING_FEILET, "DB feil") }
         }
 
         test("skal håndtere feil uten å kaste exception videre") {
             val skjema = createTestSkjema(testFnr, testOrgnr)
-            val innsending = createTestInnsending(skjema)
 
-            every { mockInnsendingRepository.findBySkjema(skjema) } returns innsending
-            every { mockInnsendingRepository.save(any()) } answers { firstArg() }
+            every { mockInnsendingStatusService.oppdaterStatusUtenInkrementForsok(skjema, any()) } just Runs
+            every { mockInnsendingStatusService.oppdaterStatus(skjema, any(), any()) } just Runs
 
-            // Skal ikke kaste exception selv om intern prosessering feiler
+            // Skal ikke kaste exception
             service.prosesserInnsendingAsync(skjema)
-
-            // Test passerer hvis ingen exception kastes
         }
     }
 })
-
-private fun createTestInnsending(skjema: Skjema): Innsending {
-    return Innsending(
-        id = UUID.randomUUID(),
-        skjema = skjema,
-        status = InnsendingStatus.MOTTATT
-    )
-}
 
 private fun createTestSkjema(fnr: String, orgnr: String): Skjema {
     return Skjema(

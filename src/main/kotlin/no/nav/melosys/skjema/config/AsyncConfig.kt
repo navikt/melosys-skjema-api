@@ -18,7 +18,6 @@ class AsyncConfig {
             setThreadNamePrefix("innsending-async-")
             setWaitForTasksToCompleteOnShutdown(true)
             setAwaitTerminationSeconds(30)
-            initialize()
         }
     }
 }

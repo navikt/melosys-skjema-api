@@ -16,6 +16,9 @@ enum class InnsendingStatus {
     /** Innsending registrert, asynkron prosessering ikke startet ennå */
     MOTTATT,
 
+    /** Prosessering pågår - brukes for å forhindre at scheduler plukker opp samme innsending flere ganger */
+    UNDER_BEHANDLING,
+
     /** Journalført OK i Joark, venter på Kafka-sending */
     JOURNALFORT,
 
