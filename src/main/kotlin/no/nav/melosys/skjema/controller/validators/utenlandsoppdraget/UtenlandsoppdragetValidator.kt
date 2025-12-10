@@ -19,28 +19,28 @@ class UtenlandsoppdragetValidator : ConstraintValidator<GyldigUtenlandsoppdrag, 
 
         if (!dto.arbeidsgiverHarOppdragILandet) {
             if (dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi begrunnelse for utenlandsoppholdet", "utenlandsoppholdetsBegrunnelse")
+                context.addViolation("Du må oppgi begrunnelse for utenlandsoppholdet", UtenlandsoppdragetDto::utenlandsoppholdetsBegrunnelse.name)
                 return false
             }
         }
 
         if (dto.arbeidstakerBleAnsattForUtenlandsoppdraget) {
             if (dto.arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget == null) {
-                context.addViolation("Du må oppgi om arbeidstaker vil jobbe for virksomhet i Norge etter oppdraget", "arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget")
+                context.addViolation("Du må oppgi om arbeidstaker vil jobbe for virksomhet i Norge etter oppdraget", UtenlandsoppdragetDto::arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget.name)
                 return false
             }
         }
 
         if (!dto.arbeidstakerForblirAnsattIHelePerioden) {
             if (dto.ansettelsesforholdBeskrivelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beskrivelse av ansettelsesforholdet", "ansettelsesforholdBeskrivelse")
+                context.addViolation("Du må oppgi beskrivelse av ansettelsesforholdet", UtenlandsoppdragetDto::ansettelsesforholdBeskrivelse.name)
                 return false
             }
         }
 
         if (dto.arbeidstakerErstatterAnnenPerson) {
             if (dto.forrigeArbeidstakerUtsendelsePeriode == null) {
-                context.addViolation("Du må oppgi forrige arbeidstakers utsendelseperiode", "forrigeArbeidstakerUtsendelsePeriode")
+                context.addViolation("Du må oppgi forrige arbeidstakers utsendelseperiode", UtenlandsoppdragetDto::forrigeArbeidstakerUtsendelsePeriode.name)
                 return false
             }
         }

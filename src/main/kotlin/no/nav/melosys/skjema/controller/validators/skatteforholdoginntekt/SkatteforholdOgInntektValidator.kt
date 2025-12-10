@@ -19,15 +19,15 @@ class SkatteforholdOgInntektValidator : ConstraintValidator<GyldigSkatteforholdO
 
         if (dto.mottarPengestotteFraAnnetEosLandEllerSveits) {
             if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {
-                context.addViolation("Du må oppgi land som utbetaler pengestøtte", "landSomUtbetalerPengestotte")
+                context.addViolation("Du må oppgi land som utbetaler pengestøtte", SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name)
                 return false
             }
             if (dto.pengestotteSomMottasFraAndreLandBelop.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beløp for pengestøtte fra andre land", "pengestotteSomMottasFraAndreLandBelop")
+                context.addViolation("Du må oppgi beløp for pengestøtte fra andre land", SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name)
                 return false
             }
             if (dto.pengestotteSomMottasFraAndreLandBeskrivelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beskrivelse av pengestøtte fra andre land", "pengestotteSomMottasFraAndreLandBeskrivelse")
+                context.addViolation("Du må oppgi beskrivelse av pengestøtte fra andre land", SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name)
                 return false
             }
         }

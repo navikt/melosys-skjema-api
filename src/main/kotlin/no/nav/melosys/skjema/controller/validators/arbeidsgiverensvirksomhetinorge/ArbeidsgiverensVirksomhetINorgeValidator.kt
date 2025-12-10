@@ -22,14 +22,14 @@ class ArbeidsgiverensVirksomhetINorgeValidator :
             if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa != null) {
                 context.addViolation(
                     "Offentlige virksomheter skal ikke oppgi bemanningsbyrå",
-                    "erArbeidsgiverenBemanningsEllerVikarbyraa"
+                    ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name
                 )
                 return false
             }
             if (dto.opprettholderArbeidsgiverenVanligDrift != null) {
                 context.addViolation(
                     "Offentlige virksomheter skal ikke oppgi vanlig drift",
-                    "opprettholderArbeidsgiverenVanligDrift"
+                    ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name
                 )
                 return false
             }

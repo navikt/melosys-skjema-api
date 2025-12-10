@@ -19,20 +19,20 @@ class OmBordPaFlyValidator : ConstraintValidator<GyldigOmBordPaFly, OmBordPaFlyD
 
         if (dto.erVanligHjemmebase) {
             if (dto.vanligHjemmebaseLand != null) {
-                context.addViolation("Vanlig hjemmebase land skal ikke oppgis når det er Norge", "vanligHjemmebaseLand")
+                context.addViolation("Vanlig hjemmebase land skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseLand.name)
                 return false
             }
             if (dto.vanligHjemmebaseNavn != null) {
-                context.addViolation("Vanlig hjemmebase navn skal ikke oppgis når det er Norge", "vanligHjemmebaseNavn")
+                context.addViolation("Vanlig hjemmebase navn skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
                 return false
             }
         } else {
             if (dto.vanligHjemmebaseLand == null) {
-                context.addViolation("Du må oppgi vanlig hjemmebase land", "vanligHjemmebaseLand")
+                context.addViolation("Du må oppgi vanlig hjemmebase land", OmBordPaFlyDto::vanligHjemmebaseLand.name)
                 return false
             }
             if (dto.vanligHjemmebaseNavn == null) {
-                context.addViolation("Du må oppgi vanlig hjemmebase navn", "vanligHjemmebaseNavn")
+                context.addViolation("Du må oppgi vanlig hjemmebase navn", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
                 return false
             }
         }

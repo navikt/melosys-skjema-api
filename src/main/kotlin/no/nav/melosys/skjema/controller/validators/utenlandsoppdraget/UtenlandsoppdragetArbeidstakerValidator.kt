@@ -18,7 +18,7 @@ class UtenlandsoppdragetArbeidstakerValidator : ConstraintValidator<GyldigUtenla
         if (dto == null) return true
 
         if (dto.utsendelsesLand.isBlank()) {
-            context.addViolation("Du må oppgi utsendelsesland", "utsendelsesLand")
+            context.addViolation("Du må oppgi utsendelsesland", UtenlandsoppdragetArbeidstakersDelDto::utsendelsesLand.name)
             return false
         }
 

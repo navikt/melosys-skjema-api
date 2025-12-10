@@ -21,25 +21,25 @@ class ArbeidsstedIUtlandetValidator : ConstraintValidator<GyldigArbeidsstedIUtla
         return when(dto.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> {
                 if (dto.paLand == null || dto.offshore != null || dto.paSkip != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi arbeidssted på land", "paLand")
+                    context.addViolation("Du må oppgi arbeidssted på land", ArbeidsstedIUtlandetDto::paLand.name)
                     false
                 } else true
             }
             ArbeidsstedType.OFFSHORE -> {
                 if (dto.offshore == null || dto.paLand != null || dto.paSkip != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi offshore arbeidssted", "offshore")
+                    context.addViolation("Du må oppgi offshore arbeidssted", ArbeidsstedIUtlandetDto::offshore.name)
                     false
                 } else true
             }
             ArbeidsstedType.PA_SKIP -> {
                 if (dto.paSkip == null || dto.paLand != null || dto.offshore != null || dto.omBordPaFly != null) {
-                    context.addViolation("Du må oppgi arbeidssted på skip", "paSkip")
+                    context.addViolation("Du må oppgi arbeidssted på skip", ArbeidsstedIUtlandetDto::paSkip.name)
                     false
                 } else true
             }
             ArbeidsstedType.OM_BORD_PA_FLY -> {
                 if (dto.omBordPaFly == null || dto.paLand != null || dto.offshore != null || dto.paSkip != null) {
-                    context.addViolation("Du må oppgi arbeidssted om bord på fly", "omBordPaFly")
+                    context.addViolation("Du må oppgi arbeidssted om bord på fly", ArbeidsstedIUtlandetDto::omBordPaFly.name)
                     false
                 } else true
             }

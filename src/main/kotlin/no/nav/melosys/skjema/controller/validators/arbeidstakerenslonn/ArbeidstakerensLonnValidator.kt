@@ -19,12 +19,12 @@ class ArbeidstakerensLonnValidator : ConstraintValidator<GyldigArbeidstakerensLo
 
         if (dto.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden) {
             if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser != null) {
-                context.addViolation("Virksomheter som utbetaler lønn skal ikke oppgis når arbeidsgiver betaler alt", "virksomheterSomUtbetalerLonnOgNaturalytelser")
+                context.addViolation("Virksomheter som utbetaler lønn skal ikke oppgis når arbeidsgiver betaler alt", ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name)
                 return false
             }
         } else {
             if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser == null) {
-                context.addViolation("Du må oppgi virksomheter som utbetaler lønn og naturalytelser", "virksomheterSomUtbetalerLonnOgNaturalytelser")
+                context.addViolation("Du må oppgi virksomheter som utbetaler lønn og naturalytelser", ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name)
                 return false
             }
         }

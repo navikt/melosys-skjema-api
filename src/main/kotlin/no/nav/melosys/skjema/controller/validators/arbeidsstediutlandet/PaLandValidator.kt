@@ -21,11 +21,11 @@ class PaLandValidator : ConstraintValidator<GyldigPaLand, PaLandDto> {
         return when (dto.fastEllerVekslendeArbeidssted) {
             FastEllerVekslendeArbeidssted.FAST -> {
                 if (dto.fastArbeidssted == null) {
-                    context.addViolation("Du må oppgi fast arbeidssted", "fastArbeidssted")
+                    context.addViolation("Du må oppgi fast arbeidssted", PaLandDto::fastArbeidssted.name)
                     return false
                 }
                 if (dto.beskrivelseVekslende != null) {
-                    context.addViolation("Beskrivelse av vekslende arbeidssted skal ikke oppgis for fast arbeidssted", "beskrivelseVekslende")
+                    context.addViolation("Beskrivelse av vekslende arbeidssted skal ikke oppgis for fast arbeidssted", PaLandDto::beskrivelseVekslende.name)
                     return false
                 }
                 true
@@ -33,11 +33,11 @@ class PaLandValidator : ConstraintValidator<GyldigPaLand, PaLandDto> {
 
             FastEllerVekslendeArbeidssted.VEKSLENDE -> {
                 if (dto.fastArbeidssted != null) {
-                    context.addViolation("Fast arbeidssted skal ikke oppgis for vekslende arbeidssted", "fastArbeidssted")
+                    context.addViolation("Fast arbeidssted skal ikke oppgis for vekslende arbeidssted", PaLandDto::fastArbeidssted.name)
                     return false
                 }
                 if (dto.beskrivelseVekslende.isNullOrBlank()) {
-                    context.addViolation("Du må oppgi beskrivelse av vekslende arbeidssted", "beskrivelseVekslende")
+                    context.addViolation("Du må oppgi beskrivelse av vekslende arbeidssted", PaLandDto::beskrivelseVekslende.name)
                     return false
                 }
                 true

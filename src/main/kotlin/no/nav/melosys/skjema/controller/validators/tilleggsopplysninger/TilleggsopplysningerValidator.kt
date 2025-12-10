@@ -19,12 +19,12 @@ class TilleggsopplysningerValidator : ConstraintValidator<GyldigTilleggsopplysni
 
         if (dto.harFlereOpplysningerTilSoknaden) {
             if (dto.tilleggsopplysningerTilSoknad.isNullOrBlank()) {
-                context.addViolation("Du må oppgi tilleggsopplysninger", "tilleggsopplysningerTilSoknad")
+                context.addViolation("Du må oppgi tilleggsopplysninger", TilleggsopplysningerDto::tilleggsopplysningerTilSoknad.name)
                 return false
             }
         } else {
             if (dto.tilleggsopplysningerTilSoknad != null) {
-                context.addViolation("Tilleggsopplysninger skal ikke oppgis", "tilleggsopplysningerTilSoknad")
+                context.addViolation("Tilleggsopplysninger skal ikke oppgis", TilleggsopplysningerDto::tilleggsopplysningerTilSoknad.name)
                 return false
             }
         }
