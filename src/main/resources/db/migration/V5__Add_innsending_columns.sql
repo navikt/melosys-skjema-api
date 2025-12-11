@@ -1,9 +1,7 @@
 -- Egen tabell for innsendingsprosessering (retry, feilhåndtering)
--- Skjema beholder referanse_id og journalpost_id som tilhører selve skjemaet
 
--- Legg til referanse_id og journalpost_id på skjema
+-- Legg til journalpost_id på skjema
 ALTER TABLE skjema ADD COLUMN journalpost_id VARCHAR(255);
-ALTER TABLE skjema ADD COLUMN referanse_id VARCHAR(50);
 
 -- Opprett innsending-tabell for prosesseringsstatus
 CREATE TABLE innsending (

@@ -2,8 +2,11 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 import java.util.UUID
 
 private val log = KotlinLogging.logger {}
@@ -23,14 +26,23 @@ class InnsendingProsesseringService(
 ) {
 
     /**
+     * Lytter på InnsendingOpprettetEvent og starter async prosessering ETTER at transaksjonen er committed.
+     * Dette sikrer at innsending-raden finnes i databasen før vi prøver å lese den.
+     *
+     * @Async her sørger for at prosesseringen kjører i tråd-pool, slik at HTTP-tråden frigjøres umiddelbart.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onInnsendingOpprettet(event: InnsendingOpprettetEvent) {
+        prosesserInnsendingAsync(event.skjemaId)
+    }
+
+    /**
      * Prosesserer en innsendt søknad asynkront.
      *
-     * Kalles fra SkjemaService.submit() og fra InnsendingRetryScheduler.
+     * Kalles fra event listener (etter commit) og fra InnsendingRetryScheduler.
      * @Async gjør at denne metoden kjører i en egen tråd fra ThreadPool,
      * og kallet returnerer umiddelbart til caller.
-     *
-     * Merk: Race conditions mellom pods håndteres av ShedLock på scheduleren.
-     * Race mellom submit og scheduler håndteres av threshold (kun retry av gamle MOTTATT).
      */
     @Async
     fun prosesserInnsendingAsync(skjemaId: UUID) {

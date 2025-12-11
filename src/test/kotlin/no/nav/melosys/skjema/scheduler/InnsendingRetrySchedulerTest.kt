@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.scheduler
 
 import io.kotest.core.spec.style.FunSpec
 import io.mockk.*
+import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
@@ -13,6 +14,14 @@ import java.time.Instant
 import java.util.*
 
 class InnsendingRetrySchedulerTest : FunSpec({
+
+    beforeSpec {
+        LockAssert.TestHelper.makeAllAssertsPass(true)
+    }
+
+    afterSpec {
+        LockAssert.TestHelper.makeAllAssertsPass(false)
+    }
 
     val mockRepository = mockk<InnsendingRepository>()
     val mockProsesseringService = mockk<InnsendingProsesseringService>()

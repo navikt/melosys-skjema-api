@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
@@ -22,6 +23,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,7 +37,7 @@ class SkjemaService(
     private val subjectHandler: SubjectHandler,
     private val altinnService: AltinnService,
     private val innsendingStatusService: InnsendingStatusService,
-    private val innsendingProsesseringService: InnsendingProsesseringService
+    private val eventPublisher: ApplicationEventPublisher
 ) {
 
 
@@ -107,8 +109,8 @@ class SkjemaService(
         // 3. Opprett innsending-rad for prosesseringsstatus
         innsendingStatusService.opprettInnsending(savedSkjema)
 
-        // 4. Start async prosessering (returnerer umiddelbart)
-        innsendingProsesseringService.prosesserInnsendingAsync(savedSkjema.id!!)
+        // 4. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
 
         // 5. Returner kvittering til bruker
         return convertToArbeidstakersSkjemaDto(savedSkjema)
