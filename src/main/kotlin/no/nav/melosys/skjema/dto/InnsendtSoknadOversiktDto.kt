@@ -10,6 +10,7 @@ import java.util.UUID
  */
 data class InnsendtSoknadOversiktDto(
     val id: UUID,
+    val referanseId: String?,
     val arbeidsgiverNavn: String?,
     val arbeidsgiverOrgnr: String?,
     val arbeidstakerNavn: String?,

@@ -230,6 +230,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
         return InnsendtSoknadOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
+            referanseId = skjema.referanseId,
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
