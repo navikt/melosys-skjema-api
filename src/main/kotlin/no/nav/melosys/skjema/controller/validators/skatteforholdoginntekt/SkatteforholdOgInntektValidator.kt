@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.skatteforholdoginntekt
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import org.springframework.stereotype.Component
@@ -19,19 +21,34 @@ class SkatteforholdOgInntektValidator : ConstraintValidator<GyldigSkatteforholdO
 
         if (dto.mottarPengestotteFraAnnetEosLandEllerSveits) {
             if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {
-                context.addViolation("Du må oppgi land som utbetaler pengestøtte", SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name)
+                context.addViolation(
+                    translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name),
+                    SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name
+                )
                 return false
             }
             if (dto.pengestotteSomMottasFraAndreLandBelop.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beløp for pengestøtte fra andre land", SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name)
+                context.addViolation(
+                    translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiBelopPengestotte.name),
+                    SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name
+                )
                 return false
             }
             if (dto.pengestotteSomMottasFraAndreLandBeskrivelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beskrivelse av pengestøtte fra andre land", SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name)
+                context.addViolation(
+                    translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name),
+                    SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name
+                )
                 return false
             }
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"
+        }
     }
 }

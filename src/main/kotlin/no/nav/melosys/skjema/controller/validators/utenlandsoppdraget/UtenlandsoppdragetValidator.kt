@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.utenlandsoppdraget
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import org.springframework.stereotype.Component
@@ -19,32 +21,50 @@ class UtenlandsoppdragetValidator : ConstraintValidator<GyldigUtenlandsoppdrag, 
 
         if (!dto.arbeidsgiverHarOppdragILandet) {
             if (dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi begrunnelse for utenlandsoppholdet", UtenlandsoppdragetDto::utenlandsoppholdetsBegrunnelse.name)
+                context.addViolation(
+                    translationFieldName(UtenlandsoppdragetTranslation::duMaOppgiBegrunnelse.name),
+                    UtenlandsoppdragetDto::utenlandsoppholdetsBegrunnelse.name
+                )
                 return false
             }
         }
 
         if (dto.arbeidstakerBleAnsattForUtenlandsoppdraget) {
             if (dto.arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget == null) {
-                context.addViolation("Du må oppgi om arbeidstaker vil jobbe for virksomhet i Norge etter oppdraget", UtenlandsoppdragetDto::arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget.name)
+                context.addViolation(
+                    translationFieldName(UtenlandsoppdragetTranslation::duMaOppgiOmArbeidstakerVilJobbeEtterOppdraget.name),
+                    UtenlandsoppdragetDto::arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget.name
+                )
                 return false
             }
         }
 
         if (!dto.arbeidstakerForblirAnsattIHelePerioden) {
             if (dto.ansettelsesforholdBeskrivelse.isNullOrBlank()) {
-                context.addViolation("Du må oppgi beskrivelse av ansettelsesforholdet", UtenlandsoppdragetDto::ansettelsesforholdBeskrivelse.name)
+                context.addViolation(
+                    translationFieldName(UtenlandsoppdragetTranslation::duMaOppgiBeskrivelseAvAnsettelsesforhold.name),
+                    UtenlandsoppdragetDto::ansettelsesforholdBeskrivelse.name
+                )
                 return false
             }
         }
 
         if (dto.arbeidstakerErstatterAnnenPerson) {
             if (dto.forrigeArbeidstakerUtsendelsePeriode == null) {
-                context.addViolation("Du må oppgi forrige arbeidstakers utsendelseperiode", UtenlandsoppdragetDto::forrigeArbeidstakerUtsendelsePeriode.name)
+                context.addViolation(
+                    translationFieldName(UtenlandsoppdragetTranslation::duMaOppgiForrigeArbeidstakerUtsendelsePeriode.name),
+                    UtenlandsoppdragetDto::forrigeArbeidstakerUtsendelsePeriode.name
+                )
                 return false
             }
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return "${ErrorMessageTranslation::utenlandsoppdragetTranslation.name}.$fieldName"
+        }
     }
 }

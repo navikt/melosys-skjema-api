@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.controller.dto
 
 import jakarta.validation.constraints.NotBlank
-import no.nav.melosys.skjema.controller.validators.ErFodselsEllerDNummer
+import no.nav.melosys.skjema.controller.validators.felles.ErFodselsEllerDNummer
 
 /**
  * Request for å verifisere en person uten fullmakt

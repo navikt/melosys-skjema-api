@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.OmBordPaFlyTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import org.springframework.stereotype.Component
@@ -19,24 +21,42 @@ class OmBordPaFlyValidator : ConstraintValidator<GyldigOmBordPaFly, OmBordPaFlyD
 
         if (dto.erVanligHjemmebase) {
             if (dto.vanligHjemmebaseLand != null) {
-                context.addViolation("Vanlig hjemmebase land skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseLand.name)
+                context.addViolation(
+                    translationFieldName(OmBordPaFlyTranslation::vanligHjemmebaseLandSkalIkkeOppgis.name),
+                    OmBordPaFlyDto::vanligHjemmebaseLand.name
+                )
                 return false
             }
             if (dto.vanligHjemmebaseNavn != null) {
-                context.addViolation("Vanlig hjemmebase navn skal ikke oppgis når det er Norge", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
+                context.addViolation(
+                    translationFieldName(OmBordPaFlyTranslation::vanligHjemmebaseNavnSkalIkkeOppgis.name),
+                    OmBordPaFlyDto::vanligHjemmebaseNavn.name
+                )
                 return false
             }
         } else {
             if (dto.vanligHjemmebaseLand == null) {
-                context.addViolation("Du må oppgi vanlig hjemmebase land", OmBordPaFlyDto::vanligHjemmebaseLand.name)
+                context.addViolation(
+                    translationFieldName(OmBordPaFlyTranslation::maaOppgiVanligHjemmebaseLand.name),
+                    OmBordPaFlyDto::vanligHjemmebaseLand.name
+                )
                 return false
             }
             if (dto.vanligHjemmebaseNavn == null) {
-                context.addViolation("Du må oppgi vanlig hjemmebase navn", OmBordPaFlyDto::vanligHjemmebaseNavn.name)
+                context.addViolation(
+                    translationFieldName(OmBordPaFlyTranslation::maaOppgiVanligHjemmebaseNavn.name),
+                    OmBordPaFlyDto::vanligHjemmebaseNavn.name
+                )
                 return false
             }
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::omBordPaFlyTranslation.name}.$fieldName"
+        }
     }
 }

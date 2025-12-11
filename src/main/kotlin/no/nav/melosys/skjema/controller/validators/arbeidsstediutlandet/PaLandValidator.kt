@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.PaLandTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
@@ -21,11 +23,17 @@ class PaLandValidator : ConstraintValidator<GyldigPaLand, PaLandDto> {
         return when (dto.fastEllerVekslendeArbeidssted) {
             FastEllerVekslendeArbeidssted.FAST -> {
                 if (dto.fastArbeidssted == null) {
-                    context.addViolation("Du må oppgi fast arbeidssted", PaLandDto::fastArbeidssted.name)
+                    context.addViolation(
+                        translationFieldName(PaLandTranslation::maaOppgiFastArbeidssted.name),
+                        PaLandDto::fastArbeidssted.name
+                    )
                     return false
                 }
                 if (dto.beskrivelseVekslende != null) {
-                    context.addViolation("Beskrivelse av vekslende arbeidssted skal ikke oppgis for fast arbeidssted", PaLandDto::beskrivelseVekslende.name)
+                    context.addViolation(
+                        translationFieldName(PaLandTranslation::beskrivelseVekslendeSkalIkkeOppgis.name),
+                        PaLandDto::beskrivelseVekslende.name
+                    )
                     return false
                 }
                 true
@@ -33,15 +41,27 @@ class PaLandValidator : ConstraintValidator<GyldigPaLand, PaLandDto> {
 
             FastEllerVekslendeArbeidssted.VEKSLENDE -> {
                 if (dto.fastArbeidssted != null) {
-                    context.addViolation("Fast arbeidssted skal ikke oppgis for vekslende arbeidssted", PaLandDto::fastArbeidssted.name)
+                    context.addViolation(
+                        translationFieldName(PaLandTranslation::fastArbeidsstedSkalIkkeOppgis.name),
+                        PaLandDto::fastArbeidssted.name
+                    )
                     return false
                 }
                 if (dto.beskrivelseVekslende.isNullOrBlank()) {
-                    context.addViolation("Du må oppgi beskrivelse av vekslende arbeidssted", PaLandDto::beskrivelseVekslende.name)
+                    context.addViolation(
+                        translationFieldName(PaLandTranslation::maaOppgiBeskrivelseVekslende.name),
+                        PaLandDto::beskrivelseVekslende.name
+                    )
                     return false
                 }
                 true
             }
+        }
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::paLandTranslation.name}.$fieldName"
         }
     }
 }

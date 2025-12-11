@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidssituasjon
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import no.nav.melosys.skjema.translations.dto.ArbeidssituasjonTranslation
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import org.springframework.stereotype.Component
@@ -20,7 +22,7 @@ class ArbeidssituasjonValidator : ConstraintValidator<GyldigArbeidssituasjon, Ar
         if (!dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending) {
             if (dto.aktivitetIMaanedenFoerUtsendingen.isNullOrBlank()) {
                 context.addViolation(
-                    "Aktivitet i måneden før utsendingen må oppgis når arbeidstaker ikke har vært i lønnet arbeid",
+                    translationFieldName(ArbeidssituasjonTranslation::maaOppgiAktivitetFoerUtsending.name),
                     "aktivitetIMaanedenFoerUtsendingen"
                 )
                 return false
@@ -35,7 +37,7 @@ class ArbeidssituasjonValidator : ConstraintValidator<GyldigArbeidssituasjon, Ar
 
             if (!hasVirksomheter) {
                 context.addViolation(
-                    "Minst én virksomhet må oppgis når arbeidstaker skal jobbe for flere virksomheter",
+                    translationFieldName(ArbeidssituasjonTranslation::maaOppgiMinstEnVirksomhet.name),
                     "virksomheterArbeidstakerJobberForIutsendelsesPeriode"
                 )
                 return false
@@ -43,5 +45,11 @@ class ArbeidssituasjonValidator : ConstraintValidator<GyldigArbeidssituasjon, Ar
         }
 
         return true
+    }
+
+    companion object {
+        private fun translationFieldName(fieldName: String): String {
+            return  "${ErrorMessageTranslation::arbeidssituasjonTranslation.name}.$fieldName"
+        }
     }
 }
