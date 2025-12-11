@@ -6,7 +6,6 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -56,9 +55,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @DisplayName("Skal finne MOTTATT innsending eldre enn grense")
         fun `skal finne MOTTATT innsending eldre enn grense`() {
             val gammelOpprettetDato = Instant.now().minus(10, ChronoUnit.MINUTES)
-            val innsending = opprettInnsending(
-                status = InnsendingStatus.MOTTATT,
-                opprettetDato = gammelOpprettetDato
+            val innsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.MOTTATT,
+                    opprettetDato = gammelOpprettetDato
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -72,9 +74,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @DisplayName("Skal IKKE finne MOTTATT innsending nyere enn grense")
         fun `skal ikke finne MOTTATT innsending nyere enn grense`() {
             val nyOpprettetDato = Instant.now().minus(2, ChronoUnit.MINUTES)
-            opprettInnsending(
-                status = InnsendingStatus.MOTTATT,
-                opprettetDato = nyOpprettetDato
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.MOTTATT,
+                    opprettetDato = nyOpprettetDato
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -86,9 +91,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal finne JOURNALFORING_FEILET med færre enn maxAttempts")
         fun `skal finne JOURNALFORING_FEILET med færre enn maxAttempts`() {
-            val innsending = opprettInnsending(
-                status = InnsendingStatus.JOURNALFORING_FEILET,
-                antallForsok = 2
+            val innsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    antallForsok = 2
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -101,9 +109,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal finne KAFKA_FEILET med færre enn maxAttempts")
         fun `skal finne KAFKA_FEILET med færre enn maxAttempts`() {
-            val innsending = opprettInnsending(
-                status = InnsendingStatus.KAFKA_FEILET,
-                antallForsok = 3
+            val innsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.KAFKA_FEILET,
+                    antallForsok = 3
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -116,9 +127,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal IKKE finne feilet innsending med maxAttempts nådd")
         fun `skal ikke finne feilet innsending med maxAttempts nådd`() {
-            opprettInnsending(
-                status = InnsendingStatus.JOURNALFORING_FEILET,
-                antallForsok = 5
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    antallForsok = 5
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -130,7 +144,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal IKKE finne FERDIG innsending")
         fun `skal ikke finne FERDIG innsending`() {
-            opprettInnsending(status = InnsendingStatus.FERDIG)
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.FERDIG))
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
             val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
@@ -141,7 +155,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal IKKE finne JOURNALFORT innsending")
         fun `skal ikke finne JOURNALFORT innsending`() {
-            opprettInnsending(status = InnsendingStatus.JOURNALFORT)
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.JOURNALFORT))
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
             val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
@@ -154,28 +168,43 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         fun `skal finne kombinasjon av MOTTATT og feilede innsendinger`() {
             val gammelOpprettetDato = Instant.now().minus(10, ChronoUnit.MINUTES)
 
-            val mottattInnsending = opprettInnsending(
-                status = InnsendingStatus.MOTTATT,
-                opprettetDato = gammelOpprettetDato
+            val mottattInnsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.MOTTATT,
+                    opprettetDato = gammelOpprettetDato
+                )
             )
-            val journalforingFeiletInnsending = opprettInnsending(
-                status = InnsendingStatus.JOURNALFORING_FEILET,
-                antallForsok = 1
+            val journalforingFeiletInnsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    antallForsok = 1
+                )
             )
-            val kafkaFeiletInnsending = opprettInnsending(
-                status = InnsendingStatus.KAFKA_FEILET,
-                antallForsok = 2
+            val kafkaFeiletInnsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.KAFKA_FEILET,
+                    antallForsok = 2
+                )
             )
             // Disse skal IKKE inkluderes:
-            opprettInnsending(status = InnsendingStatus.FERDIG)
-            opprettInnsending(status = InnsendingStatus.JOURNALFORT)
-            opprettInnsending(
-                status = InnsendingStatus.MOTTATT,
-                opprettetDato = Instant.now() // For ny
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.FERDIG))
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.JOURNALFORT))
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.MOTTATT,
+                    opprettetDato = Instant.now() // For ny
+                )
             )
-            opprettInnsending(
-                status = InnsendingStatus.JOURNALFORING_FEILET,
-                antallForsok = 5 // Max nådd
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    antallForsok = 5 // Max nådd
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -192,13 +221,19 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal respektere maxAttempts parameter")
         fun `skal respektere maxAttempts parameter`() {
-            opprettInnsending(
-                status = InnsendingStatus.JOURNALFORING_FEILET,
-                antallForsok = 2
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    antallForsok = 2
+                )
             )
-            opprettInnsending(
-                status = InnsendingStatus.KAFKA_FEILET,
-                antallForsok = 3
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.KAFKA_FEILET,
+                    antallForsok = 3
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -235,9 +270,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @DisplayName("Skal finne UNDER_BEHANDLING med gammel sisteForsoekTidspunkt")
         fun `skal finne UNDER_BEHANDLING med gammel sisteForsoekTidspunkt`() {
             val gammelSisteForsoekTidspunkt = Instant.now().minus(10, ChronoUnit.MINUTES)
-            val innsending = opprettInnsending(
-                status = InnsendingStatus.UNDER_BEHANDLING,
-                sisteForsoekTidspunkt = gammelSisteForsoekTidspunkt
+            val innsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.UNDER_BEHANDLING,
+                    sisteForsoekTidspunkt = gammelSisteForsoekTidspunkt
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -251,9 +289,12 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @DisplayName("Skal IKKE finne UNDER_BEHANDLING med fersk sisteForsoekTidspunkt")
         fun `skal ikke finne UNDER_BEHANDLING med fersk sisteForsoekTidspunkt`() {
             val ferskSisteForsoekTidspunkt = Instant.now().minus(1, ChronoUnit.MINUTES)
-            opprettInnsending(
-                status = InnsendingStatus.UNDER_BEHANDLING,
-                sisteForsoekTidspunkt = ferskSisteForsoekTidspunkt
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = opprettSkjema(),
+                    status = InnsendingStatus.UNDER_BEHANDLING,
+                    sisteForsoekTidspunkt = ferskSisteForsoekTidspunkt
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -289,21 +330,5 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         }
     }
 
-    private fun opprettInnsending(
-        status: InnsendingStatus,
-        antallForsok: Int = 0,
-        opprettetDato: Instant = Instant.now(),
-        sisteForsoekTidspunkt: Instant? = null
-    ): Innsending {
-        val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-        return innsendingRepository.save(
-            innsendingMedDefaultVerdier(
-                skjema = skjema,
-                status = status,
-                antallForsok = antallForsok,
-                opprettetDato = opprettetDato,
-                sisteForsoekTidspunkt = sisteForsoekTidspunkt
-            )
-        )
-    }
+    private fun opprettSkjema() = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
 }
