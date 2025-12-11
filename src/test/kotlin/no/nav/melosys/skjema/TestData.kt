@@ -31,12 +31,15 @@ import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import java.util.UUID
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -220,6 +223,7 @@ fun createDefaultMetadata(
 }
 
 fun skjemaMedDefaultVerdier(
+    id: UUID? = null,
     fnr: String? = korrektSyntetiskFnr,
     orgnr: String? = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
@@ -232,6 +236,7 @@ fun skjemaMedDefaultVerdier(
     endretAv: String = fnr ?: korrektSyntetiskFnr
 ): Skjema {
     return Skjema(
+        id = id,
         status = status,
         type = type,
         fnr = fnr,
@@ -298,4 +303,22 @@ fun fullmaktMedDefaultVerdier() = Fullmakt(
     fullmektig = "98765432109",
     leserettigheter = listOf("MED"),
     skriverettigheter = listOf("MED")
+)
+
+fun innsendingMedDefaultVerdier(
+    id: UUID? = null,
+    skjema: Skjema = skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT),
+    status: InnsendingStatus = InnsendingStatus.MOTTATT,
+    antallForsok: Int = 0,
+    opprettetDato: Instant = Instant.now(),
+    sisteForsoekTidspunkt: Instant? = null,
+    feilmelding: String? = null
+) = Innsending(
+    id = id,
+    skjema = skjema,
+    status = status,
+    antallForsok = antallForsok,
+    opprettetDato = opprettetDato,
+    sisteForsoekTidspunkt = sisteForsoekTidspunkt,
+    feilmelding = feilmelding
 )

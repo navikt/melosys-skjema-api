@@ -3,6 +3,9 @@ package no.nav.melosys.skjema.dto
 /**
  * Metadata for Utsendt Arbeidstaker skjema.
  * Lagres i skjema.metadata som JSONB.
+ *
+ * Merk: Innsendingsstatus ligger på egne felt i Skjema-entiteten,
+ * ikke her, siden det er felles for alle skjematyper.
  */
 data class UtsendtArbeidstakerMetadata(
     val representasjonstype: Representasjonstype,

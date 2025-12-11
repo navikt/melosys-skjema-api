@@ -3,8 +3,9 @@ package no.nav.melosys.skjema.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.util.UUID
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
+import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -22,8 +23,10 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 private val log = KotlinLogging.logger { }
 
@@ -32,7 +35,9 @@ class SkjemaService(
     private val skjemaRepository: SkjemaRepository,
     private val objectMapper: ObjectMapper,
     private val subjectHandler: SubjectHandler,
-    private val altinnService: AltinnService
+    private val altinnService: AltinnService,
+    private val innsendingStatusService: InnsendingStatusService,
+    private val eventPublisher: ApplicationEventPublisher
 ) {
 
 
@@ -87,15 +92,27 @@ class SkjemaService(
         }
     }
 
+    @Transactional
     fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
-        log.info { "Submitting arbeidsgiver oppsummering for skjema: $skjemaId" }
+        log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
+        // 1. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
+
+        // 2. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
+
+        // 3. Opprett innsending-rad for prosesseringsstatus
+        innsendingStatusService.opprettInnsending(savedSkjema)
+
+        // 4. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
+
+        // 5. Returner kvittering til bruker
         return convertToArbeidstakersSkjemaDto(savedSkjema)
     }
 

@@ -46,11 +46,23 @@ class Skjema(
     val opprettetAv: String,
 
     @Column(name = "endret_av", nullable = false, length = 11)
-    var endretAv: String
+    var endretAv: String,
+
+    /** Journalpost-ID fra Joark etter vellykket journalføring */
+    @Column(name = "journalpost_id")
+    var journalpostId: String? = null
 )
 
+/**
+ * Status for et skjema i søknadsprosessen.
+ *
+ * Dette er den overordnede statusen som vises til bruker i skjema-web.
+ * For detaljert sporing av asynkron prosessering, se [Skjema.innsendingStatus].
+ */
 enum class SkjemaStatus {
+    /** Bruker jobber med søknaden - ikke sendt ennå */
     UTKAST,
-    SENDT,
-    MOTTATT
+
+    /** Bruker har sendt inn søknaden. Asynkron prosessering pågår eller er fullført. */
+    SENDT
 }
