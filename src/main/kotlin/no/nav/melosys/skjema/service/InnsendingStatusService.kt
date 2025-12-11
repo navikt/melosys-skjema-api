@@ -81,8 +81,8 @@ class InnsendingStatusService(
      */
     @Transactional
     fun oppdaterSkjemaJournalpostId(skjemaId: UUID, journalpostId: String) {
-        val skjema = skjemaRepository.findById(skjemaId)
-            .orElseThrow { IllegalArgumentException("Skjema $skjemaId ikke funnet") }
+        val skjema = skjemaRepository.findById(skjemaId).orElse(null)
+            ?: error("Skjema $skjemaId ikke funnet")
         skjema.journalpostId = journalpostId
         skjemaRepository.save(skjema)
     }

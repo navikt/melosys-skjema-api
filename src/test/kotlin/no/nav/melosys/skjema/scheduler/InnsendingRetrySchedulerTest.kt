@@ -6,10 +6,11 @@ import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.service.InnsendingProsesseringService
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import java.time.Instant
 import java.util.*
 
@@ -86,17 +87,9 @@ class InnsendingRetrySchedulerTest : FunSpec({
 })
 
 private fun createTestInnsending(): Innsending {
-    val skjema = Skjema(
+    return innsendingMedDefaultVerdier(
         id = UUID.randomUUID(),
-        status = SkjemaStatus.SENDT,
-        fnr = "12345678901",
-        orgnr = "123456789",
-        opprettetAv = "12345678901",
-        endretAv = "12345678901"
-    )
-    return Innsending(
-        id = UUID.randomUUID(),
-        skjema = skjema,
+        skjema = skjemaMedDefaultVerdier(id = UUID.randomUUID(), status = SkjemaStatus.SENDT),
         status = InnsendingStatus.JOURNALFORING_FEILET,
         antallForsok = 1,
         sisteForsoekTidspunkt = Instant.now().minusSeconds(600)

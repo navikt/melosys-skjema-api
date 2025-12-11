@@ -39,6 +39,7 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import java.util.UUID
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -222,6 +223,7 @@ fun createDefaultMetadata(
 }
 
 fun skjemaMedDefaultVerdier(
+    id: UUID? = null,
     fnr: String? = korrektSyntetiskFnr,
     orgnr: String? = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
@@ -234,6 +236,7 @@ fun skjemaMedDefaultVerdier(
     endretAv: String = fnr ?: korrektSyntetiskFnr
 ): Skjema {
     return Skjema(
+        id = id,
         status = status,
         type = type,
         fnr = fnr,
@@ -303,6 +306,7 @@ fun fullmaktMedDefaultVerdier() = Fullmakt(
 )
 
 fun innsendingMedDefaultVerdier(
+    id: UUID? = null,
     skjema: Skjema = skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT),
     status: InnsendingStatus = InnsendingStatus.MOTTATT,
     antallForsok: Int = 0,
@@ -310,6 +314,7 @@ fun innsendingMedDefaultVerdier(
     sisteForsoekTidspunkt: Instant? = null,
     feilmelding: String? = null
 ) = Innsending(
+    id = id,
     skjema = skjema,
     status = status,
     antallForsok = antallForsok,
