@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
-import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
-import no.nav.melosys.skjema.controller.dto.translations.OmBordPaFlyTranslation
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.OmBordPaFlyTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
 import org.springframework.stereotype.Component

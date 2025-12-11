@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.controller.validators.arbeidstakerenslonn
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
-import no.nav.melosys.skjema.controller.dto.translations.ArbeidstakerensLonnTranslation
-import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.ArbeidstakerensLonnTranslation
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import org.springframework.stereotype.Component

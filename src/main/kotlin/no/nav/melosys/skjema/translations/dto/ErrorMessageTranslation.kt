@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.controller.dto.translations
+package no.nav.melosys.skjema.translations.dto
 
 data class ErrorMessageTranslation(
     val arbeidsgiverensVirksomhetINorgeTranslation: ArbeidsgiverensVirksomhetINorgeTranslation,

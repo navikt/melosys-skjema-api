@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.controller.validators.skatteforholdoginntekt
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
-import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
-import no.nav.melosys.skjema.controller.dto.translations.SkatteforholdOgInntektTranslation
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import org.springframework.stereotype.Component

@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.controller.validators.felles
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
-import no.nav.melosys.skjema.controller.dto.translations.ErrorMessageTranslation
-import no.nav.melosys.skjema.controller.dto.translations.FellesTranslation
+import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
+import no.nav.melosys.skjema.translations.dto.FellesTranslation
 import no.nav.melosys.skjema.controller.validators.addViolation
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
