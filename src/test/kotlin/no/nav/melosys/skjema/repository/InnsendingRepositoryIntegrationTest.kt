@@ -7,10 +7,9 @@ import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.korrektSyntetiskFnr
-import no.nav.melosys.skjema.korrektSyntetiskOrgnr
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -214,29 +213,15 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        @DisplayName("Skal finne UNDER_BEHANDLING med NULL sisteForsoek (kritisk edge case)")
-        fun `skal finne UNDER_BEHANDLING med NULL sisteForsoek`() {
-            val skjema = opprettSkjema()
-            val innsending = innsendingRepository.save(Innsending(
-                skjema = skjema,
-                status = InnsendingStatus.UNDER_BEHANDLING,
-                sisteForsoek = null  // App krasjet før første oppdatering
-            ))
-
-            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
-            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
-
-            kandidater shouldHaveSize 1
-            kandidater[0].id shouldBe innsending.id
-        }
-
-        @Test
-        @DisplayName("Skal finne UNDER_BEHANDLING med gammel sisteForsoek")
-        fun `skal finne UNDER_BEHANDLING med gammel sisteForsoek`() {
-            val gammelSisteForsoek = Instant.now().minus(10, ChronoUnit.MINUTES)
-            val innsending = opprettInnsending(
-                status = InnsendingStatus.UNDER_BEHANDLING,
-                sisteForsoek = gammelSisteForsoek
+        @DisplayName("Skal finne UNDER_BEHANDLING med NULL sisteForsoekTidspunkt (kritisk edge case)")
+        fun `skal finne UNDER_BEHANDLING med NULL sisteForsoekTidspunkt`() {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
+            val innsending = innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = skjema,
+                    status = InnsendingStatus.UNDER_BEHANDLING,
+                    sisteForsoekTidspunkt = null  // App krasjet før første oppdatering
+                )
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -247,12 +232,28 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        @DisplayName("Skal IKKE finne UNDER_BEHANDLING med fersk sisteForsoek")
-        fun `skal ikke finne UNDER_BEHANDLING med fersk sisteForsoek`() {
-            val ferskSisteForsoek = Instant.now().minus(1, ChronoUnit.MINUTES)
+        @DisplayName("Skal finne UNDER_BEHANDLING med gammel sisteForsoekTidspunkt")
+        fun `skal finne UNDER_BEHANDLING med gammel sisteForsoekTidspunkt`() {
+            val gammelSisteForsoekTidspunkt = Instant.now().minus(10, ChronoUnit.MINUTES)
+            val innsending = opprettInnsending(
+                status = InnsendingStatus.UNDER_BEHANDLING,
+                sisteForsoekTidspunkt = gammelSisteForsoekTidspunkt
+            )
+
+            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
+
+            kandidater shouldHaveSize 1
+            kandidater[0].id shouldBe innsending.id
+        }
+
+        @Test
+        @DisplayName("Skal IKKE finne UNDER_BEHANDLING med fersk sisteForsoekTidspunkt")
+        fun `skal ikke finne UNDER_BEHANDLING med fersk sisteForsoekTidspunkt`() {
+            val ferskSisteForsoekTidspunkt = Instant.now().minus(1, ChronoUnit.MINUTES)
             opprettInnsending(
                 status = InnsendingStatus.UNDER_BEHANDLING,
-                sisteForsoek = ferskSisteForsoek
+                sisteForsoekTidspunkt = ferskSisteForsoekTidspunkt
             )
 
             val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
@@ -269,12 +270,8 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal finne innsending for skjema")
         fun `skal finne innsending for skjema`() {
-            val skjema = opprettSkjema()
-            val innsending = Innsending(
-                skjema = skjema,
-                status = InnsendingStatus.MOTTATT
-            )
-            innsendingRepository.save(innsending)
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
+            val innsending = innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
 
             val funnet = innsendingRepository.findBySkjema(skjema)
 
@@ -284,7 +281,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         @Test
         @DisplayName("Skal returnere null når innsending ikke finnes")
         fun `skal returnere null når innsending ikke finnes`() {
-            val skjema = opprettSkjema()
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
 
             val funnet = innsendingRepository.findBySkjema(skjema)
 
@@ -292,32 +289,21 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         }
     }
 
-    private fun opprettSkjema(): Skjema {
-        return skjemaRepository.save(
-            Skjema(
-                status = SkjemaStatus.SENDT,
-                fnr = korrektSyntetiskFnr,
-                orgnr = korrektSyntetiskOrgnr,
-                opprettetAv = korrektSyntetiskFnr,
-                endretAv = korrektSyntetiskFnr
-            )
-        )
-    }
-
     private fun opprettInnsending(
         status: InnsendingStatus,
         antallForsok: Int = 0,
         opprettetDato: Instant = Instant.now(),
-        sisteForsoek: Instant? = null
+        sisteForsoekTidspunkt: Instant? = null
     ): Innsending {
-        val skjema = opprettSkjema()
-        val innsending = Innsending(
-            skjema = skjema,
-            status = status,
-            antallForsok = antallForsok,
-            opprettetDato = opprettetDato,
-            sisteForsoek = sisteForsoek
+        val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
+        return innsendingRepository.save(
+            innsendingMedDefaultVerdier(
+                skjema = skjema,
+                status = status,
+                antallForsok = antallForsok,
+                opprettetDato = opprettetDato,
+                sisteForsoekTidspunkt = sisteForsoekTidspunkt
+            )
         )
-        return innsendingRepository.save(innsending)
     }
 }

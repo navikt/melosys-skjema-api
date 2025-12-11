@@ -47,11 +47,11 @@ class InnsendingStatusService(
         feilmelding: String? = null
     ) {
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
-            ?: throw IllegalArgumentException("Innsending for skjema $skjemaId ikke funnet")
+            ?: error("Innsending for skjema $skjemaId ikke funnet")
 
         innsending.status = status
         innsending.antallForsok += 1
-        innsending.sisteForsoek = Instant.now()
+        innsending.sisteForsoekTidspunkt = Instant.now()
 
         if (feilmelding != null) {
             innsending.feilmelding = feilmelding.take(2000)
@@ -63,15 +63,15 @@ class InnsendingStatusService(
 
     /**
      * Setter status til UNDER_BEHANDLING for å markere at prosessering er startet.
-     * Oppdaterer også sisteForsoek for å kunne detektere "hengende" prosesseringer.
+     * Oppdaterer også sisteForsoekTidspunkt for å kunne detektere "hengende" prosesseringer.
      */
     @Transactional
     fun startProsessering(skjemaId: UUID) {
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
-            ?: throw IllegalArgumentException("Innsending for skjema $skjemaId ikke funnet")
+            ?: error("Innsending for skjema $skjemaId ikke funnet")
 
         innsending.status = InnsendingStatus.UNDER_BEHANDLING
-        innsending.sisteForsoek = Instant.now()
+        innsending.sisteForsoekTidspunkt = Instant.now()
         innsendingRepository.save(innsending)
         log.debug { "Startet prosessering av skjema $skjemaId" }
     }

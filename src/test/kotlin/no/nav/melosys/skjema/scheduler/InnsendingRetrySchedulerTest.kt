@@ -99,6 +99,6 @@ private fun createTestInnsending(): Innsending {
         skjema = skjema,
         status = InnsendingStatus.JOURNALFORING_FEILET,
         antallForsok = 1,
-        sisteForsoek = Instant.now().minusSeconds(600)
+        sisteForsoekTidspunkt = Instant.now().minusSeconds(600)
     )
 }

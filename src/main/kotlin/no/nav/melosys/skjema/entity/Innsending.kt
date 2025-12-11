@@ -37,7 +37,7 @@ class Innsending(
     var antallForsok: Int = 0,
 
     @Column(name = "siste_forsoek")
-    var sisteForsoek: Instant? = null,
+    var sisteForsoekTidspunkt: Instant? = null,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now()

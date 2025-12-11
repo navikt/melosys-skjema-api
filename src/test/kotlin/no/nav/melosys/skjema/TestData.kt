@@ -31,6 +31,8 @@ import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
@@ -298,4 +300,20 @@ fun fullmaktMedDefaultVerdier() = Fullmakt(
     fullmektig = "98765432109",
     leserettigheter = listOf("MED"),
     skriverettigheter = listOf("MED")
+)
+
+fun innsendingMedDefaultVerdier(
+    skjema: Skjema = skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT),
+    status: InnsendingStatus = InnsendingStatus.MOTTATT,
+    antallForsok: Int = 0,
+    opprettetDato: Instant = Instant.now(),
+    sisteForsoekTidspunkt: Instant? = null,
+    feilmelding: String? = null
+) = Innsending(
+    skjema = skjema,
+    status = status,
+    antallForsok = antallForsok,
+    opprettetDato = opprettetDato,
+    sisteForsoekTidspunkt = sisteForsoekTidspunkt,
+    feilmelding = feilmelding
 )

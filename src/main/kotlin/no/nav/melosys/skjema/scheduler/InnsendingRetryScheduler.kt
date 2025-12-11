@@ -40,12 +40,14 @@ class InnsendingRetryScheduler(
         LockAssert.assertLocked()
         log.debug { "Kjører retry-jobb for feilede innsendinger" }
 
-        val grense = Instant.now().minus(retryConfig.staleThresholdMinutes, ChronoUnit.MINUTES)
-        val kandidater = innsendingRepository.findRetryKandidater(grense, retryConfig.maxAttempts)
+        val sisteForsoekTidspunktGrense = Instant.now().minus(retryConfig.staleThresholdMinutes, ChronoUnit.MINUTES)
+        val kandidater = innsendingRepository.findRetryKandidater(sisteForsoekTidspunktGrense, retryConfig.maxAttempts)
 
-        if (kandidater.isNotEmpty()) {
-            log.info { "Fant ${kandidater.size} innsendinger for retry" }
+        if (kandidater.isEmpty()) {
+            return
         }
+
+        log.info { "Fant ${kandidater.size} innsendinger for retry" }
 
         kandidater.forEach { innsending ->
             try {

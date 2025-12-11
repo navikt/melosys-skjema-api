@@ -22,7 +22,7 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
      *
      * Inkluderer:
      * - MOTTATT eldre enn grensen (aldri startet prosessering)
-     * - UNDER_BEHANDLING med gammel/null sisteForsoek (app krasjet under prosessering)
+     * - UNDER_BEHANDLING med gammel/null sisteForsoekTidspunkt (app krasjet under prosessering)
      * - Feilstatuser med færre enn maxAttempts forsøk
      *
      * Race conditions håndteres av ShedLock på scheduleren.
@@ -30,9 +30,9 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
     @Transactional(readOnly = true)
     @Query("""
         SELECT i FROM Innsending i
-        WHERE (i.status = 'MOTTATT' AND i.opprettetDato < :grense)
-        OR (i.status = 'UNDER_BEHANDLING' AND (i.sisteForsoek IS NULL OR i.sisteForsoek < :grense))
+        WHERE (i.status = 'MOTTATT' AND i.opprettetDato < :sisteForsoekTidspunktGrense)
+        OR (i.status = 'UNDER_BEHANDLING' AND (i.sisteForsoekTidspunkt IS NULL OR i.sisteForsoekTidspunkt < :sisteForsoekTidspunktGrense))
         OR (i.status IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND i.antallForsok < :maxAttempts)
     """)
-    fun findRetryKandidater(@Param("grense") grense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
+    fun findRetryKandidater(@Param("sisteForsoekTidspunktGrense") sisteForsoekTidspunktGrense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
 }
