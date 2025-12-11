@@ -36,7 +36,7 @@ class Innsending(
     @Column(name = "antall_forsok", nullable = false)
     var antallForsok: Int = 0,
 
-    @Column(name = "siste_forsoek")
+    @Column(name = "siste_forsoek_tidspunkt")
     var sisteForsoekTidspunkt: Instant? = null,
 
     @Column(name = "opprettet_dato", nullable = false)

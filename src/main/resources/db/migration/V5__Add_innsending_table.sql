@@ -10,7 +10,7 @@ CREATE TABLE innsending (
     status VARCHAR(50) NOT NULL,
     feilmelding TEXT,
     antall_forsok INTEGER NOT NULL DEFAULT 0,
-    siste_forsoek TIMESTAMP WITH TIME ZONE,
+    siste_forsoek_tidspunkt TIMESTAMP WITH TIME ZONE,
     opprettet_dato TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
