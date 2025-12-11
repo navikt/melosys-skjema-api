@@ -127,7 +127,4 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
         @Param("searchTerm") searchTerm: String,
         pageable: Pageable
     ): Page<Skjema>
-
-    // ReferanseId unikhetssjekk
-    fun existsByReferanseId(referanseId: String): Boolean
 }

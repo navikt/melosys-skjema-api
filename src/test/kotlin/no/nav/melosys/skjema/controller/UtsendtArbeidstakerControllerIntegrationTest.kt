@@ -33,6 +33,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.service.NotificationService
@@ -77,6 +78,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
+
+    @Autowired
+    private lateinit var innsendingRepository: InnsendingRepository
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -300,9 +304,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             this.referanseId.startsWith("MEL-") shouldBe true
             this.referanseId.length shouldBe 10 // "MEL-" + 6 tegn
 
-            // Verifiser at referanseId er lagret i databasen
+            // Verifiser at referanseId er lagret i innsending-tabellen
+            val innsending = innsendingRepository.findBySkjemaId(this.skjemaId)
+            innsending.shouldNotBeNull()
+            innsending.referanseId shouldBe this.referanseId
+
             val persistedSkjema = skjemaRepository.getReferenceById(this.skjemaId)
-            persistedSkjema.referanseId shouldBe this.referanseId
             persistedSkjema.status shouldBe SkjemaStatus.SENDT
         }
     }

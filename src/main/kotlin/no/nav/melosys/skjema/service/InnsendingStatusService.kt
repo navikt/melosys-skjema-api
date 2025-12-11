@@ -26,13 +26,14 @@ class InnsendingStatusService(
 ) {
 
     /**
-     * Oppretter en ny innsending for et skjema.
+     * Oppretter en ny innsending for et skjema med referanseId.
      */
     @Transactional
-    fun opprettInnsending(skjema: Skjema): Innsending {
+    fun opprettInnsending(skjema: Skjema, referanseId: String): Innsending {
         val innsending = Innsending(
             skjema = skjema,
-            status = InnsendingStatus.MOTTATT
+            status = InnsendingStatus.MOTTATT,
+            referanseId = referanseId
         )
         return innsendingRepository.save(innsending)
     }

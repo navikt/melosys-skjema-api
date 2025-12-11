@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.data.domain.Page
@@ -28,6 +29,7 @@ private val log = KotlinLogging.logger { }
 @Service
 class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private val skjemaRepository: SkjemaRepository,
+    private val innsendingRepository: InnsendingRepository,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val objectMapper: ObjectMapper,
@@ -227,10 +229,11 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
         val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
         val metadata = utsendtSkjema.metadata
+        val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
-            referanseId = skjema.referanseId,
+            referanseId = innsending?.referanseId,
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig

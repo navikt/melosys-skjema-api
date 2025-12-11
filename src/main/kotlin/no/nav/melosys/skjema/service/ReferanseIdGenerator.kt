@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.service
 
-import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import org.springframework.stereotype.Component
 import java.security.SecureRandom
 
@@ -14,7 +14,7 @@ import java.security.SecureRandom
  */
 @Component
 class ReferanseIdGenerator(
-    private val skjemaRepository: SkjemaRepository
+    private val innsendingRepository: InnsendingRepository
 ) {
     private val random = SecureRandom()
 
@@ -33,7 +33,7 @@ class ReferanseIdGenerator(
                 .joinToString("")
             val referanseId = "$PREFIKS-$kode"
 
-            if (!skjemaRepository.existsByReferanseId(referanseId)) {
+            if (!innsendingRepository.existsByReferanseId(referanseId)) {
                 return referanseId
             }
         }

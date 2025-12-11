@@ -103,7 +103,6 @@ class SkjemaService(
 
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
-        skjema.referanseId = referanseId
 
         // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
@@ -112,8 +111,8 @@ class SkjemaService(
         // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 4. Opprett innsending-rad for prosesseringsstatus
-        innsendingStatusService.opprettInnsending(savedSkjema)
+        // 4. Opprett innsending-rad for prosesseringsstatus med referanseId
+        innsendingStatusService.opprettInnsending(savedSkjema, referanseId)
 
         // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
         eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))

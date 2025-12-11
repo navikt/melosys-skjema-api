@@ -312,7 +312,8 @@ fun innsendingMedDefaultVerdier(
     antallForsok: Int = 0,
     opprettetDato: Instant = Instant.now(),
     sisteForsoekTidspunkt: Instant? = null,
-    feilmelding: String? = null
+    feilmelding: String? = null,
+    referanseId: String = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -320,5 +321,6 @@ fun innsendingMedDefaultVerdier(
     antallForsok = antallForsok,
     opprettetDato = opprettetDato,
     sisteForsoekTidspunkt = sisteForsoekTidspunkt,
-    feilmelding = feilmelding
+    feilmelding = feilmelding,
+    referanseId = referanseId
 )

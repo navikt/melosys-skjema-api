@@ -1,5 +1,5 @@
--- Legg til referanse_id kolonne for brukervennlig referanse til søknaden
-ALTER TABLE skjema ADD COLUMN referanse_id VARCHAR(20);
+-- Legg til referanse_id kolonne i innsending-tabellen (non-null for innsendte skjemaer)
+ALTER TABLE innsending ADD COLUMN referanse_id VARCHAR(20) NOT NULL;
 
 -- Unique index for rask oppslag og unikhet
-CREATE UNIQUE INDEX idx_skjema_referanse_id ON skjema(referanse_id) WHERE referanse_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_innsending_referanse_id ON innsending(referanse_id);
