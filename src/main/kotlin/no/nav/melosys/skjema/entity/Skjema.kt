@@ -50,11 +50,7 @@ class Skjema(
 
     /** Journalpost-ID fra Joark etter vellykket journalføring */
     @Column(name = "journalpost_id")
-    var journalpostId: String? = null,
-
-    /** Brukervennlig referanse-ID (f.eks. "MEL-AB12CD") */
-    @Column(name = "referanse_id")
-    var referanseId: String? = null
+    var journalpostId: String? = null
 )
 
 /**
