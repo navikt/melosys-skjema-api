@@ -35,4 +35,6 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
         OR (i.status IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND i.antallForsok < :maxAttempts)
     """)
     fun findRetryKandidater(@Param("sisteForsoekTidspunktGrense") sisteForsoekTidspunktGrense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
+
+    fun existsByReferanseId(referanseId: String): Boolean
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.SubmitSkjemaResponse
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import java.util.UUID
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
@@ -37,7 +38,8 @@ class SkjemaService(
     private val subjectHandler: SubjectHandler,
     private val altinnService: AltinnService,
     private val innsendingStatusService: InnsendingStatusService,
-    private val eventPublisher: ApplicationEventPublisher
+    private val eventPublisher: ApplicationEventPublisher,
+    private val referanseIdGenerator: ReferanseIdGenerator
 ) {
 
 
@@ -93,27 +95,34 @@ class SkjemaService(
     }
 
     @Transactional
-    fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): ArbeidstakersSkjemaDto {
+    fun submitArbeidsgiver(skjemaId: UUID, request: SubmitSkjemaRequest): SubmitSkjemaResponse {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
         val skjema = getSkjemaAsArbeidsgiver(skjemaId)
 
-        // 1. Sett skjema-status til SENDT
+        // 1. Generer referanseId
+        val referanseId = referanseIdGenerator.generer()
+
+        // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = currentUser
 
-        // 2. Lagre skjema
+        // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 3. Opprett innsending-rad for prosesseringsstatus
-        innsendingStatusService.opprettInnsending(savedSkjema)
+        // 4. Opprett innsending-rad for prosesseringsstatus med referanseId
+        innsendingStatusService.opprettInnsending(savedSkjema, referanseId)
 
-        // 4. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
         eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
 
-        // 5. Returner kvittering til bruker
-        return convertToArbeidstakersSkjemaDto(savedSkjema)
+        // 6. Returner kvittering med referanseId
+        return SubmitSkjemaResponse(
+            skjemaId = savedSkjema.id,
+            referanseId = referanseId,
+            status = savedSkjema.status
+        )
     }
 
     fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): ArbeidstakersSkjemaDto {

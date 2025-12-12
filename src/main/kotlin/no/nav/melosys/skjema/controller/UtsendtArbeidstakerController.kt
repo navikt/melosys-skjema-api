@@ -9,6 +9,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
+import no.nav.melosys.skjema.dto.SubmitSkjemaResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
@@ -223,11 +224,11 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Skjema submitted")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun submitArbeidsgiverRequest(@PathVariable skjemaId: UUID, @Valid @RequestBody request: SubmitSkjemaRequest): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun submitArbeidsgiverRequest(@PathVariable skjemaId: UUID, @Valid @RequestBody request: SubmitSkjemaRequest): ResponseEntity<SubmitSkjemaResponse> {
         log.info { "Submitting arbeidsgiver oppsummering at ${request.submittedAt}" }
         validerArbeidsgiverTilgang(skjemaId)
-        val skjema = skjemaService.submitArbeidsgiver(skjemaId, request)
-        return ResponseEntity.ok(skjema)
+        val response = skjemaService.submitArbeidsgiver(skjemaId, request)
+        return ResponseEntity.ok(response)
     }
 
     // Arbeidstaker Flow Endpoints

@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
+import no.nav.melosys.skjema.dto.SubmitSkjemaResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -32,6 +33,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.service.NotificationService
@@ -76,6 +78,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
+
+    @Autowired
+    private lateinit var innsendingRepository: InnsendingRepository
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -269,14 +274,11 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit skal sende inn skjema")
     fun `POST submit skal sende inn skjema`() {
-        val existingSkjemaDataBeforePOST = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
-
         val existingSkjemaBeforePOST = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,
                 orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST,
-                data = objectMapper.valueToTree(existingSkjemaDataBeforePOST)
+                status = SkjemaStatus.UTKAST
             )
         )
 
@@ -291,22 +293,24 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<ArbeidstakersSkjemaDto>()
+            .expectBody<SubmitSkjemaResponse>()
             .returnResult().responseBody
 
         responseBody.run {
             this.shouldNotBeNull()
-            this shouldBe ArbeidstakersSkjemaDto(
-                id = existingSkjemaBeforePOST.id!!,
-                fnr = existingSkjemaBeforePOST.fnr!!,
-                status = SkjemaStatus.SENDT,
-                data = existingSkjemaDataBeforePOST
-            )
+            this.skjemaId shouldBe existingSkjemaBeforePOST.id!!
+            this.status shouldBe SkjemaStatus.SENDT
+            this.referanseId.shouldNotBeNull()
+            this.referanseId.startsWith("MEL-") shouldBe true
+            this.referanseId.length shouldBe 10 // "MEL-" + 6 tegn
 
-            val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
-                skjemaRepository.getReferenceById(this.id).data
-            )
-            this.data shouldBe persistedSkjemaDataAfterPOST
+            // Verifiser at referanseId er lagret i innsending-tabellen
+            val innsending = innsendingRepository.findBySkjemaId(this.skjemaId)
+            innsending.shouldNotBeNull()
+            innsending.referanseId shouldBe this.referanseId
+
+            val persistedSkjema = skjemaRepository.getReferenceById(this.skjemaId)
+            persistedSkjema.status shouldBe SkjemaStatus.SENDT
         }
     }
 

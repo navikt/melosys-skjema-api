@@ -43,15 +43,17 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         fun `skal opprette innsending med status MOTTATT`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
 
-            val innsending = innsendingStatusService.opprettInnsending(skjema)
+            val innsending = innsendingStatusService.opprettInnsending(skjema, "MEL-TEST01")
 
             innsending.skjema.id shouldBe skjema.id
             innsending.status shouldBe InnsendingStatus.MOTTATT
             innsending.antallForsok shouldBe 0
+            innsending.referanseId shouldBe "MEL-TEST01"
 
             val lagret = innsendingRepository.findBySkjemaId(skjema.id!!)
             lagret shouldNotBe null
             lagret!!.status shouldBe InnsendingStatus.MOTTATT
+            lagret.referanseId shouldBe "MEL-TEST01"
         }
     }
 
@@ -63,7 +65,10 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         @DisplayName("Skal oppdatere status til FERDIG")
         fun `skal oppdatere status til FERDIG`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            ))
 
             innsendingStatusService.oppdaterStatus(skjema.id!!, InnsendingStatus.FERDIG)
 
@@ -77,7 +82,10 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         @DisplayName("Skal oppdatere status med feilmelding")
         fun `skal oppdatere status med feilmelding`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            ))
 
             innsendingStatusService.oppdaterStatus(
                 skjema.id!!,
@@ -94,7 +102,10 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         @DisplayName("Skal inkrementere antallForsok ved gjentatte oppdateringer")
         fun `skal inkrementere antallForsok ved gjentatte oppdateringer`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            ))
 
             innsendingStatusService.oppdaterStatus(skjema.id!!, InnsendingStatus.JOURNALFORING_FEILET)
             innsendingRepository.findBySkjemaId(skjema.id!!)!!.antallForsok shouldBe 1
@@ -107,7 +118,10 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         @DisplayName("Skal trunkere lange feilmeldinger til 2000 tegn")
         fun `skal trunkere lange feilmeldinger til 2000 tegn`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            ))
             val langFeilmelding = "x".repeat(3000)
 
             innsendingStatusService.oppdaterStatus(
@@ -141,7 +155,10 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         @DisplayName("Skal sette status til UNDER_BEHANDLING og oppdatere sisteForsoekTidspunkt")
         fun `skal sette status til UNDER_BEHANDLING og oppdatere sisteForsoekTidspunkt`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema))
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            ))
 
             innsendingStatusService.startProsessering(skjema.id!!)
 

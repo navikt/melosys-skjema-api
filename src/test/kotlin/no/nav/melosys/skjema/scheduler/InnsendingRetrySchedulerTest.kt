@@ -92,6 +92,7 @@ private fun createTestInnsending(): Innsending {
         skjema = skjemaMedDefaultVerdier(id = UUID.randomUUID(), status = SkjemaStatus.SENDT),
         status = InnsendingStatus.JOURNALFORING_FEILET,
         antallForsok = 1,
-        sisteForsoekTidspunkt = Instant.now().minusSeconds(600)
+        sisteForsoekTidspunkt = Instant.now().minusSeconds(600),
+        referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
     )
 }
