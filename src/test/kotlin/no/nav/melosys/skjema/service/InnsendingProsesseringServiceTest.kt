@@ -3,17 +3,22 @@ package no.nav.melosys.skjema.service
 import io.kotest.core.spec.style.FunSpec
 import io.mockk.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
 import java.util.*
 
 class InnsendingProsesseringServiceTest : FunSpec({
 
     val mockInnsendingStatusService = mockk<InnsendingStatusService>()
+    val mockSkjemaMottattProducer = mockk<SkjemaMottattProducer>()
 
     afterTest {
         clearMocks(mockInnsendingStatusService)
     }
 
-    val service = InnsendingProsesseringService(mockInnsendingStatusService)
+    val service = InnsendingProsesseringService(
+        mockInnsendingStatusService,
+        mockSkjemaMottattProducer
+    )
 
     context("prosesserInnsendingAsync") {
 

@@ -121,6 +121,7 @@ pdl:
 kafka:
   topic:
     brukervarsel: aapen-brukervarsel-v1
+    skjema-mottak: ${KAFKA_SKJEMA_MOTTAK_TOPIC}
   producer:
     cluster: ${NAIS_CLUSTER_NAME}
     namespace: ${NAIS_NAMESPACE}

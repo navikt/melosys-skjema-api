@@ -3,6 +3,9 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
+import no.nav.melosys.skjema.kafka.SendSkjemaMottattMeldingFeilet
+import no.nav.melosys.skjema.kafka.SkjemaMottattMelding
+import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionPhase
@@ -22,7 +25,8 @@ private val log = KotlinLogging.logger {}
  */
 @Service
 class InnsendingProsesseringService(
-    private val innsendingStatusService: InnsendingStatusService
+    private val innsendingStatusService: InnsendingStatusService,
+    private val skjemaMottattProducer: SkjemaMottattProducer
 ) {
 
     /**
@@ -57,16 +61,18 @@ class InnsendingProsesseringService(
             // innsendingStatusService.oppdaterSkjemaJournalpostId(skjemaId, journalpostId)
             // innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.JOURNALFORT)
 
-            // TODO MELOSYS-7760: Send til Kafka
-            // kafkaProducer.sendSoknadMottatt(skjemaId)
+            // MELOSYS-7760: Send til Kafka
+            skjemaMottattProducer.blokkerendeSendSkjemaMottatt(SkjemaMottattMelding(skjemaId = skjemaId))
 
             // TODO MELOSYS-7763: Varsle arbeidstaker (best effort)
             // varselService.varsleArbeidstaker(skjemaId)
 
-            // STUB: Marker som ferdig for nå
             innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.FERDIG)
             log.info { "Fullført prosessering av skjema $skjemaId" }
 
+        } catch (e: SendSkjemaMottattMeldingFeilet) {
+            log.error(e) { "Kafka-feil ved prosessering av skjema $skjemaId" }
+            innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.KAFKA_FEILET, feilmelding = e.message)
         } catch (e: Exception) {
             log.error(e) { "Feil ved prosessering av skjema $skjemaId" }
             innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.JOURNALFORING_FEILET, feilmelding = e.message)
