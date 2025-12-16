@@ -15,7 +15,7 @@ import org.springframework.web.reactive.function.client.bodyToMono
 private val log = KotlinLogging.logger { }
 
 @Component
-class ArbeidsgiverNotifikasjonConsumer(
+class ArbeidsgiverNotifikasjonClient(
     private val arbeidsgiverNotifikasjonClient: WebClient,
     @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
     @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,

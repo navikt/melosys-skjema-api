@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonConsumer
+import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonClient
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
@@ -20,7 +20,7 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class NotificationService(
-    @param:Autowired(required = false) private val arbeidsgiverNotifikasjonConsumer: ArbeidsgiverNotifikasjonConsumer?,
+    @param:Autowired(required = false) private val arbeidsgiverNotifikasjonClient: ArbeidsgiverNotifikasjonClient?,
     private val kafkaTemplate: KafkaTemplate<String, String>,
     @param:Value("\${kafka.topic.brukervarsel}")
     private val topic: String,
@@ -64,12 +64,12 @@ class NotificationService(
         lenke: String,
         eksternId: String? = null
     ): String {
-        if (arbeidsgiverNotifikasjonConsumer == null) {
+        if (arbeidsgiverNotifikasjonClient == null) {
             throw RuntimeException("ArbeidsgiverNotifikasjonConsumer ikke konfigurert")
         }
 
         try {
-            val beskjedId = arbeidsgiverNotifikasjonConsumer.opprettBeskjed(
+            val beskjedId = arbeidsgiverNotifikasjonClient.opprettBeskjed(
                 BeskjedRequest(
                     virksomhetsnummer = virksomhetsnummer,
                     tekst = notificationText,
