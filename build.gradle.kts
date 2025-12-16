@@ -62,8 +62,6 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion")

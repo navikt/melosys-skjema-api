@@ -29,7 +29,7 @@ spring:
     baseline-on-migrate: true
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -120,8 +120,9 @@ pdl:
 
 kafka:
   topic:
-    brukervarsel: aapen-brukervarsel-v1
-  producer:
+    skjema-mottak: ${KAFKA_SKJEMA_MOTTAK_TOPIC}
+  brukervarsel:
+    topic: aapen-brukervarsel-v1
     cluster: ${NAIS_CLUSTER_NAME}
     namespace: ${NAIS_NAMESPACE}
     appname: ${NAIS_APP_NAME}

@@ -15,8 +15,8 @@ import org.springframework.web.reactive.function.client.bodyToMono
 private val log = KotlinLogging.logger { }
 
 @Component
-class ArbeidsgiverNotifikasjonConsumer(
-    private val arbeidsgiverNotifikasjonClient: WebClient,
+class ArbeidsgiverNotifikasjonClient(
+    private val arbeidsgiverNotifikasjonWebClient: WebClient,
     @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
     @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
 ) {
@@ -42,7 +42,7 @@ class ArbeidsgiverNotifikasjonConsumer(
             variables = variables
         )
 
-        val response = arbeidsgiverNotifikasjonClient.post()
+        val response = arbeidsgiverNotifikasjonWebClient.post()
             .uri("/api/graphql")
             .bodyValue(graphQLRequest)
             .retrieve()

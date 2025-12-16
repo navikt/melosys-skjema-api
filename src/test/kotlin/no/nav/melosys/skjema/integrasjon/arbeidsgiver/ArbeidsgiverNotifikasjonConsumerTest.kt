@@ -8,7 +8,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
-import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedResult
 import org.springframework.web.reactive.function.client.WebClient
 
 class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
@@ -17,14 +16,14 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
     val merkelapp = "TestMerkelapp"
     val ressursId = "test-ressurs"
     
-    lateinit var consumer: ArbeidsgiverNotifikasjonConsumer
+    lateinit var consumer: ArbeidsgiverNotifikasjonClient
 
     beforeEach {
         wireMockServer.start()
         val webClient = WebClient.builder()
             .baseUrl("http://localhost:${wireMockServer.port()}")
             .build()
-        consumer = ArbeidsgiverNotifikasjonConsumer(webClient, merkelapp, ressursId)
+        consumer = ArbeidsgiverNotifikasjonClient(webClient, merkelapp, ressursId)
     }
 
     afterEach {

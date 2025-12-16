@@ -136,7 +136,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Konverterer PageRequest med JPA field names til database-kolonnenavn for native queries.
+     * Konverterer PageRequest med JPA field names til database: InnsendingRepository-kolonnenavn for native queries.
      */
     private fun konverterTilNativePageable(pageable: PageRequest): PageRequest {
         val nativeSort = Sort.by(

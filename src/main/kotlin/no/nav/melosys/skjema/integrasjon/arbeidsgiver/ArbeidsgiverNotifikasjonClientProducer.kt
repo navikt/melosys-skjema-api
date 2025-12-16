@@ -24,7 +24,7 @@ class ArbeidsgiverNotifikasjonClientProducer(
     }
 
     @Bean
-    fun arbeidsgiverNotifikasjonClient(
+    fun arbeidsgiverNotifikasjonWebClient(
         webClientBuilder: WebClient.Builder,
         clientConfigurationProperties: ClientConfigurationProperties,
         oAuth2AccessTokenService: OAuth2AccessTokenService
