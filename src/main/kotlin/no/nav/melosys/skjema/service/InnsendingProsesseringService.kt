@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
-import no.nav.melosys.skjema.kafka.SendSkjemaMottattMeldingFeilet
+import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 import no.nav.melosys.skjema.kafka.SkjemaMottattMelding
 import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
 import org.springframework.scheduling.annotation.Async

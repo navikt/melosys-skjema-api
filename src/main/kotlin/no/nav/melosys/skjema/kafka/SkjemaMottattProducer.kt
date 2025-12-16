@@ -5,6 +5,7 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
+import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 
 @Service
 class SkjemaMottattProducer(
@@ -37,7 +38,7 @@ class SkjemaMottattProducer(
      * Blokkerende variant av sendSkjemaMottatt.
      * Venter på at meldingen er sendt før den returnerer.
      *
-     * @throws SendSkjemaMottattMeldingFeilet hvis sending feiler
+     * @throws no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet hvis sending feiler
      */
     fun blokkerendeSendSkjemaMottatt(melding: SkjemaMottattMelding) {
         try {

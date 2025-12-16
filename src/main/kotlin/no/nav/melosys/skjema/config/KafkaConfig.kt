@@ -16,6 +16,20 @@ import org.springframework.kafka.support.serializer.JsonSerializer
 class KafkaConfig {
 
     @Bean
+    fun stringProducerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, String> {
+        return DefaultKafkaProducerFactory(
+            kafkaProperties.buildProducerProperties(null),
+            StringSerializer(),
+            StringSerializer()
+        )
+    }
+
+    @Bean
+    fun stringKafkaTemplate(stringProducerFactory: ProducerFactory<String, String>): KafkaTemplate<String, String> {
+        return KafkaTemplate(stringProducerFactory)
+    }
+
+    @Bean
     fun skjemaMottattProducerFactory(
         kafkaProperties: KafkaProperties,
         objectMapper: ObjectMapper

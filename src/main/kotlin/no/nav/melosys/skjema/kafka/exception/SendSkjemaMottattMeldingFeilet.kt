@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.kafka
+package no.nav.melosys.skjema.kafka.exception
 
 /**
  * Exception som kastes når sending av skjema-mottatt melding til Kafka feiler.
