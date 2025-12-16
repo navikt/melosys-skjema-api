@@ -13,41 +13,37 @@ class SkjemaMottattProducer(
 ) {
     private val log = KotlinLogging.logger {}
 
-    fun sendSkjemaMottatt(melding: SkjemaMottattMelding): CompletableFuture<SendResult<String, SkjemaMottattMelding>> {
-        val key = melding.skjemaId.toString()
-
-        log.info { "Sender skjema-mottatt melding for skjemaId=${melding.skjemaId}" }
-
-        return kafkaTemplate.sendDefault(key, melding)
-            .toCompletableFuture()
-            .thenApply { result ->
-                log.info {
-                    "Kafka-melding sendt OK for skjemaId=${melding.skjemaId}, " +
-                    "partition=${result.recordMetadata.partition()}, " +
-                    "offset=${result.recordMetadata.offset()}"
-                }
-                result
-            }
-            .exceptionally { exception ->
-                log.error(exception) { "Feil ved sending av Kafka-melding for skjemaId=${melding.skjemaId}" }
-                throw exception
-            }
-    }
-
     /**
      * Blokkerende variant av sendSkjemaMottatt.
      * Venter på at meldingen er sendt før den returnerer.
      *
-     * @throws no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet hvis sending feiler
+     * @throws SendSkjemaMottattMeldingFeilet hvis sending feiler
      */
-    fun blokkerendeSendSkjemaMottatt(melding: SkjemaMottattMelding) {
-        try {
-            sendSkjemaMottatt(melding).get()
-        } catch (e: Exception) {
+    fun blokkerendeSendSkjemaMottatt(skjemaMottattMelding: SkjemaMottattMelding) =
+        runCatching {
+            sendSkjemaMottatt(skjemaMottattMelding).get()
+        }.onFailure { exception ->
             throw SendSkjemaMottattMeldingFeilet(
-                "Feil ved sending av skjema-mottatt melding for skjemaId=${melding.skjemaId}",
-                e
+                "Feil ved sending av skjema-mottatt melding for skjemaId=${skjemaMottattMelding.skjemaId}",
+                exception
             )
         }
+
+
+    private fun sendSkjemaMottatt(skjemaMottattMelding: SkjemaMottattMelding): CompletableFuture<SendResult<String, SkjemaMottattMelding>> {
+        val key = skjemaMottattMelding.skjemaId.toString()
+
+        log.info { "Sender skjema-mottatt melding for skjemaId=${skjemaMottattMelding.skjemaId}" }
+
+        return kafkaTemplate.sendDefault(key, skjemaMottattMelding)
+            .toCompletableFuture()
+            .thenApply { result ->
+                log.info {
+                    "Kafka-melding sendt OK for skjemaId=${skjemaMottattMelding.skjemaId}, " +
+                            "partition=${result.recordMetadata.partition()}, " +
+                            "offset=${result.recordMetadata.offset()}"
+                }
+                result
+            }
     }
 }

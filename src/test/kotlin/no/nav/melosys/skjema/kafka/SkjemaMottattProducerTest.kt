@@ -36,7 +36,10 @@ class SkjemaMottattProducerTest {
         val skjemaId = UUID.randomUUID()
         val melding = SkjemaMottattMelding(skjemaId = skjemaId)
 
-        every { kafkaTemplate.sendDefault(any(), any()) } returns CompletableFuture.failedFuture(RuntimeException("Kafka er nede"))
+        val failedFuture = CompletableFuture<SendResult<String, SkjemaMottattMelding>>()
+        failedFuture.completeExceptionally(RuntimeException("Kafka er nede"))
+
+        every { kafkaTemplate.sendDefault(any(), any()) } returns failedFuture
 
         val exception = assertThrows(SendSkjemaMottattMeldingFeilet::class.java) {
             producer.blokkerendeSendSkjemaMottatt(melding)

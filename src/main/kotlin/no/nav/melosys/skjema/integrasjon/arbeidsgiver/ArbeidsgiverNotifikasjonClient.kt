@@ -16,7 +16,7 @@ private val log = KotlinLogging.logger { }
 
 @Component
 class ArbeidsgiverNotifikasjonClient(
-    private val arbeidsgiverNotifikasjonClient: WebClient,
+    private val arbeidsgiverNotifikasjonWebClient: WebClient,
     @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
     @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
 ) {
@@ -42,7 +42,7 @@ class ArbeidsgiverNotifikasjonClient(
             variables = variables
         )
 
-        val response = arbeidsgiverNotifikasjonClient.post()
+        val response = arbeidsgiverNotifikasjonWebClient.post()
             .uri("/api/graphql")
             .bodyValue(graphQLRequest)
             .retrieve()
