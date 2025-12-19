@@ -34,7 +34,7 @@ val mockkVersion = "1.14.7"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
 val springdocVersion = "2.8.14"
-val shedlockVersion = "7.2.1"
+val shedlockVersion = "7.2.2"
 
 repositories {
     mavenCentral()
