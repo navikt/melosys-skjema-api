@@ -312,6 +312,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = orgnummer,
+                fnr = etAnnetKorrektSyntetiskFnr,
                 metadata = objectMapper.valueToTree(
                     utsendtArbeidstakerMetadataMedDefaultVerdier(
                         representasjonstype = Representasjonstype.ARBEIDSGIVER
@@ -350,6 +351,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
+                fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
                 metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
@@ -382,6 +384,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = null,
+                fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
                 metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,

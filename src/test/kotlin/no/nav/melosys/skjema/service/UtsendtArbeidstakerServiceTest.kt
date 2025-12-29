@@ -33,7 +33,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val objectMapper: ObjectMapper = jacksonObjectMapper()
-    val mockHentInnsendteSoknaderService = mockk<HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService>()
     val innsendingStatusService = mockk<InnsendingStatusService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
@@ -45,7 +44,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockReprService,
         objectMapper,
         mockSubjectHandler,
-    mockHentInnsendteSoknaderService,
         innsendingStatusService,
         eventPublisher,
         referanseIdGenerator

@@ -19,6 +19,7 @@ import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerD
 import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
@@ -39,6 +40,7 @@ private val log = KotlinLogging.logger { }
 @Protected
 class UtsendtArbeidstakerController(
     private val utsendtArbeidstakerService: UtsendtArbeidstakerService,
+    private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
 ) {
 
     @GetMapping
@@ -76,7 +78,7 @@ class UtsendtArbeidstakerController(
         @RequestBody @Valid request: no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
     ): ResponseEntity<no.nav.melosys.skjema.dto.InnsendteSoknaderResponse> {
         log.info { "Henter innsendte søknader for representasjonstype: ${request.representasjonstype}, side: ${request.side}" }
-        val response = utsendtArbeidstakerService.hentInnsendteSoknader(request)
+        val response = hentInnsendteSoknaderService.hentInnsendteSoknader(request)
         return ResponseEntity.ok(response)
     }
 

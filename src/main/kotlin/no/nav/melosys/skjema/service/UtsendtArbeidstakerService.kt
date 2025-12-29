@@ -6,7 +6,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -45,7 +44,6 @@ class UtsendtArbeidstakerService(
     private val reprService: ReprService,
     private val objectMapper: ObjectMapper,
     private val subjectHandler: SubjectHandler,
-    private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
     private val innsendingStatusService: InnsendingStatusService,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator
@@ -229,8 +227,8 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sikre at representasjonstype i metadata er DEG_SELV
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.DEG_SELV
+                    val skjemaMetadata = parseMetadata(skjema)
+                    skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
                 }
             }
 
@@ -245,8 +243,9 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at representasjonstype er ARBEIDSGIVER
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
+                    val skjemaMetadata = parseMetadata(skjema)
+
+                    skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
                         skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
                 }
             }
@@ -262,9 +261,10 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.RADGIVER &&
-                        utsendtSkjema.metadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
+                    val skjemaMetadata = parseMetadata(skjema)
+
+                    skjemaMetadata.representasjonstype == Representasjonstype.RADGIVER &&
+                            skjemaMetadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
                 }
             }
 
@@ -283,10 +283,9 @@ class UtsendtArbeidstakerService(
                 // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
                 skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
                     .filter { skjema ->
-                        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-
+                        val skjemaMetadata = parseMetadata(skjema)
                         // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
-                        utsendtSkjema.metadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
+                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
                             skjema.fnr != null && personerMedFullmaktFnr.contains(skjema.fnr)
                     }
             }
@@ -303,18 +302,6 @@ class UtsendtArbeidstakerService(
             utkast = utkastDtos,
             antall = utkastDtos.size
         )
-    }
-
-    /**
-     * Henter innsendte søknader basert på representasjonskontekst med paginering, søk og sortering.
-     *
-     * Delegerer til dedikert service for bedre separasjon av ansvar.
-     *
-     * @param request Forespørsel med søk-, sorterings- og pagineringsparametere
-     * @return Paginert liste med innsendte søknader
-     */
-    fun hentInnsendteSoknader(request: HentInnsendteSoknaderRequest): InnsendteSoknaderResponse {
-        return hentInnsendteSoknaderService.hentInnsendteSoknader(request)
     }
 
     fun getSkjemaArbeidsgiversDel(skjemaId: UUID): ArbeidsgiversSkjemaDto {
@@ -401,10 +388,7 @@ class UtsendtArbeidstakerService(
     fun getRepresentasjonstype(skjemaId: UUID): Representasjonstype {
         val skjema = getSkjemaMedTilgangsstyring(skjemaId)
 
-        return objectMapper.treeToValue(
-            skjema.metadata,
-            UtsendtArbeidstakerMetadata::class.java
-        ).representasjonstype
+        return parseMetadata(skjema).representasjonstype
     }
 
     fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): ArbeidstakersSkjemaDto {
@@ -448,16 +432,26 @@ class UtsendtArbeidstakerService(
     }
 
     /**
+     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
+     * @throws IllegalStateException hvis metadata er null
+     */
+    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata {
+        return objectMapper.treeToValue(
+            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}"),
+            UtsendtArbeidstakerMetadata::class.java
+        )
+    }
+
+    /**
      * Konverterer Skjema til UtkastOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-        val metadata = utsendtSkjema.metadata
+        val skjemaMetadata = parseMetadata(skjema)
 
         return UtkastOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
-            arbeidsgiverNavn = metadata.arbeidsgiverNavn,
+            arbeidsgiverNavn = skjemaMetadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
@@ -475,10 +469,7 @@ class UtsendtArbeidstakerService(
             return skjema
         }
 
-        val skjemaMetadata = objectMapper.treeToValue(
-            skjema.metadata,
-            UtsendtArbeidstakerMetadata::class.java
-        )
+        val skjemaMetadata = parseMetadata(skjema)
 
         return when(skjemaMetadata.representasjonstype){
             Representasjonstype.DEG_SELV -> skjema.also {
