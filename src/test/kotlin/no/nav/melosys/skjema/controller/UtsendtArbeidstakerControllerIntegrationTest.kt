@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
+import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.SubmitSkjemaResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
@@ -43,6 +44,7 @@ import no.nav.melosys.skjema.submitSkjemaRequestMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -228,29 +230,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isNotFound
     }
 
-
-    @Test
-    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/submit skal sende skjema og trigge notifikasjoner")
-    fun `POST submit skjema skal sende skjema og trigge notifikasjoner`() {
-        val savedSkjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = korrektSyntetiskFnr,
-                orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST
-            )
-        )
-
-        val token = createTokenForUser(savedSkjema.fnr!!)
-
-        webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/submit")
-            .header("Authorization", "Bearer $token")
-            .exchange()
-            .expectStatus().isOk
-        verify { notificationService.sendNotificationToArbeidstaker(savedSkjema.fnr, any()) }
-        verify { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), savedSkjema.orgnr!!) }
-    }
-
     @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/pdf skal returnere PDF response")
     fun `GET pdf skal returnere PDF response`() {
@@ -270,50 +249,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
     }
-
-    @Test
-    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit skal sende inn skjema")
-    fun `POST submit skal sende inn skjema`() {
-        val existingSkjemaBeforePOST = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = korrektSyntetiskFnr,
-                orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST
-            )
-        )
-
-        val token = createTokenForUser(korrektSyntetiskFnr)
-        val submitRequest = submitSkjemaRequestMedDefaultVerdier()
-
-        val responseBody = webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/submit")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(submitRequest)
-            .exchange()
-            .expectStatus().isOk
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<SubmitSkjemaResponse>()
-            .returnResult().responseBody
-
-        responseBody.run {
-            this.shouldNotBeNull()
-            this.skjemaId shouldBe existingSkjemaBeforePOST.id!!
-            this.status shouldBe SkjemaStatus.SENDT
-            this.referanseId.shouldNotBeNull()
-            this.referanseId.startsWith("MEL-") shouldBe true
-            this.referanseId.length shouldBe 10 // "MEL-" + 6 tegn
-
-            // Verifiser at referanseId er lagret i innsending-tabellen
-            val innsending = innsendingRepository.findBySkjemaId(this.skjemaId)
-            innsending.shouldNotBeNull()
-            innsending.referanseId shouldBe this.referanseId
-
-            val persistedSkjema = skjemaRepository.getReferenceById(this.skjemaId)
-            persistedSkjema.status shouldBe SkjemaStatus.SENDT
-        }
-    }
-
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("arbeidsgiverStegTestFixtures")
@@ -379,7 +314,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
-                orgnr = orgnummer
+                orgnr = orgnummer,
+                metadata = objectMapper.valueToTree(
+                    utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        representasjonstype = Representasjonstype.ARBEIDSGIVER
+                    )
+                )
             )
         )
 
@@ -413,7 +353,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST
+                status = SkjemaStatus.UTKAST,
+                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                )),
             )
         )
 
@@ -442,7 +385,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = null,
-                status = SkjemaStatus.UTKAST
+                status = SkjemaStatus.UTKAST,
+                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                ))
             )
         )
 
@@ -485,11 +431,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger",
             tilleggsopplysningerDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/submit",
-            submitSkjemaRequestMedDefaultVerdier()
         )
     )
 
