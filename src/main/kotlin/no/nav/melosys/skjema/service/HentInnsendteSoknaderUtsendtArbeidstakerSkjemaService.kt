@@ -2,10 +2,15 @@ package no.nav.melosys.skjema.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.*
+import no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
+import no.nav.melosys.skjema.dto.InnsendtSoknadOversiktDto
+import no.nav.melosys.skjema.dto.InnsendteSoknaderResponse
+import no.nav.melosys.skjema.dto.Representasjonstype
+import no.nav.melosys.skjema.dto.SorteringsFelt
+import no.nav.melosys.skjema.dto.Sorteringsretning
+import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -223,12 +228,22 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
+     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
+     * @throws IllegalStateException hvis metadata er null
+     */
+    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata {
+        return objectMapper.treeToValue(
+            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}"),
+            UtsendtArbeidstakerMetadata::class.java
+        )
+    }
+
+    /**
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
-        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-        val metadata = utsendtSkjema.metadata
+        val metadata = parseMetadata(skjema)
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(

@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.bodyToFlux
 
 private val log = KotlinLogging.logger { }
 
@@ -20,7 +21,7 @@ class ReprConsumer(
         val response = reprClientTokenX.get()
             .uri("/api/v2/eksternbruker/fullmakt/kan-representere")
             .retrieve()
-            .bodyToFlux(Fullmakt::class.java)
+            .bodyToFlux<Fullmakt>()
             .collectList()
             .block()
 
