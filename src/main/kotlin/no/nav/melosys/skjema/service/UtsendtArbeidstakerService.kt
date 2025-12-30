@@ -160,50 +160,6 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Bygger metadata-objekt med korrekt fullmektig-logikk.
-     *
-     * fullmektigFnr representerer HVEM som kan fylle ut arbeidstaker-delen på vegne av arbeidstaker.
-     * Dette feltet settes kun når det faktisk ER en fullmektig som kan representere arbeidstaker:
-     *
-     * - DEG_SELV: Ingen fullmektig (null)
-     *   → Arbeidstaker er innlogget bruker og fyller selv, trenger ikke fullmakt
-     *
-     * - ANNEN_PERSON: Innlogget bruker er fullmektig (innloggetBrukerFnr)
-     *   → Advokat/fullmektig representerer arbeidstaker, validert via repr-api
-     *
-     * - ARBEIDSGIVER/RADGIVER med harFullmakt=true: Innlogget bruker er fullmektig (innloggetBrukerFnr)
-     *   → HR-person/konsulent har fått fullmakt fra arbeidstaker (validert via repr-api)
-     *   → Kan fylle både arbeidsgiver-del OG arbeidstaker-del
-     *
-     * - ARBEIDSGIVER/RADGIVER med harFullmakt=false: Ingen fullmektig (null)
-     *   → Arbeidsgiver/rådgiver fyller kun sin egen del
-     *   → Arbeidstaker må selv fylle sin del (validert at person finnes i PDL)
-     *
-     * Merk: Validering har allerede bekreftet at fullmakt eksisterer når harFullmakt=true
-     */
-    private fun byggMetadata(
-        request: OpprettSoknadMedKontekstRequest,
-        innloggetBrukerFnr: String
-    ): UtsendtArbeidstakerMetadata {
-        val fullmektigFnr = when {
-            request.representasjonstype == Representasjonstype.DEG_SELV -> null // Ingen fullmektig
-            request.representasjonstype == Representasjonstype.ANNEN_PERSON -> innloggetBrukerFnr // Fullmektig er innlogget bruker
-            request.harFullmakt -> innloggetBrukerFnr // Arbeidsgiver/rådgiver MED fullmakt (validert)
-            else -> null // Arbeidsgiver/rådgiver UTEN fullmakt (arbeidstaker fyller selv)
-        }
-
-        return UtsendtArbeidstakerMetadata(
-            representasjonstype = request.representasjonstype,
-            harFullmakt = request.harFullmakt,
-            radgiverfirma = request.radgiverfirma?.let {
-                RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
-            },
-            arbeidsgiverNavn = request.arbeidsgiver?.navn,
-            fullmektigFnr = fullmektigFnr
-        )
-    }
-
-    /**
      * Henter utkast basert på representasjonskontekst.
      *
      * Filtrerer søknader med status UTKAST basert på:
@@ -305,11 +261,11 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaArbeidsgiversDel(skjemaId: UUID): ArbeidsgiversSkjemaDto {
-        return convertToArbeidsgiversSkjemaDto(getSkjemaMedTilgangsstyring(skjemaId))
+        return convertToArbeidsgiversSkjemaDto(hentSkjemaMedTilgangsstyring(skjemaId))
     }
 
     fun getSkjemaArbeidstakersDel(skjemaId: UUID): ArbeidstakersSkjemaDto {
-        return convertToArbeidstakersSkjemaDto(getSkjemaMedTilgangsstyring(skjemaId))
+        return convertToArbeidstakersSkjemaDto(hentSkjemaMedTilgangsstyring(skjemaId))
     }
 
 
@@ -359,7 +315,7 @@ class UtsendtArbeidstakerService(
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val currentUser = subjectHandler.getUserID()
 
-        val skjema = getSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
@@ -386,9 +342,30 @@ class UtsendtArbeidstakerService(
     }
 
     fun getRepresentasjonstype(skjemaId: UUID): Representasjonstype {
-        val skjema = getSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         return parseMetadata(skjema).representasjonstype
+    }
+
+    /**
+     * Henter et Utsendt Arbeidstaker skjema med tilgangskontroll.
+     *
+     * Validerer at innlogget bruker har tilgang til skjemaet basert på:
+     * - Om bruker er arbeidstaker
+     * - Om bruker er fullmektig (og har aktiv fullmakt via repr-api)
+     * - Om bruker har Altinn-tilgang til arbeidsgiver
+     *
+     * @param skjemaId ID til skjemaet
+     * @return UtsendtArbeidstakerSkjema med type-safe metadata
+     * @throws NoSuchElementException hvis skjema ikke finnes
+     * @throws AccessDeniedException hvis tilgang nektes
+     */
+    fun hentSkjemaMedTilgangsstyring(skjemaId: UUID): Skjema {
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+
+        return skjema.takeIf { harInnloggetBrukerTilgangTilSkjema(it) }
+            ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
     }
 
     fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): ArbeidstakersSkjemaDto {
@@ -432,6 +409,50 @@ class UtsendtArbeidstakerService(
     }
 
     /**
+     * Bygger metadata-objekt med korrekt fullmektig-logikk.
+     *
+     * fullmektigFnr representerer HVEM som kan fylle ut arbeidstaker-delen på vegne av arbeidstaker.
+     * Dette feltet settes kun når det faktisk ER en fullmektig som kan representere arbeidstaker:
+     *
+     * - DEG_SELV: Ingen fullmektig (null)
+     *   → Arbeidstaker er innlogget bruker og fyller selv, trenger ikke fullmakt
+     *
+     * - ANNEN_PERSON: Innlogget bruker er fullmektig (innloggetBrukerFnr)
+     *   → Advokat/fullmektig representerer arbeidstaker, validert via repr-api
+     *
+     * - ARBEIDSGIVER/RADGIVER med harFullmakt=true: Innlogget bruker er fullmektig (innloggetBrukerFnr)
+     *   → HR-person/konsulent har fått fullmakt fra arbeidstaker (validert via repr-api)
+     *   → Kan fylle både arbeidsgiver-del OG arbeidstaker-del
+     *
+     * - ARBEIDSGIVER/RADGIVER med harFullmakt=false: Ingen fullmektig (null)
+     *   → Arbeidsgiver/rådgiver fyller kun sin egen del
+     *   → Arbeidstaker må selv fylle sin del (validert at person finnes i PDL)
+     *
+     * Merk: Validering har allerede bekreftet at fullmakt eksisterer når harFullmakt=true
+     */
+    private fun byggMetadata(
+        request: OpprettSoknadMedKontekstRequest,
+        innloggetBrukerFnr: String
+    ): UtsendtArbeidstakerMetadata {
+        val fullmektigFnr = when {
+            request.representasjonstype == Representasjonstype.DEG_SELV -> null // Ingen fullmektig
+            request.representasjonstype == Representasjonstype.ANNEN_PERSON -> innloggetBrukerFnr // Fullmektig er innlogget bruker
+            request.harFullmakt -> innloggetBrukerFnr // Arbeidsgiver/rådgiver MED fullmakt (validert)
+            else -> null // Arbeidsgiver/rådgiver UTEN fullmakt (arbeidstaker fyller selv)
+        }
+
+        return UtsendtArbeidstakerMetadata(
+            representasjonstype = request.representasjonstype,
+            harFullmakt = request.harFullmakt,
+            radgiverfirma = request.radgiverfirma?.let {
+                RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
+            },
+            arbeidsgiverNavn = request.arbeidsgiver?.navn,
+            fullmektigFnr = fullmektigFnr
+        )
+    }
+
+    /**
      * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
      * @throws IllegalStateException hvis metadata er null
      */
@@ -461,33 +482,38 @@ class UtsendtArbeidstakerService(
         )
     }
 
-    fun getSkjemaMedTilgangsstyring(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
-            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
-
+    /**
+     * Validerer at innlogget bruker har tilgang til skjemaet.
+     *
+     * Sjekker følgende i prioritert rekkefølge:
+     * 1. Er bruker arbeidstaker? (fnr match)
+     * 2. Er bruker fullmektig? (fullmektigFnr match + aktiv fullmakt via repr-api)
+     * 3. Har bruker Altinn-tilgang til arbeidsgiver? (orgnr match)
+     *
+     * VIKTIG: Fullmakt verifiseres ALLTID mot repr-api for å sikre at den fortsatt er aktiv.
+     *
+     * @param skjema Skjemaet som skal sjekkes
+     * @param currentUser Innlogget bruker
+     * @throws IllegalArgumentException hvis bruker ikke har tilgang
+     */
+    private fun harInnloggetBrukerTilgangTilSkjema(skjema: Skjema): Boolean {
         if (skjema.fnr == subjectHandler.getUserID()) {
-            return skjema
+            return true
         }
 
         val skjemaMetadata = parseMetadata(skjema)
 
         return when(skjemaMetadata.representasjonstype){
-            Representasjonstype.DEG_SELV -> skjema.also {
-                if (it.fnr != subjectHandler.getUserID()) {
-                    throw AccessDeniedException("Bruker har ikke tilgang")
-                }
+            Representasjonstype.DEG_SELV -> false
+
+            Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
+                skjema.orgnr?.let { altinnService.harBrukerTilgang(it) } ?: false
             }
 
-            Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> skjema.also {
-                it.orgnr?.takeIf { orgnr -> altinnService.harBrukerTilgang(orgnr) }
-                    ?: throw AccessDeniedException("Bruker har ikke tilgang")
-            }
-
-            Representasjonstype.ANNEN_PERSON -> skjema.also {
-                skjemaMetadata.fullmektigFnr?.takeIf {
-                    it == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr ?: error("Denne skal ikke kunnevære null lenger"))
-                }
-                    ?: throw AccessDeniedException("Bruker har ikke tilgang")
+            Representasjonstype.ANNEN_PERSON -> {
+                skjemaMetadata.fullmektigFnr == subjectHandler.getUserID() &&
+                        skjema.fnr != null &&
+                        reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
         }
     }
@@ -496,7 +522,7 @@ class UtsendtArbeidstakerService(
         skjemaId: UUID,
         updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
     ): ArbeidsgiversSkjemaDto {
-        val skjema = getSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
         val existingDto = convertToArbeidsgiversSkjemaDataDto(skjema.data)
@@ -513,7 +539,7 @@ class UtsendtArbeidstakerService(
         skjemaId: UUID,
         updateFunction: (ArbeidstakersSkjemaDataDto) -> ArbeidstakersSkjemaDataDto
     ): ArbeidstakersSkjemaDto {
-        val skjema = getSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         // Read existing ArbeidstakersSkjemaDataDto or create empty one
         val existingDto = convertToArbeidstakersSkjemaDataDto(skjema.data)
