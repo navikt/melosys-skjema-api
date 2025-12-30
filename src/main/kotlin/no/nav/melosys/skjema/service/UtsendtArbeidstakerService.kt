@@ -341,10 +341,10 @@ class UtsendtArbeidstakerService(
         )
     }
 
-    fun getRepresentasjonstype(skjemaId: UUID): Representasjonstype {
+    fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        return parseMetadata(skjema).representasjonstype
+        return parseMetadata(skjema)
     }
 
     /**
