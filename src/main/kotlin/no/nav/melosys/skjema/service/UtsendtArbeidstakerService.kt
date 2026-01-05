@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.Utenlandsoppdra
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 
@@ -313,16 +314,18 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun sendInnSkjema(skjemaId: UUID): SubmitSkjemaResponse {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val currentUser = subjectHandler.getUserID()
-
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaAlleredeSendtException()
+        }
 
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
 
         // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
-        skjema.endretAv = currentUser
+        skjema.endretAv = subjectHandler.getUserID()
 
         // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
@@ -493,7 +496,6 @@ class UtsendtArbeidstakerService(
      * VIKTIG: Fullmakt verifiseres ALLTID mot repr-api for å sikre at den fortsatt er aktiv.
      *
      * @param skjema Skjemaet som skal sjekkes
-     * @param currentUser Innlogget bruker
      * @throws IllegalArgumentException hvis bruker ikke har tilgang
      */
     private fun harInnloggetBrukerTilgangTilSkjema(skjema: Skjema): Boolean {
