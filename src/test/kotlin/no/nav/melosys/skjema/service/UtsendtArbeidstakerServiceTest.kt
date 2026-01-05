@@ -24,6 +24,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.context.ApplicationEventPublisher
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
@@ -914,9 +915,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("skal kaste SkjemaAlleredeSendtException når skjema allerede er sendt") {
             val alleredeSendtSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.SENDT
+                status = SkjemaStatus.SENDT,
+                fnr = korrektSyntetiskFnr
             )
 
+            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr!!
             every { mockRepository.findByIdOrNull(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
 
             shouldThrow<SkjemaAlleredeSendtException> {
