@@ -6,13 +6,30 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.entity.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.*
+import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
+import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.transaction.annotation.Transactional
 
 private val log = KotlinLogging.logger { }
 
@@ -28,7 +45,9 @@ class UtsendtArbeidstakerService(
     private val reprService: ReprService,
     private val objectMapper: ObjectMapper,
     private val subjectHandler: SubjectHandler,
-    private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
+    private val innsendingStatusService: InnsendingStatusService,
+    private val eventPublisher: ApplicationEventPublisher,
+    private val referanseIdGenerator: ReferanseIdGenerator
 ) {
 
     /**
@@ -100,95 +119,6 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Henter et Utsendt Arbeidstaker skjema med tilgangskontroll.
-     *
-     * Validerer at innlogget bruker har tilgang til skjemaet basert på:
-     * - Om bruker er arbeidstaker
-     * - Om bruker er fullmektig (og har aktiv fullmakt via repr-api)
-     * - Om bruker har Altinn-tilgang til arbeidsgiver
-     *
-     * @param skjemaId ID til skjemaet
-     * @return UtsendtArbeidstakerSkjema med type-safe metadata
-     * @throws NoSuchElementException hvis skjema ikke finnes
-     * @throws AccessDeniedException hvis tilgang nektes
-     */
-    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjema {
-        val currentUser = subjectHandler.getUserID()
-        log.debug { "Henter Utsendt Arbeidstaker skjema: $skjemaId" }
-
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
-            ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
-
-        // Valider tilgang
-        validerTilgangTilSkjema(skjema, currentUser)
-
-        return UtsendtArbeidstakerSkjema(skjema, objectMapper)
-    }
-
-    /**
-     * Validerer at innlogget bruker har tilgang til skjemaet.
-     *
-     * Sjekker følgende i prioritert rekkefølge:
-     * 1. Er bruker arbeidstaker? (fnr match)
-     * 2. Er bruker fullmektig? (fullmektigFnr match + aktiv fullmakt via repr-api)
-     * 3. Har bruker Altinn-tilgang til arbeidsgiver? (orgnr match)
-     *
-     * VIKTIG: Fullmakt verifiseres ALLTID mot repr-api for å sikre at den fortsatt er aktiv.
-     *
-     * @param skjema Skjemaet som skal sjekkes
-     * @param currentUser Innlogget bruker
-     * @throws IllegalArgumentException hvis bruker ikke har tilgang
-     */
-    private fun validerTilgangTilSkjema(skjema: Skjema, currentUser: String) {
-        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-        val metadata = utsendtSkjema.metadata
-
-        val harTilgang = when {
-            // 1. Arbeidstaker selv
-            skjema.fnr == currentUser -> {
-                log.debug { "Tilgang gitt: Bruker er arbeidstaker" }
-                true
-            }
-
-            // 2. Fullmektig - VIKTIG: Alltid verifiser via repr-api!
-            metadata.fullmektigFnr != null &&
-                    metadata.fullmektigFnr == currentUser &&
-                    skjema.fnr != null -> {
-                // Sjekk at fullmakten fortsatt er aktiv
-                val harAktivFullmakt = try {
-                    reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved sjekk av fullmakt for skjema $skjema.id" }
-                    false
-                }
-
-                if (harAktivFullmakt) {
-                    log.debug { "Tilgang gitt: Bruker er fullmektig med aktiv fullmakt" }
-                } else {
-                    log.warn { "Fullmakt er ikke lenger aktiv for skjema ${skjema.id}" }
-                }
-
-                harAktivFullmakt
-            }
-
-            // 3. Arbeidsgiver/rådgiver med Altinn-tilgang
-            skjema.orgnr != null && altinnService.harBrukerTilgang(skjema.orgnr) -> {
-                log.debug { "Tilgang gitt: Bruker har Altinn-tilgang til arbeidsgiver" }
-                true
-            }
-
-            else -> {
-                log.warn { "Tilgang nektet til skjema ${skjema.id} for bruker" }
-                false
-            }
-        }
-
-        if (!harTilgang) {
-            throw IllegalArgumentException("Bruker har ikke tilgang til skjema ${skjema.id}")
-        }
-    }
-
-    /**
      * Henter alle skjemaer hvor innlogget bruker har en eller annen form for tilgang.
      *
      * Inkluderer skjemaer hvor bruker er:
@@ -196,7 +126,7 @@ class UtsendtArbeidstakerService(
      * - Fullmektig for arbeidstaker (med aktiv fullmakt)
      * - Arbeidsgiver/rådgiver (via Altinn-tilgang)
      */
-    fun listAlleSkjemaerForBruker(): List<UtsendtArbeidstakerSkjema> {
+    fun listAlleSkjemaerForBruker(): List<ArbeidstakersSkjemaDto> {
         val innloggetBrukerFnr = subjectHandler.getUserID()
         log.debug { "Lister alle skjemaer for bruker" }
 
@@ -223,11 +153,262 @@ class UtsendtArbeidstakerService(
         // Kombiner og fjern duplikater
         val alleSkjemaer = (somArbeidstaker + somFullmektig + somArbeidsgiver)
             .distinctBy { it.id }
-            .map { UtsendtArbeidstakerSkjema(it, objectMapper) }
+            .map { convertToArbeidstakersSkjemaDto(it) }
 
         log.debug { "Fant ${alleSkjemaer.size} skjemaer for bruker (arbeidstaker: ${somArbeidstaker.size}, fullmektig: ${somFullmektig.size}, arbeidsgiver: ${somArbeidsgiver.size})" }
 
         return alleSkjemaer
+    }
+
+    /**
+     * Henter utkast basert på representasjonskontekst.
+     *
+     * Filtrerer søknader med status UTKAST basert på:
+     * - DEG_SELV: fnr = innlogget bruker
+     * - ARBEIDSGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
+     * - RADGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
+     * - ANNEN_PERSON: opprettetAv = innlogget bruker OG fnr i fullmaktsliste
+     *
+     * @param request Kun representasjonstype - filtreringen gjøres basert på brukerens tilganger
+     * @return Liste med utkast
+     */
+    fun hentUtkast(request: HentUtkastRequest): UtkastListeResponse {
+        val innloggetBrukerFnr = subjectHandler.getUserID()
+        log.debug { "Henter utkast for representasjonstype: ${request.representasjonstype}" }
+
+        val utkastSkjemaer = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> {
+                // Arbeidstaker fyller ut for seg selv
+                skjemaRepository.findByFnrAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    // Sikre at representasjonstype i metadata er DEG_SELV
+                    val skjemaMetadata = parseMetadata(skjema)
+                    skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
+                }
+            }
+
+            Representasjonstype.ARBEIDSGIVER -> {
+                // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
+                val tilganger = altinnService.hentBrukersTilganger()
+                val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
+
+                // Hent alle utkast opprettet av bruker og filtrer på tilganger
+                skjemaRepository.findByOpprettetAvAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    // Sjekk at representasjonstype er ARBEIDSGIVER
+                    val skjemaMetadata = parseMetadata(skjema)
+
+                    skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
+                        skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
+                }
+            }
+
+            Representasjonstype.RADGIVER -> {
+                // Rådgiver - kun utkast for det spesifikke rådgiverfirmaet
+                val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
+                    ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
+
+                // Hent utkast opprettet av innlogget bruker som tilhører rådgiverfirmaet
+                skjemaRepository.findByOpprettetAvAndStatus(
+                    innloggetBrukerFnr,
+                    SkjemaStatus.UTKAST
+                ).filter { skjema ->
+                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
+                    val skjemaMetadata = parseMetadata(skjema)
+
+                    skjemaMetadata.representasjonstype == Representasjonstype.RADGIVER &&
+                            skjemaMetadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
+                }
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                // Fullmektig på vegne av alle personer bruker har fullmakt for
+                // Hent alle personer innlogget bruker har fullmakt for
+                val fullmakter = try {
+                    reprService.hentKanRepresentere()
+                } catch (e: Exception) {
+                    log.warn(e) { "Feil ved henting av fullmakter for bruker" }
+                    emptyList()
+                }
+
+                val personerMedFullmaktFnr = fullmakter.map { it.fullmaktsgiver }.toSet()
+
+                // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
+                skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
+                    .filter { skjema ->
+                        val skjemaMetadata = parseMetadata(skjema)
+                        // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
+                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
+                            skjema.fnr != null && personerMedFullmaktFnr.contains(skjema.fnr)
+                    }
+            }
+        }
+
+        // Konverter til DTO
+        val utkastDtos = utkastSkjemaer.map { skjema ->
+            konverterTilUtkastDto(skjema)
+        }
+
+        log.debug { "Fant ${utkastDtos.size} utkast for representasjonstype ${request.representasjonstype}" }
+
+        return UtkastListeResponse(
+            utkast = utkastDtos,
+            antall = utkastDtos.size
+        )
+    }
+
+    fun getSkjemaArbeidsgiversDel(skjemaId: UUID): ArbeidsgiversSkjemaDto {
+        return convertToArbeidsgiversSkjemaDto(hentSkjemaMedTilgangsstyring(skjemaId))
+    }
+
+    fun getSkjemaArbeidstakersDel(skjemaId: UUID): ArbeidstakersSkjemaDto {
+        return convertToArbeidstakersSkjemaDto(hentSkjemaMedTilgangsstyring(skjemaId))
+    }
+
+
+
+    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving virksomhet info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidsgiverensVirksomhetINorge = request)
+        }
+    }
+
+    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(utenlandsoppdraget = request)
+        }
+    }
+
+    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidstakerensLonn = request)
+        }
+    }
+
+    fun saveArbeidsstedIUtlandetInfo(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidsstedIUtlandet = request)
+        }
+    }
+
+    fun saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidsgiversSkjemaDto {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+
+        return updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
+    }
+
+    @Transactional
+    fun sendInnSkjema(skjemaId: UUID): SubmitSkjemaResponse {
+        log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaAlleredeSendtException()
+        }
+
+        // 1. Generer referanseId
+        val referanseId = referanseIdGenerator.generer()
+
+        // 2. Sett skjema-status til SENDT
+        skjema.status = SkjemaStatus.SENDT
+        skjema.endretAv = subjectHandler.getUserID()
+
+        // 3. Lagre skjema
+        val savedSkjema = skjemaRepository.save(skjema)
+
+        // 4. Opprett innsending-rad for prosesseringsstatus med referanseId
+        innsendingStatusService.opprettInnsending(savedSkjema, referanseId)
+
+        // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
+
+        // 6. Returner kvittering med referanseId
+        return SubmitSkjemaResponse(
+            skjemaId = savedSkjema.id,
+            referanseId = referanseId,
+            status = savedSkjema.status
+        )
+    }
+
+    fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        return parseMetadata(skjema)
+    }
+
+    /**
+     * Henter et Utsendt Arbeidstaker skjema med tilgangskontroll.
+     *
+     * Validerer at innlogget bruker har tilgang til skjemaet basert på:
+     * - Om bruker er arbeidstaker
+     * - Om bruker er fullmektig (og har aktiv fullmakt via repr-api)
+     * - Om bruker har Altinn-tilgang til arbeidsgiver
+     *
+     * @param skjemaId ID til skjemaet
+     * @return UtsendtArbeidstakerSkjema med type-safe metadata
+     * @throws NoSuchElementException hvis skjema ikke finnes
+     * @throws AccessDeniedException hvis tilgang nektes
+     */
+    fun hentSkjemaMedTilgangsstyring(skjemaId: UUID): Skjema {
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+
+        return skjema.takeIf { harInnloggetBrukerTilgangTilSkjema(it) }
+            ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
+    }
+
+    fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving utenlandsoppdraget info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(utenlandsoppdraget = request)
+        }
+    }
+
+    fun saveArbeidssituasjonInfo(skjemaId: UUID, request: ArbeidssituasjonDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(arbeidssituasjon = request)
+        }
+    }
+
+    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(skatteforholdOgInntekt = request)
+        }
+    }
+
+    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(familiemedlemmer = request)
+        }
+    }
+
+    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): ArbeidstakersSkjemaDto {
+        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+
+        return updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(skjemaId) { dto ->
+            dto.copy(tilleggsopplysninger = request)
+        }
     }
 
     /**
@@ -275,102 +456,13 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Henter utkast basert på representasjonskontekst.
-     *
-     * Filtrerer søknader med status UTKAST basert på:
-     * - DEG_SELV: fnr = innlogget bruker
-     * - ARBEIDSGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - RADGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - ANNEN_PERSON: opprettetAv = innlogget bruker OG fnr i fullmaktsliste
-     *
-     * @param request Kun representasjonstype - filtreringen gjøres basert på brukerens tilganger
-     * @return Liste med utkast
+     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
+     * @throws IllegalStateException hvis metadata er null
      */
-    fun hentUtkast(request: HentUtkastRequest): UtkastListeResponse {
-        val innloggetBrukerFnr = subjectHandler.getUserID()
-        log.debug { "Henter utkast for representasjonstype: ${request.representasjonstype}" }
-
-        val utkastSkjemaer = when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> {
-                // Arbeidstaker fyller ut for seg selv
-                skjemaRepository.findByFnrAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sikre at representasjonstype i metadata er DEG_SELV
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.DEG_SELV
-                }
-            }
-
-            Representasjonstype.ARBEIDSGIVER -> {
-                // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
-                val tilganger = altinnService.hentBrukersTilganger()
-                val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
-
-                // Hent alle utkast opprettet av bruker og filtrer på tilganger
-                skjemaRepository.findByOpprettetAvAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sjekk at representasjonstype er ARBEIDSGIVER
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
-                        skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
-                }
-            }
-
-            Representasjonstype.RADGIVER -> {
-                // Rådgiver - kun utkast for det spesifikke rådgiverfirmaet
-                val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
-                    ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
-
-                // Hent utkast opprettet av innlogget bruker som tilhører rådgiverfirmaet
-                skjemaRepository.findByOpprettetAvAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-                    utsendtSkjema.metadata.representasjonstype == Representasjonstype.RADGIVER &&
-                        utsendtSkjema.metadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
-                }
-            }
-
-            Representasjonstype.ANNEN_PERSON -> {
-                // Fullmektig på vegne av alle personer bruker har fullmakt for
-                // Hent alle personer innlogget bruker har fullmakt for
-                val fullmakter = try {
-                    reprService.hentKanRepresentere()
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved henting av fullmakter for bruker" }
-                    emptyList()
-                }
-
-                val personerMedFullmaktFnr = fullmakter.map { it.fullmaktsgiver }.toSet()
-
-                // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
-                skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
-                    .filter { skjema ->
-                        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-
-                        // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
-                        utsendtSkjema.metadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
-                            skjema.fnr != null && personerMedFullmaktFnr.contains(skjema.fnr)
-                    }
-            }
-        }
-
-        // Konverter til DTO
-        val utkastDtos = utkastSkjemaer.map { skjema ->
-            konverterTilUtkastDto(skjema)
-        }
-
-        log.debug { "Fant ${utkastDtos.size} utkast for representasjonstype ${request.representasjonstype}" }
-
-        return UtkastListeResponse(
-            utkast = utkastDtos,
-            antall = utkastDtos.size
+    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata {
+        return objectMapper.treeToValue(
+            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}"),
+            UtsendtArbeidstakerMetadata::class.java
         )
     }
 
@@ -379,18 +471,134 @@ class UtsendtArbeidstakerService(
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val utsendtSkjema = UtsendtArbeidstakerSkjema(skjema, objectMapper)
-        val metadata = utsendtSkjema.metadata
+        val skjemaMetadata = parseMetadata(skjema)
 
         return UtkastOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
-            arbeidsgiverNavn = metadata.arbeidsgiverNavn,
+            arbeidsgiverNavn = skjemaMetadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
             opprettetDato = skjema.opprettetDato,
             sistEndretDato = skjema.endretDato,
             status = skjema.status
+        )
+    }
+
+    /**
+     * Validerer at innlogget bruker har tilgang til skjemaet.
+     *
+     * Sjekker følgende i prioritert rekkefølge:
+     * 1. Er bruker arbeidstaker? (fnr match)
+     * 2. Er bruker fullmektig? (fullmektigFnr match + aktiv fullmakt via repr-api)
+     * 3. Har bruker Altinn-tilgang til arbeidsgiver? (orgnr match)
+     *
+     * VIKTIG: Fullmakt verifiseres ALLTID mot repr-api for å sikre at den fortsatt er aktiv.
+     *
+     * @param skjema Skjemaet som skal sjekkes
+     * @throws IllegalArgumentException hvis bruker ikke har tilgang
+     */
+    private fun harInnloggetBrukerTilgangTilSkjema(skjema: Skjema): Boolean {
+        if (skjema.fnr == subjectHandler.getUserID()) {
+            return true
+        }
+
+        val skjemaMetadata = parseMetadata(skjema)
+
+        return when(skjemaMetadata.representasjonstype){
+            Representasjonstype.DEG_SELV -> false
+
+            Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
+                skjema.orgnr?.let { altinnService.harBrukerTilgang(it) } ?: false
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                skjemaMetadata.fullmektigFnr == subjectHandler.getUserID() &&
+                        skjema.fnr != null &&
+                        reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+        }
+    }
+
+    private fun updateArbeidsgiverSkjemaDataAndConvertToArbeidsgiversSkjemaDto(
+        skjemaId: UUID,
+        updateFunction: (ArbeidsgiversSkjemaDataDto) -> ArbeidsgiversSkjemaDataDto
+    ): ArbeidsgiversSkjemaDto {
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        // Read existing ArbeidsgiversSkjemaDto or create empty one
+        val existingDto = convertToArbeidsgiversSkjemaDataDto(skjema.data)
+
+        // Apply the update function
+        val updatedDto = updateFunction(existingDto)
+
+        // Convert back to JSON and save
+        skjema.data = objectMapper.valueToTree(updatedDto)
+        return saveAndConvertToArbeidsgiversSkjemaDto(skjema)
+    }
+
+    private fun updateArbeidstakerSkjemaDataAndConvertToArbeidstakersSkjemaDto(
+        skjemaId: UUID,
+        updateFunction: (ArbeidstakersSkjemaDataDto) -> ArbeidstakersSkjemaDataDto
+    ): ArbeidstakersSkjemaDto {
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        // Read existing ArbeidstakersSkjemaDataDto or create empty one
+        val existingDto = convertToArbeidstakersSkjemaDataDto(skjema.data)
+
+        // Apply the update function
+        val updatedDto = updateFunction(existingDto)
+
+        // Convert back to JSON and save
+        skjema.data = objectMapper.valueToTree(updatedDto)
+        return saveAndConvertToArbeidstakersSkjemaDto(skjema)
+    }
+
+    private fun saveAndConvertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
+        val savedSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidsgiversSkjemaDto(savedSkjema)
+    }
+
+    private fun saveAndConvertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
+        val savedSkjema = skjemaRepository.save(skjema)
+        return convertToArbeidstakersSkjemaDto(savedSkjema)
+    }
+
+    private fun convertToArbeidsgiversSkjemaDataDto(data: JsonNode?): ArbeidsgiversSkjemaDataDto {
+        return convertDataToDto(data, ArbeidsgiversSkjemaDataDto())
+    }
+
+    private fun convertToArbeidstakersSkjemaDataDto(data: JsonNode?): ArbeidstakersSkjemaDataDto {
+        return convertDataToDto(data, ArbeidstakersSkjemaDataDto())
+    }
+
+    private inline fun <reified T> convertDataToDto(data: JsonNode?, defaultValue: T): T {
+        return if (data == null) {
+            defaultValue
+        } else {
+            objectMapper.treeToValue(data, T::class.java)
+        }
+    }
+
+    private fun convertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
+        val data = convertToArbeidsgiversSkjemaDataDto(skjema.data)
+
+        return ArbeidsgiversSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
+            status = skjema.status,
+            data = data
+        )
+    }
+
+    private fun convertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
+        val data = convertToArbeidstakersSkjemaDataDto(skjema.data)
+
+        return ArbeidstakersSkjemaDto(
+            id = skjema.id ?: error("Skjema ID is null"),
+            fnr = skjema.fnr ?: error("Skjema fnr is null"),
+            status = skjema.status,
+            data = data
         )
     }
 
@@ -407,17 +615,5 @@ class UtsendtArbeidstakerService(
         } else {
             "***********"
         }
-    }
-
-    /**
-     * Henter innsendte søknader basert på representasjonskontekst med paginering, søk og sortering.
-     *
-     * Delegerer til dedikert service for bedre separasjon av ansvar.
-     *
-     * @param request Forespørsel med søk-, sorterings- og pagineringsparametere
-     * @return Paginert liste med innsendte søknader
-     */
-    fun hentInnsendteSoknader(request: HentInnsendteSoknaderRequest): InnsendteSoknaderResponse {
-        return hentInnsendteSoknaderService.hentInnsendteSoknader(request)
     }
 }

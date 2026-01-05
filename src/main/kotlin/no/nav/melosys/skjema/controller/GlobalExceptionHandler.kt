@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.RateLimitConfig
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
@@ -59,6 +60,15 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(mapOf("message" to e.message!!))
+    }
+
+    @ExceptionHandler(SkjemaAlleredeSendtException::class)
+    fun handleSkjemaAlleredeSendt(e: SkjemaAlleredeSendtException): ResponseEntity<ErrorResponse> {
+        log.warn { "Organisasjon eksisterer ikke: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(ErrorResponse(message = e.message ?: ""))
     }
 
     @ExceptionHandler(PersonVerifiseringException::class)

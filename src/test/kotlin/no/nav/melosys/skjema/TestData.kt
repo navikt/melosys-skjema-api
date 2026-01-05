@@ -205,7 +205,7 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
 )
 
-fun createDefaultMetadata(
+fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
     arbeidsgiverNavn: String? = null,
@@ -229,7 +229,7 @@ fun skjemaMedDefaultVerdier(
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
-    metadata: JsonNode? = createDefaultMetadata(),
+    metadata: JsonNode? = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr ?: korrektSyntetiskFnr,

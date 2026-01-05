@@ -10,18 +10,22 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.melosys.skjema.createDefaultMetadata
+import java.util.UUID
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.data.repository.findByIdOrNull
-import java.util.*
+import org.springframework.context.ApplicationEventPublisher
+import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
 
@@ -31,7 +35,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val objectMapper: ObjectMapper = jacksonObjectMapper()
-    val mockHentInnsendteSoknaderService = mockk<HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService>()
+    val innsendingStatusService = mockk<InnsendingStatusService>()
+    val eventPublisher = mockk<ApplicationEventPublisher>()
+    val referanseIdGenerator = mockk<ReferanseIdGenerator>()
 
     val service = UtsendtArbeidstakerService(
         mockRepository,
@@ -40,7 +46,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockReprService,
         objectMapper,
         mockSubjectHandler,
-        mockHentInnsendteSoknaderService
+        innsendingStatusService,
+        eventPublisher,
+        referanseIdGenerator
     )
 
     val testArbeidsgiver = SimpleOrganisasjonDto(
@@ -69,9 +77,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 harFullmakt = false
             )
 
-            val savedSkjema = Skjema(
+            val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = objectMapper.createObjectNode(),
@@ -101,9 +108,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 harFullmakt = true
             )
 
-            val savedSkjema = Skjema(
+            val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = objectMapper.createObjectNode(),
@@ -133,9 +139,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 harFullmakt = true
             )
 
-            val savedSkjema = Skjema(
+            val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = objectMapper.createObjectNode(),
@@ -164,9 +169,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 harFullmakt = true
             )
 
-            val savedSkjema = Skjema(
+            val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = objectMapper.createObjectNode(),
@@ -206,19 +210,18 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         }
     }
 
-    context("hentSkjema - tilgangskontroll") {
+    context("hentSkjemaMedTilgangsstyring - tilgangskontroll") {
         test("skal godkjenne tilgang for arbeidstaker selv") {
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = createDefaultMetadata(
-                representasjonstype = no.nav.melosys.skjema.dto.Representasjonstype.DEG_SELV,
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
 
-            val skjema = Skjema(
+            val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -229,7 +232,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockRepository.findByIdOrNull(skjemaId) } returns skjema
 
-            val result = service.hentSkjema(skjemaId)
+            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
 
             result.fnr shouldBe currentUser
         }
@@ -240,15 +243,14 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             // Metadata med fullmektigFnr
-            val metadata = createDefaultMetadata(
-                representasjonstype = no.nav.melosys.skjema.dto.Representasjonstype.ANNEN_PERSON,
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
             )
 
-            val skjema = Skjema(
+            val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = arbeidstakerFnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -260,7 +262,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
-            val result = service.hentSkjema(skjemaId)
+            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
 
             result.fnr shouldBe arbeidstakerFnr
             verify { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) }
@@ -276,9 +278,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             metadata.put("harFullmakt", true)
             metadata.put("fullmektigFnr", currentUser)
 
-            val skjema = Skjema(
+            val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = arbeidstakerFnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -290,8 +291,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
-            val exception = shouldThrow<IllegalArgumentException> {
-                service.hentSkjema(skjemaId)
+            val exception = shouldThrow<AccessDeniedException> {
+                service.hentSkjemaMedTilgangsstyring(skjemaId)
             }
 
             exception.message shouldContain "ikke tilgang"
@@ -304,9 +305,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadata = objectMapper.createObjectNode()
             metadata.put("representasjonstype", "ARBEIDSGIVER")
 
-            val skjema = Skjema(
+            val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -318,7 +318,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            val result = service.hentSkjema(skjemaId)
+            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
 
             result.orgnr shouldBe testArbeidsgiver.orgnr
             verify { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) }
@@ -331,9 +331,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadata = objectMapper.createObjectNode()
             metadata.put("representasjonstype", "ARBEIDSGIVER")
 
-            val skjema = Skjema(
+            val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -345,8 +344,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
-            val exception = shouldThrow<IllegalArgumentException> {
-                service.hentSkjema(skjemaId)
+            val exception = shouldThrow<AccessDeniedException> {
+                service.hentSkjemaMedTilgangsstyring(skjemaId)
             }
 
             exception.message shouldContain "ikke tilgang"
@@ -359,11 +358,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockRepository.findByIdOrNull(skjemaId) } returns null
 
-            val exception = shouldThrow<NoSuchElementException> {
-                service.hentSkjema(skjemaId)
+            shouldThrow<NoSuchElementException> {
+                service.hentSkjemaMedTilgangsstyring(skjemaId)
             }
-
-            exception.message shouldContain "finnes ikke"
         }
     }
 
@@ -373,18 +370,17 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = createDefaultMetadata(
+            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
-            val metadata2 = createDefaultMetadata(
+            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
 
-            val utkast1 = Skjema(
+            val utkast1 = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata1,
@@ -392,9 +388,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 endretAv = currentUser
             )
 
-            val utkast2 = Skjema(
+            val utkast2 = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = "999888777",
                 metadata = metadata2,
@@ -422,19 +417,18 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = createDefaultMetadata(
+            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiverNavn = "Bedrift A AS"
             )
-            val metadata2 = createDefaultMetadata(
+            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiverNavn = "Bedrift B AS"
             )
 
             // Utkast for to forskjellige bedrifter
-            val utkast1 = Skjema(
+            val utkast1 = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = "111222333",
                 metadata = metadata1,
@@ -442,9 +436,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 endretAv = currentUser
             )
 
-            val utkast2 = Skjema(
+            val utkast2 = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = "10987654321",
                 orgnr = "444555666",
                 metadata = metadata2,
@@ -453,9 +446,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast for bedrift uten Altinn-tilgang (skal ikke vises)
-            val utkast3 = Skjema(
+            val utkast3 = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = "11111111111",
                 orgnr = "777888999",
                 metadata = metadata2,
@@ -488,7 +480,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val radgiverfirmaOrgnr = "987654321"
             val skjemaId1 = UUID.randomUUID()
 
-            val metadata1 = createDefaultMetadata(
+            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             // Legg til rådgiverfirma i metadata
@@ -500,9 +492,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 }
             )
 
-            val utkast1 = Skjema(
+            val utkast1 = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = "111222333",
                 metadata = metadata1,
@@ -511,7 +502,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med annet rådgiverfirma (skal ikke vises)
-            val metadata2 = createDefaultMetadata(
+            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -522,9 +513,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 }
             )
 
-            val utkast2 = Skjema(
+            val utkast2 = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = "10987654321",
                 orgnr = "444555666",
                 metadata = metadata2,
@@ -571,20 +561,19 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = createDefaultMetadata(
+            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
             )
-            val metadata2 = createDefaultMetadata(
+            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
             )
 
-            val utkast1 = Skjema(
+            val utkast1 = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = person1Fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata1,
@@ -592,9 +581,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 endretAv = currentUser
             )
 
-            val utkast2 = Skjema(
+            val utkast2 = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = person2Fnr,
                 orgnr = "999888777",
                 metadata = metadata2,
@@ -603,9 +591,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast for person uten fullmakt (skal ikke vises)
-            val utkast3 = Skjema(
+            val utkast3 = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
-                status = SkjemaStatus.UTKAST,
                 fnr = "11111111111",
                 orgnr = "777888999",
                 metadata = metadata1,
@@ -665,14 +652,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = createDefaultMetadata(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
 
-            val utkast = Skjema(
+            val utkast = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
@@ -698,12 +684,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med DEG_SELV (skal returneres)
-            val metadataDegSelv = createDefaultMetadata(
+            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
-            val utkastDegSelv = Skjema(
+            val utkastDegSelv = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadataDegSelv,
@@ -712,12 +697,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med ARBEIDSGIVER (skal ikke returneres)
-            val metadataArbeidsgiver = createDefaultMetadata(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
-            val utkastArbeidsgiver = Skjema(
+            val utkastArbeidsgiver = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadataArbeidsgiver,
@@ -745,12 +729,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med ARBEIDSGIVER (skal returneres)
-            val metadataArbeidsgiver = createDefaultMetadata(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
-            val utkastArbeidsgiver = Skjema(
+            val utkastArbeidsgiver = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = "111222333",
                 metadata = metadataArbeidsgiver,
@@ -759,12 +742,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med DEG_SELV (skal ikke returneres)
-            val metadataDegSelv = createDefaultMetadata(
+            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
-            val utkastDegSelv = Skjema(
+            val utkastDegSelv = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = currentUser,
                 orgnr = "111222333",
                 metadata = metadataDegSelv,
@@ -798,7 +780,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med RADGIVER (skal returneres)
-            val metadataRadgiver = createDefaultMetadata(
+            val metadataRadgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -808,9 +790,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                     put("navn", "Rådgiver AS")
                 }
             )
-            val utkastRadgiver = Skjema(
+            val utkastRadgiver = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = "12345678910",
                 orgnr = "111222333",
                 metadata = metadataRadgiver,
@@ -819,7 +800,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med ARBEIDSGIVER (skal ikke returneres)
-            val metadataArbeidsgiver = createDefaultMetadata(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
             (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -829,9 +810,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                     put("navn", "Rådgiver AS")
                 }
             )
-            val utkastArbeidsgiver = Skjema(
+            val utkastArbeidsgiver = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = "10987654321",
                 orgnr = "444555666",
                 metadata = metadataArbeidsgiver,
@@ -861,14 +841,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med ANNEN_PERSON (skal returneres)
-            val metadataAnnenPerson = createDefaultMetadata(
+            val metadataAnnenPerson = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
             )
-            val utkastAnnenPerson = Skjema(
+            val utkastAnnenPerson = skjemaMedDefaultVerdier(
                 id = skjemaId1,
-                status = SkjemaStatus.UTKAST,
                 fnr = person1Fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadataAnnenPerson,
@@ -877,12 +856,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med DEG_SELV (skal ikke returneres)
-            val metadataDegSelv = createDefaultMetadata(
+            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
-            val utkastDegSelv = Skjema(
+            val utkastDegSelv = skjemaMedDefaultVerdier(
                 id = skjemaId2,
-                status = SkjemaStatus.UTKAST,
                 fnr = person1Fnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadataDegSelv,
@@ -930,6 +908,23 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             response.antall shouldBe 0
             response.utkast.size shouldBe 0
+        }
+    }
+
+    context("sendInnSkjema") {
+        test("skal kaste SkjemaAlleredeSendtException når skjema allerede er sendt") {
+            val alleredeSendtSkjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.SENDT,
+                fnr = korrektSyntetiskFnr
+            )
+
+            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr!!
+            every { mockRepository.findByIdOrNull(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
+
+            shouldThrow<SkjemaAlleredeSendtException> {
+                service.sendInnSkjema(alleredeSendtSkjema.id!!)
+            }
         }
     }
 })
