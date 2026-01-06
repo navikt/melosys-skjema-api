@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.Instant
 import java.time.LocalDate
 import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
@@ -40,6 +39,7 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
+import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -202,7 +202,9 @@ fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirk
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
     skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
     familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
-    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
+    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
+    utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
+    arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
 )
 
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -210,16 +212,29 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     harFullmakt: Boolean = false,
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null
-): JsonNode {
-    val objectMapper = jacksonObjectMapper()
-    val metadata = UtsendtArbeidstakerMetadata(
+): UtsendtArbeidstakerMetadata {
+
+    return UtsendtArbeidstakerMetadata(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
-        radgiverfirma = null,
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr
     )
-    return objectMapper.valueToTree(metadata)
+}
+
+fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
+    harFullmakt: Boolean = false,
+    arbeidsgiverNavn: String? = null,
+    fullmektigFnr: String? = null
+): JsonNode {
+
+    return jacksonObjectMapper().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+        representasjonstype = representasjonstype,
+        harFullmakt = harFullmakt,
+        arbeidsgiverNavn = arbeidsgiverNavn,
+        fullmektigFnr = fullmektigFnr
+    ))
 }
 
 fun skjemaMedDefaultVerdier(
@@ -229,7 +244,7 @@ fun skjemaMedDefaultVerdier(
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
-    metadata: JsonNode? = utsendtArbeidstakerMetadataMedDefaultVerdier(),
+    metadata: JsonNode? = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr ?: korrektSyntetiskFnr,

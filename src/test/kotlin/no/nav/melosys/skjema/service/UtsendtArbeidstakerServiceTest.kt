@@ -11,7 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
@@ -215,7 +215,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
@@ -243,7 +243,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             // Metadata med fullmektigFnr
-            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
@@ -370,11 +370,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
-            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
@@ -417,11 +417,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiverNavn = "Bedrift A AS"
             )
-            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiverNavn = "Bedrift B AS"
             )
@@ -480,7 +480,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val radgiverfirmaOrgnr = "987654321"
             val skjemaId1 = UUID.randomUUID()
 
-            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             // Legg til rådgiverfirma i metadata
@@ -502,7 +502,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med annet rådgiverfirma (skal ikke vises)
-            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -561,12 +561,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
             val skjemaId2 = UUID.randomUUID()
 
-            val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
             )
-            val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
@@ -652,7 +652,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 harFullmakt = false
             )
@@ -684,7 +684,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med DEG_SELV (skal returneres)
-            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataDegSelv = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
             val utkastDegSelv = skjemaMedDefaultVerdier(
@@ -697,7 +697,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med ARBEIDSGIVER (skal ikke returneres)
-            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
             val utkastArbeidsgiver = skjemaMedDefaultVerdier(
@@ -729,7 +729,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med ARBEIDSGIVER (skal returneres)
-            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
             val utkastArbeidsgiver = skjemaMedDefaultVerdier(
@@ -742,7 +742,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med DEG_SELV (skal ikke returneres)
-            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataDegSelv = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
             val utkastDegSelv = skjemaMedDefaultVerdier(
@@ -780,7 +780,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med RADGIVER (skal returneres)
-            val metadataRadgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
             (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -800,7 +800,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med ARBEIDSGIVER (skal ikke returneres)
-            val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
             (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
@@ -841,7 +841,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId2 = UUID.randomUUID()
 
             // Utkast med ANNEN_PERSON (skal returneres)
-            val metadataAnnenPerson = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataAnnenPerson = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
@@ -856,7 +856,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             // Utkast med DEG_SELV (skal ikke returneres)
-            val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            val metadataDegSelv = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
             val utkastDegSelv = skjemaMedDefaultVerdier(

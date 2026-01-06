@@ -6,6 +6,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldMatch
 import io.mockk.clearMocks
 import io.mockk.every
 import java.util.UUID
@@ -18,6 +19,7 @@ import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.dto.Representasjonstype
+import no.nav.melosys.skjema.dto.SkjemaInnsendtResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -41,6 +43,7 @@ import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
@@ -314,7 +317,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = orgnummer,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 metadata = objectMapper.valueToTree(
-                    utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                         representasjonstype = Representasjonstype.ARBEIDSGIVER
                     )
                 )
@@ -353,7 +356,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = korrektSyntetiskOrgnr,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 )),
             )
@@ -386,7 +389,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = null,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 ))
             )
@@ -490,7 +493,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             HttpMethod.POST,
             "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger",
             tilleggsopplysningerDtoMedDefaultVerdier()
-        )
+        ),
+        // Teknisk sett endepunkt felles for arbeidstaker og arbeidsgiver
+        Arguments.of(
+            HttpMethod.POST,
+            "/api/{id}/send-inn",
+            null
+        ),
     )
 
     @ParameterizedTest(name = "{0} {1}")
@@ -717,6 +726,45 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "tilleggsopplysningerTranslation.maaOppgiTilleggsopplysninger")
         )
     ).map { Arguments.of(it) }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/send-inn skal sende inn skjema")
+    fun `POST send-inn skal sende inn skjema`() {
+        val skjemaSomSkalSendesInn = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                type = "A1",
+                data = objectMapper.valueToTree(
+                    arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                ),
+                metadata = objectMapper.valueToTree(
+                    utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        representasjonstype = Representasjonstype.DEG_SELV
+                    )
+                )
+            )
+        )
+
+        val token = createTokenForUser(skjemaSomSkalSendesInn.fnr!!)
+
+        val skjemaInnsendtResponse = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody(SkjemaInnsendtResponse::class.java)
+            .returnResult().responseBody
+
+        skjemaInnsendtResponse.shouldNotBeNull()
+
+        skjemaInnsendtResponse.run {
+            skjemaInnsendtResponse.skjemaId shouldBe skjemaSomSkalSendesInn.id
+            skjemaInnsendtResponse.status shouldBe SkjemaStatus.SENDT
+            skjemaInnsendtResponse.referanseId shouldMatch "^MEL-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
+        }
+    }
 
     private fun createTokenForUser(pid: String): String {
         return mockOAuth2Server.getToken(

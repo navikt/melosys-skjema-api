@@ -312,13 +312,15 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID): SubmitSkjemaResponse {
+    fun sendInnSkjema(skjemaId: UUID): SkjemaInnsendtResponse {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaAlleredeSendtException()
         }
+
+        // TODO: Her må det valideres at skjemaet er komplett utfyllt med gyldige data
 
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
@@ -337,7 +339,7 @@ class UtsendtArbeidstakerService(
         eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
 
         // 6. Returner kvittering med referanseId
-        return SubmitSkjemaResponse(
+        return SkjemaInnsendtResponse(
             skjemaId = savedSkjema.id,
             referanseId = referanseId,
             status = savedSkjema.status
