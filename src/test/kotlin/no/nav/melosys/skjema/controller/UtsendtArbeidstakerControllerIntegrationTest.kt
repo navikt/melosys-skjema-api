@@ -497,7 +497,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // Teknisk sett endepunkt felles for arbeidstaker og arbeidsgiver
         Arguments.of(
             HttpMethod.POST,
-            "/api/{id}/send-inn",
+            "/api/skjema/utsendt-arbeidstaker/{id}/send-inn",
             null
         ),
     )
