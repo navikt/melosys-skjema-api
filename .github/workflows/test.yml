@@ -19,17 +19,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Cache Depdendencies
-        uses: actions/cache@v5.0.1
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
       - name: JDK
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 21
+          cache: 'gradle'
       - name: Kjører tester
         env:
           GITHUB_USERNAME: x-access-token
