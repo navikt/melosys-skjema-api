@@ -502,6 +502,11 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             "/api/skjema/utsendt-arbeidstaker/{id}/send-inn",
             null
         ),
+        Arguments.of(
+            HttpMethod.GET,
+            "/api/skjema/utsendt-arbeidstaker/{id}/innsendt-kvittering",
+            null
+        ),
     )
 
     @ParameterizedTest(name = "{0} {1}")
