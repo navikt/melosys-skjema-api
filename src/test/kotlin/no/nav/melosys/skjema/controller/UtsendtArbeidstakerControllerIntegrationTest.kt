@@ -19,15 +19,17 @@ import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.SkjemaInnsendtResponse
+import no.nav.melosys.skjema.dto.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
@@ -749,21 +751,55 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val token = createTokenForUser(skjemaSomSkalSendesInn.fnr!!)
 
-        val skjemaInnsendtResponse = webTestClient.post()
+        val skjemaInnsendtKvittering = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
-            .expectBody(SkjemaInnsendtResponse::class.java)
+            .expectBody(SkjemaInnsendtKvittering::class.java)
             .returnResult().responseBody
 
-        skjemaInnsendtResponse.shouldNotBeNull()
+        skjemaInnsendtKvittering.shouldNotBeNull()
 
-        skjemaInnsendtResponse.run {
-            skjemaInnsendtResponse.skjemaId shouldBe skjemaSomSkalSendesInn.id
-            skjemaInnsendtResponse.status shouldBe SkjemaStatus.SENDT
-            skjemaInnsendtResponse.referanseId shouldMatch "^MEL-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
+        skjemaInnsendtKvittering.run {
+            skjemaInnsendtKvittering.skjemaId shouldBe skjemaSomSkalSendesInn.id
+            skjemaInnsendtKvittering.status shouldBe SkjemaStatus.SENDT
+            skjemaInnsendtKvittering.referanseId shouldMatch "^MEL-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
         }
+    }
+
+    @Test
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/innsendt-kvittering skal hente kvittering")
+    fun `GET innsendt-kvittering skal returnere kvittering`() {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.SENDT
+            )
+        )
+
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(
+                skjema = skjema,
+                status = InnsendingStatus.MOTTATT,
+                referanseId = "MEL-ABC123"
+            )
+        )
+
+        val token = createTokenForUser(korrektSyntetiskFnr)
+
+        val kvittering = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id!!}/innsendt-kvittering")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody(SkjemaInnsendtKvittering::class.java)
+            .returnResult().responseBody
+
+        kvittering.shouldNotBeNull()
+        kvittering.skjemaId shouldBe skjema.id
+        kvittering.referanseId shouldBe "MEL-ABC123"
+        kvittering.status shouldBe SkjemaStatus.SENDT
     }
 
     private fun createTokenForUser(pid: String): String {
