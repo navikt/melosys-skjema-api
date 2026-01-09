@@ -25,6 +25,7 @@ import org.springframework.context.ApplicationEventPublisher
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 
@@ -486,15 +487,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId1 = UUID.randomUUID()
 
             val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.RADGIVER
-            )
-            // Legg til rådgiverfirma i metadata
-            (metadata1 as tools.jackson.databind.node.ObjectNode).set(
-                "radgiverfirma",
-                jsonMapper.createObjectNode().apply {
-                    put("orgnr", radgiverfirmaOrgnr)
-                    put("navn", "Rådgiver AS")
-                }
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
             )
 
             val utkast1 = skjemaMedDefaultVerdier(
@@ -508,14 +502,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             // Utkast med annet rådgiverfirma (skal ikke vises)
             val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.RADGIVER
-            )
-            (metadata2 as tools.jackson.databind.node.ObjectNode).set(
-                "radgiverfirma",
-                jsonMapper.createObjectNode().apply {
-                    put("orgnr", "111111111")
-                    put("navn", "Annen Rådgiver AS")
-                }
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = "111111111")
             )
 
             val utkast2 = skjemaMedDefaultVerdier(
@@ -786,14 +774,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             // Utkast med RADGIVER (skal returneres)
             val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.RADGIVER
-            )
-            (metadataRadgiver as tools.jackson.databind.node.ObjectNode).set(
-                "radgiverfirma",
-                jsonMapper.createObjectNode().apply {
-                    put("orgnr", radgiverfirmaOrgnr)
-                    put("navn", "Rådgiver AS")
-                }
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
             )
             val utkastRadgiver = skjemaMedDefaultVerdier(
                 id = skjemaId1,
@@ -806,14 +788,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             // Utkast med ARBEIDSGIVER (skal ikke returneres)
             val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER
-            )
-            (metadataArbeidsgiver as tools.jackson.databind.node.ObjectNode).set(
-                "radgiverfirma",
-                jsonMapper.createObjectNode().apply {
-                    put("orgnr", radgiverfirmaOrgnr)
-                    put("navn", "Rådgiver AS")
-                }
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
             )
             val utkastArbeidsgiver = skjemaMedDefaultVerdier(
                 id = skjemaId2,

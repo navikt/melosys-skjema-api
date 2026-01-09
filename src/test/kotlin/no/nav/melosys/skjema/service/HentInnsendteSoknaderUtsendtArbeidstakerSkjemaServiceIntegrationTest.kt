@@ -17,6 +17,7 @@ import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
+import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -337,14 +338,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
         // Opprett metadata med rådgiverfirma
         val metadataRiktigRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.RADGIVER
-        )
-        (metadataRiktigRadgiver as tools.jackson.databind.node.ObjectNode).set(
-            "radgiverfirma",
-            jsonMapper.createObjectNode().apply {
-                put("orgnr", radgiverfirmaOrgnr)
-                put("navn", "Rådgiver AS")
-            }
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr=radgiverfirmaOrgnr)
         )
 
         // Opprett søknad opprettet av ANNEN BRUKER - skal likevel returneres
@@ -360,15 +355,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
         // Opprett søknad med annet rådgiverfirma (skal ikke returneres)
         val metadataFeilRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.RADGIVER
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr="111111111")
         )
-        (metadataFeilRadgiver as tools.jackson.databind.node.ObjectNode).set(
-            "radgiverfirma",
-            jsonMapper.createObjectNode().apply {
-                put("orgnr", "111111111")
-                put("navn", "Annen Rådgiver AS")
-            }
-        )
+
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = etAnnetKorrektSyntetiskFnr,

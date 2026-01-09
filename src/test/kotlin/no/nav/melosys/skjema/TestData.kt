@@ -39,6 +39,7 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
+import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
 import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
@@ -211,14 +212,26 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
     arbeidsgiverNavn: String? = null,
-    fullmektigFnr: String? = null
+    fullmektigFnr: String? = null,
+    radgiverfirma: RadgiverfirmaInfo? = null,
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr
+        fullmektigFnr = fullmektigFnr,
+        radgiverfirma = radgiverfirma,
+    )
+}
+
+fun radgiverfirmaInfoMedDefaultVerdier(
+    navn: String = "Rådgiverfirma AS",
+    orgnr: String = "987654321"
+): RadgiverfirmaInfo {
+    return RadgiverfirmaInfo(
+        orgnr = orgnr,
+        navn = navn,
     )
 }
 
@@ -226,14 +239,16 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
     arbeidsgiverNavn: String? = null,
-    fullmektigFnr: String? = null
+    fullmektigFnr: String? = null,
+    radgiverfirma: RadgiverfirmaInfo? = null
 ): JsonNode {
 
     return JsonMapper.builder().build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr
+        fullmektigFnr = fullmektigFnr,
+        radgiverfirma = radgiverfirma
     ))
 }
 
