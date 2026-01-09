@@ -7,7 +7,6 @@ import java.time.LocalDate
 import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.dto.SubmitSkjemaRequest
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
@@ -142,11 +141,6 @@ fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
     erVanligHjemmebase = true,
     vanligHjemmebaseLand = null,
     vanligHjemmebaseNavn = null
-)
-
-fun submitSkjemaRequestMedDefaultVerdier() = SubmitSkjemaRequest(
-    bekreftetRiktighet = true,
-    submittedAt = Instant.now()
 )
 
 fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
