@@ -40,6 +40,7 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/arbeidsgiver-view"),
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/arbeidstaker-view"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/send-inn"),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/innsendt-kvittering"),
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/pdf"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/arbeidsgiverens-virksomhet-i-norge"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/123/utenlandsoppdraget"),

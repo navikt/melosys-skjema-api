@@ -8,6 +8,7 @@ import jakarta.validation.Valid
 import java.util.UUID
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.dto.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
@@ -117,11 +118,22 @@ class UtsendtArbeidstakerController(
     @Operation(summary = "Send inn skjema")
     @ApiResponse(responseCode = "200", description = "Skjema innsendt")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun submitSkjema(@PathVariable id: UUID): ResponseEntity<Any> { //TODO dette brukes kun som ett test endepunkt nå. Kommer sannsynligvis til å fjernes.
+    fun sendInnSkjema(@PathVariable id: UUID): ResponseEntity<SkjemaInnsendtKvittering> {
         log.info { "Sender inn skjema med id: $id" }
-        val innsendtSkjemaBekreftelse = utsendtArbeidstakerService.sendInnSkjema(id)
+        val innsendtSkjemaKvittering = utsendtArbeidstakerService.sendInnSkjema(id)
 
-        return ResponseEntity.ok(innsendtSkjemaBekreftelse)
+        return ResponseEntity.ok(innsendtSkjemaKvittering)
+    }
+
+    @GetMapping("/{id}/innsendt-kvittering")
+    @Operation(summary = "Send inn skjema")
+    @ApiResponse(responseCode = "200", description = "Skjema innsendt")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun hentInnsendingKvittering(@PathVariable id: UUID): ResponseEntity<SkjemaInnsendtKvittering> {
+        log.info { "Sender inn skjema med id: $id" }
+        val innsendtSkjemaKvittering = utsendtArbeidstakerService.genererInnsendtKvittering(id)
+
+        return ResponseEntity.ok(innsendtSkjemaKvittering)
     }
 
     @GetMapping("/{id}/pdf")

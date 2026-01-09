@@ -28,6 +28,7 @@ import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 
@@ -40,6 +41,7 @@ private val log = KotlinLogging.logger { }
 @Service
 class UtsendtArbeidstakerService(
     private val skjemaRepository: SkjemaRepository,
+    private val innsendingRepository: InnsendingRepository,
     private val validator: UtsendtArbeidstakerValidator,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
@@ -312,13 +314,15 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID): SubmitSkjemaResponse {
+    fun sendInnSkjema(skjemaId: UUID): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaAlleredeSendtException()
         }
+
+        // TODO: Her må det valideres at skjemaet er komplett utfyllt med gyldige data
 
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
@@ -337,11 +341,25 @@ class UtsendtArbeidstakerService(
         eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
 
         // 6. Returner kvittering med referanseId
-        return SubmitSkjemaResponse(
+        return SkjemaInnsendtKvittering(
             skjemaId = savedSkjema.id,
             referanseId = referanseId,
             status = savedSkjema.status
         )
+    }
+
+    fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
+
+        return SkjemaInnsendtKvittering(
+            skjemaId,
+            innsending.referanseId,
+            skjema.status
+        )
+
     }
 
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
