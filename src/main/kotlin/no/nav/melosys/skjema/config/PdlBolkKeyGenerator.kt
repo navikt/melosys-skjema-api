@@ -10,7 +10,7 @@ import java.lang.reflect.Method
  */
 @Component("pdlBolkKeyGenerator")
 class PdlBolkKeyGenerator : KeyGenerator {
-    override fun generate(target: Any, method: Method, vararg params: Any): Any {
+    override fun generate(target: Any, method: Method, vararg params: Any?): Any {
         @Suppress("UNCHECKED_CAST")
         val identer = params[0] as List<String>
         return identer.sorted().joinToString(",")

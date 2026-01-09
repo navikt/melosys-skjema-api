@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.repr.dto
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import tools.jackson.databind.json.JsonMapper
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest
 class FullmaktTest {
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @Test
     fun `Fullmakt skal serialisere og deserialisere korrekt`() {
@@ -22,8 +21,8 @@ class FullmaktTest {
             skriverettigheter = listOf("MED")
         )
 
-        val json = objectMapper.writeValueAsString(fullmakt)
-        val deserialized = objectMapper.readValue<Fullmakt>(json)
+        val json = jsonMapper.writeValueAsString(fullmakt)
+        val deserialized = jsonMapper.readValue(json, Fullmakt::class.java)
 
         deserialized shouldBe fullmakt
     }
@@ -43,7 +42,7 @@ class FullmaktTest {
             }
         """.trimIndent()
 
-        val fullmakt = objectMapper.readValue<Fullmakt>(jsonWithUnknownFields)
+        val fullmakt = jsonMapper.readValue(jsonWithUnknownFields, Fullmakt::class.java)
 
         fullmakt.fullmaktsgiver shouldBe "12345678901"
         fullmakt.fullmektig shouldBe "98765432109"
@@ -62,7 +61,7 @@ class FullmaktTest {
             }
         """.trimIndent()
 
-        val fullmakt = objectMapper.readValue<Fullmakt>(json)
+        val fullmakt = jsonMapper.readValue(json, Fullmakt::class.java)
 
         fullmakt.leserettigheter shouldBe emptyList()
         fullmakt.skriverettigheter shouldBe emptyList()

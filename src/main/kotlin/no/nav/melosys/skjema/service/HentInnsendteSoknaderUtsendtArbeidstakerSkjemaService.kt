@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.dto.InnsendtSoknadOversiktDto
@@ -37,7 +37,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private val innsendingRepository: InnsendingRepository,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
-    private val objectMapper: ObjectMapper,
+    private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler
 ) {
 
@@ -232,7 +232,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * @throws IllegalStateException hvis metadata er null
      */
     private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata {
-        return objectMapper.treeToValue(
+        return jsonMapper.treeToValue(
             skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}"),
             UtsendtArbeidstakerMetadata::class.java
         )

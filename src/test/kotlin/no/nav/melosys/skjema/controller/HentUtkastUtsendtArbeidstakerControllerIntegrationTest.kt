@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
+import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -45,7 +46,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private lateinit var skjemaRepository: SkjemaRepository
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
     private lateinit var altinnService: AltinnService
@@ -188,14 +189,8 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         // Opprett utkast med rådgiverfirma i metadata
         val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.RADGIVER
-        )
-        (metadata1 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
-            "radgiverfirma",
-            objectMapper.createObjectNode().apply {
-                put("orgnr", radgiverfirmaOrgnr)
-                put("navn", "Rådgiver AS")
-            }
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )
         val skjema1 = skjemaMedDefaultVerdier(
             fnr = etAnnetKorrektSyntetiskFnr,
@@ -208,14 +203,8 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         // Opprett utkast med annet rådgiverfirma (skal ikke returneres)
         val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.RADGIVER
-        )
-        (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
-            "radgiverfirma",
-            objectMapper.createObjectNode().apply {
-                put("orgnr", "111111111")
-                put("navn", "Annen Rådgiver AS")
-            }
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = "111111111")
         )
         val skjema2 = skjemaMedDefaultVerdier(
             fnr = etAnnetKorrektSyntetiskFnr,
@@ -484,14 +473,8 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         // Opprett utkast med RADGIVER
         val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.RADGIVER
-        )
-        (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
-            "radgiverfirma",
-            objectMapper.createObjectNode().apply {
-                put("orgnr", radgiverfirmaOrgnr)
-                put("navn", "Rådgiver AS")
-            }
+            representasjonstype = Representasjonstype.RADGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )
         val skjemaRadgiver = skjemaMedDefaultVerdier(
             fnr = etAnnetKorrektSyntetiskFnr,
@@ -504,14 +487,8 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         // Opprett utkast med ARBEIDSGIVER for samme rådgiverfirma (skal ikke returneres)
         val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.ARBEIDSGIVER
-        )
-        (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
-            "radgiverfirma",
-            objectMapper.createObjectNode().apply {
-                put("orgnr", radgiverfirmaOrgnr)
-                put("navn", "Rådgiver AS")
-            }
+            representasjonstype = Representasjonstype.ARBEIDSGIVER,
+            radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )
         val skjemaArbeidsgiver = skjemaMedDefaultVerdier(
             fnr = etAnnetKorrektSyntetiskFnr,

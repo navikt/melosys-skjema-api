@@ -21,6 +21,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        type.json_format_mapper: no.nav.melosys.skjema.config.Jackson3FormatMapper
     show-sql: false
 
   flyway:

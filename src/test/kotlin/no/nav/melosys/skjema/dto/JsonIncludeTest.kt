@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.dto
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import io.kotest.matchers.string.shouldNotContain
 import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
@@ -17,19 +17,20 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.json.JsonTest
+import tools.jackson.databind.json.JsonMapper
 
 @JsonTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JsonIncludeTest {
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("dtoTestCases")
     @DisplayName("DTOs should exclude null values from JSON serialization")
     fun `DTOs should exclude null values from JSON serialization`(dto: Any) {
-        val json = objectMapper.writeValueAsString(dto)
+        val json = jsonMapper.writeValueAsString(dto)
 
         json shouldNotContain "null"
     }

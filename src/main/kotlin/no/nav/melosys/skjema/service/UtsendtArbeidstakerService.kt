@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.JsonNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
@@ -45,7 +45,7 @@ class UtsendtArbeidstakerService(
     private val validator: UtsendtArbeidstakerValidator,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
-    private val objectMapper: ObjectMapper,
+    private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler,
     private val innsendingStatusService: InnsendingStatusService,
     private val eventPublisher: ApplicationEventPublisher,
@@ -70,7 +70,7 @@ class UtsendtArbeidstakerService(
 
         // Bygg metadata med korrekt fullmektig-logikk
         val metadata = byggMetadata(request, innloggetBrukerFnr)
-        val metadataJson = objectMapper.valueToTree<JsonNode>(metadata)
+        val metadataJson = jsonMapper.valueToTree<JsonNode>(metadata)
 
         // Opprett skjema med riktig fnr og orgnr basert på representasjonstype
         val skjema = when (request.representasjonstype) {
@@ -478,7 +478,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis metadata er null
      */
     private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata {
-        return objectMapper.treeToValue(
+        return jsonMapper.treeToValue(
             skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}"),
             UtsendtArbeidstakerMetadata::class.java
         )
@@ -551,7 +551,7 @@ class UtsendtArbeidstakerService(
         val updatedDto = updateFunction(existingDto)
 
         // Convert back to JSON and save
-        skjema.data = objectMapper.valueToTree(updatedDto)
+        skjema.data = jsonMapper.valueToTree(updatedDto)
         return saveAndConvertToArbeidsgiversSkjemaDto(skjema)
     }
 
@@ -568,7 +568,7 @@ class UtsendtArbeidstakerService(
         val updatedDto = updateFunction(existingDto)
 
         // Convert back to JSON and save
-        skjema.data = objectMapper.valueToTree(updatedDto)
+        skjema.data = jsonMapper.valueToTree(updatedDto)
         return saveAndConvertToArbeidstakersSkjemaDto(skjema)
     }
 
@@ -594,7 +594,7 @@ class UtsendtArbeidstakerService(
         return if (data == null) {
             defaultValue
         } else {
-            objectMapper.treeToValue(data, T::class.java)
+            jsonMapper.treeToValue(data, T::class.java)
         }
     }
 
