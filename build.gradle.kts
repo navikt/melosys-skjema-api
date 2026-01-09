@@ -33,7 +33,7 @@ val kotestVersion = "6.0.7"
 val mockkVersion = "1.14.7"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
-val springdocVersion = "2.8.14"
+val springdocVersion = "3.0.1"
 val shedlockVersion = "7.5.0"
 
 repositories {
