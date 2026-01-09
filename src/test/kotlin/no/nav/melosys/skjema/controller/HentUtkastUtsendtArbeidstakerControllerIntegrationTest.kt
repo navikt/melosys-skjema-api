@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -45,7 +45,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private lateinit var skjemaRepository: SkjemaRepository
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
     private lateinit var altinnService: AltinnService
@@ -190,9 +190,9 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER
         )
-        (metadata1 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadata1 as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", radgiverfirmaOrgnr)
                 put("navn", "Rådgiver AS")
             }
@@ -210,9 +210,9 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER
         )
-        (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadata2 as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", "111111111")
                 put("navn", "Annen Rådgiver AS")
             }
@@ -486,9 +486,9 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER
         )
-        (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadataRadgiver as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", radgiverfirmaOrgnr)
                 put("navn", "Rådgiver AS")
             }
@@ -506,9 +506,9 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER
         )
-        (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadataArbeidsgiver as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", radgiverfirmaOrgnr)
                 put("navn", "Rådgiver AS")
             }

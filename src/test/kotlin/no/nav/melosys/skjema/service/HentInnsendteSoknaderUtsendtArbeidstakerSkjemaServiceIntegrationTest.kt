@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -43,7 +43,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     private lateinit var skjemaRepository: SkjemaRepository
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
     private lateinit var altinnService: AltinnService
@@ -339,9 +339,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val metadataRiktigRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER
         )
-        (metadataRiktigRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadataRiktigRadgiver as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", radgiverfirmaOrgnr)
                 put("navn", "Rådgiver AS")
             }
@@ -362,9 +362,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val metadataFeilRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER
         )
-        (metadataFeilRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+        (metadataFeilRadgiver as tools.jackson.databind.node.ObjectNode).set(
             "radgiverfirma",
-            objectMapper.createObjectNode().apply {
+            jsonMapper.createObjectNode().apply {
                 put("orgnr", "111111111")
                 put("navn", "Annen Rådgiver AS")
             }

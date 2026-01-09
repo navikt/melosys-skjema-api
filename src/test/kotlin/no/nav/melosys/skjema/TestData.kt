@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
 import java.time.Instant
 import java.time.LocalDate
 import no.nav.melosys.skjema.dto.Representasjonstype
@@ -229,7 +229,7 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     fullmektigFnr: String? = null
 ): JsonNode {
 
-    return jacksonObjectMapper().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+    return JsonMapper.builder().build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,

@@ -18,8 +18,7 @@ class AsyncRequestContextConfiguration {
      */
     @Bean
     fun requestContextFilter(): FilterRegistrationBean<RequestContextFilter> {
-        val registration = FilterRegistrationBean<RequestContextFilter>()
-        registration.filter = RequestContextFilter()
+        val registration = FilterRegistrationBean(RequestContextFilter())
         registration.order = Ordered.HIGHEST_PRECEDENCE
         registration.setName("requestContextFilter")
         return registration

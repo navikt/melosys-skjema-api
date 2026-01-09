@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.controller
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -87,7 +87,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private lateinit var innsendingRepository: InnsendingRepository
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
     private lateinit var notificationService: NotificationService
@@ -156,7 +156,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                data = objectMapper.valueToTree(skjemaData)
+                data = jsonMapper.valueToTree(skjemaData)
             )
         )
 
@@ -191,7 +191,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                data = objectMapper.valueToTree(skjemaData)
+                data = jsonMapper.valueToTree(skjemaData)
             )
         )
 
@@ -260,7 +260,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                data = objectMapper.valueToTree(fixture.dataBeforePost)
+                data = jsonMapper.valueToTree(fixture.dataBeforePost)
             )
         )
 
@@ -285,11 +285,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @MethodSource("arbeidstakerStegTestFixtures")
     @DisplayName("POST arbeidstaker steg endpoints skal lagre data korrekt")
     fun `POST arbeidstaker steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>) {
+        val data = jsonMapper.valueToTree<JsonNode>(fixture.dataBeforePost)
+
         val existingSkjemaBeforePOST = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                data = objectMapper.valueToTree(fixture.dataBeforePost)
+                data = jsonMapper.valueToTree(fixture.dataBeforePost)
             )
         )
 
@@ -318,7 +320,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = orgnummer,
                 fnr = etAnnetKorrektSyntetiskFnr,
-                metadata = objectMapper.valueToTree(
+                metadata = jsonMapper.valueToTree(
                     utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                         representasjonstype = Representasjonstype.ARBEIDSGIVER
                     )
@@ -358,7 +360,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = korrektSyntetiskOrgnr,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                metadata = jsonMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 )),
             )
@@ -391,7 +393,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = null,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                metadata = objectMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                metadata = jsonMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 ))
             )
@@ -743,10 +745,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
                 type = "A1",
-                data = objectMapper.valueToTree(
+                data = jsonMapper.valueToTree(
                     arbeidstakersSkjemaDataDtoMedDefaultVerdier()
                 ),
-                metadata = objectMapper.valueToTree(
+                metadata = jsonMapper.valueToTree(
                     utsendtArbeidstakerMetadataMedDefaultVerdier(
                         representasjonstype = Representasjonstype.DEG_SELV
                     )
@@ -814,6 +816,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     private inline fun <reified T> convertJsonToDto(jsonNode: JsonNode?): T? {
-        return jsonNode?.let { objectMapper.treeToValue(it, T::class.java) }
+        return jsonNode?.let { jsonMapper.treeToValue(it, T::class.java) }
     }
 }

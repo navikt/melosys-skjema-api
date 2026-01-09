@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -17,6 +16,7 @@ import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -36,7 +36,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockAltinnService = mockk<AltinnService>()
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
-    val objectMapper: ObjectMapper = jacksonObjectMapper()
+    val jsonMapper: JsonMapper = JsonMapper.builder().build()
     val innsendingStatusService = mockk<InnsendingStatusService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
@@ -47,7 +47,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockValidator,
         mockAltinnService,
         mockReprService,
-        objectMapper,
+        jsonMapper,
         mockSubjectHandler,
         innsendingStatusService,
         eventPublisher,
@@ -84,7 +84,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 id = UUID.randomUUID(),
                 fnr = currentUser,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = objectMapper.createObjectNode(),
+                metadata = jsonMapper.createObjectNode(),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -115,7 +115,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = objectMapper.createObjectNode(),
+                metadata = jsonMapper.createObjectNode(),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -146,7 +146,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = objectMapper.createObjectNode(),
+                metadata = jsonMapper.createObjectNode(),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -176,7 +176,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = objectMapper.createObjectNode(),
+                metadata = jsonMapper.createObjectNode(),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -276,7 +276,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val arbeidstakerFnr = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = objectMapper.createObjectNode()
+            val metadata = jsonMapper.createObjectNode()
             metadata.put("representasjonstype", "ANNEN_PERSON")
             metadata.put("harFullmakt", true)
             metadata.put("fullmektigFnr", currentUser)
@@ -302,15 +302,16 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         }
 
         test("skal godkjenne tilgang for bruker med Altinn-tilgang") {
-            val currentUser = "99999999999"
+            val currentUser = korrektSyntetiskFnr
             val skjemaId = UUID.randomUUID()
 
-            val metadata = objectMapper.createObjectNode()
-            metadata.put("representasjonstype", "ARBEIDSGIVER")
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+            )
 
             val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                fnr = "12345678910",
+                fnr = etAnnetKorrektSyntetiskFnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
                 opprettetAv = currentUser,
@@ -328,15 +329,16 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         }
 
         test("skal nekte tilgang for bruker uten noen tilgang") {
-            val currentUser = "99999999999"
+            val currentUser = korrektSyntetiskFnr
             val skjemaId = UUID.randomUUID()
 
-            val metadata = objectMapper.createObjectNode()
-            metadata.put("representasjonstype", "ARBEIDSGIVER")
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+            )
 
             val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
-                fnr = "12345678910",
+                fnr = etAnnetKorrektSyntetiskFnr,
                 orgnr = testArbeidsgiver.orgnr,
                 metadata = metadata,
                 opprettetAv = currentUser,
@@ -487,9 +489,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 representasjonstype = Representasjonstype.RADGIVER
             )
             // Legg til rådgiverfirma i metadata
-            (metadata1 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+            (metadata1 as tools.jackson.databind.node.ObjectNode).set(
                 "radgiverfirma",
-                objectMapper.createObjectNode().apply {
+                jsonMapper.createObjectNode().apply {
                     put("orgnr", radgiverfirmaOrgnr)
                     put("navn", "Rådgiver AS")
                 }
@@ -508,9 +510,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
-            (metadata2 as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+            (metadata2 as tools.jackson.databind.node.ObjectNode).set(
                 "radgiverfirma",
-                objectMapper.createObjectNode().apply {
+                jsonMapper.createObjectNode().apply {
                     put("orgnr", "111111111")
                     put("navn", "Annen Rådgiver AS")
                 }
@@ -786,9 +788,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER
             )
-            (metadataRadgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+            (metadataRadgiver as tools.jackson.databind.node.ObjectNode).set(
                 "radgiverfirma",
-                objectMapper.createObjectNode().apply {
+                jsonMapper.createObjectNode().apply {
                     put("orgnr", radgiverfirmaOrgnr)
                     put("navn", "Rådgiver AS")
                 }
@@ -806,9 +808,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
-            (metadataArbeidsgiver as com.fasterxml.jackson.databind.node.ObjectNode).set<com.fasterxml.jackson.databind.node.ObjectNode>(
+            (metadataArbeidsgiver as tools.jackson.databind.node.ObjectNode).set(
                 "radgiverfirma",
-                objectMapper.createObjectNode().apply {
+                jsonMapper.createObjectNode().apply {
                     put("orgnr", radgiverfirmaOrgnr)
                     put("navn", "Rådgiver AS")
                 }
