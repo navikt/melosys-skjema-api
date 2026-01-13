@@ -40,6 +40,7 @@ import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
 import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
 import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -143,9 +144,17 @@ fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
     vanligHjemmebaseNavn = null
 )
 
+fun familiemedlemMedDefaultVerdier() = Familiemedlem(
+    fornavn = "John",
+    etternavn = "Doe",
+    harNorskFodselsnummerEllerDnummer = true,
+    fodselsnummer = korrektSyntetiskFnr,
+    fodselsdato = null
+)
+
 fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
-    sokerForBarnUnder18SomSkalVaereMed = false,
-    harEktefellePartnerSamboerEllerBarnOver18SomSenderEgenSoknad = false
+    skalHaMedFamiliemedlemmer = false,
+    familiemedlemmer = emptyList()
 )
 
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
