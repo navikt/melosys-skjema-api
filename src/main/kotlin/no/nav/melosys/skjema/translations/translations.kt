@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.translations.dto.ArbeidsstedIUtlandetTranslation
 import no.nav.melosys.skjema.translations.dto.ArbeidstakerensLonnTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslations
+import no.nav.melosys.skjema.translations.dto.FamiliemedlemmerTranslation
 import no.nav.melosys.skjema.translations.dto.FellesTranslation
 import no.nav.melosys.skjema.translations.dto.OmBordPaFlyTranslation
 import no.nav.melosys.skjema.translations.dto.PaLandTranslation
@@ -77,6 +78,13 @@ val TRANSLATIONS = ErrorMessageTranslations(
         utenlandsoppdragetArbeidstakerTranslation = UtenlandsoppdragetArbeidstakerTranslation(
             duMaOppgiUtsendelsesland = "Du må oppgi utsendelsesland"
         ),
+        familiemedlemmerTranslation = FamiliemedlemmerTranslation(
+            familiemedlemmerMaaVaereTomNarSkalHaMedFamiliemedlemmerErFalse = "Familiemedlemmer må være tom når du ikke skal ha med familiemedlemmer",
+            fornavnMaaOppgis = "Du må oppgi fornavn",
+            etternavnMaaOppgis = "Du må oppgi etternavn",
+            fodselsnummerMaaOppgis = "Du må oppgi fødselsnummer",
+            fodselsdatoMaaOppgis = "Du må oppgi fødselsdato"
+        ),
         fellesTranslation = FellesTranslation(
             organisasjonsnummerHarUgyldigFormat = "Organisasjonsnummer har ugyldig format",
             organisasjonsnummerFinnesIkke = "Organisasjonsnummer finnes ikke i Enhetsregisteret",
@@ -142,6 +150,13 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         utenlandsoppdragetArbeidstakerTranslation = UtenlandsoppdragetArbeidstakerTranslation(
             duMaOppgiUtsendelsesland = "You must specify posting country"
+        ),
+        familiemedlemmerTranslation = FamiliemedlemmerTranslation(
+            familiemedlemmerMaaVaereTomNarSkalHaMedFamiliemedlemmerErFalse = "Family members must be empty when you are not bringing family members",
+            fornavnMaaOppgis = "You must specify first name",
+            etternavnMaaOppgis = "You must specify last name",
+            fodselsnummerMaaOppgis = "You must specify national identity number",
+            fodselsdatoMaaOppgis = "You must specify date of birth"
         ),
         fellesTranslation = FellesTranslation(
             organisasjonsnummerHarUgyldigFormat = "Organization number has invalid format",

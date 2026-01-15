@@ -13,5 +13,6 @@ data class ErrorMessageTranslation(
     val tilleggsopplysningerTranslation: TilleggsopplysningerTranslation,
     val utenlandsoppdragetTranslation: UtenlandsoppdragetTranslation,
     val utenlandsoppdragetArbeidstakerTranslation: UtenlandsoppdragetArbeidstakerTranslation,
+    val familiemedlemmerTranslation: FamiliemedlemmerTranslation,
     val fellesTranslation: FellesTranslation,
 )

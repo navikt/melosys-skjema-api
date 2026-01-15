@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintValidatorContext
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonRequest
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
+import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -29,7 +30,8 @@ class ErFodselsEllerDNummerValidatorTest : BaseValidatorTest() {
     }
 
     fun fieldsWithFodselsnummer(): Stream<Arguments> = listOf(
-        Arguments.of(VerifiserPersonRequest::class.java, "fodselsnummer")
+        Arguments.of(VerifiserPersonRequest::class.java, VerifiserPersonRequest::fodselsnummer.name),
+        Arguments.of(Familiemedlem::class.java, Familiemedlem::fodselsnummer.name),
     ).stream()
 
     @Test

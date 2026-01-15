@@ -9,15 +9,16 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
 
 @ExtendWith(SpringExtension::class)
 @ContextConfiguration(classes = [BaseValidatorTest.TestConfig::class])
-@ActiveProfiles("test")
+@TestPropertySource(properties = ["validation.fodselsnummer.synthetic-mode=true"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseValidatorTest {
     @Autowired
@@ -32,6 +33,7 @@ abstract class BaseValidatorTest {
     }
 
     @Configuration
+    @ComponentScan(basePackages = ["no.nav.melosys.skjema.controller.validators"])
     class TestConfig {
         @Bean
         fun validator(): Validator = LocalValidatorFactoryBean()
