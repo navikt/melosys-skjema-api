@@ -29,6 +29,7 @@ import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
@@ -86,7 +87,7 @@ fun periodeDtoMedDefaultVerdier() = PeriodeDto(
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
-    utsendelseLand = "SE",
+    utsendelseLand = LandKode.SE,
     arbeidstakerUtsendelsePeriode = periodeDtoMedDefaultVerdier(),
     arbeidsgiverHarOppdragILandet = true,
     arbeidstakerBleAnsattForUtenlandsoppdraget = false,
@@ -125,19 +126,19 @@ fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
 fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
     navnPaInnretning = "Test Platform",
     typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
-    sokkelLand = "NO"
+    sokkelLand = LandKode.SE
 )
 
 fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
     navnPaSkip = "MS Test Ship",
     yrketTilArbeidstaker = "Skipsfører",
     seilerI = Farvann.INTERNASJONALT_FARVANN,
-    flaggland = "NO",
+    flaggland = LandKode.SE,
     territorialfarvannLand = null
 )
 
 fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
-    hjemmebaseLand = "NO",
+    hjemmebaseLand = LandKode.SE,
     hjemmebaseNavn = "Oslo Airport",
     erVanligHjemmebase = true,
     vanligHjemmebaseLand = null,
@@ -158,7 +159,7 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
 )
 
 fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
-    utsendelsesLand = "SV",
+    utsendelsesLand = LandKode.SE,
     utsendelsePeriode = periodeDtoMedDefaultVerdier()
 )
 

@@ -3,11 +3,11 @@ package no.nav.melosys.skjema.controller.validators.utenlandsoppdraget
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import jakarta.validation.Valid
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.Test
@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource
 class UtenlandsoppdragetValidatorTest : BaseValidatorTest() {
 
     private val utenlandsoppdragetDtoMedGyldigeVerdier = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-        utsendelseLand = "SE",
+        utsendelseLand = LandKode.SE,
         arbeidstakerUtsendelsePeriode = PeriodeDto(
             fraDato = java.time.LocalDate.of(2024, 1, 1),
             tilDato = java.time.LocalDate.of(2024, 12, 31)

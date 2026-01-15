@@ -3,10 +3,10 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
+import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -45,7 +45,7 @@ class OmBordPaFlyValidatorTest: BaseValidatorTest() {
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
             erVanligHjemmebase = false,
-            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseLand = LandKode.SE,
             vanligHjemmebaseNavn = "Stockholm Airport"
         )
     ).map { Arguments.of(it) }.stream()
@@ -53,7 +53,7 @@ class OmBordPaFlyValidatorTest: BaseValidatorTest() {
     fun invalidCombinations(): Stream<Arguments> = listOf(
         omBordPaFlyDtoMedDefaultVerdier().copy(
             erVanligHjemmebase = true,
-            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseLand = LandKode.SE,
             vanligHjemmebaseNavn = null
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
@@ -63,7 +63,7 @@ class OmBordPaFlyValidatorTest: BaseValidatorTest() {
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
             erVanligHjemmebase = true,
-            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseLand = LandKode.SE,
             vanligHjemmebaseNavn = "Stockholm Airport"
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
@@ -73,7 +73,7 @@ class OmBordPaFlyValidatorTest: BaseValidatorTest() {
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
             erVanligHjemmebase = false,
-            vanligHjemmebaseLand = "SE",
+            vanligHjemmebaseLand = LandKode.SE,
             vanligHjemmebaseNavn = null
         ),
         omBordPaFlyDtoMedDefaultVerdier().copy(
