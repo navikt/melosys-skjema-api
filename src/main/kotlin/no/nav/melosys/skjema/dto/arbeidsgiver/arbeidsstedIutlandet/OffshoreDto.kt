@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.dto.felles.LandKode
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class OffshoreDto(
+    val navnPaVirksomhet: String,
     val navnPaInnretning: String,
     val typeInnretning: TypeInnretning,
     val sokkelLand: LandKode

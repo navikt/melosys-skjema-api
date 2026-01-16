@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.dto.felles.LandKode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @GyldigOmBordPaFly
 data class OmBordPaFlyDto(
+    val navnPaVirksomhet: String,
     val hjemmebaseLand: LandKode,
     val hjemmebaseNavn: String,
     val erVanligHjemmebase: Boolean,
