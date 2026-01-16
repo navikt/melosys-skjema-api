@@ -22,14 +22,14 @@ class PaSkipValidator : ConstraintValidator<GyldigPaSkip, PaSkipDto> {
 
         return when(dto.seilerI) {
             Farvann.INTERNASJONALT_FARVANN -> {
-                if (dto.flaggland.isNullOrBlank()) {
+                if (dto.flaggland == null) {
                     context.addViolation(
                         translationFieldName(PaSkipTranslation::duMaOppgiFlaggland.name),
                         PaSkipDto::flaggland.name
                     )
                     return false
                 }
-                if (!dto.territorialfarvannLand.isNullOrBlank()) {
+                if (dto.territorialfarvannLand != null) {
                     context.addViolation(
                         translationFieldName(PaSkipTranslation::territorialfarvannLandSkalIkkeOppgis.name),
                         PaSkipDto::territorialfarvannLand.name
@@ -39,14 +39,14 @@ class PaSkipValidator : ConstraintValidator<GyldigPaSkip, PaSkipDto> {
                 true
             }
             Farvann.TERRITORIALFARVANN -> {
-                if (dto.territorialfarvannLand.isNullOrBlank()) {
+                if (dto.territorialfarvannLand == null) {
                     context.addViolation(
                         translationFieldName(PaSkipTranslation::duMaOppgiTerritorialfarvannLand.name),
                         PaSkipDto::territorialfarvannLand.name
                     )
                     return false
                 }
-                if (!dto.flaggland.isNullOrBlank()) {
+                if (dto.flaggland != null) {
                     context.addViolation(
                         translationFieldName(PaSkipTranslation::flagglandSkalIkkeOppgis.name),
                         PaSkipDto::flaggland.name

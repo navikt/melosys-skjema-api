@@ -3,12 +3,13 @@ package no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget
 import com.fasterxml.jackson.annotation.JsonInclude
 import jakarta.validation.Valid
 import no.nav.melosys.skjema.controller.validators.utenlandsoppdraget.GyldigUtenlandsoppdrag
+import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @GyldigUtenlandsoppdrag
 data class UtenlandsoppdragetDto(
-    val utsendelseLand: String,
+    val utsendelseLand: LandKode,
     @field:Valid
     val arbeidstakerUtsendelsePeriode: PeriodeDto,
     val arbeidsgiverHarOppdragILandet: Boolean,

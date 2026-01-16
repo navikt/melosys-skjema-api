@@ -1,0 +1,41 @@
+package no.nav.melosys.skjema.dto.felles
+
+// https://github.com/navikt/melosys-kodeverk/blob/master/src/landkoder.js
+
+enum class LandKode {
+    AT,
+    AX,
+    BE,
+    BG,
+    CH,
+    CY,
+    CZ,
+    DE,
+    DK,
+    EE,
+    ES,
+    FI,
+    FO,
+    FR,
+    GB,
+    GL,
+    GR,
+    HR,
+    HU,
+    IE,
+    IS,
+    IT,
+    LI,
+    LT,
+    LU,
+    LV,
+    MT,
+    NL,
+    PL,
+    PT,
+    RO,
+    SE,
+    SI,
+    SJ,
+    SK
+}

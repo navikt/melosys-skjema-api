@@ -3,11 +3,11 @@ package no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import java.util.stream.Stream
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.paSkipDtoMedDefaultVerdier
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -41,13 +41,13 @@ class PaSkipValidatorTest: BaseValidatorTest() {
     fun validCombinations(): Stream<Arguments> = listOf(
         paSkipDtoMedDefaultVerdier().copy(
             seilerI = Farvann.INTERNASJONALT_FARVANN,
-            flaggland = "NO",
+            flaggland = LandKode.SE,
             territorialfarvannLand = null
         ),
         paSkipDtoMedDefaultVerdier().copy(
             seilerI = Farvann.TERRITORIALFARVANN,
             flaggland = null,
-            territorialfarvannLand = "SE"
+            territorialfarvannLand = LandKode.SE
         )
     ).map { Arguments.of(it) }.stream()
 
@@ -59,18 +59,8 @@ class PaSkipValidatorTest: BaseValidatorTest() {
         ),
         paSkipDtoMedDefaultVerdier().copy(
             seilerI = Farvann.INTERNASJONALT_FARVANN,
-            flaggland = "",
-            territorialfarvannLand = null
-        ),
-        paSkipDtoMedDefaultVerdier().copy(
-            seilerI = Farvann.INTERNASJONALT_FARVANN,
-            flaggland = "   ",
-            territorialfarvannLand = null
-        ),
-        paSkipDtoMedDefaultVerdier().copy(
-            seilerI = Farvann.INTERNASJONALT_FARVANN,
-            flaggland = "NO",
-            territorialfarvannLand = "SE"
+            flaggland = LandKode.SE,
+            territorialfarvannLand = LandKode.SE
         ),
         paSkipDtoMedDefaultVerdier().copy(
             seilerI = Farvann.TERRITORIALFARVANN,
@@ -79,18 +69,8 @@ class PaSkipValidatorTest: BaseValidatorTest() {
         ),
         paSkipDtoMedDefaultVerdier().copy(
             seilerI = Farvann.TERRITORIALFARVANN,
-            flaggland = null,
-            territorialfarvannLand = ""
-        ),
-        paSkipDtoMedDefaultVerdier().copy(
-            seilerI = Farvann.TERRITORIALFARVANN,
-            flaggland = null,
-            territorialfarvannLand = "   "
-        ),
-        paSkipDtoMedDefaultVerdier().copy(
-            seilerI = Farvann.TERRITORIALFARVANN,
-            flaggland = "NO",
-            territorialfarvannLand = "SE"
+            flaggland = LandKode.SE,
+            territorialfarvannLand = LandKode.SE
         )
     ).map { Arguments.of(it) }.stream()
 }
