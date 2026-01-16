@@ -18,9 +18,9 @@ class PdlServiceTest {
     private val pdlService = PdlService(pdlConsumer)
 
     @Test
-    fun `verifiserOgHentPerson returnerer navn og fødselsdato når person finnes og etternavn matcher`() {
+    fun `verifiserOgHentPerson returnerer navn og fodselsdato naar person finnes og navn matcher`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "Nordmann"
+        val navn = "Ola Nordmann"
         val person = PdlPerson(
             navn = listOf(
                 PdlNavn(
@@ -36,17 +36,17 @@ class PdlServiceTest {
 
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
-        val (navn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+        val (returnertNavn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, navn)
 
-        assertThat(navn).isEqualTo("Ola Nordmann")
+        assertThat(returnertNavn).isEqualTo("Ola Nordmann")
         assertThat(fodselsdato).isEqualTo(LocalDate.of(1990, 1, 1))
         verify { pdlConsumer.hentPerson(fodselsnummer) }
     }
 
     @Test
-    fun `verifiserOgHentPerson returnerer fullt navn med mellomnavn når person har mellomnavn`() {
+    fun `verifiserOgHentPerson returnerer fullt navn med mellomnavn naar person har mellomnavn`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "Hansen"
+        val navn = "Kari Marie Hansen"
         val person = PdlPerson(
             navn = listOf(
                 PdlNavn(
@@ -62,16 +62,16 @@ class PdlServiceTest {
 
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
-        val (navn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+        val (returnertNavn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, navn)
 
-        assertThat(navn).isEqualTo("Kari Marie Hansen")
+        assertThat(returnertNavn).isEqualTo("Kari Marie Hansen")
         assertThat(fodselsdato).isEqualTo(LocalDate.of(1985, 5, 15))
     }
 
     @Test
-    fun `verifiserOgHentPerson håndterer etternavn case-insensitive`() {
+    fun `verifiserOgHentPerson haandterer navn case-insensitive`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "NORDMANN" // Store bokstaver
+        val navn = "OLA NORDMANN" // Store bokstaver
         val person = PdlPerson(
             navn = listOf(
                 PdlNavn(
@@ -87,29 +87,29 @@ class PdlServiceTest {
 
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
-        val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+        val (returnertNavn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, navn)
 
-        assertThat(navn).isEqualTo("Ola Nordmann")
+        assertThat(returnertNavn).isEqualTo("Ola Nordmann")
     }
 
     @Test
-    fun `verifiserOgHentPerson kaster PersonVerifiseringException når person ikke finnes i PDL`() {
+    fun `verifiserOgHentPerson kaster PersonVerifiseringException naar person ikke finnes i PDL`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "Nordmann"
+        val navn = "Ola Nordmann"
 
         every { pdlConsumer.hentPerson(fodselsnummer) } throws IllegalArgumentException("Fant ikke ident i PDL")
 
         val exception = assertThrows<PersonVerifiseringException> {
-            pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+            pdlService.verifiserOgHentPerson(fodselsnummer, navn)
         }
 
-        assertThat(exception.message).isEqualTo("Fødselsnummer og etternavn matcher ikke")
+        assertThat(exception.message).isEqualTo("Fødselsnummer og navn matcher ikke")
     }
 
     @Test
-    fun `verifiserOgHentPerson kaster PersonVerifiseringException når etternavn ikke matcher`() {
+    fun `verifiserOgHentPerson kaster PersonVerifiseringException naar navn ikke matcher`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "FeilEtternavn"
+        val navn = "Feil Navn"
         val person = PdlPerson(
             navn = listOf(
                 PdlNavn(
@@ -126,16 +126,16 @@ class PdlServiceTest {
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<PersonVerifiseringException> {
-            pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+            pdlService.verifiserOgHentPerson(fodselsnummer, navn)
         }
 
-        assertThat(exception.message).isEqualTo("Fødselsnummer og etternavn matcher ikke")
+        assertThat(exception.message).isEqualTo("Fødselsnummer og navn matcher ikke")
     }
 
     @Test
-    fun `verifiserOgHentPerson kaster PersonVerifiseringException når person mangler navn i PDL`() {
+    fun `verifiserOgHentPerson kaster IllegalArgumentException naar person mangler navn i PDL`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "Nordmann"
+        val navn = "Ola Nordmann"
         val person = PdlPerson(
             navn = emptyList(), // Ingen navn registrert
             foedselsdato = listOf(
@@ -145,17 +145,17 @@ class PdlServiceTest {
 
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
-        val exception = assertThrows<PersonVerifiseringException> {
-            pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+        val exception = assertThrows<IllegalArgumentException> {
+            pdlService.verifiserOgHentPerson(fodselsnummer, navn)
         }
 
-        assertThat(exception.message).isEqualTo("Fødselsnummer og etternavn matcher ikke")
+        assertThat(exception.message).isEqualTo("Person har ingen navn registrert i PDL")
     }
 
     @Test
-    fun `verifiserOgHentPerson kaster IllegalArgumentException når person mangler fødselsdato i PDL`() {
+    fun `verifiserOgHentPerson kaster IllegalArgumentException naar person mangler fodselsdato i PDL`() {
         val fodselsnummer = "12345678901"
-        val etternavn = "Nordmann"
+        val navn = "Ola Nordmann"
         val person = PdlPerson(
             navn = listOf(
                 PdlNavn(
@@ -164,13 +164,13 @@ class PdlServiceTest {
                     etternavn = "Nordmann"
                 )
             ),
-            foedselsdato = emptyList() // Ingen fødselsdato registrert
+            foedselsdato = emptyList() // Ingen fodselsdato registrert
         )
 
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<IllegalArgumentException> {
-            pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
+            pdlService.verifiserOgHentPerson(fodselsnummer, navn)
         }
 
         assertThat(exception.message).isEqualTo("Person har ingen fødselsdato registrert i PDL")

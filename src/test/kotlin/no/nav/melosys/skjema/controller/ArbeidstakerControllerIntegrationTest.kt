@@ -43,7 +43,7 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val request = VerifiserPersonRequest(
             fodselsnummer = korrektSyntetiskFnr,
-            etternavn = "Nordmann"
+            navn = "Nordmann"
         )
 
         every {
@@ -77,12 +77,12 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val request = VerifiserPersonRequest(
             fodselsnummer = korrektSyntetiskFnr,
-            etternavn = "FeilEtternavn"
+            navn = "FeilEtternavn"
         )
 
         every {
             pdlService.verifiserOgHentPerson(korrektSyntetiskFnr, "FeilEtternavn")
-        } throws PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
+        } throws PersonVerifiseringException("Fødselsnummer og navn matcher ikke")
 
         val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -102,7 +102,7 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun `POST verifiser-person skal returnere 400 ved ugyldig fnr-format`() {
         val request = VerifiserPersonRequest(
             fodselsnummer = "123", // Ugyldig format
-            etternavn = "Nordmann"
+            navn = "Nordmann"
         )
 
         val accessToken = mockOAuth2Server.getToken(
@@ -119,11 +119,11 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere 400 ved tomt etternavn")
-    fun `POST verifiser-person skal returnere 400 ved tomt etternavn`() {
+    @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere 400 ved tomt navn")
+    fun `POST verifiser-person skal returnere 400 ved tomt navn`() {
         val request = VerifiserPersonRequest(
             fodselsnummer = korrektSyntetiskFnr,
-            etternavn = ""
+            navn = ""
         )
 
         val accessToken = mockOAuth2Server.getToken(
@@ -144,7 +144,7 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun `POST verifiser-person skal returnere 401 uten autentisering`() {
         val request = VerifiserPersonRequest(
             fodselsnummer = korrektSyntetiskFnr,
-            etternavn = "Nordmann"
+            navn = "Nordmann"
         )
 
         webTestClient.post()
@@ -162,7 +162,7 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val request = VerifiserPersonRequest(
             fodselsnummer = korrektSyntetiskFnr,
-            etternavn = "Nordmann"
+            navn = "Nordmann"
         )
 
         every {

@@ -13,39 +13,38 @@ class PdlService(
 ) {
 
     /**
-     * Verifiserer at en person med gitt fødselsnummer og etternavn eksisterer,
+     * Verifiserer at en person med gitt fødselsnummer og navn eksisterer,
      * og returnerer persondata hvis verifisering lykkes.
      *
      * @param fodselsnummer Fødselsnummer eller d-nummer
-     * @param etternavn Etternavnet som skal matches
+     * @param navn Navnet som skal matches
      * @return Pair med navn og fødselsdato
-     * @throws PersonVerifiseringException hvis person ikke finnes eller etternavn ikke matcher
+     * @throws PersonVerifiseringException hvis person ikke finnes eller navn ikke matcher
      * @throws IllegalArgumentException hvis person ikke har nødvendig data registrert
      */
-    fun verifiserOgHentPerson(fodselsnummer: String, etternavn: String): Pair<String, LocalDate> {
+    fun verifiserOgHentPerson(fodselsnummer: String, navn: String): Pair<String, LocalDate> {
         log.info { "Verifiserer og henter person fra PDL" }
 
         val person = try {
             pdlConsumer.hentPerson(fodselsnummer)
         } catch (e: IllegalArgumentException) {
             log.warn(e) { "Fant ikke person ved verifisering" }
-            throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
+            throw PersonVerifiseringException("Fødselsnummer og navn matcher ikke")
         }
 
-        val personEtternavn = person.navn.firstOrNull()?.etternavn
-        if (!personEtternavn.equals(etternavn, ignoreCase = true)) {
-            log.warn { "Etternavn matcher ikke ved verifisering" }
-            throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
-        }
-
-        val navn = person.navn.firstOrNull()?.fulltNavn()
+        val personNavn = person.navn.firstOrNull()?.fulltNavn()
             ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
+
+        if (!personNavn.equals(navn, ignoreCase = true)) {
+            log.warn { "Navn matcher ikke ved verifisering" }
+            throw PersonVerifiseringException("Fødselsnummer og navn matcher ikke")
+        }
 
         val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato
             ?: throw IllegalArgumentException("Person har ingen fødselsdato registrert i PDL")
 
         val fodselsdato = LocalDate.parse(fodselsdatoString)
 
-        return Pair(navn, fodselsdato)
+        return Pair(personNavn, fodselsdato)
     }
 }

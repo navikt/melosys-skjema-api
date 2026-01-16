@@ -15,8 +15,8 @@ data class VerifiserPersonRequest(
     val fodselsnummer: String,
 
     /**
-     * Etternavn for verifisering
+     * Fullt navn for verifisering
      */
     @field:NotBlank
-    val etternavn: String
+    val navn: String
 )
