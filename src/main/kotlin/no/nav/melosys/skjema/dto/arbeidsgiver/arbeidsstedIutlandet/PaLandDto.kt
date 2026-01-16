@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.controller.validators.arbeidsstediutlandet.GyldigPa
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @GyldigPaLand
 data class PaLandDto(
+    val navnPaVirksomhet: String,
     val fastEllerVekslendeArbeidssted: FastEllerVekslendeArbeidssted,
     val fastArbeidssted: PaLandFastArbeidsstedDto?,
     val beskrivelseVekslende: String?,

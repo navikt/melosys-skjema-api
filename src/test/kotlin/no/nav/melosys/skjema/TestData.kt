@@ -112,6 +112,7 @@ fun paLandFastArbeidsstedDtoMedDefaultVerdier() = PaLandFastArbeidsstedDto(
 )
 
 fun paLandDtoMedDefaultVerdier() = PaLandDto(
+    navnPaVirksomhet = "Test Inc",
     fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
     fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
     beskrivelseVekslende = null,
@@ -124,12 +125,14 @@ fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
 )
 
 fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
+    navnPaVirksomhet = "Test Inc",
     navnPaInnretning = "Test Platform",
     typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
     sokkelLand = LandKode.SE
 )
 
 fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
+    navnPaVirksomhet = "Test Inc",
     navnPaSkip = "MS Test Ship",
     yrketTilArbeidstaker = "Skipsfører",
     seilerI = Farvann.INTERNASJONALT_FARVANN,
@@ -138,6 +141,7 @@ fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
 )
 
 fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
+    navnPaVirksomhet = "Test Inc",
     hjemmebaseLand = LandKode.SE,
     hjemmebaseNavn = "Oslo Airport",
     erVanligHjemmebase = true,
