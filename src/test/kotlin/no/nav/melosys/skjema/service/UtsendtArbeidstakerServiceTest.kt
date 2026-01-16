@@ -62,7 +62,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
     val testArbeidstaker = PersonDto(
         fnr = "12345678910",
-        etternavn = "Testesen"
+        navn = "Test Testesen"
     )
 
     val testRadgiverfirma = SimpleOrganisasjonDto(

@@ -38,9 +38,9 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         fnr = "12345678910"
     )
 
-    val testArbeidstakerMedEtternavn = PersonDto(
+    val testArbeidstakerMedNavn = PersonDto(
         fnr = "12345678910",
-        etternavn = "Testesen"
+        navn = "Test Testesen"
     )
 
     val testRadgiverfirma = SimpleOrganisasjonDto(
@@ -149,20 +149,20 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstakerMedEtternavn,
+                arbeidstaker = testArbeidstakerMedNavn,
                 harFullmakt = false
             )
 
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
-            every { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) } returns Pair(
+            every { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedNavn.fnr, testArbeidstakerMedNavn.navn!!) } returns Pair(
                 "Test Testesen",
                 java.time.LocalDate.of(1990, 1, 1)
             )
 
             validator.validerOpprettelse(request, currentUser)
 
-            verify { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) }
+            verify { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedNavn.fnr, testArbeidstakerMedNavn.navn!!) }
         }
 
         test("skal feile når bruker ikke har Altinn-tilgang") {
@@ -211,21 +211,21 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstakerMedEtternavn,
+                arbeidstaker = testArbeidstakerMedNavn,
                 harFullmakt = false
             )
 
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
             every {
-                mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!)
+                mockPdlService.verifiserOgHentPerson(testArbeidstakerMedNavn.fnr, testArbeidstakerMedNavn.navn!!)
             } throws IllegalArgumentException("Person ikke funnet")
 
             val exception = shouldThrow<IllegalArgumentException> {
                 validator.validerOpprettelse(request, currentUser)
             }
 
-            exception.message shouldContain "finnes ikke eller etternavn matcher ikke"
+            exception.message shouldContain "finnes ikke eller navn matcher ikke"
         }
     }
 

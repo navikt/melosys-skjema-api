@@ -30,13 +30,13 @@ class ArbeidstakerController(
     @PostMapping("/verifiser-person")
     @Operation(
         summary = "Verifiser person uten fullmakt",
-        description = "Verifiserer at en person med gitt fødselsnummer og etternavn eksisterer i PDL. " +
+        description = "Verifiserer at en person med gitt fødselsnummer og navn eksisterer i PDL. " +
                 "Brukes for arbeidstakere uten fullmakt. " +
-                "Returnerer 400 hvis fødselsnummer og etternavn ikke matcher. " +
+                "Returnerer 400 hvis fødselsnummer og navn ikke matcher. " +
                 "Inkluderer rate limiting (se RateLimitConfig for grenser)."
     )
     @ApiResponse(responseCode = "200", description = "Person verifisert - returnerer navn og fødselsdato")
-    @ApiResponse(responseCode = "400", description = "Ugyldig input eller finner ikke person med oppgitt fødselsnummer og etternavn")
+    @ApiResponse(responseCode = "400", description = "Ugyldig input eller finner ikke person med oppgitt fødselsnummer og navn")
     @ApiResponse(responseCode = "401", description = "Ikke autentisert")
     @ApiResponse(responseCode = "429", description = "Rate limit overskredet")
     fun verifiserPerson(@Valid @RequestBody request: VerifiserPersonRequest): ResponseEntity<VerifiserPersonResponse> {
@@ -49,7 +49,7 @@ class ArbeidstakerController(
 
         val (navn, fodselsdato) = pdlService.verifiserOgHentPerson(
             fodselsnummer = request.fodselsnummer,
-            etternavn = request.etternavn
+            navn = request.navn
         )
 
         // TODO: Legg til auditlogs av personverifiseringen

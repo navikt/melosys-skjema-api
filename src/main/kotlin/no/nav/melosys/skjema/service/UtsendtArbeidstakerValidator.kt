@@ -177,7 +177,7 @@ class UtsendtArbeidstakerValidator(
      * Validerer arbeidstaker for ARBEIDSGIVER og RADGIVER scenarioer.
      *
      * Med fullmakt: Validerer via repr-api (som også verifiserer PDL)
-     * Uten fullmakt: Validerer direkte mot PDL med etternavn
+     * Uten fullmakt: Validerer direkte mot PDL med navn
      */
     private fun validerArbeidstakerForArbeidsgiver(
         request: OpprettSoknadMedKontekstRequest
@@ -194,22 +194,22 @@ class UtsendtArbeidstakerValidator(
             }
             // repr-api validerer også at person finnes i PDL
         } else {
-            // Uten fullmakt: Validere at person finnes i PDL med etternavn-matching
+            // Uten fullmakt: Validere at person finnes i PDL med navn-matching
             log.debug { "Validerer arbeidstaker uten fullmakt via PDL" }
 
-            if (request.arbeidstaker.etternavn == null) {
-                throw IllegalArgumentException("Etternavn må oppgis for arbeidstaker uten fullmakt")
+            if (request.arbeidstaker.navn == null) {
+                throw IllegalArgumentException("Navn må oppgis for arbeidstaker uten fullmakt")
             }
 
             try {
                 pdlService.verifiserOgHentPerson(
                     request.arbeidstaker.fnr,
-                    request.arbeidstaker.etternavn
+                    request.arbeidstaker.navn
                 )
             } catch (e: Exception) {
                 log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
                 throw IllegalArgumentException(
-                    "Arbeidstaker med fødselsnummer ${request.arbeidstaker.fnr} finnes ikke eller etternavn matcher ikke",
+                    "Arbeidstaker med fødselsnummer ${request.arbeidstaker.fnr} finnes ikke eller navn matcher ikke",
                     e
                 )
             }
