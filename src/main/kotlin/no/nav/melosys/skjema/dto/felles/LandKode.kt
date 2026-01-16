@@ -1,5 +1,7 @@
 package no.nav.melosys.skjema.dto.felles
 
+// https://github.com/navikt/melosys-kodeverk/blob/master/src/landkoder.js
+
 enum class LandKode {
     AT,
     AX,
