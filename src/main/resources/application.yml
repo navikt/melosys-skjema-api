@@ -144,6 +144,11 @@ innsending:
     initial-delay-seconds: ${INNSENDING_RETRY_INITIAL_DELAY_SECONDS:60}
     max-attempts: ${INNSENDING_RETRY_MAX_ATTEMPTS:5}
     stale-threshold-minutes: ${INNSENDING_RETRY_STALE_THRESHOLD_MINUTES:5}
+# Skjemadefinisjon
+skjemadefinisjon:
+  aktive-versjoner:
+    A1: "1"
+
 # Rate limiting
 rate-limit:
   organisasjonssok:

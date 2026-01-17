@@ -9,7 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
-import no.nav.security.token.support.core.api.Unprotected
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/skjema/definisjon")
 @Tag(name = "Skjemadefinisjon", description = "Endepunkter for skjemadefinisjoner med versjonering og språkstøtte")
-@Unprotected
+@Protected
 class SkjemaDefinisjonController(
     private val skjemaDefinisjonService: SkjemaDefinisjonService
 ) {
@@ -52,7 +53,8 @@ class SkjemaDefinisjonController(
         @Parameter(description = "Språkkode (nb, nn, en). Standard: nb")
         @RequestParam(defaultValue = "nb") språk: String
     ): SkjemaDefinisjonDto {
-        return skjemaDefinisjonService.hent(type, versjon, språk)
+        val validertSpråk = Språk.fraKode(språk)
+        return skjemaDefinisjonService.hent(type, versjon, validertSpråk)
     }
 
     @GetMapping("/{type}/versjon", produces = [MediaType.APPLICATION_JSON_VALUE])

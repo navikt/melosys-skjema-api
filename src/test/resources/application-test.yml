@@ -25,3 +25,7 @@ NAIS_APP_NAME: test-app
 MERKELAPP: foo123
 RESSURS_ID: test123
 BRUK_SYNTETISK_FNR: true
+
+skjemadefinisjon:
+  aktive-versjoner:
+    A1: "1"

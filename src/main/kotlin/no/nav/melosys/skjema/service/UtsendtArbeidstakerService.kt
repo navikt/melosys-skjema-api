@@ -30,6 +30,7 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 
@@ -401,7 +402,8 @@ class UtsendtArbeidstakerService(
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
 
         // Bruk ønsket språk, eller fall tilbake til innsendtSpråk, eller nb som default
-        val visSprak = sprak ?: metadata.innsendtSprak ?: "nb"
+        val visSprakKode = sprak ?: metadata.innsendtSprak ?: "nb"
+        val visSprak = Språk.fraKode(visSprakKode)
         val versjon = metadata.skjemaDefinisjonVersjon ?: skjemaDefinisjonService.hentAktivVersjon(skjema.type)
 
         // Hent definisjon for riktig versjon
