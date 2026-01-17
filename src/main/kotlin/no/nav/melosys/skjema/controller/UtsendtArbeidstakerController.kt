@@ -2,10 +2,12 @@ package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
+import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.dto.SkjemaInnsendtKvittering
@@ -22,8 +24,11 @@ import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.Utenlandsoppdra
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
+import no.nav.melosys.skjema.service.pdf.PdfGeneratorService
 import no.nav.security.token.support.core.api.Protected
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -42,6 +47,7 @@ private val log = KotlinLogging.logger { }
 class UtsendtArbeidstakerController(
     private val utsendtArbeidstakerService: UtsendtArbeidstakerService,
     private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
+    private val pdfGeneratorService: PdfGeneratorService,
 ) {
 
     @GetMapping
@@ -126,22 +132,70 @@ class UtsendtArbeidstakerController(
     }
 
     @GetMapping("/{id}/innsendt-kvittering")
-    @Operation(summary = "Send inn skjema")
-    @ApiResponse(responseCode = "200", description = "Skjema innsendt")
+    @Operation(summary = "Hent kvittering for innsendt skjema")
+    @ApiResponse(responseCode = "200", description = "Kvittering hentet")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun hentInnsendingKvittering(@PathVariable id: UUID): ResponseEntity<SkjemaInnsendtKvittering> {
-        log.info { "Sender inn skjema med id: $id" }
+        log.info { "Henter innsending-kvittering for skjema: $id" }
         val innsendtSkjemaKvittering = utsendtArbeidstakerService.genererInnsendtKvittering(id)
 
         return ResponseEntity.ok(innsendtSkjemaKvittering)
     }
 
-    @GetMapping("/{id}/pdf")
-    @Operation(summary = "Generate PDF for skjema")
-    @ApiResponse(responseCode = "200", description = "PDF generated")
+    @GetMapping("/{id}/innsendt")
+    @Operation(
+        summary = "Hent innsendt søknad med skjemadefinisjon",
+        description = """
+            Henter innsendt søknad med alle data og skjemadefinisjon for visning.
+            Skjemadefinisjonen brukes til å vise søknaden med korrekte tekster
+            fra innsendingstidspunkt.
+
+            Hvis språk ikke er spesifisert, brukes språket som ble brukt ved innsending.
+        """
+    )
+    @ApiResponse(responseCode = "200", description = "Innsendt søknad hentet")
+    @ApiResponse(responseCode = "400", description = "Skjema er ikke innsendt")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun generatePdf(@PathVariable id: UUID): ResponseEntity<Any> {
-        return ResponseEntity.ok().build()
+    fun hentInnsendtSkjema(
+        @PathVariable id: UUID,
+        @Parameter(description = "Språk for visning (valgfritt - bruker innsendtSpråk som default)")
+        @RequestParam(required = false) sprak: String?
+    ): ResponseEntity<InnsendtSkjemaResponse> {
+        log.info { "Henter innsendt søknad med definisjon: id=$id, språk=$sprak" }
+        val innsendtSkjema = utsendtArbeidstakerService.hentInnsendtSkjema(id, sprak)
+
+        return ResponseEntity.ok(innsendtSkjema)
+    }
+
+    @GetMapping("/{id}/pdf", produces = ["application/pdf"])
+    @Operation(
+        summary = "Generer PDF for innsendt søknad",
+        description = """
+            Genererer en PDF-fil for innsendt søknad.
+            PDF-en inneholder alle data fra søknaden med korrekte tekster fra innsendingstidspunkt.
+        """
+    )
+    @ApiResponse(responseCode = "200", description = "PDF generert")
+    @ApiResponse(responseCode = "400", description = "Skjema er ikke innsendt")
+    @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    fun generatePdf(
+        @PathVariable id: UUID,
+        @Parameter(description = "Språk for PDF (valgfritt - bruker innsendtSpråk som default)")
+        @RequestParam(required = false) sprak: String?
+    ): ResponseEntity<ByteArray> {
+        log.info { "Genererer PDF for skjema: $id, språk=$sprak" }
+
+        val innsendtSkjema = utsendtArbeidstakerService.hentInnsendtSkjema(id, sprak)
+        val pdfBytes = pdfGeneratorService.genererPdf(innsendtSkjema)
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.APPLICATION_PDF
+        headers.setContentDispositionFormData("attachment", "soknad-${innsendtSkjema.referanseId}.pdf")
+        headers.contentLength = pdfBytes.size.toLong()
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(pdfBytes)
     }
 
     // Arbeidsgiver Flow Endpoints
