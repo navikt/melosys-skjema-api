@@ -71,11 +71,15 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")
+
+    // PDF generation
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.36")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.36")
     implementation("net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion")
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:$shedlockVersion")
 
     runtimeOnly("org.postgresql:postgresql")
-    
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
