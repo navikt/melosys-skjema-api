@@ -242,6 +242,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 status = SkjemaStatus.SENDT
             )
         )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(
+                skjema = savedSkjema,
+                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+            )
+        )
 
         val token = createTokenForUser(savedSkjema.fnr!!)
 

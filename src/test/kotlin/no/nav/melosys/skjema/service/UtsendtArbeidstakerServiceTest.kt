@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
@@ -41,6 +42,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val innsendingStatusService = mockk<InnsendingStatusService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
+    val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
 
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
@@ -52,7 +54,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockSubjectHandler,
         innsendingStatusService,
         eventPublisher,
-        referanseIdGenerator
+        referanseIdGenerator,
+        mockSkjemaDefinisjonService
     )
 
     val testArbeidsgiver = SimpleOrganisasjonDto(
