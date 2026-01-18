@@ -27,7 +27,10 @@ import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerD
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
+import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhetMedAnsettelsesform
+import no.nav.melosys.skjema.dto.felles.Ansettelsesform
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.domain.InnsendingStatus
@@ -203,9 +206,27 @@ fun utenlandskVirksomhetMedDefaultVerdier() = UtenlandskVirksomhet(
     tilhorerSammeKonsern = true
 )
 
+fun utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier() = UtenlandskVirksomhetMedAnsettelsesform(
+    navn = "Foreign Company Ltd",
+    organisasjonsnummer = "ABC123",
+    vegnavnOgHusnummer = "Main Street 123",
+    bygning = "Building A",
+    postkode = "12345",
+    byStedsnavn = "Stockholm",
+    region = "Stockholm County",
+    land = "SE",
+    tilhorerSammeKonsern = true,
+    ansettelsesform = Ansettelsesform.ARBEIDSTAKER_ELLER_FRILANSER
+)
+
 fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirksomheter(
     norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
     utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
+)
+
+fun norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier() = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
+    norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
+    utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier())
 )
 
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(

@@ -3,14 +3,14 @@ package no.nav.melosys.skjema.controller.validators.arbeidssituasjon
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.validators.BaseValidatorTest
 import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
 import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
-import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
@@ -57,7 +57,7 @@ class ArbeidssituasjonValidatorTest: BaseValidatorTest() {
         arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
             skalJobbeForFlereVirksomheter = true,
-            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheter(
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
                 norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
                 utenlandskeVirksomheter = null
             )
@@ -66,19 +66,16 @@ class ArbeidssituasjonValidatorTest: BaseValidatorTest() {
         arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
             skalJobbeForFlereVirksomheter = true,
-            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheter(
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
                 norskeVirksomheter = null,
-                utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
+                utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier())
             )
         ),
         // Skal jobbe for flere virksomheter - både norske og utenlandske
         arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
             skalJobbeForFlereVirksomheter = true,
-            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheter(
-                norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
-                utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
-            )
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier()
         )
     ).map { Arguments.of(it) }.stream()
 
@@ -111,7 +108,7 @@ class ArbeidssituasjonValidatorTest: BaseValidatorTest() {
         arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
             skalJobbeForFlereVirksomheter = true,
-            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheter(
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
                 norskeVirksomheter = null,
                 utenlandskeVirksomheter = null
             )
@@ -120,7 +117,7 @@ class ArbeidssituasjonValidatorTest: BaseValidatorTest() {
         arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
             skalJobbeForFlereVirksomheter = true,
-            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheter(
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
                 norskeVirksomheter = emptyList(),
                 utenlandskeVirksomheter = emptyList()
             )
