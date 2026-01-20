@@ -23,3 +23,5 @@ EREG_URL: https://ereg-services.intern.dev.nav.no
 BRUK_SYNTETISK_FNR: true
 PDL_URL: http://host.docker.internal:8082/pdl
 REPR_URL: http://host.docker.internal:8082/repr
+AZURE_APP_WELL_KNOWN_URL: http://host.docker.internal:8082/azure/.well-known/openid-configuration
+MELOSYS_CLIENT_ID: placeholder-melosys-client-id

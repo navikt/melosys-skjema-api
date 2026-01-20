@@ -46,6 +46,9 @@ no.nav.security.jwt:
     tokenx:
       discovery-url: ${TOKEN_X_WELL_KNOWN_URL}
       accepted_audience: ${TOKEN_X_CLIENT_ID}
+    azure:
+      discovery-url: ${AZURE_APP_WELL_KNOWN_URL}
+      accepted_audience: ${AZURE_APP_CLIENT_ID}
   client:
     registration:
       arbeidsgiver-altinn-tilganger:
@@ -155,3 +158,9 @@ rate-limit:
   hent-personer-med-fullmakt:
     max-requests: 15
     time-window-minutes: 1
+
+# Machine-to-machine access control
+m2m:
+  read-skjemadata:
+    clients:
+      - ${MELOSYS_CLIENT_ID}
