@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,7 +20,7 @@ private val log = KotlinLogging.logger { }
 @RequestMapping("/m2m/api/skjema")
 @Tag(name = "M2M Skjema", description = "Machine-to-machine endepunkter for skjemadata")
 class M2MSkjemaController(
-    private val skjemaRepository: SkjemaRepository
+    private val m2mSkjemaService: M2MSkjemaService
 ) {
 
     @GetMapping("/{id}/data")
@@ -31,9 +31,6 @@ class M2MSkjemaController(
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
     fun getSkjema(@PathVariable id: UUID): ResponseEntity<Skjema> {
         log.info { "M2M: Henter skjema med id: $id" }
-        
-        val skjema = skjemaRepository.findById(id)
-            .orElseThrow { NoSuchElementException("Skjema med id $id ikke funnet") }
-        return ResponseEntity.ok(skjema)
+        return ResponseEntity.ok(m2mSkjemaService.hentSkjemaData(id))
     }
 }
