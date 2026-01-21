@@ -6,9 +6,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.*
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.extensions.toArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.extensions.toArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -481,7 +481,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis metadata er null
      */
     private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
-        jsonMapper.toUtsendtArbeidstakerMetadata(
+        jsonMapper.parseUtsendtArbeidstakerMetadata(
             skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}")
         )
 
@@ -546,7 +546,7 @@ class UtsendtArbeidstakerService(
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         // Read existing ArbeidsgiversSkjemaDto or create empty one
-        val existingDto = skjema.data?.let { jsonMapper.toArbeidsgiversSkjemaDataDto(it) } ?: ArbeidsgiversSkjemaDataDto()
+        val existingDto = skjema.data?.let { jsonMapper.parseArbeidsgiversSkjemaDataDto(it) } ?: ArbeidsgiversSkjemaDataDto()
 
         // Apply the update function
         val updatedDto = updateFunction(existingDto)
@@ -563,7 +563,7 @@ class UtsendtArbeidstakerService(
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         // Read existing ArbeidstakersSkjemaDataDto or create empty one
-        val existingDto = skjema.data?.let { jsonMapper.toArbeidstakersSkjemaDataDto(it) } ?: ArbeidstakersSkjemaDataDto()
+        val existingDto = skjema.data?.let { jsonMapper.parseArbeidstakersSkjemaDataDto(it) } ?: ArbeidstakersSkjemaDataDto()
 
         // Apply the update function
         val updatedDto = updateFunction(existingDto)
@@ -584,7 +584,7 @@ class UtsendtArbeidstakerService(
     }
 
     private fun convertToArbeidsgiversSkjemaDto(skjema: Skjema): ArbeidsgiversSkjemaDto {
-        val data = skjema.data?.let { jsonMapper.toArbeidsgiversSkjemaDataDto(it) } ?: ArbeidsgiversSkjemaDataDto()
+        val data = skjema.data?.let { jsonMapper.parseArbeidsgiversSkjemaDataDto(it) } ?: ArbeidsgiversSkjemaDataDto()
 
         return ArbeidsgiversSkjemaDto(
             id = skjema.id ?: error("Skjema ID is null"),
@@ -595,7 +595,7 @@ class UtsendtArbeidstakerService(
     }
 
     private fun convertToArbeidstakersSkjemaDto(skjema: Skjema): ArbeidstakersSkjemaDto {
-        val data = skjema.data?.let { jsonMapper.toArbeidstakersSkjemaDataDto(it) } ?: ArbeidstakersSkjemaDataDto()
+        val data = skjema.data?.let { jsonMapper.parseArbeidstakersSkjemaDataDto(it) } ?: ArbeidstakersSkjemaDataDto()
 
         return ArbeidstakersSkjemaDto(
             id = skjema.id ?: error("Skjema ID is null"),

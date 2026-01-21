@@ -11,7 +11,7 @@ import no.nav.melosys.skjema.dto.Sorteringsretning
 import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
-import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -233,7 +233,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * @throws IllegalStateException hvis metadata er null
      */
     private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
-        jsonMapper.toUtsendtArbeidstakerMetadata(
+        jsonMapper.parseUtsendtArbeidstakerMetadata(
             skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}")
         )
 

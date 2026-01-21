@@ -10,11 +10,11 @@ import tools.jackson.databind.json.JsonMapper
  * Extension functions for JsonMapper for type-sikker parsing av skjemadata.
  */
 
-fun JsonMapper.toUtsendtArbeidstakerMetadata(node: JsonNode): UtsendtArbeidstakerMetadata =
+fun JsonMapper.parseUtsendtArbeidstakerMetadata(node: JsonNode): UtsendtArbeidstakerMetadata =
     this.treeToValue(node, UtsendtArbeidstakerMetadata::class.java)
 
-fun JsonMapper.toArbeidsgiversSkjemaDataDto(node: JsonNode): ArbeidsgiversSkjemaDataDto =
+fun JsonMapper.parseArbeidsgiversSkjemaDataDto(node: JsonNode): ArbeidsgiversSkjemaDataDto =
     this.treeToValue(node, ArbeidsgiversSkjemaDataDto::class.java)
 
-fun JsonMapper.toArbeidstakersSkjemaDataDto(node: JsonNode): ArbeidstakersSkjemaDataDto =
+fun JsonMapper.parseArbeidstakersSkjemaDataDto(node: JsonNode): ArbeidstakersSkjemaDataDto =
     this.treeToValue(node, ArbeidstakersSkjemaDataDto::class.java)

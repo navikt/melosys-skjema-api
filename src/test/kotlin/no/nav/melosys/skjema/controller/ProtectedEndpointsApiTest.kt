@@ -65,6 +65,6 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.GET, "/api/harTilgang/123456789"),
 
         // M2MSkjemaController
-        Arguments.of(HttpMethod.GET, "/m2m/api/skjema/123/data")
+        Arguments.of(HttpMethod.GET, "/m2m/api/skjema/utsendt-arbeidstaker/123/data")
     )
 }
