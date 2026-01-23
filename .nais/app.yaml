@@ -58,6 +58,9 @@ spec:
         - application: tokenx-token-generator
           namespace: nais
           cluster: dev-gcp
+        - application: melosys
+          namespace: teammelosys
+          cluster: dev-fss
     outbound:
       # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
@@ -68,8 +71,6 @@ spec:
         - host: nav-melding-api.intern.nav.no
         - host: ag-notifikasjon-produsent-api.intern.dev.nav.no
       rules:
-        - application: melosys-api
-          namespace: teammelosys
         - application: repr-api
           namespace: repr
         - application: pdl-api
