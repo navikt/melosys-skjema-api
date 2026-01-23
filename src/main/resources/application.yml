@@ -30,7 +30,7 @@ spring:
     baseline-on-migrate: true
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    bootstrap-servers: ${KAFKA_BROKERS}
 
 server:
   port: ${SERVER_PORT:8080}

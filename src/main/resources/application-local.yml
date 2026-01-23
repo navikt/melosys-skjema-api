@@ -11,7 +11,7 @@ SERVER_PORT: 8090
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: placeholder
 ALTINN_RESSURS: placeholder
 TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
-KAFKA_BOOTSTRAP_SERVERS: localhost:29092
+KAFKA_BROKERS: localhost:29092
 KAFKA_SKJEMA_MOTTAK_TOPIC: teammelosys.skjema.innsendt.v1-docker-compose
 NAIS_CLUSTER_NAME: local
 NAIS_NAMESPACE: teammelosys
