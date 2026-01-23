@@ -42,7 +42,11 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
+import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.dto.Skjemadel
 import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
 
@@ -240,6 +244,7 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
@@ -248,6 +253,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     return UtsendtArbeidstakerMetadata(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
+        skjemadel = skjemadel,
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
         radgiverfirma = radgiverfirma,
@@ -263,6 +269,38 @@ fun radgiverfirmaInfoMedDefaultVerdier(
         navn = navn,
     )
 }
+
+fun personDtoMedDefaultVerdier(
+    fnr: String = korrektSyntetiskFnr,
+    etternavn: String? = "Testesen"
+) = PersonDto(
+    fnr = fnr,
+    etternavn = etternavn
+)
+
+fun simpleOrganisasjonDtoMedDefaultVerdier(
+    orgnr: String = korrektSyntetiskOrgnr,
+    navn: String = "Test AS"
+) = SimpleOrganisasjonDto(
+    orgnr = orgnr,
+    navn = navn
+)
+
+fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
+    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+    radgiverfirma: SimpleOrganisasjonDto? = null,
+    arbeidsgiver: SimpleOrganisasjonDto? = simpleOrganisasjonDtoMedDefaultVerdier(),
+    arbeidstaker: PersonDto? = personDtoMedDefaultVerdier(),
+    harFullmakt: Boolean = false
+) = OpprettSoknadMedKontekstRequest(
+    representasjonstype = representasjonstype,
+    skjemadel = skjemadel,
+    radgiverfirma = radgiverfirma,
+    arbeidsgiver = arbeidsgiver,
+    arbeidstaker = arbeidstaker,
+    harFullmakt = harFullmakt
+)
 
 fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,

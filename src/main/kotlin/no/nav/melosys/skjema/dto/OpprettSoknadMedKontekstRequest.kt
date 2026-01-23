@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 
 data class OpprettSoknadMedKontekstRequest(
-    @field:NotNull
     val representasjonstype: Representasjonstype,
+    val skjemadel: Skjemadel,
     val radgiverfirma: SimpleOrganisasjonDto?,
     val arbeidsgiver: SimpleOrganisasjonDto?,
     val arbeidstaker: PersonDto?,

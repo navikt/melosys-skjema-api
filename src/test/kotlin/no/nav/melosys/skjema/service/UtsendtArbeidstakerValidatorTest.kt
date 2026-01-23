@@ -6,14 +6,14 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
+import no.nav.melosys.skjema.personDtoMedDefaultVerdier
+import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 
 class UtsendtArbeidstakerValidatorTest : FunSpec({
 
@@ -29,34 +29,18 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         mockEregService
     )
 
-    val testArbeidsgiver = SimpleOrganisasjonDto(
-        orgnr = "123456789",
-        navn = "Test AS"
-    )
-
-    val testArbeidstaker = PersonDto(
-        fnr = "12345678910"
-    )
-
-    val testArbeidstakerMedEtternavn = PersonDto(
-        fnr = "12345678910",
-        etternavn = "Testesen"
-    )
-
-    val testRadgiverfirma = SimpleOrganisasjonDto(
-        orgnr = "987654321",
-        navn = "Rådgiver AS"
-    )
+    val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")
+    val testArbeidstaker = personDtoMedDefaultVerdier(fnr = "12345678910", etternavn = null)
+    val testArbeidstakerMedEtternavn = personDtoMedDefaultVerdier(fnr = "12345678910", etternavn = "Testesen")
+    val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     context("DEG_SELV validering") {
         test("skal godkjenne gyldig DEG_SELV request") {
             val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
@@ -68,12 +52,10 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når arbeidsgiver mangler") {
             val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = null,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             val exception = shouldThrow<IllegalArgumentException> {
@@ -85,12 +67,10 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når arbeidsgiver ikke finnes i EREG") {
             val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns false
@@ -104,9 +84,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når harFullmakt er true") {
             val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -125,9 +104,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     context("ARBEIDSGIVER validering") {
         test("skal godkjenne gyldig ARBEIDSGIVER request med fullmakt") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -145,9 +123,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal godkjenne gyldig ARBEIDSGIVER request uten fullmakt") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstakerMedEtternavn,
                 harFullmakt = false
@@ -167,12 +144,10 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når bruker ikke har Altinn-tilgang") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
@@ -186,9 +161,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når fullmakt mangler") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -207,9 +181,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når arbeidstaker ikke finnes i PDL (uten fullmakt)") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstakerMedEtternavn,
                 harFullmakt = false
@@ -232,7 +205,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     context("RADGIVER validering") {
         test("skal godkjenne gyldig RADGIVER request med fullmakt") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -253,12 +226,11 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når rådgiverfirma mangler") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             val exception = shouldThrow<IllegalArgumentException> {
@@ -270,12 +242,11 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når rådgiverfirma ikke finnes i EREG") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns false
@@ -292,9 +263,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     context("ANNEN_PERSON validering") {
         test("skal godkjenne gyldig ANNEN_PERSON request") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -310,9 +280,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når arbeidstaker mangler") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = null,
                 harFullmakt = true
@@ -327,9 +296,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når bruker ikke har fullmakt") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -346,9 +314,8 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
         test("skal feile når harFullmakt er false") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = false
