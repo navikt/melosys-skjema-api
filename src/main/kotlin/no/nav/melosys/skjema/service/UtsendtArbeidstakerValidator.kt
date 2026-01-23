@@ -27,17 +27,15 @@ class UtsendtArbeidstakerValidator(
      * Validerer at en opprettelsesforespørsel er gyldig basert på representasjonstype.
      *
      * @param request Forespørsel om å opprette søknad
-     * @param innloggetBrukerFnr Innlogget bruker (fødselsnummer)
      * @throws IllegalArgumentException hvis validering feiler
      */
     fun validerOpprettelse(
         request: OpprettSoknadMedKontekstRequest,
-        innloggetBrukerFnr: String
     ) {
         log.info { "Validerer opprettelse av søknad for representasjonstype: ${request.representasjonstype}" }
 
         when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> validerDegSelv(request, innloggetBrukerFnr)
+            Representasjonstype.DEG_SELV -> validerDegSelv(request)
             Representasjonstype.ARBEIDSGIVER -> validerArbeidsgiver(request)
             Representasjonstype.RADGIVER -> validerRadgiver(request)
             Representasjonstype.ANNEN_PERSON -> validerAnnenPerson(request)
@@ -52,13 +50,8 @@ class UtsendtArbeidstakerValidator(
      * - Arbeidsgiver finnes
      * - Ingen fullmakt (selv-representasjon)
      */
-    private fun validerDegSelv(request: OpprettSoknadMedKontekstRequest, innloggetBrukerFnr: String) {
+    private fun validerDegSelv(request: OpprettSoknadMedKontekstRequest) {
         log.debug { "Validerer DEG_SELV scenario" }
-
-        // 1. Arbeidsgiver finnes
-        if (request.arbeidsgiver == null) {
-            throw IllegalArgumentException("Arbeidsgiver må oppgis")
-        }
 
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
@@ -78,11 +71,6 @@ class UtsendtArbeidstakerValidator(
      */
     private fun validerArbeidsgiver(request: OpprettSoknadMedKontekstRequest) {
         log.debug { "Validerer ARBEIDSGIVER scenario" }
-
-        // 1. Arbeidsgiver må oppgis
-        if (request.arbeidsgiver == null) {
-            throw IllegalArgumentException("Arbeidsgiver må oppgis for ARBEIDSGIVER")
-        }
 
         // 2. Validere Altinn-tilgang
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
@@ -118,11 +106,6 @@ class UtsendtArbeidstakerValidator(
             throw IllegalArgumentException("Rådgiverfirma med organisasjonsnummer ${request.radgiverfirma.orgnr} finnes ikke")
         }
 
-        // 3. Arbeidsgiver må oppgis
-        if (request.arbeidsgiver == null) {
-            throw IllegalArgumentException("Arbeidsgiver må oppgis for RADGIVER")
-        }
-
         // 4. Validere Altinn-tilgang til arbeidsgiver
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
             throw AccessDeniedException("Innlogget bruker har ikke Altinn-tilgang til arbeidsgiver ${request.arbeidsgiver.orgnr}")
@@ -147,21 +130,11 @@ class UtsendtArbeidstakerValidator(
     private fun validerAnnenPerson(request: OpprettSoknadMedKontekstRequest) {
         log.debug { "Validerer ANNEN_PERSON scenario" }
 
-        // 1. Arbeidstaker må oppgis
-        if (request.arbeidstaker == null) {
-            throw IllegalArgumentException("Arbeidstaker må oppgis for ANNEN_PERSON")
-        }
-
         // 2. Innlogget bruker må ha fullmakt fra arbeidstaker
         if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
             throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
         }
         // Dette sjekker også at arbeidstaker finnes i PDL (repr-api validerer det)
-
-        // 3. Arbeidsgiver finnes
-        if (request.arbeidsgiver == null) {
-            throw IllegalArgumentException("Arbeidsgiver må oppgis for ANNEN_PERSON")
-        }
 
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
@@ -182,10 +155,6 @@ class UtsendtArbeidstakerValidator(
     private fun validerArbeidstakerForArbeidsgiver(
         request: OpprettSoknadMedKontekstRequest
     ) {
-        if (request.arbeidstaker == null) {
-            throw IllegalArgumentException("Arbeidstaker må oppgis")
-        }
-
         if (request.harFullmakt) {
             // Med fullmakt: Validere via repr-api
             log.debug { "Validerer arbeidstaker med fullmakt via repr-api" }

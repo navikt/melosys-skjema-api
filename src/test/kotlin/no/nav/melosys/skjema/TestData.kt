@@ -290,8 +290,8 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     radgiverfirma: SimpleOrganisasjonDto? = null,
-    arbeidsgiver: SimpleOrganisasjonDto? = simpleOrganisasjonDtoMedDefaultVerdier(),
-    arbeidstaker: PersonDto? = personDtoMedDefaultVerdier(),
+    arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
+    arbeidstaker: PersonDto = personDtoMedDefaultVerdier(),
     harFullmakt: Boolean = false
 ) = OpprettSoknadMedKontekstRequest(
     representasjonstype = representasjonstype,
@@ -321,16 +321,16 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
 
 fun skjemaMedDefaultVerdier(
     id: UUID? = null,
-    fnr: String? = korrektSyntetiskFnr,
-    orgnr: String? = korrektSyntetiskOrgnr,
+    fnr: String = korrektSyntetiskFnr,
+    orgnr: String = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
-    metadata: JsonNode? = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
+    metadata: JsonNode = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
-    opprettetAv: String = fnr ?: korrektSyntetiskFnr,
-    endretAv: String = fnr ?: korrektSyntetiskFnr
+    opprettetAv: String = fnr,
+    endretAv: String = fnr
 ): Skjema {
     return Skjema(
         id = id,

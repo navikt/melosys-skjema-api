@@ -234,7 +234,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      */
     private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
         jsonMapper.parseUtsendtArbeidstakerMetadata(
-            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}")
+            skjema.metadata
         )
 
     /**
@@ -251,7 +251,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
+            arbeidstakerFnrMaskert =  maskerFnr(skjema.fnr),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass

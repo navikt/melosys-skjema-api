@@ -87,7 +87,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
             verify { mockSkjemaRepository.save(any()) }
         }
 
@@ -117,7 +117,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
             verify { mockSkjemaRepository.save(any()) }
         }
 
@@ -148,7 +148,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
         }
 
         test("skal opprette skjema for ANNEN_PERSON") {
@@ -177,7 +177,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
         }
 
         test("skal feile når validering feiler") {
@@ -189,7 +189,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockValidator.validerOpprettelse(request, currentUser) } throws IllegalArgumentException("Validering feilet")
+            every { mockValidator.validerOpprettelse(request) } throws IllegalArgumentException("Validering feilet")
 
             val exception = shouldThrow<IllegalArgumentException> {
                 service.opprettMedKontekst(request)
@@ -888,7 +888,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 fnr = korrektSyntetiskFnr
             )
 
-            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr!!
+            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr
             every { mockSkjemaRepository.findByIdOrNull(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
 
             shouldThrow<SkjemaAlleredeSendtException> {

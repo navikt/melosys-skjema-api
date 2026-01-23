@@ -12,7 +12,7 @@ data class InnsendtSoknadOversiktDto(
     val id: UUID,
     val referanseId: String?,
     val arbeidsgiverNavn: String?,
-    val arbeidsgiverOrgnr: String?,
+    val arbeidsgiverOrgnr: String,
     val arbeidstakerNavn: String?,
     val arbeidstakerFnrMaskert: String?, // Maskert fnr (f.eks. "010190*****")
     val innsendtDato: Instant,
