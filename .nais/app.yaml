@@ -32,8 +32,14 @@ spec:
   prometheus:
     enabled: true
     path: /actuator/prometheus
-  secureLogs:
-    enabled: true
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: elastic
+        - id: loki
   gcp:
     sqlInstances:
       - name: melosys-skjema-db
