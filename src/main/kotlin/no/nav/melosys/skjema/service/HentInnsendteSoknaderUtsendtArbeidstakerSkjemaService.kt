@@ -229,20 +229,11 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
-     * @throws IllegalStateException hvis metadata er null
-     */
-    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
-        jsonMapper.parseUtsendtArbeidstakerMetadata(
-            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}")
-        )
-
-    /**
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
-        val metadata = parseMetadata(skjema)
+        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(
@@ -251,7 +242,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
+            arbeidstakerFnrMaskert =  maskerFnr(skjema.fnr),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass

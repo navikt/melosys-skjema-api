@@ -673,38 +673,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader[0].harPdf shouldBe false // TODO: Skal endres når PDF implementeres
     }
 
-    @Test
-    @DisplayName("Edge case: Skal håndtere null verdier i metadata")
-    fun `skal håndtere null verdier i metadata`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-            representasjonstype = Representasjonstype.DEG_SELV,
-            arbeidsgiverNavn = null // Null arbeidsgiver navn
-        )
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                orgnr = null, // Null orgnr
-                status = SkjemaStatus.SENDT,
-                metadata = metadata
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader shouldHaveSize 1
-        response.soknader[0].arbeidsgiverNavn shouldBe null
-        response.soknader[0].arbeidsgiverOrgnr shouldBe null
-    }
-
     // Error handling tests
     // ========================================
 

@@ -11,10 +11,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
@@ -25,9 +22,14 @@ import org.springframework.context.ApplicationEventPublisher
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
+import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import tools.jackson.databind.JsonNode
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
 
@@ -55,30 +57,17 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         referanseIdGenerator
     )
 
-    val testArbeidsgiver = SimpleOrganisasjonDto(
-        orgnr = "123456789",
-        navn = "Test AS"
-    )
-
-    val testArbeidstaker = PersonDto(
-        fnr = "12345678910",
-        etternavn = "Testesen"
-    )
-
-    val testRadgiverfirma = SimpleOrganisasjonDto(
-        orgnr = "987654321",
-        navn = "Rådgiver AS"
-    )
+    val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")
+    val testArbeidstaker = personDtoMedDefaultVerdier(fnr = "12345678910")
+    val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     context("opprettMedKontekst") {
         test("skal opprette skjema for DEG_SELV") {
             val currentUser = "12345678910"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             val savedSkjema = skjemaMedDefaultVerdier(
@@ -98,15 +87,14 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
             verify { mockSkjemaRepository.save(any()) }
         }
 
         test("skal opprette skjema for ARBEIDSGIVER med fullmakt") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -129,13 +117,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
             verify { mockSkjemaRepository.save(any()) }
         }
 
         test("skal opprette skjema for RADGIVER") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -160,14 +148,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
         }
 
         test("skal opprette skjema for ANNEN_PERSON") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker,
                 harFullmakt = true
@@ -190,21 +177,19 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
 
-            verify { mockValidator.validerOpprettelse(request, currentUser) }
+            verify { mockValidator.validerOpprettelse(request) }
         }
 
         test("skal feile når validering feiler") {
             val currentUser = "99999999999"
-            val request = OpprettSoknadMedKontekstRequest(
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockValidator.validerOpprettelse(request, currentUser) } throws IllegalArgumentException("Validering feilet")
+            every { mockValidator.validerOpprettelse(request) } throws IllegalArgumentException("Validering feilet")
 
             val exception = shouldThrow<IllegalArgumentException> {
                 service.opprettMedKontekst(request)
@@ -277,10 +262,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val arbeidstakerFnr = "12345678910"
             val skjemaId = UUID.randomUUID()
 
-            val metadata = jsonMapper.createObjectNode()
-            metadata.put("representasjonstype", "ANNEN_PERSON")
-            metadata.put("harFullmakt", true)
-            metadata.put("fullmektigFnr", currentUser)
+            val metadata = jsonMapper.valueToTree<JsonNode>(
+                utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ANNEN_PERSON,
+                    harFullmakt = true,
+                    fullmektigFnr = currentUser
+                )
+            )
 
             val skjema = skjemaMedDefaultVerdier(
                 id = skjemaId,
@@ -900,7 +888,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 fnr = korrektSyntetiskFnr
             )
 
-            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr!!
+            every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr
             every { mockSkjemaRepository.findByIdOrNull(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
 
             shouldThrow<SkjemaAlleredeSendtException> {

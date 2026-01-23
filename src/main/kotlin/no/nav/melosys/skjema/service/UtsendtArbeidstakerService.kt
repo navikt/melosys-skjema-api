@@ -69,7 +69,7 @@ class UtsendtArbeidstakerService(
         log.info { "Oppretter Utsendt Arbeidstaker søknad for representasjonstype: ${request.representasjonstype}" }
 
         // Valider forespørsel
-        validator.validerOpprettelse(request, innloggetBrukerFnr)
+        validator.validerOpprettelse(request)
 
         // Bygg metadata med korrekt fullmektig-logikk
         val metadata = byggMetadata(request, innloggetBrukerFnr)
@@ -82,7 +82,7 @@ class UtsendtArbeidstakerService(
                 Skjema(
                     status = SkjemaStatus.UTKAST,
                     fnr = innloggetBrukerFnr,
-                    orgnr = request.arbeidsgiver?.orgnr,
+                    orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadataJson,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
@@ -93,8 +93,8 @@ class UtsendtArbeidstakerService(
                 // Arbeidsgiver eller rådgiver fyller ut på vegne av arbeidstaker
                 Skjema(
                     status = SkjemaStatus.UTKAST,
-                    orgnr = request.arbeidsgiver?.orgnr,
-                    fnr = request.arbeidstaker?.fnr,
+                    orgnr = request.arbeidsgiver.orgnr,
+                    fnr = request.arbeidstaker.fnr,
                     metadata = metadataJson,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
@@ -105,8 +105,8 @@ class UtsendtArbeidstakerService(
                 // Fullmektig fyller ut på vegne av arbeidstaker
                 Skjema(
                     status = SkjemaStatus.UTKAST,
-                    fnr = request.arbeidstaker?.fnr,
-                    orgnr = request.arbeidsgiver?.orgnr,
+                    fnr = request.arbeidstaker.fnr,
+                    orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadataJson,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
@@ -141,7 +141,7 @@ class UtsendtArbeidstakerService(
         // 2. Skjemaer hvor bruker er fullmektig (må verifisere aktiv fullmakt)
         val somFullmektig = skjemaRepository.findByFullmektigFnr(innloggetBrukerFnr)
             .filter { skjema ->
-                skjema.fnr != null && try {
+                try {
                     reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
                 } catch (e: Exception) {
                     log.warn(e) { "Feil ved sjekk av fullmakt for skjema ${skjema.id}" }
@@ -189,7 +189,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sikre at representasjonstype i metadata er DEG_SELV
-                    val skjemaMetadata = parseMetadata(skjema)
+                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
                     skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
                 }
             }
@@ -205,10 +205,9 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at representasjonstype er ARBEIDSGIVER
-                    val skjemaMetadata = parseMetadata(skjema)
+                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
-                    skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER &&
-                        skjema.orgnr != null && tilgangOrgnr.contains(skjema.orgnr)
+                    skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER && tilgangOrgnr.contains(skjema.orgnr)
                 }
             }
 
@@ -223,7 +222,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val skjemaMetadata = parseMetadata(skjema)
+                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
                     skjemaMetadata.representasjonstype == Representasjonstype.RADGIVER &&
                             skjemaMetadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
@@ -245,10 +244,9 @@ class UtsendtArbeidstakerService(
                 // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
                 skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
                     .filter { skjema ->
-                        val skjemaMetadata = parseMetadata(skjema)
+                        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
                         // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
-                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON &&
-                            skjema.fnr != null && personerMedFullmaktFnr.contains(skjema.fnr)
+                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON && personerMedFullmaktFnr.contains(skjema.fnr)
                     }
             }
         }
@@ -368,7 +366,7 @@ class UtsendtArbeidstakerService(
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        return parseMetadata(skjema)
+        return jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
     }
 
     /**
@@ -468,36 +466,28 @@ class UtsendtArbeidstakerService(
         return UtsendtArbeidstakerMetadata(
             representasjonstype = request.representasjonstype,
             harFullmakt = request.harFullmakt,
+            skjemadel = request.skjemadel,
             radgiverfirma = request.radgiverfirma?.let {
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
-            arbeidsgiverNavn = request.arbeidsgiver?.navn,
+            arbeidsgiverNavn = request.arbeidsgiver.navn,
             fullmektigFnr = fullmektigFnr
         )
     }
-
-    /**
-     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
-     * @throws IllegalStateException hvis metadata er null
-     */
-    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
-        jsonMapper.parseUtsendtArbeidstakerMetadata(
-            skjema.metadata ?: error("Metadata mangler for skjema ${skjema.id}")
-        )
 
     /**
      * Konverterer Skjema til UtkastOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val skjemaMetadata = parseMetadata(skjema)
+        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
         return UtkastOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
             arbeidsgiverNavn = skjemaMetadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert = skjema.fnr?.let { maskerFnr(it) },
+            arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             opprettetDato = skjema.opprettetDato,
             sistEndretDato = skjema.endretDato,
             status = skjema.status
@@ -522,19 +512,17 @@ class UtsendtArbeidstakerService(
             return true
         }
 
-        val skjemaMetadata = parseMetadata(skjema)
+        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
         return when(skjemaMetadata.representasjonstype){
             Representasjonstype.DEG_SELV -> false
 
             Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
-                skjema.orgnr?.let { altinnService.harBrukerTilgang(it) } ?: false
+                altinnService.harBrukerTilgang(skjema.orgnr)
             }
 
             Representasjonstype.ANNEN_PERSON -> {
-                skjemaMetadata.fullmektigFnr == subjectHandler.getUserID() &&
-                        skjema.fnr != null &&
-                        reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+                skjemaMetadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
         }
     }
@@ -588,7 +576,7 @@ class UtsendtArbeidstakerService(
 
         return ArbeidsgiversSkjemaDto(
             id = skjema.id ?: error("Skjema ID is null"),
-            orgnr = skjema.orgnr ?: error("Skjema orgnr is null"),
+            orgnr = skjema.orgnr,
             status = skjema.status,
             data = data
         )
@@ -599,7 +587,7 @@ class UtsendtArbeidstakerService(
 
         return ArbeidstakersSkjemaDto(
             id = skjema.id ?: error("Skjema ID is null"),
-            fnr = skjema.fnr ?: error("Skjema fnr is null"),
+            fnr = skjema.fnr,
             status = skjema.status,
             data = data
         )

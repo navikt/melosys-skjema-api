@@ -160,7 +160,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        val token = createTokenForUser(savedSkjema.fnr!!)
+        val token = createTokenForUser(savedSkjema.fnr)
 
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidstaker-view")
@@ -211,7 +211,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             this.shouldNotBeNull()
             this shouldBe ArbeidsgiversSkjemaDto(
                 id = savedSkjema.id!!,
-                orgnr = savedSkjema.orgnr!!,
+                orgnr = savedSkjema.orgnr,
                 status = savedSkjema.status,
                 data = skjemaData
             )
@@ -243,7 +243,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        val token = createTokenForUser(savedSkjema.fnr!!)
+        val token = createTokenForUser(savedSkjema.fnr)
 
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/pdf")
@@ -312,13 +312,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         persistedSkjemaDataAfterPOST shouldBe fixture.expectedDataAfterPost
     }
 
-    @MethodSource("orgnummerHarVerdiOgOrgnnummerErNull")
-    @ParameterizedTest(name = "har ikke tilgang når orgnr = {0}")
+    @Test
     @DisplayName("Get /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal ikke kunne aksessere andres skjemaer")
-    fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`(orgnummer: String?) {
+    fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`() {
         val savedSkjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
-                orgnr = orgnummer,
+                orgnr = korrektSyntetiskOrgnr,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 metadata = jsonMapper.valueToTree(
                     utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
@@ -330,9 +329,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val token = createTokenForUser(korrektSyntetiskFnr)
 
-        orgnummer?.let {
-            every { altinnService.harBrukerTilgang(it) } returns false
-        }
+        every { altinnService.harBrukerTilgang(savedSkjema.orgnr) } returns false
+
 
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
@@ -368,38 +366,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         val token = createTokenForUser(korrektSyntetiskFnr)
         every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns false
-
-        val request = webTestClient.method(httpMethod)
-            .uri(path, savedSkjema.id)
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-
-        requestBody?.let { request.bodyValue(it) }
-
-        request.exchange()
-            .expectStatus().isForbidden
-    }
-
-    @ParameterizedTest(name = "{0} {1}")
-    @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr=null")
-    fun `Arbeidsgiver endpoints skal returnere 403 for skjemaer med orgnr null`(
-        httpMethod: HttpMethod,
-        path: String,
-        requestBody: Any?
-    ) {
-        val savedSkjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                orgnr = null,
-                fnr = etAnnetKorrektSyntetiskFnr,
-                status = SkjemaStatus.UTKAST,
-                metadata = jsonMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                ))
-            )
-        )
-
-        val token = createTokenForUser(korrektSyntetiskFnr)
 
         val request = webTestClient.method(httpMethod)
             .uri(path, savedSkjema.id)
