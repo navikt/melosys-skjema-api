@@ -229,20 +229,11 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Parser metadata-feltet til en typesafe UtsendtArbeidstakerMetadata.
-     * @throws IllegalStateException hvis metadata er null
-     */
-    private fun parseMetadata(skjema: Skjema): UtsendtArbeidstakerMetadata =
-        jsonMapper.parseUtsendtArbeidstakerMetadata(
-            skjema.metadata
-        )
-
-    /**
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
-        val metadata = parseMetadata(skjema)
+        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(
