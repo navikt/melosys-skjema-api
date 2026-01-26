@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.config
 
-import no.nav.melosys.skjema.integrasjon.felles.CorrelationIdInterceptor
+import no.nav.melosys.skjema.config.observability.CorrelationIdInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
