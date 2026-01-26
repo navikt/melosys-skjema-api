@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.integrasjon.felles
+package no.nav.melosys.skjema.config.observability
 
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.MDC

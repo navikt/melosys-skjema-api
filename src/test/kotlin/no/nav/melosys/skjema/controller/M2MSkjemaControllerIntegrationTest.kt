@@ -3,7 +3,6 @@ package no.nav.melosys.skjema.controller
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
@@ -21,7 +20,6 @@ import java.util.UUID
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.dto.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -47,6 +45,8 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
 
     @BeforeEach
     fun setUp() {
+        skjemaRepository.deleteAll()
+        innsendingRepository.deleteAll()
     }
 
     @Nested

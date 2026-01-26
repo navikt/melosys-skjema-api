@@ -24,7 +24,7 @@ class PdlConfig(
     fun pdlClient(
         webClientBuilder: WebClient.Builder,
         pdlAuthFilter: PdlAuthFilterAzure,
-        correlationIdOutgoingFilter: no.nav.melosys.skjema.integrasjon.felles.CorrelationIdOutgoingFilter
+        correlationIdOutgoingFilter: no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingFilter
     ): WebClient {
         log.info { "Konfigurerer PDL-klient med base URL: $pdlUrl" }
 
