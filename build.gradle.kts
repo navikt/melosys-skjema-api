@@ -36,6 +36,7 @@ val springMockkVersion = "5.0.1"
 val springdocVersion = "3.0.1"
 val shedlockVersion = "7.5.0"
 val logstashLogbackEncoderVersion = "9.0"
+val opentelemetryLogbackVersion = "2.16.0-alpha"
 
 repositories {
     mavenCentral()
@@ -65,6 +66,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashLogbackEncoderVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:$opentelemetryLogbackVersion")
 
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")

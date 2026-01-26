@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <configuration>
-  <appender name="team-logs" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+  <appender name="team-logs-base" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
     <destination>team-logs.nais-system:5170</destination>
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
       <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${NAIS_POD_NAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
@@ -14,7 +15,7 @@
     </filter>
   </appender>
 
-  <appender name="default-json" class="ch.qos.logback.core.ConsoleAppender">
+  <appender name="default-json-base" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
     <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
       <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -23,6 +24,14 @@
       <OnMatch>DENY</OnMatch>
       <OnMismatch>ACCEPT</OnMismatch>
     </filter>
+  </appender>
+
+  <appender name="team-logs" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
+    <appender-ref ref="team-logs-base" />
+  </appender>
+
+  <appender name="default-json" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
+    <appender-ref ref="default-json-base" />
   </appender>
 
   <root level="INFO">
