@@ -401,10 +401,10 @@ class UtsendtArbeidstakerService(
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
 
-        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk, eller nb som default
-        val visSprakKode = sprak ?: metadata.innsendtSprak ?: "nb"
+        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk
+        val visSprakKode = sprak ?: metadata.innsendtSprak
         val visSprak = Språk.fraKode(visSprakKode)
-        val versjon = metadata.skjemaDefinisjonVersjon ?: skjemaDefinisjonService.hentAktivVersjon(skjema.type)
+        val versjon = metadata.skjemaDefinisjonVersjon
 
         // Hent definisjon for riktig versjon
         val definisjon = skjemaDefinisjonService.hent(
@@ -421,7 +421,7 @@ class UtsendtArbeidstakerService(
             skjemaId = skjema.id!!,
             referanseId = innsending.referanseId,
             innsendtDato = skjema.endretDato,
-            innsendtSprak = metadata.innsendtSprak ?: "nb",
+            innsendtSprak = metadata.innsendtSprak,
             skjemaDefinisjonVersjon = versjon,
             arbeidstakerData = arbeidstakerData,
             arbeidsgiverData = arbeidsgiverData,
@@ -530,7 +530,9 @@ class UtsendtArbeidstakerService(
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
             arbeidsgiverNavn = request.arbeidsgiver?.navn,
-            fullmektigFnr = fullmektigFnr
+            fullmektigFnr = fullmektigFnr,
+            skjemaDefinisjonVersjon = skjemaDefinisjonService.hentAktivVersjon("A1"),
+            innsendtSprak = "nb"
         )
     }
 

@@ -1,14 +1,15 @@
 package no.nav.melosys.skjema.service.skjemadefinisjon
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjon
 import no.nav.melosys.skjema.dto.skjemadefinisjon.flerspraklig.FlersprakligSkjemaDefinisjonDto
-import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.kotlinModule
 import java.util.concurrent.ConcurrentHashMap
+
+private val log = KotlinLogging.logger {}
 
 /**
  * Service for å hente skjemadefinisjoner.
@@ -30,12 +31,9 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 @EnableConfigurationProperties(SkjemaDefinisjonProperties::class)
 class SkjemaDefinisjonService(
-    private val properties: SkjemaDefinisjonProperties
+    private val properties: SkjemaDefinisjonProperties,
+    private val jsonMapper: JsonMapper
 ) {
-    private val jsonMapper: JsonMapper = JsonMapper.builder()
-        .addModule(kotlinModule())
-        .build()
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     /** Cache for enkeltspråklige skjemadefinisjoner. Nøkkel: "type:versjon:språk" */
     private val cache = ConcurrentHashMap<String, SkjemaDefinisjon>()
@@ -57,7 +55,7 @@ class SkjemaDefinisjonService(
         val cacheKey = "$type:$faktiskVersjon:${språk.kode}"
 
         return cache.getOrPut(cacheKey) {
-            logger.debug("Henter skjemadefinisjon: type=$type, versjon=$faktiskVersjon, språk=${språk.kode}")
+            log.debug { "Henter skjemadefinisjon: type=$type, versjon=$faktiskVersjon, språk=${språk.kode}" }
             val flerspraklig = hentFlerspraklig(type, faktiskVersjon)
             flerspraklig.tilSkjemaDefinisjonDto(språk)
         }
@@ -69,7 +67,7 @@ class SkjemaDefinisjonService(
     private fun hentFlerspraklig(type: String, versjon: String): FlersprakligSkjemaDefinisjonDto {
         val cacheKey = "$type:$versjon"
         return flersprakligCache.getOrPut(cacheKey) {
-            logger.debug("Laster flerspråklig skjemadefinisjon fra fil: type=$type, versjon=$versjon")
+            log.debug { "Laster flerspråklig skjemadefinisjon fra fil: type=$type, versjon=$versjon" }
             lastFlersprakligFraFil(type, versjon)
         }
     }
@@ -119,7 +117,7 @@ class SkjemaDefinisjonService(
                 jsonMapper.readValue(stream, FlersprakligSkjemaDefinisjonDto::class.java)
             }
         } catch (e: Exception) {
-            logger.error("Feil ved lesing av skjemadefinisjon fra $path", e)
+            log.error(e) { "Feil ved lesing av skjemadefinisjon fra $path" }
             throw IllegalStateException("Kunne ikke lese skjemadefinisjon fra $path: ${e.message}", e)
         }
     }
@@ -137,6 +135,6 @@ class SkjemaDefinisjonService(
     fun tømCache() {
         cache.clear()
         flersprakligCache.clear()
-        logger.info("Skjemadefinisjon-cacher tømt")
+        log.info { "Skjemadefinisjon-cacher tømt" }
     }
 }
