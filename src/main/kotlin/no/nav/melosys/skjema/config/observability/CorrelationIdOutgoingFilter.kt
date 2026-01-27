@@ -1,6 +1,6 @@
-package no.nav.melosys.skjema.integrasjon.felles
+package no.nav.melosys.skjema.config.observability
 
-import no.nav.melosys.skjema.integrasjon.felles.MDCOperations.Companion.X_CORRELATION_ID
+import no.nav.melosys.skjema.config.observability.MDCOperations.Companion.X_CORRELATION_ID
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ClientRequest
 import org.springframework.web.reactive.function.client.ClientResponse

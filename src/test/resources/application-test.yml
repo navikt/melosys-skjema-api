@@ -17,7 +17,12 @@ PDL_SCOPE: test:pdl:pdl-api
 AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: ${mock-oauth2-server.baseUrl}/azure/token
 AZURE_APP_CLIENT_ID: test-azure-client-id
 AZURE_APP_CLIENT_SECRET: test-azure-client-secret
-KAFKA_BOOTSTRAP_SERVERS: whatever
+KAFKA_BROKERS: whatever
+
+spring:
+  kafka:
+    properties:
+      security.protocol: PLAINTEXT
 KAFKA_SKJEMA_MOTTAK_TOPIC: test-topic
 NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
@@ -25,6 +30,8 @@ NAIS_APP_NAME: test-app
 MERKELAPP: foo123
 RESSURS_ID: test123
 BRUK_SYNTETISK_FNR: true
+AZURE_APP_WELL_KNOWN_URL: ${mock-oauth2-server.baseUrl}/azure/.well-known/openid-configuration
+MELOSYS_CLIENT_ID: test-melosys-client-id
 
 skjemadefinisjon:
   aktive-versjoner:

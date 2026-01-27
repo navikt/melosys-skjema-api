@@ -24,20 +24,19 @@ class Skjema(
 
     // Denne burde ikke være nullable lenger
     @Column(name = "fnr", length = 11)
-    val fnr: String? = null,
+    val fnr: String,
 
     // Denne burde muligens ligge i
     @Column(name = "orgnr", length = 9)
-    val orgnr: String? = null,
+    val orgnr: String,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data")
     var data: JsonNode? = null,
 
-    // TODO: Denne burde ikke være nullable
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata")
-    var metadata: JsonNode? = null,
+    var metadata: JsonNode,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),

@@ -7,7 +7,7 @@ TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: dev-gcp:fager:arbeidsgiver-altinn
 ALTINN_RESSURS: test-fager
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: https://arbeidsgiver-altinn-tilganger.intern.dev.nav.no
 TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
-KAFKA_BOOTSTRAP_SERVERS: localhost:29092
+KAFKA_BROKERS: localhost:29092
 FLYWAY_ENABLED: false
 NAIS_CLUSTER_NAME: dev-gcp
 NAIS_NAMESPACE: teammelosys
@@ -24,6 +24,8 @@ TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api
 PDL_URL: https://pdl-api.dev.intern.nav.no/graphql
 PDL_SCOPE: api://dev-fss.pdl.pdl-api/.default
 AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/oauth2/v2.0/token
+AZURE_APP_WELL_KNOWN_URL: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/v2.0/.well-known/openid-configuration
+MELOSYS_CLIENT_ID: placeholder-melosys-client-id
 
 kubernetes:
   azure:

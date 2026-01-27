@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.dto.felles.LandKode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @GyldigPaSkip
 data class PaSkipDto(
+    val navnPaVirksomhet: String,
     val navnPaSkip: String,
     val yrketTilArbeidstaker: String,
     val seilerI: Farvann,

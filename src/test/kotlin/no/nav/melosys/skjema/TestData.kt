@@ -27,7 +27,10 @@ import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerD
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
 import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
+import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhetMedAnsettelsesform
+import no.nav.melosys.skjema.dto.felles.Ansettelsesform
 import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
 import no.nav.melosys.skjema.dto.felles.PeriodeDto
 import no.nav.melosys.skjema.dto.felles.LandKode
 import no.nav.melosys.skjema.domain.InnsendingStatus
@@ -39,7 +42,11 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
+import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.dto.PersonDto
 import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.dto.Skjemadel
 import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
 
@@ -112,6 +119,7 @@ fun paLandFastArbeidsstedDtoMedDefaultVerdier() = PaLandFastArbeidsstedDto(
 )
 
 fun paLandDtoMedDefaultVerdier() = PaLandDto(
+    navnPaVirksomhet = "Test Inc",
     fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
     fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
     beskrivelseVekslende = null,
@@ -124,12 +132,14 @@ fun arbeidsstedIUtlandetDtoMedDefaultVerdier() = ArbeidsstedIUtlandetDto(
 )
 
 fun offshoreDtoMedDefaultVerdier() = OffshoreDto(
+    navnPaVirksomhet = "Test Inc",
     navnPaInnretning = "Test Platform",
     typeInnretning = TypeInnretning.PLATTFORM_ELLER_ANNEN_FAST_INNRETNING,
     sokkelLand = LandKode.SE
 )
 
 fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
+    navnPaVirksomhet = "Test Inc",
     navnPaSkip = "MS Test Ship",
     yrketTilArbeidstaker = "Skipsfører",
     seilerI = Farvann.INTERNASJONALT_FARVANN,
@@ -138,6 +148,7 @@ fun paSkipDtoMedDefaultVerdier() = PaSkipDto(
 )
 
 fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
+    navnPaVirksomhet = "Test Inc",
     hjemmebaseLand = LandKode.SE,
     hjemmebaseNavn = "Oslo Airport",
     erVanligHjemmebase = true,
@@ -199,9 +210,27 @@ fun utenlandskVirksomhetMedDefaultVerdier() = UtenlandskVirksomhet(
     tilhorerSammeKonsern = true
 )
 
+fun utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier() = UtenlandskVirksomhetMedAnsettelsesform(
+    navn = "Foreign Company Ltd",
+    organisasjonsnummer = "ABC123",
+    vegnavnOgHusnummer = "Main Street 123",
+    bygning = "Building A",
+    postkode = "12345",
+    byStedsnavn = "Stockholm",
+    region = "Stockholm County",
+    land = "SE",
+    tilhorerSammeKonsern = true,
+    ansettelsesform = Ansettelsesform.ARBEIDSTAKER_ELLER_FRILANSER
+)
+
 fun norskeOgUtenlandskeVirksomheterMedDefaultVerdier() = NorskeOgUtenlandskeVirksomheter(
     norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
     utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
+)
+
+fun norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier() = NorskeOgUtenlandskeVirksomheterMedAnsettelsesform(
+    norskeVirksomheter = listOf(norskVirksomhetMedDefaultVerdier()),
+    utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier())
 )
 
 fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
@@ -215,17 +244,23 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
+    skjemaDefinisjonVersjon: String = "1",
+    innsendtSprak: String = "nb",
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
+        skjemadel = skjemadel,
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
         radgiverfirma = radgiverfirma,
+        skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
+        innsendtSprak = innsendtSprak,
     )
 }
 
@@ -238,6 +273,38 @@ fun radgiverfirmaInfoMedDefaultVerdier(
         navn = navn,
     )
 }
+
+fun personDtoMedDefaultVerdier(
+    fnr: String = korrektSyntetiskFnr,
+    etternavn: String? = "Testesen"
+) = PersonDto(
+    fnr = fnr,
+    etternavn = etternavn
+)
+
+fun simpleOrganisasjonDtoMedDefaultVerdier(
+    orgnr: String = korrektSyntetiskOrgnr,
+    navn: String = "Test AS"
+) = SimpleOrganisasjonDto(
+    orgnr = orgnr,
+    navn = navn
+)
+
+fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
+    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+    radgiverfirma: SimpleOrganisasjonDto? = null,
+    arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
+    arbeidstaker: PersonDto = personDtoMedDefaultVerdier(),
+    harFullmakt: Boolean = false
+) = OpprettSoknadMedKontekstRequest(
+    representasjonstype = representasjonstype,
+    skjemadel = skjemadel,
+    radgiverfirma = radgiverfirma,
+    arbeidsgiver = arbeidsgiver,
+    arbeidstaker = arbeidstaker,
+    harFullmakt = harFullmakt
+)
 
 fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
@@ -258,16 +325,16 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
 
 fun skjemaMedDefaultVerdier(
     id: UUID? = null,
-    fnr: String? = korrektSyntetiskFnr,
-    orgnr: String? = korrektSyntetiskOrgnr,
+    fnr: String = korrektSyntetiskFnr,
+    orgnr: String = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: String = "A1",
     data: JsonNode? = null,
-    metadata: JsonNode? = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
+    metadata: JsonNode = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
-    opprettetAv: String = fnr ?: korrektSyntetiskFnr,
-    endretAv: String = fnr ?: korrektSyntetiskFnr
+    opprettetAv: String = fnr,
+    endretAv: String = fnr
 ): Skjema {
     return Skjema(
         id = id,
