@@ -19,11 +19,10 @@ class KafkaConfig {
 
     @Bean
     fun stringProducerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, String> {
-        return DefaultKafkaProducerFactory(
-            kafkaProperties.buildProducerProperties().withCorrelationId(),
-            { StringSerializer() },
-            { StringSerializer() }
-        )
+        val props = kafkaProperties.buildProducerProperties().withCorrelationId()
+        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        return DefaultKafkaProducerFactory(props)
     }
 
     @Bean
@@ -36,11 +35,11 @@ class KafkaConfig {
         kafkaProperties: KafkaProperties,
         jsonMapper: JsonMapper
     ): ProducerFactory<String, SkjemaMottattMelding> {
-        return DefaultKafkaProducerFactory(
-            kafkaProperties.buildProducerProperties().withCorrelationId(),
-            { StringSerializer() },
-            { JacksonJsonSerializer(jsonMapper) }
-        )
+        val props = kafkaProperties.buildProducerProperties().withCorrelationId()
+        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        val factory = DefaultKafkaProducerFactory<String, SkjemaMottattMelding>(props)
+        factory.valueSerializer = JacksonJsonSerializer(jsonMapper)
+        return factory
     }
 
     @Bean
