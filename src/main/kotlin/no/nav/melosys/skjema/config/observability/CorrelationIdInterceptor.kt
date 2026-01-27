@@ -21,10 +21,13 @@ class CorrelationIdInterceptor : HandlerInterceptor {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val callId = MDCOperations.generateCallId()
+        val correlationId = MDCOperations.getCorrelationId(request)
 
         MDCOperations.putToMDC(MDC_CALL_ID, callId)
-        MDCOperations.putToMDC(CORRELATION_ID, MDCOperations.getCorrelationId(request))
+        MDCOperations.putToMDC(CORRELATION_ID, correlationId)
         MDCOperations.putToMDC(MDC_CONSUMER_ID, MDCOperations.getSystembruker())
+
+        response.setHeader(MDCOperations.X_CORRELATION_ID, correlationId)
 
         log.info { "Incoming request: ${request.method} ${request.requestURI}" }
 
