@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.config
 
 import no.nav.melosys.skjema.config.observability.CorrelationIdKafkaProducerInterceptor
-import tools.jackson.databind.json.JsonMapper
 import no.nav.melosys.skjema.kafka.SkjemaMottattMelding
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
@@ -32,14 +31,12 @@ class KafkaConfig {
 
     @Bean
     fun skjemaMottattProducerFactory(
-        kafkaProperties: KafkaProperties,
-        jsonMapper: JsonMapper
+        kafkaProperties: KafkaProperties
     ): ProducerFactory<String, SkjemaMottattMelding> {
         val props = kafkaProperties.buildProducerProperties().withCorrelationId()
         props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        val factory = DefaultKafkaProducerFactory<String, SkjemaMottattMelding>(props)
-        factory.valueSerializer = JacksonJsonSerializer(jsonMapper)
-        return factory
+        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JacksonJsonSerializer::class.java
+        return DefaultKafkaProducerFactory(props)
     }
 
     @Bean

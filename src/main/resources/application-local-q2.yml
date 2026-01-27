@@ -15,7 +15,7 @@ NAIS_APP_NAME: melosys-skjema-api
 ARBEIDSGIVER_NOTIFIKASJON_URL: https://notifikasjon-fake-produsent-api.ekstern.dev.nav.no
 MERKELAPP: test-fager
 RESSURS_ID: test-fager
-SERVER_PORT: 8089
+SERVER_PORT: 8090
 EREG_URL: https://ereg-services.intern.dev.nav.no
 BRUK_SYNTETISK_FNR: true
 REPR_URL: https://repr-api.intern.dev.nav.no
@@ -26,6 +26,7 @@ PDL_SCOPE: api://dev-fss.pdl.pdl-api/.default
 AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/oauth2/v2.0/token
 AZURE_APP_WELL_KNOWN_URL: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/v2.0/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: placeholder-melosys-client-id
+KAFKA_SKJEMA_MOTTAK_TOPIC: teammelosys.skjema.innsendt.q2-local
 
 kubernetes:
   azure:
