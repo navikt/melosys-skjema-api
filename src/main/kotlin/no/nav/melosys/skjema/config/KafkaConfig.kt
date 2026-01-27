@@ -21,8 +21,8 @@ class KafkaConfig {
     fun stringProducerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, String> {
         return DefaultKafkaProducerFactory(
             kafkaProperties.buildProducerProperties().withCorrelationId(),
-            StringSerializer(),
-            StringSerializer()
+            { StringSerializer() },
+            { StringSerializer() }
         )
     }
 
@@ -38,8 +38,8 @@ class KafkaConfig {
     ): ProducerFactory<String, SkjemaMottattMelding> {
         return DefaultKafkaProducerFactory(
             kafkaProperties.buildProducerProperties().withCorrelationId(),
-            StringSerializer(),
-            JacksonJsonSerializer(jsonMapper)
+            { StringSerializer() },
+            { JacksonJsonSerializer(jsonMapper) }
         )
     }
 

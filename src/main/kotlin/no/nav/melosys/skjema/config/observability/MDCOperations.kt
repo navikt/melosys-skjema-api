@@ -30,8 +30,20 @@ class MDCOperations {
             }
         }
 
-        fun setCorrelationId(correlationId: String?) {
-            putToMDC(CORRELATION_ID, correlationId ?: getCorrelationId())
+        fun setCorrelationId(correlationId: String? = null) {
+            putToMDC(CORRELATION_ID, correlationId ?: UUID.randomUUID().toString())
+        }
+
+        /**
+         * Setter correlation ID (eller genererer ny hvis null), kjører funksjonen, og rydder opp MDC etterpå.
+         */
+        inline fun <T> withCorrelationId(correlationId: String? = null, block: () -> T): T {
+            return try {
+                setCorrelationId(correlationId ?: UUID.randomUUID().toString())
+                block()
+            } finally {
+                remove(CORRELATION_ID)
+            }
         }
 
         /**
