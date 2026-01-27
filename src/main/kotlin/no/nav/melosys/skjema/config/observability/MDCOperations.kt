@@ -30,6 +30,10 @@ class MDCOperations {
             }
         }
 
+        fun setCorrelationId(correlationId: String?) {
+            putToMDC(CORRELATION_ID, correlationId ?: getCorrelationId())
+        }
+
         /**
          * Fjerner verdi fra MDC
          */

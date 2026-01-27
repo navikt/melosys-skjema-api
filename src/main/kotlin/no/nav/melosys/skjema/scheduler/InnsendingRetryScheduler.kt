@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import no.nav.melosys.skjema.config.observability.MDCOperations
 
 private val log = KotlinLogging.logger {}
 
@@ -51,6 +52,7 @@ class InnsendingRetryScheduler(
 
         kandidater.forEach { innsending ->
             try {
+                MDCOperations.setCorrelationId(innsending.correlationId)
                 val skjemaId = innsending.skjema.id!!
                 log.info { "Starter retry av innsending for skjema $skjemaId" }
                 innsendingProsesseringService.prosesserInnsendingAsync(skjemaId)
