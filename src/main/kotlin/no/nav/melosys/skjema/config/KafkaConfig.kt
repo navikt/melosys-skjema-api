@@ -12,16 +12,18 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer
+import tools.jackson.databind.json.JsonMapper
 
 @Configuration
 class KafkaConfig {
 
     @Bean
     fun stringProducerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, String> {
-        val props = kafkaProperties.buildProducerProperties().withCorrelationId()
-        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        return DefaultKafkaProducerFactory(props)
+        return DefaultKafkaProducerFactory(
+            kafkaProperties.buildProducerProperties().withCorrelationId(),
+            StringSerializer(),
+            StringSerializer()
+        )
     }
 
     @Bean
@@ -31,12 +33,14 @@ class KafkaConfig {
 
     @Bean
     fun skjemaMottattProducerFactory(
-        kafkaProperties: KafkaProperties
+        kafkaProperties: KafkaProperties,
+        jsonMapper: JsonMapper
     ): ProducerFactory<String, SkjemaMottattMelding> {
-        val props = kafkaProperties.buildProducerProperties().withCorrelationId()
-        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JacksonJsonSerializer::class.java
-        return DefaultKafkaProducerFactory(props)
+        return DefaultKafkaProducerFactory(
+            kafkaProperties.buildProducerProperties().withCorrelationId(),
+            StringSerializer(),
+            JacksonJsonSerializer(jsonMapper)
+        )
     }
 
     @Bean
