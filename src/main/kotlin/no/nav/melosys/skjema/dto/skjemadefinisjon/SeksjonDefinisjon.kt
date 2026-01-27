@@ -7,8 +7,8 @@ package no.nav.melosys.skjema.dto.skjemadefinisjon
  * @property beskrivelse Valgfri beskrivelse/hjelpetekst for seksjonen
  * @property felter Map fra felt-ID til feltdefinisjon
  */
-data class SeksjonDto(
+data class SeksjonDefinisjon(
     val tittel: String,
     val beskrivelse: String? = null,
-    val felter: Map<String, FeltDto>
+    val felter: Map<String, FeltDefinisjon>
 )

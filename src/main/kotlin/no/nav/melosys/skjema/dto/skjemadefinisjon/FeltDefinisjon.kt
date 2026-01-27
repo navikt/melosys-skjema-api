@@ -16,16 +16,16 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     property = "type"
 )
 @JsonSubTypes(
-    JsonSubTypes.Type(value = BooleanFeltDto::class, name = "BOOLEAN"),
-    JsonSubTypes.Type(value = TextFeltDto::class, name = "TEXT"),
-    JsonSubTypes.Type(value = TextareaFeltDto::class, name = "TEXTAREA"),
-    JsonSubTypes.Type(value = DateFeltDto::class, name = "DATE"),
-    JsonSubTypes.Type(value = PeriodeFeltDto::class, name = "PERIOD"),
-    JsonSubTypes.Type(value = SelectFeltDto::class, name = "SELECT"),
-    JsonSubTypes.Type(value = CountrySelectFeltDto::class, name = "COUNTRY_SELECT"),
-    JsonSubTypes.Type(value = ListeFeltDto::class, name = "LIST")
+    JsonSubTypes.Type(value = BooleanFeltDefinisjon::class, name = "BOOLEAN"),
+    JsonSubTypes.Type(value = TextFeltDefinisjon::class, name = "TEXT"),
+    JsonSubTypes.Type(value = TextareaFeltDefinisjon::class, name = "TEXTAREA"),
+    JsonSubTypes.Type(value = DateFeltDefinisjon::class, name = "DATE"),
+    JsonSubTypes.Type(value = PeriodeFeltDefinisjon::class, name = "PERIOD"),
+    JsonSubTypes.Type(value = SelectFeltDefinisjon::class, name = "SELECT"),
+    JsonSubTypes.Type(value = CountrySelectFeltDefinisjon::class, name = "COUNTRY_SELECT"),
+    JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST")
 )
-sealed class FeltDto {
+sealed class FeltDefinisjon {
     abstract val label: String
     abstract val hjelpetekst: String?
     abstract val pakrevd: Boolean
@@ -37,43 +37,43 @@ sealed class FeltDto {
  * @property jaLabel Visningslabel for "Ja"-valget
  * @property neiLabel Visningslabel for "Nei"-valget
  */
-data class BooleanFeltDto(
+data class BooleanFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
-    val jaLabel: String = "Ja",
-    val neiLabel: String = "Nei"
-) : FeltDto()
+    val jaLabel: String,
+    val neiLabel: String
+) : FeltDefinisjon()
 
 /**
  * Enkelt tekstfelt (input).
  */
-data class TextFeltDto(
+data class TextFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDto()
+) : FeltDefinisjon()
 
 /**
  * Flerlinjers tekstfelt (textarea).
  *
  * @property maxLength Maksimal lengde på teksten
  */
-data class TextareaFeltDto(
+data class TextareaFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
     val maxLength: Int? = null
-) : FeltDto()
+) : FeltDefinisjon()
 
 /**
  * Dato-felt.
  */
-data class DateFeltDto(
+data class DateFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDto()
+) : FeltDefinisjon()
 
 /**
  * Periode-felt (fra dato - til dato).
@@ -81,35 +81,35 @@ data class DateFeltDto(
  * @property fraDatoLabel Label for fra-dato feltet
  * @property tilDatoLabel Label for til-dato feltet
  */
-data class PeriodeFeltDto(
+data class PeriodeFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
-    val fraDatoLabel: String = "Fra dato",
-    val tilDatoLabel: String = "Til dato"
-) : FeltDto()
+    val fraDatoLabel: String,
+    val tilDatoLabel: String
+) : FeltDefinisjon()
 
 /**
  * Nedtrekksliste med predefinerte alternativer.
  *
  * @property alternativer Liste over mulige valg
  */
-data class SelectFeltDto(
+data class SelectFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
-    val alternativer: List<AlternativDto>
-) : FeltDto()
+    val alternativer: List<AlternativDefinisjon>
+) : FeltDefinisjon()
 
 /**
  * Land-velger (spesialisert nedtrekksliste for land).
  * Frontend rendrer dette med en landvelger-komponent.
  */
-data class CountrySelectFeltDto(
+data class CountrySelectFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDto()
+) : FeltDefinisjon()
 
 /**
  * Liste-felt for repeterende elementer (f.eks. familiemedlemmer, virksomheter).
@@ -119,12 +119,12 @@ data class CountrySelectFeltDto(
  * @property tomListeMelding Melding som vises når listen er tom
  * @property elementDefinisjon Definisjon av feltene i hvert liste-element
  */
-data class ListeFeltDto(
+data class ListeFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = false,
-    val leggTilLabel: String = "Legg til",
-    val fjernLabel: String = "Fjern",
+    val leggTilLabel: String,
+    val fjernLabel: String,
     val tomListeMelding: String? = null,
-    val elementDefinisjon: Map<String, FeltDto>
-) : FeltDto()
+    val elementDefinisjon: Map<String, FeltDefinisjon>
+) : FeltDefinisjon()
