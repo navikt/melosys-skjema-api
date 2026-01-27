@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.util.UUID
+import no.nav.melosys.skjema.config.observability.MDCOperations
 
 private val log = KotlinLogging.logger {}
 
@@ -38,6 +39,7 @@ class InnsendingProsesseringService(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onInnsendingOpprettet(event: InnsendingOpprettetEvent) {
+        MDCOperations.setCorrelationId(event.correlationId)
         prosesserInnsendingAsync(event.skjemaId)
     }
 
