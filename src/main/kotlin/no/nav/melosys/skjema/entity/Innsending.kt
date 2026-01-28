@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.config.observability.MDCOperations
 
 /**
  * Sporer prosesseringsstatus for innsendte skjemaer.
@@ -44,5 +45,8 @@ class Innsending(
 
     /** Brukervennlig referanse-ID for søknaden (f.eks. MEL-AB12CD) */
     @Column(name = "referanse_id", nullable = false, unique = true)
-    val referanseId: String
+    val referanseId: String,
+
+    @Column(name = "correlation_id")
+    var correlationId: String? = MDCOperations.getCorrelationId()
 )
