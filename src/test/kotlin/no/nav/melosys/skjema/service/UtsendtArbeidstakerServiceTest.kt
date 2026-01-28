@@ -26,6 +26,7 @@ import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
@@ -43,6 +44,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val innsendingStatusService = mockk<InnsendingStatusService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
+    val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
 
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
@@ -54,12 +56,17 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockSubjectHandler,
         innsendingStatusService,
         eventPublisher,
-        referanseIdGenerator
+        referanseIdGenerator,
+        mockSkjemaDefinisjonService
     )
 
     val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")
     val testArbeidstaker = personDtoMedDefaultVerdier(fnr = "12345678910")
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
+
+    beforeTest {
+        every { mockSkjemaDefinisjonService.hentAktivVersjon("A1") } returns "1"
+    }
 
     context("opprettMedKontekst") {
         test("skal opprette skjema for DEG_SELV") {

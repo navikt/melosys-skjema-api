@@ -32,3 +32,7 @@ RESSURS_ID: test123
 BRUK_SYNTETISK_FNR: true
 AZURE_APP_WELL_KNOWN_URL: ${mock-oauth2-server.baseUrl}/azure/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: test-melosys-client-id
+
+skjemadefinisjon:
+  aktive-versjoner:
+    A1: "1"

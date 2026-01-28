@@ -44,5 +44,13 @@ class Innsending(
 
     /** Brukervennlig referanse-ID for søknaden (f.eks. MEL-AB12CD) */
     @Column(name = "referanse_id", nullable = false, unique = true)
-    val referanseId: String
+    val referanseId: String,
+
+    /** Versjon av skjemadefinisjon som ble brukt ved innsending */
+    @Column(name = "skjema_definisjon_versjon", nullable = false)
+    val skjemaDefinisjonVersjon: String,
+
+    /** Språk som ble brukt ved innsending (f.eks. "nb", "en") */
+    @Column(name = "innsendt_sprak", nullable = false)
+    val innsendtSprak: String
 )

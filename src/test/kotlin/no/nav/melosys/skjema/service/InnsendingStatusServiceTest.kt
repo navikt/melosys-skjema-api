@@ -43,17 +43,26 @@ class InnsendingStatusServiceTest : ApiTestBase() {
         fun `skal opprette innsending med status MOTTATT`() {
             val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
 
-            val innsending = innsendingStatusService.opprettInnsending(skjema, "MEL-TEST01")
+            val innsending = innsendingStatusService.opprettInnsending(
+                skjema = skjema,
+                referanseId = "MEL-TEST01",
+                skjemaDefinisjonVersjon = "1",
+                innsendtSprak = "nb"
+            )
 
             innsending.skjema.id shouldBe skjema.id
             innsending.status shouldBe InnsendingStatus.MOTTATT
             innsending.antallForsok shouldBe 0
             innsending.referanseId shouldBe "MEL-TEST01"
+            innsending.skjemaDefinisjonVersjon shouldBe "1"
+            innsending.innsendtSprak shouldBe "nb"
 
             val lagret = innsendingRepository.findBySkjemaId(skjema.id!!)
             lagret shouldNotBe null
             lagret!!.status shouldBe InnsendingStatus.MOTTATT
             lagret.referanseId shouldBe "MEL-TEST01"
+            lagret.skjemaDefinisjonVersjon shouldBe "1"
+            lagret.innsendtSprak shouldBe "nb"
         }
     }
 
