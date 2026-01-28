@@ -328,34 +328,31 @@ class UtsendtArbeidstakerService(
 
         // TODO: Her må det valideres at skjemaet er komplett utfyllt med gyldige data
 
-        // 1. Generer referanseId
+        // 1. Generer referanseId og hent aktiv versjon
         val referanseId = referanseIdGenerator.generer()
-
-        // 2. Oppdater metadata med skjemadefinisjon-versjon og språk
-        val eksisterendeMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
         val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
-        val oppdatertMetadata = eksisterendeMetadata.copy(
-            skjemaDefinisjonVersjon = aktivVersjon,
-            innsendtSprak = sprak
-        )
-        skjema.metadata = jsonMapper.valueToTree(oppdatertMetadata)
 
-        // 3. Sett skjema-status til SENDT
+        // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
         skjema.endretAv = subjectHandler.getUserID()
 
-        // 4. Lagre skjema
+        // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 5. Opprett innsending-rad for prosesseringsstatus med referanseId
-        innsendingStatusService.opprettInnsending(savedSkjema, referanseId)
+        // 4. Opprett innsending-rad med versjon og språk
+        innsendingStatusService.opprettInnsending(
+            skjema = savedSkjema,
+            referanseId = referanseId,
+            skjemaDefinisjonVersjon = aktivVersjon,
+            innsendtSprak = sprak
+        )
 
-        // 6. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
         eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
 
         log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=$sprak, referanseId=$referanseId" }
 
-        // 7. Returner kvittering med referanseId
+        // 6. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
             skjemaId = savedSkjema.id,
             referanseId = referanseId,
@@ -398,19 +395,17 @@ class UtsendtArbeidstakerService(
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
         }
 
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
 
-        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk
-        val visSprakKode = sprak ?: metadata.innsendtSprak
+        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk fra innsending
+        val visSprakKode = sprak ?: innsending.innsendtSprak
         val visSprak = Språk.fraKode(visSprakKode)
-        val versjon = metadata.skjemaDefinisjonVersjon
 
         // Hent definisjon for riktig versjon
         val definisjon = skjemaDefinisjonService.hent(
             type = skjema.type,
-            versjon = versjon,
+            versjon = innsending.skjemaDefinisjonVersjon,
             språk = visSprak
         )
 
@@ -422,8 +417,8 @@ class UtsendtArbeidstakerService(
             skjemaId = skjema.id!!,
             referanseId = innsending.referanseId,
             innsendtDato = skjema.endretDato,
-            innsendtSprak = metadata.innsendtSprak,
-            skjemaDefinisjonVersjon = versjon,
+            innsendtSprak = innsending.innsendtSprak,
+            skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
             arbeidstakerData = arbeidstakerData,
             arbeidsgiverData = arbeidsgiverData,
             definisjon = definisjon
@@ -532,9 +527,7 @@ class UtsendtArbeidstakerService(
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
             arbeidsgiverNavn = request.arbeidsgiver?.navn,
-            fullmektigFnr = fullmektigFnr,
-            skjemaDefinisjonVersjon = skjemaDefinisjonService.hentAktivVersjon("A1"),
-            innsendtSprak = "nb"
+            fullmektigFnr = fullmektigFnr
         )
     }
 

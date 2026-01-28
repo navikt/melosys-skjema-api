@@ -248,8 +248,6 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
-    skjemaDefinisjonVersjon: String = "1",
-    innsendtSprak: String = "nb",
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
@@ -259,8 +257,6 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
         radgiverfirma = radgiverfirma,
-        skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
-        innsendtSprak = innsendtSprak,
     )
 }
 
@@ -414,7 +410,9 @@ fun innsendingMedDefaultVerdier(
     opprettetDato: Instant = Instant.now(),
     sisteForsoekTidspunkt: Instant? = null,
     feilmelding: String? = null,
-    referanseId: String = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+    referanseId: String = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}",
+    skjemaDefinisjonVersjon: String = "1",
+    innsendtSprak: String = "nb"
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -423,5 +421,7 @@ fun innsendingMedDefaultVerdier(
     opprettetDato = opprettetDato,
     sisteForsoekTidspunkt = sisteForsoekTidspunkt,
     feilmelding = feilmelding,
-    referanseId = referanseId
+    referanseId = referanseId,
+    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
+    innsendtSprak = innsendtSprak
 )

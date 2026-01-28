@@ -13,11 +13,7 @@ data class UtsendtArbeidstakerMetadata(
     val skjemadel: Skjemadel,
     val radgiverfirma: RadgiverfirmaInfo? = null,
     val arbeidsgiverNavn: String? = null,
-    val fullmektigFnr: String? = null,
-    /** Versjon av skjemadefinisjon som ble brukt ved innsending */
-    val skjemaDefinisjonVersjon: String,
-    /** Språk som ble brukt ved innsending */
-    val innsendtSprak: String
+    val fullmektigFnr: String? = null
 )
 
 data class RadgiverfirmaInfo(
