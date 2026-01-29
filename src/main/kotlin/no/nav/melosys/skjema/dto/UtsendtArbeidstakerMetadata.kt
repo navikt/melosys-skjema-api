@@ -10,6 +10,7 @@ package no.nav.melosys.skjema.dto
 data class UtsendtArbeidstakerMetadata(
     val representasjonstype: Representasjonstype,
     val harFullmakt: Boolean,
+    val skjemadel: Skjemadel,
     val radgiverfirma: RadgiverfirmaInfo? = null,
     val arbeidsgiverNavn: String? = null,
     val fullmektigFnr: String? = null
@@ -27,3 +28,7 @@ enum class Representasjonstype {
     ANNEN_PERSON
 }
 
+enum class Skjemadel {
+    ARBEIDSTAKERS_DEL,
+    ARBEIDSGIVERS_DEL
+}

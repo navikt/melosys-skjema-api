@@ -528,10 +528,11 @@ class UtsendtArbeidstakerService(
         return UtsendtArbeidstakerMetadata(
             representasjonstype = request.representasjonstype,
             harFullmakt = request.harFullmakt,
+            skjemadel = request.skjemadel,
             radgiverfirma = request.radgiverfirma?.let {
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
-            arbeidsgiverNavn = request.arbeidsgiver.navn,
+            arbeidsgiverNavn = request.arbeidsgiver?.navn,
             fullmektigFnr = fullmektigFnr
         )
     }
