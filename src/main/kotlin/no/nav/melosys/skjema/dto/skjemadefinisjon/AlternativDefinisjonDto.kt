@@ -7,7 +7,7 @@ package no.nav.melosys.skjema.dto.skjemadefinisjon
  * @property label Visningslabel for alternativet
  * @property beskrivelse Valgfri beskrivelse/hjelpetekst
  */
-data class AlternativDefinisjon(
+data class AlternativDefinisjonDto(
     val verdi: String,
     val label: String,
     val beskrivelse: String? = null

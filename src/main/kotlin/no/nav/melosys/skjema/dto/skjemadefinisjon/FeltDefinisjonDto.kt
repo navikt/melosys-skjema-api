@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = CountrySelectFeltDefinisjon::class, name = "COUNTRY_SELECT"),
     JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST")
 )
-sealed class FeltDefinisjon {
+sealed class FeltDefinisjonDto {
     abstract val label: String
     abstract val hjelpetekst: String?
     abstract val pakrevd: Boolean
@@ -43,7 +43,7 @@ data class BooleanFeltDefinisjon(
     override val pakrevd: Boolean = true,
     val jaLabel: String,
     val neiLabel: String
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Enkelt tekstfelt (input).
@@ -52,7 +52,7 @@ data class TextFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Flerlinjers tekstfelt (textarea).
@@ -64,7 +64,7 @@ data class TextareaFeltDefinisjon(
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
     val maxLength: Int? = null
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Dato-felt.
@@ -73,7 +73,7 @@ data class DateFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Periode-felt (fra dato - til dato).
@@ -87,7 +87,7 @@ data class PeriodeFeltDefinisjon(
     override val pakrevd: Boolean = true,
     val fraDatoLabel: String,
     val tilDatoLabel: String
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Nedtrekksliste med predefinerte alternativer.
@@ -98,8 +98,8 @@ data class SelectFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
-    val alternativer: List<AlternativDefinisjon>
-) : FeltDefinisjon()
+    val alternativer: List<AlternativDefinisjonDto>
+) : FeltDefinisjonDto()
 
 /**
  * Land-velger (spesialisert nedtrekksliste for land).
@@ -109,7 +109,7 @@ data class CountrySelectFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true
-) : FeltDefinisjon()
+) : FeltDefinisjonDto()
 
 /**
  * Liste-felt for repeterende elementer (f.eks. familiemedlemmer, virksomheter).
@@ -126,5 +126,5 @@ data class ListeFeltDefinisjon(
     val leggTilLabel: String,
     val fjernLabel: String,
     val tomListeMelding: String? = null,
-    val elementDefinisjon: Map<String, FeltDefinisjon>
-) : FeltDefinisjon()
+    val elementDefinisjon: Map<String, FeltDefinisjonDto>
+) : FeltDefinisjonDto()

@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.dto
 import io.swagger.v3.oas.annotations.media.Schema
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjon
+import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
 import java.time.Instant
 import java.util.UUID
 
@@ -35,5 +35,5 @@ data class InnsendtSkjemaResponse(
     val arbeidsgiverData: ArbeidsgiversSkjemaDataDto?,
 
     @param:Schema(description = "Skjemadefinisjon for visning (basert på lagret versjon)")
-    val definisjon: SkjemaDefinisjon
+    val definisjon: SkjemaDefinisjonDto
 )

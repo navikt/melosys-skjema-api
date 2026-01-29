@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjon
+import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import no.nav.security.token.support.core.api.Protected
@@ -52,7 +52,7 @@ class SkjemaDefinisjonController(
 
         @Parameter(description = "Språkkode (nb, nn, en). Standard: nb")
         @RequestParam(defaultValue = "nb") språk: String
-    ): SkjemaDefinisjon {
+    ): SkjemaDefinisjonDto {
         val validertSpråk = Språk.fraKode(språk)
         return skjemaDefinisjonService.hent(type, versjon, validertSpråk)
     }
@@ -93,10 +93,10 @@ class SkjemaDefinisjonController(
  */
 @Schema(description = "Informasjon om aktiv versjon for en skjematype")
 data class AktivVersjonResponse(
-    @Schema(description = "Skjematype", example = "A1")
+    @param:Schema(description = "Skjematype", example = "A1")
     val type: String,
 
-    @Schema(description = "Aktiv versjon", example = "1")
+    @param:Schema(description = "Aktiv versjon", example = "1")
     val aktivVersjon: String
 )
 
@@ -105,6 +105,6 @@ data class AktivVersjonResponse(
  */
 @Schema(description = "Liste over støttede skjematyper")
 data class StøttedeTyperResponse(
-    @Schema(description = "Støttede skjematyper", example = "[\"A1\"]")
+    @param:Schema(description = "Støttede skjematyper", example = "[\"A1\"]")
     val typer: Set<String>
 )

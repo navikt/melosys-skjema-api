@@ -24,15 +24,15 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
     JsonSubTypes.Type(value = FlersprakligCountrySelectFeltDto::class, name = "COUNTRY_SELECT"),
     JsonSubTypes.Type(value = FlersprakligListeFeltDto::class, name = "LIST")
 )
-sealed class FlersprakligFeltDto {
+sealed class FlersprakligFeltModel {
     abstract val label: FlersprakligTekst
     abstract val hjelpetekst: FlersprakligTekst?
     abstract val pakrevd: Boolean
 
     /**
-     * Transformerer til enkeltspråklig FeltDefinisjon.
+     * Transformerer til enkeltspråklig FeltDefinisjonDto.
      */
-    abstract fun tilFeltDto(språk: Språk): FeltDefinisjon
+    abstract fun tilFeltDto(språk: Språk): FeltDefinisjonDto
 }
 
 data class FlersprakligBooleanFeltDto(
@@ -41,7 +41,7 @@ data class FlersprakligBooleanFeltDto(
     override val pakrevd: Boolean = true,
     val jaLabel: FlersprakligTekst,
     val neiLabel: FlersprakligTekst
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = BooleanFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -55,7 +55,7 @@ data class FlersprakligTextFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = TextFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -68,7 +68,7 @@ data class FlersprakligTextareaFeltDto(
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true,
     val maxLength: Int? = null
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = TextareaFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -81,7 +81,7 @@ data class FlersprakligDateFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = DateFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -95,7 +95,7 @@ data class FlersprakligPeriodeFeltDto(
     override val pakrevd: Boolean = true,
     val fraDatoLabel: FlersprakligTekst,
     val tilDatoLabel: FlersprakligTekst
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = PeriodeFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -110,7 +110,7 @@ data class FlersprakligAlternativDto(
     val label: FlersprakligTekst,
     val beskrivelse: FlersprakligTekst? = null
 ) {
-    fun tilAlternativDto(språk: Språk) = AlternativDefinisjon(
+    fun tilAlternativDto(språk: Språk) = AlternativDefinisjonDto(
         verdi = verdi,
         label = label.hent(språk),
         beskrivelse = beskrivelse?.hent(språk)
@@ -122,7 +122,7 @@ data class FlersprakligSelectFeltDto(
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true,
     val alternativer: List<FlersprakligAlternativDto>
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = SelectFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -135,7 +135,7 @@ data class FlersprakligCountrySelectFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true
-) : FlersprakligFeltDto() {
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = CountrySelectFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
@@ -150,8 +150,8 @@ data class FlersprakligListeFeltDto(
     val leggTilLabel: FlersprakligTekst,
     val fjernLabel: FlersprakligTekst,
     val tomListeMelding: FlersprakligTekst? = null,
-    val elementDefinisjon: Map<String, FlersprakligFeltDto>
-) : FlersprakligFeltDto() {
+    val elementDefinisjon: Map<String, FlersprakligFeltModel>
+) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = ListeFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),

@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.dto.skjemadefinisjon.flerspraklig
 
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjon
+import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 
 /**
@@ -33,15 +33,15 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
  * }
  * ```
  */
-data class FlersprakligSkjemaDefinisjonDto(
+data class FlersprakligSkjemaDefinisjonModel(
     val type: String,
     val versjon: String,
-    val seksjoner: Map<String, FlersprakligSeksjonDto>
+    val seksjoner: Map<String, FlersprakligSeksjonModel>
 ) {
     /**
-     * Transformerer til enkeltspråklig SkjemaDefinisjon.
+     * Transformerer til enkeltspråklig SkjemaDefinisjonDto.
      */
-    fun tilSkjemaDefinisjonDto(språk: Språk) = SkjemaDefinisjon(
+    fun tilSkjemaDefinisjonDto(språk: Språk) = SkjemaDefinisjonDto(
         type = type,
         versjon = versjon,
         seksjoner = seksjoner.mapValues { it.value.tilSeksjonDto(språk) }

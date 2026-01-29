@@ -1,20 +1,20 @@
 package no.nav.melosys.skjema.dto.skjemadefinisjon.flerspraklig
 
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjon
+import no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 
 /**
  * Flerspråklig definisjon av en seksjon i et skjema.
  */
-data class FlersprakligSeksjonDto(
+data class FlersprakligSeksjonModel(
     val tittel: FlersprakligTekst,
     val beskrivelse: FlersprakligTekst? = null,
-    val felter: Map<String, FlersprakligFeltDto>
+    val felter: Map<String, FlersprakligFeltModel>
 ) {
     /**
-     * Transformerer til enkeltspråklig SeksjonDefinisjon.
+     * Transformerer til enkeltspråklig SeksjonDefinisjonDto.
      */
-    fun tilSeksjonDto(språk: Språk) = SeksjonDefinisjon(
+    fun tilSeksjonDto(språk: Språk) = SeksjonDefinisjonDto(
         tittel = tittel.hent(språk),
         beskrivelse = beskrivelse?.hent(språk),
         felter = felter.mapValues { it.value.tilFeltDto(språk) }

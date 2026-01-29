@@ -8,8 +8,8 @@ package no.nav.melosys.skjema.dto.skjemadefinisjon
  * @property versjon Versjon av definisjonen, f.eks. "1"
  * @property seksjoner Map fra seksjons-ID til seksjonsdefinisjon
  */
-data class SkjemaDefinisjon(
+data class SkjemaDefinisjonDto(
     val type: String,
     val versjon: String,
-    val seksjoner: Map<String, SeksjonDefinisjon>
+    val seksjoner: Map<String, SeksjonDefinisjonDto>
 )
