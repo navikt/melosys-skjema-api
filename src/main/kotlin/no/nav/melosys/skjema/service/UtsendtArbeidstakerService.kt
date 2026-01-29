@@ -33,6 +33,8 @@ import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 
@@ -53,7 +55,8 @@ class UtsendtArbeidstakerService(
     private val subjectHandler: SubjectHandler,
     private val innsendingStatusService: InnsendingStatusService,
     private val eventPublisher: ApplicationEventPublisher,
-    private val referanseIdGenerator: ReferanseIdGenerator
+    private val referanseIdGenerator: ReferanseIdGenerator,
+    private val skjemaDefinisjonService: SkjemaDefinisjonService
 ) {
 
     /**
@@ -316,7 +319,7 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID): SkjemaInnsendtKvittering {
+    fun sendInnSkjema(skjemaId: UUID, sprak: String = "nb"): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
@@ -326,8 +329,9 @@ class UtsendtArbeidstakerService(
 
         // TODO: Her må det valideres at skjemaet er komplett utfyllt med gyldige data
 
-        // 1. Generer referanseId
+        // 1. Generer referanseId og hent aktiv versjon
         val referanseId = referanseIdGenerator.generer()
+        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
 
         // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
@@ -336,8 +340,13 @@ class UtsendtArbeidstakerService(
         // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 4. Opprett innsending-rad for prosesseringsstatus med referanseId
-        innsendingStatusService.opprettInnsending(savedSkjema, referanseId)
+        // 4. Opprett innsending-rad med versjon og språk
+        innsendingStatusService.opprettInnsending(
+            skjema = savedSkjema,
+            referanseId = referanseId,
+            skjemaDefinisjonVersjon = aktivVersjon,
+            innsendtSprak = sprak
+        )
 
         // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
         eventPublisher.publishEvent(
@@ -346,6 +355,8 @@ class UtsendtArbeidstakerService(
                 correlationId = MDCOperations.getCorrelationId()
             )
         )
+
+        log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=$sprak, referanseId=$referanseId" }
 
         // 6. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
@@ -373,6 +384,51 @@ class UtsendtArbeidstakerService(
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         return jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+    }
+
+    /**
+     * Henter en innsendt søknad med skjemadefinisjon for visning.
+     *
+     * @param skjemaId ID til skjemaet
+     * @param sprak Ønsket språk for definisjonen (valgfritt - bruker innsendtSpråk som default)
+     * @return Innsendt søknad med data og definisjon
+     * @throws IllegalStateException hvis skjema ikke er innsendt
+     */
+    fun hentInnsendtSkjema(skjemaId: UUID, sprak: String?): InnsendtSkjemaResponse {
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+
+        if (skjema.status != SkjemaStatus.SENDT) {
+            throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
+        }
+
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
+
+        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk fra innsending
+        val visSprakKode = sprak ?: innsending.innsendtSprak
+        val visSprak = Språk.fraKode(visSprakKode)
+
+        // Hent definisjon for riktig versjon
+        val definisjon = skjemaDefinisjonService.hent(
+            type = skjema.type,
+            versjon = innsending.skjemaDefinisjonVersjon,
+            språk = visSprak
+        )
+
+        // Parse skjemadata
+        val arbeidstakerData = skjema.data?.let { jsonMapper.parseArbeidstakersSkjemaDataDto(it) }
+        val arbeidsgiverData = skjema.data?.let { jsonMapper.parseArbeidsgiversSkjemaDataDto(it) }
+
+        return InnsendtSkjemaResponse(
+            skjemaId = skjema.id!!,
+            referanseId = innsending.referanseId,
+            innsendtDato = skjema.endretDato,
+            innsendtSprak = innsending.innsendtSprak,
+            skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
+            arbeidstakerData = arbeidstakerData,
+            arbeidsgiverData = arbeidsgiverData,
+            definisjon = definisjon
+        )
     }
 
     /**
@@ -476,7 +532,7 @@ class UtsendtArbeidstakerService(
             radgiverfirma = request.radgiverfirma?.let {
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
-            arbeidsgiverNavn = request.arbeidsgiver.navn,
+            arbeidsgiverNavn = request.arbeidsgiver?.navn,
             fullmektigFnr = fullmektigFnr
         )
     }

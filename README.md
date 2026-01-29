@@ -685,6 +685,80 @@ For detaljert dokumentasjon av fullmaktmodellen, se [fullmakt.md](fullmakt.md). 
 
 ## Utviklerdokumentasjon
 
+### Skjemadefinisjoner
+
+Skjemadefinisjoner lagres som flerspråklige JSON-filer i `src/main/resources/skjema-definisjoner/`.
+
+#### Filstruktur
+```
+resources/skjema-definisjoner/
+└── A1/
+    └── v1/
+        └── definisjon.json   # Alle språk i én fil
+```
+
+#### JSON-format
+Alle tekster er flerspråklige med språkkode som nøkkel:
+
+```json
+{
+  "type": "A1",
+  "versjon": "1",
+  "seksjoner": {
+    "utenlandsoppdraget": {
+      "tittel": {
+        "nb": "Utenlandsoppdraget",
+        "en": "Foreign assignment"
+      },
+      "felter": {
+        "land": {
+          "type": "COUNTRY_SELECT",
+          "label": {
+            "nb": "Hvilket land?",
+            "en": "Which country?"
+          },
+          "pakrevd": true
+        },
+        "bekreft": {
+          "type": "BOOLEAN",
+          "label": { "nb": "Bekreft", "en": "Confirm" },
+          "jaLabel": { "nb": "Ja", "en": "Yes" },
+          "neiLabel": { "nb": "Nei", "en": "No" },
+          "pakrevd": true
+        }
+      }
+    }
+  }
+}
+```
+
+#### API
+```
+GET /api/skjema/definisjon/{type}?språk=nb
+GET /api/skjema/definisjon/{type}?språk=en
+```
+
+Returnerer enkeltspråklig DTO basert på `språk`-parameter. Fallback til `nb` hvis språk ikke finnes.
+
+#### Relevante klasser
+- `FlersprakligSkjemaDefinisjonDto` - Leser flerspråklig JSON
+- `SkjemaDefinisjonDto` - Enkeltspråklig respons-DTO
+- `SkjemaDefinisjonService` - Transformerer og cacher
+
+#### Legge til nytt språk
+1. Legg til oversettelser i `definisjon.json` for alle tekster
+2. Ferdig - API støtter automatisk nye språk
+
+#### Legge til ny versjon
+1. Opprett ny mappe: `resources/skjema-definisjoner/A1/v2/`
+2. Kopier og oppdater `definisjon.json`
+3. Oppdater `application.yml`:
+   ```yaml
+   skjemadefinisjon:
+     aktive-versjoner:
+       A1: "2"
+   ```
+
 ### repr-api integrasjon
 
 Applikasjonen integrerer med NAVs [repr-api](https://github.com/navikt/representasjon) for å hente fullmakter fra Nav.no fullmaktsløsning.

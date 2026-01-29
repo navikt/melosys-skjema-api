@@ -2,10 +2,12 @@ package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
+import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.dto.SkjemaInnsendtKvittering
@@ -126,14 +128,39 @@ class UtsendtArbeidstakerController(
     }
 
     @GetMapping("/{id}/innsendt-kvittering")
-    @Operation(summary = "Send inn skjema")
-    @ApiResponse(responseCode = "200", description = "Skjema innsendt")
+    @Operation(summary = "Hent kvittering for innsendt skjema")
+    @ApiResponse(responseCode = "200", description = "Kvittering hentet")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
     fun hentInnsendingKvittering(@PathVariable id: UUID): ResponseEntity<SkjemaInnsendtKvittering> {
-        log.info { "Sender inn skjema med id: $id" }
+        log.info { "Henter innsending-kvittering for skjema: $id" }
         val innsendtSkjemaKvittering = utsendtArbeidstakerService.genererInnsendtKvittering(id)
 
         return ResponseEntity.ok(innsendtSkjemaKvittering)
+    }
+
+    @GetMapping("/{id}/innsendt")
+    @Operation(
+        summary = "Hent innsendt søknad med skjemadefinisjon",
+        description = """
+            Henter innsendt søknad med alle data og skjemadefinisjon for visning.
+            Skjemadefinisjonen brukes til å vise søknaden med korrekte tekster
+            fra innsendingstidspunkt.
+
+            Hvis språk ikke er spesifisert, brukes språket som ble brukt ved innsending.
+        """
+    )
+    @ApiResponse(responseCode = "200", description = "Innsendt søknad hentet")
+    @ApiResponse(responseCode = "400", description = "Skjema er ikke innsendt")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun hentInnsendtSkjema(
+        @PathVariable id: UUID,
+        @Parameter(description = "Språk for visning (valgfritt - bruker innsendtSpråk som default)")
+        @RequestParam(required = false) sprak: String?
+    ): ResponseEntity<InnsendtSkjemaResponse> {
+        log.info { "Henter innsendt søknad med definisjon: id=$id, språk=$sprak" }
+        val innsendtSkjema = utsendtArbeidstakerService.hentInnsendtSkjema(id, sprak)
+
+        return ResponseEntity.ok(innsendtSkjema)
     }
 
     @GetMapping("/{id}/pdf")
