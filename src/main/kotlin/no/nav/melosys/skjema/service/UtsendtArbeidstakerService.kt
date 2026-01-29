@@ -15,6 +15,7 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.*
+import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -348,7 +349,12 @@ class UtsendtArbeidstakerService(
         )
 
         // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
-        eventPublisher.publishEvent(InnsendingOpprettetEvent(savedSkjema.id!!))
+        eventPublisher.publishEvent(
+            InnsendingOpprettetEvent(
+                skjemaId = savedSkjema.id!!,
+                correlationId = MDCOperations.getCorrelationId()
+            )
+        )
 
         log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=$sprak, referanseId=$referanseId" }
 

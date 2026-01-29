@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.config
 
 import no.nav.melosys.skjema.config.observability.CorrelationIdKafkaProducerInterceptor
-import tools.jackson.databind.json.JsonMapper
 import no.nav.melosys.skjema.kafka.SkjemaMottattMelding
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
@@ -13,6 +12,7 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer
+import tools.jackson.databind.json.JsonMapper
 
 @Configuration
 class KafkaConfig {

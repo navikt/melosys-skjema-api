@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.config.observability.MDCOperations
 
 /**
  * Sporer prosesseringsstatus for innsendte skjemaer.
@@ -52,5 +53,8 @@ class Innsending(
 
     /** Språk som ble brukt ved innsending (f.eks. "nb", "en") */
     @Column(name = "innsendt_sprak", nullable = false)
-    val innsendtSprak: String
+    val innsendtSprak: String,
+
+    @Column(name = "correlation_id")
+    var correlationId: String? = MDCOperations.getCorrelationId()
 )

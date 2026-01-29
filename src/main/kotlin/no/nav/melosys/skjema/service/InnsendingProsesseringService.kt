@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.util.UUID
+import no.nav.melosys.skjema.config.observability.MDCOperations
+import no.nav.melosys.skjema.config.observability.MDCOperations.Companion.withCorrelationId
 
 private val log = KotlinLogging.logger {}
 
@@ -37,9 +39,11 @@ class InnsendingProsesseringService(
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onInnsendingOpprettet(event: InnsendingOpprettetEvent) {
-        prosesserInnsendingAsync(event.skjemaId)
+    fun onInnsendingOpprettet(event: InnsendingOpprettetEvent) = withCorrelationId(event.correlationId){
+            prosesserInnsendingAsync(event.skjemaId)
     }
+
+
 
     /**
      * Prosesserer en innsendt søknad asynkront.
