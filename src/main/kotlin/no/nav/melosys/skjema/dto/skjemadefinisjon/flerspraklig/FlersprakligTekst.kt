@@ -41,8 +41,4 @@ constructor(
             ?: tekster.values.firstOrNull()
             ?: ""
     }
-
-    fun harSpråk(språk: Språk): Boolean = tekster.containsKey(språk.kode)
-
-    fun alleSpråk(): Set<String> = tekster.keys
 }

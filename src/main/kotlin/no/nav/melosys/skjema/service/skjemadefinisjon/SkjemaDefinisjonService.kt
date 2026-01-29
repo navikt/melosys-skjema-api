@@ -85,13 +85,6 @@ class SkjemaDefinisjonService(
     }
 
     /**
-     * Sjekker om en skjematype er støttet.
-     */
-    fun erStøttetType(type: String): Boolean {
-        return properties.aktiveVersjoner.containsKey(type)
-    }
-
-    /**
      * Henter liste over alle støttede skjematyper.
      */
     fun hentStøttedeTyper(): Set<String> {
