@@ -24,6 +24,7 @@ import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.Utenlandsoppdra
 import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -158,7 +159,8 @@ class UtsendtArbeidstakerController(
         @RequestParam(required = false) sprak: String?
     ): ResponseEntity<InnsendtSkjemaResponse> {
         log.info { "Henter innsendt søknad med definisjon: id=$id, språk=$sprak" }
-        val innsendtSkjema = utsendtArbeidstakerService.hentInnsendtSkjema(id, sprak)
+        val språkEnum = sprak?.let { Språk.fraKode(it) }
+        val innsendtSkjema = utsendtArbeidstakerService.hentInnsendtSkjema(id, språkEnum)
 
         return ResponseEntity.ok(innsendtSkjema)
     }
