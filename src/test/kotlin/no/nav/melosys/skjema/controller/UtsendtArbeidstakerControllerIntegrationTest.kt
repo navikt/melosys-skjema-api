@@ -634,6 +634,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 erArbeidsgiverenOffentligVirksomhet = false,
                 erArbeidsgiverenBemanningsEllerVikarbyraa = null,
+                opprettholderArbeidsgiverenVanligDrift = false
             ),
             expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "arbeidsgiverensVirksomhetINorgeTranslation.maaOppgiOmBemanningsbyraa")
         ),

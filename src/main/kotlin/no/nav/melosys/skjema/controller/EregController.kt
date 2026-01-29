@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.controller
 
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
-import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
@@ -34,7 +34,7 @@ class EregController(
     @GetMapping("/organisasjon-med-juridisk-enhet/{orgnummer}")
     fun hentOrganisasjonMedJuridiskEnhet(
         @PathVariable orgnummer: String
-    ): ResponseEntity<OrganisasjonMedJuridiskEnhet> = withRateLimit {
+    ): ResponseEntity<OrganisasjonMedJuridiskEnhetDto> = withRateLimit {
         val organisasjon = eregService.hentOrganisasjonMedJuridiskEnhet(orgnummer)
         ResponseEntity.ok(organisasjon)
     }
@@ -50,7 +50,7 @@ class EregController(
     @GetMapping("/organisasjon/{orgnummer}")
     fun hentOrganisasjon(
         @PathVariable orgnummer: String
-    ): ResponseEntity<Organisasjon> = withRateLimit {
+    ): ResponseEntity<SimpleOrganisasjonDto> = withRateLimit {
         val organisasjon = eregService.hentOrganisasjon(orgnummer)
         ResponseEntity.ok(organisasjon)
     }

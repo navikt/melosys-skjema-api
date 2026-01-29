@@ -5,7 +5,8 @@ import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
-import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -31,9 +32,9 @@ class EregServiceTest {
         val result = eregService.hentOrganisasjonMedJuridiskEnhet(virksomhet.organisasjonsnummer)
 
         assertThat(result).isEqualTo(
-            OrganisasjonMedJuridiskEnhet(
-                organisasjon = virksomhet,
-                juridiskEnhet = juridiskEnhet
+            OrganisasjonMedJuridiskEnhetDto(
+                organisasjon = virksomhet.toSimpleOrganisasjonDto(),
+                juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto()
             )
         )
     }

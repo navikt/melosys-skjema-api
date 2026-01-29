@@ -8,8 +8,7 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
-import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
@@ -24,6 +23,8 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import java.util.stream.Stream
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 
 /**
  * Integrasjonstest for EregController med MockOAuth2Server og WebTestClient.
@@ -57,9 +58,9 @@ class EregControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        val expected = OrganisasjonMedJuridiskEnhet(
-            organisasjon = virksomhet,
-            juridiskEnhet = juridiskEnhet
+        val expected = OrganisasjonMedJuridiskEnhetDto(
+            organisasjon = virksomhet.toSimpleOrganisasjonDto(),
+            juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto()
         )
 
         every { rateLimiterService.isRateLimited(any(), any()) } returns false
@@ -76,7 +77,7 @@ class EregControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<OrganisasjonMedJuridiskEnhet>()
+            .expectBody<OrganisasjonMedJuridiskEnhetDto>()
             .consumeWith { response ->
                 response.responseBody shouldBe expected
             }
@@ -89,7 +90,7 @@ class EregControllerIntegrationTest : ApiTestBase() {
         val virksomhet = virksomhetMedDefaultVerdier()
 
         every { rateLimiterService.isRateLimited(any(), any()) } returns false
-        every { eregService.hentOrganisasjon(virksomhet.organisasjonsnummer) } returns virksomhet
+        every { eregService.hentOrganisasjon(virksomhet.organisasjonsnummer) } returns virksomhet.toSimpleOrganisasjonDto()
 
         val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -102,9 +103,9 @@ class EregControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<Organisasjon>()
+            .expectBody<SimpleOrganisasjonDto>()
             .consumeWith { response ->
-                response.responseBody shouldBe virksomhet
+                response.responseBody shouldBe virksomhet.toSimpleOrganisasjonDto()
             }
     }
 

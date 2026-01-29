@@ -3,8 +3,10 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhet
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
-import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonMedJuridiskEnhet
+import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.dto.finnJuridiskEnhetOrganisasjonsnummer
+import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.springframework.stereotype.Service
 
@@ -21,9 +23,9 @@ class EregService(
      * @param orgnummer 9-sifret organisasjonsnummer
      * @return Organisasjon
      */
-    fun hentOrganisasjon(orgnummer: String): Organisasjon {
+    fun hentOrganisasjon(orgnummer: String): SimpleOrganisasjonDto {
         log.info { "Henter organisasjon fra EREG (uten hierarki): ${orgnummer.take(3)}***" }
-        return eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = false)
+        return eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = false).toSimpleOrganisasjonDto()
     }
 
     /**
@@ -32,15 +34,15 @@ class EregService(
      * @param orgnummer 9-sifret organisasjonsnummer
      * @return Organisasjon med juridisk enhet
      */
-    fun hentOrganisasjonMedJuridiskEnhet(orgnummer: String): OrganisasjonMedJuridiskEnhet {
+    fun hentOrganisasjonMedJuridiskEnhet(orgnummer: String): OrganisasjonMedJuridiskEnhetDto {
         log.info { "Henter organisasjon fra EREG: ${orgnummer.take(3)}***" }
 
         val organisasjon = eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = true)
         val juridiskEnhet = hentJuridiskEnhetForOrganisasjon(organisasjon)
 
-        return OrganisasjonMedJuridiskEnhet(
-            organisasjon = organisasjon,
-            juridiskEnhet = juridiskEnhet
+        return OrganisasjonMedJuridiskEnhetDto(
+            organisasjon = organisasjon.toSimpleOrganisasjonDto(),
+            juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto()
         )
     }
 

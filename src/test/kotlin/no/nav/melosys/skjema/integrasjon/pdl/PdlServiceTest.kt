@@ -11,15 +11,16 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import no.nav.melosys.skjema.korrektSyntetiskFnr
 
 class PdlServiceTest {
 
     private val pdlConsumer = mockk<PdlConsumer>()
-    private val pdlService = PdlService(pdlConsumer)
+    private val pdlService = PdlService(pdlConsumer, true)
 
     @Test
     fun `verifiserOgHentPerson returnerer navn og fødselsdato når person finnes og etternavn matcher`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Nordmann"
         val person = PdlPerson(
             navn = listOf(
@@ -45,7 +46,7 @@ class PdlServiceTest {
 
     @Test
     fun `verifiserOgHentPerson returnerer fullt navn med mellomnavn når person har mellomnavn`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Hansen"
         val person = PdlPerson(
             navn = listOf(
@@ -70,7 +71,7 @@ class PdlServiceTest {
 
     @Test
     fun `verifiserOgHentPerson håndterer etternavn case-insensitive`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "NORDMANN" // Store bokstaver
         val person = PdlPerson(
             navn = listOf(
@@ -93,8 +94,18 @@ class PdlServiceTest {
     }
 
     @Test
+    fun `verifiserOgHentPerson kaster PersonVerifiseringException når fnr ikke har gyldig format`() {
+
+        val exception = assertThrows<PersonVerifiseringException> {
+            pdlService.verifiserOgHentPerson("12345678987", "Hansen")
+        }
+
+        assertThat(exception.message).isEqualTo("Ugyldig format på fødselsnummer eller d-nummer")
+    }
+
+    @Test
     fun `verifiserOgHentPerson kaster PersonVerifiseringException når person ikke finnes i PDL`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Nordmann"
 
         every { pdlConsumer.hentPerson(fodselsnummer) } throws IllegalArgumentException("Fant ikke ident i PDL")
@@ -108,7 +119,7 @@ class PdlServiceTest {
 
     @Test
     fun `verifiserOgHentPerson kaster PersonVerifiseringException når etternavn ikke matcher`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "FeilEtternavn"
         val person = PdlPerson(
             navn = listOf(
@@ -134,7 +145,7 @@ class PdlServiceTest {
 
     @Test
     fun `verifiserOgHentPerson kaster PersonVerifiseringException når person mangler navn i PDL`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Nordmann"
         val person = PdlPerson(
             navn = emptyList(), // Ingen navn registrert
@@ -154,7 +165,7 @@ class PdlServiceTest {
 
     @Test
     fun `verifiserOgHentPerson kaster IllegalArgumentException når person mangler fødselsdato i PDL`() {
-        val fodselsnummer = "12345678901"
+        val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Nordmann"
         val person = PdlPerson(
             navn = listOf(

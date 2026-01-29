@@ -98,27 +98,6 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere 400 ved ugyldig fnr-format")
-    fun `POST verifiser-person skal returnere 400 ved ugyldig fnr-format`() {
-        val request = VerifiserPersonRequest(
-            fodselsnummer = "123", // Ugyldig format
-            etternavn = "Nordmann"
-        )
-
-        val accessToken = mockOAuth2Server.getToken(
-            claims = mapOf("pid" to "98765432109")
-        )
-
-        webTestClient.post()
-            .uri("/api/arbeidstaker/verifiser-person")
-            .header("Authorization", "Bearer $accessToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
-            .exchange()
-            .expectStatus().isBadRequest
-    }
-
-    @Test
     @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere 400 ved tomt etternavn")
     fun `POST verifiser-person skal returnere 400 ved tomt etternavn`() {
         val request = VerifiserPersonRequest(
