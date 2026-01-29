@@ -9,6 +9,7 @@ import no.nav.melosys.skjema.entity.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -47,7 +48,7 @@ class InnsendingStatusServiceTest : ApiTestBase() {
                 skjema = skjema,
                 referanseId = "MEL-TEST01",
                 skjemaDefinisjonVersjon = "1",
-                innsendtSprak = "nb"
+                innsendtSprak = Språk.NORSK_BOKMAL
             )
 
             innsending.skjema.id shouldBe skjema.id
@@ -55,14 +56,14 @@ class InnsendingStatusServiceTest : ApiTestBase() {
             innsending.antallForsok shouldBe 0
             innsending.referanseId shouldBe "MEL-TEST01"
             innsending.skjemaDefinisjonVersjon shouldBe "1"
-            innsending.innsendtSprak shouldBe "nb"
+            innsending.innsendtSprak shouldBe Språk.NORSK_BOKMAL
 
             val lagret = innsendingRepository.findBySkjemaId(skjema.id!!)
             lagret shouldNotBe null
             lagret!!.status shouldBe InnsendingStatus.MOTTATT
             lagret.referanseId shouldBe "MEL-TEST01"
             lagret.skjemaDefinisjonVersjon shouldBe "1"
-            lagret.innsendtSprak shouldBe "nb"
+            lagret.innsendtSprak shouldBe Språk.NORSK_BOKMAL
         }
     }
 

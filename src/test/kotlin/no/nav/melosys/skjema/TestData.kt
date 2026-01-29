@@ -5,6 +5,7 @@ import tools.jackson.databind.json.JsonMapper
 import java.time.Instant
 import java.time.LocalDate
 import no.nav.melosys.skjema.dto.Representasjonstype
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -412,7 +413,7 @@ fun innsendingMedDefaultVerdier(
     feilmelding: String? = null,
     referanseId: String = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}",
     skjemaDefinisjonVersjon: String = "1",
-    innsendtSprak: String = "nb"
+    innsendtSprak: Språk = Språk.NORSK_BOKMAL
 ) = Innsending(
     id = id,
     skjema = skjema,
