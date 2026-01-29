@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.entity
 
 import jakarta.persistence.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
 import java.time.Instant
 import java.util.*
 import no.nav.melosys.skjema.config.observability.MDCOperations
@@ -51,9 +53,10 @@ class Innsending(
     @Column(name = "skjema_definisjon_versjon", nullable = false)
     val skjemaDefinisjonVersjon: String,
 
-    /** Språk som ble brukt ved innsending (f.eks. "nb", "en") */
+    /** Språk som ble brukt ved innsending */
     @Column(name = "innsendt_sprak", nullable = false)
-    val innsendtSprak: String,
+    @Convert(converter = SpråkConverter::class)
+    val innsendtSprak: Språk,
 
     @Column(name = "correlation_id")
     var correlationId: String? = MDCOperations.getCorrelationId()

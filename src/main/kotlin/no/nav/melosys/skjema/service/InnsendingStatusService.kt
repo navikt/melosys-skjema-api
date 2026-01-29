@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -33,7 +34,7 @@ class InnsendingStatusService(
         skjema: Skjema,
         referanseId: String,
         skjemaDefinisjonVersjon: String,
-        innsendtSprak: String
+        innsendtSprak: Språk
     ): Innsending {
         val innsending = Innsending(
             skjema = skjema,

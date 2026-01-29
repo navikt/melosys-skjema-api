@@ -51,9 +51,9 @@ class SkjemaDefinisjonController(
         @RequestParam(required = false) versjon: String?,
 
         @Parameter(description = "Språkkode (nb, nn, en). Standard: nb")
-        @RequestParam(defaultValue = "nb") språk: String
+        @RequestParam(defaultValue = "nb") sprak: String
     ): SkjemaDefinisjonDto {
-        val validertSpråk = Språk.fraKode(språk)
+        val validertSpråk = Språk.fraKode(sprak)
         return skjemaDefinisjonService.hent(type, versjon, validertSpråk)
     }
 

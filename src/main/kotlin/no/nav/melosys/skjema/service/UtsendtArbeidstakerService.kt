@@ -319,7 +319,7 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID, sprak: String = "nb"): SkjemaInnsendtKvittering {
+    fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
@@ -356,7 +356,7 @@ class UtsendtArbeidstakerService(
             )
         )
 
-        log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=$sprak, referanseId=$referanseId" }
+        log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=${sprak.kode}, referanseId=$referanseId" }
 
         // 6. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
@@ -394,7 +394,7 @@ class UtsendtArbeidstakerService(
      * @return Innsendt søknad med data og definisjon
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
-    fun hentInnsendtSkjema(skjemaId: UUID, sprak: String?): InnsendtSkjemaResponse {
+    fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
@@ -405,8 +405,7 @@ class UtsendtArbeidstakerService(
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
 
         // Bruk ønsket språk, eller fall tilbake til innsendtSpråk fra innsending
-        val visSprakKode = sprak ?: innsending.innsendtSprak
-        val visSprak = Språk.fraKode(visSprakKode)
+        val visSprak = sprak ?: innsending.innsendtSprak
 
         // Hent definisjon for riktig versjon
         val definisjon = skjemaDefinisjonService.hent(

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
 import java.time.Instant
 import java.util.UUID
 
@@ -23,7 +24,7 @@ data class InnsendtSkjemaResponse(
     val innsendtDato: Instant,
 
     @param:Schema(description = "Språk som ble brukt ved innsending", example = "nb")
-    val innsendtSprak: String,
+    val innsendtSprak: Språk,
 
     @param:Schema(description = "Versjon av skjemadefinisjon som ble brukt", example = "1")
     val skjemaDefinisjonVersjon: String,
