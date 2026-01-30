@@ -1,5 +1,7 @@
 package no.nav.melosys.skjema.integrasjon.ereg.dto
 
+import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+
 /**
  * Finner organisasjonsnummeret til den øverste juridiske enheten ved å traversere organisasjonshierarkiet.
  *
@@ -32,3 +34,8 @@ fun Organisasjon.finnJuridiskEnhetOrganisasjonsnummer(): String? {
                 ?.firstOrNull()?.organisasjonsledd?.finnJuridiskEnhetOrganisasjonsnummer()
     }
 }
+
+fun Organisasjon.toSimpleOrganisasjonDto() = SimpleOrganisasjonDto(
+        orgnr = this.organisasjonsnummer,
+        navn = this.navn?.sammensattnavn ?: "Ukjent navn",
+    )

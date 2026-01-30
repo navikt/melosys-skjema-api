@@ -4,12 +4,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
+import org.springframework.beans.factory.annotation.Value
 
 private val log = KotlinLogging.logger { }
 
 @Service
 class PdlService(
-    private val pdlConsumer: PdlConsumer
+    private val pdlConsumer: PdlConsumer,
+    @param:Value("\${validation.fodselsnummer.synthetic-mode}")
+    private val validerSyntetiskFnr: Boolean
 ) {
 
     /**
@@ -24,6 +28,10 @@ class PdlService(
      */
     fun verifiserOgHentPerson(fodselsnummer: String, etternavn: String): Pair<String, LocalDate> {
         log.info { "Verifiserer og henter person fra PDL" }
+
+        if (!ErFodselsEllerDNummerValidator.validerFnrOgDnrFormat(fodselsnummer, validerSyntetiskFnr)) {
+            throw PersonVerifiseringException("Ugyldig format på fødselsnummer eller d-nummer")
+        }
 
         val person = try {
             pdlConsumer.hentPerson(fodselsnummer)

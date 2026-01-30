@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
+import no.nav.melosys.skjema.validators.ValidationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -47,6 +48,15 @@ class GlobalExceptionHandler(
             val fieldName = violation.propertyPath.toString().takeIf { it.isNotEmpty() } ?: "global"
             errors[fieldName] = violation.message
         }
+
+        return ResponseEntity
+            .badRequest()
+            .body(ErrorResponse(message = "Valideringsfeil", errors = errors))
+    }
+
+    @ExceptionHandler(ValidationException::class)
+    fun handleCustomValidationException(ex: ValidationException): ResponseEntity<ErrorResponse> {
+        val errors = ex.violations.associate { it.field to it.translationKey }
 
         return ResponseEntity
             .badRequest()
