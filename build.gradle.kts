@@ -43,10 +43,6 @@ repositories {
     maven {
         url = uri("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
     }
-    // veraPDF for PDF/A-validering
-    maven {
-        url = uri("https://artifactory.openpreservation.org/artifactory/vera-dev")
-    }
 }
 
 dependencies {
