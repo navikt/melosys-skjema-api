@@ -172,7 +172,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
             val html = htmlBuilder.byggHtml(skjema)
 
-            html shouldContain "Application for A1"
+            html shouldContain "Application for posted worker"
             html shouldContain "Employee"
             html shouldContain "Employer"
             html shouldContain "Foreign assignment"
