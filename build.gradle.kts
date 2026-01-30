@@ -43,6 +43,10 @@ repositories {
     maven {
         url = uri("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
     }
+    // veraPDF for PDF/A-validering
+    maven {
+        url = uri("https://artifactory.openpreservation.org/artifactory/vera-dev")
+    }
 }
 
 dependencies {
@@ -75,6 +79,9 @@ dependencies {
     // PDF generation
     implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.36")
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.36")
+
+    // PDF/A-2u validation i tester - veraPDF Greenfield parser med Jakarta (Spring Boot 4)
+    testImplementation("org.verapdf:validation-model-jakarta:1.28.2")
     implementation("net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion")
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:$shedlockVersion")
 

@@ -1,11 +1,18 @@
 package no.nav.melosys.skjema.service.pdf
 
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import no.nav.melosys.skjema.*
+import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider
+import org.verapdf.pdfa.Foundries
+import org.verapdf.pdfa.flavours.PDFAFlavour
+import org.verapdf.pdfa.results.TestAssertion
+import kotlin.io.path.createTempFile
+import kotlin.io.path.writeBytes
 import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -74,6 +81,31 @@ class PdfGeneratorServiceTest : FunSpec({
             pdfBytes shouldNotBe null
             pdfBytes.size shouldNotBe 0
             String(pdfBytes.take(4).toByteArray()) shouldBe "%PDF"
+        }
+
+        test("genererer PDF/A-2u kompatibel fil") {
+            val skjema = lagInnsendtSkjema(
+                referanseId = "MEL-PDFA",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val pdfBytes = pdfGeneratorService.genererPdf(skjema)
+            lagrePdfForInspeksjon("pdfa-validering.pdf", pdfBytes)
+
+            // Valider PDF/A-2u compliance med veraPDF (offisielt valideringsverktøy)
+            val feil = validerPdfA2u(pdfBytes)
+
+            if (feil.isNotEmpty()) {
+                val feilTekst = feil.joinToString("\n") { "- ${it.ruleId}: ${it.message}" }
+                log.error { "PDF/A-2u valideringsfeil:\n$feilTekst" }
+                java.io.File("build/test-output/pdfa-errors.txt").apply {
+                    parentFile?.mkdirs()
+                    writeText("PDF/A-2u valideringsfeil:\n$feilTekst")
+                }
+            }
+
+            feil.shouldBeEmpty()
         }
 
         test("genererer PDF med forventet størrelse for komplett søknad") {
@@ -505,4 +537,33 @@ private fun lagKomplettArbeidsgiverData(): ArbeidsgiversSkjemaDataDto {
         arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier(),
         tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
     )
+}
+
+/**
+ * Validerer at en PDF er PDF/A-2u kompatibel ved hjelp av veraPDF.
+ * veraPDF er det offisielle referanse-valideringsverktøyet for PDF/A.
+ *
+ * @return Liste med valideringsfeil (tom liste = gyldig PDF/A-2u)
+ */
+private fun validerPdfA2u(pdfBytes: ByteArray): List<TestAssertion> {
+    val tempFile = createTempFile(prefix = "pdfa-test", suffix = ".pdf")
+    try {
+        tempFile.writeBytes(pdfBytes)
+
+        // Initialiser Greenfield parser
+        VeraGreenfieldFoundryProvider.initialise()
+
+        Foundries.defaultInstance().use { foundry ->
+            val flavour = PDFAFlavour.PDFA_2_U
+            val validator = foundry.createValidator(flavour, false)
+
+            foundry.createParser(tempFile.toFile()).use { parser ->
+                val result = validator.validate(parser)
+                return result.testAssertions
+                    .filter { it.status == TestAssertion.Status.FAILED }
+            }
+        }
+    } finally {
+        tempFile.toFile().delete()
+    }
 }
