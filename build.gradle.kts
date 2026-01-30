@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "4.0.1"
+    id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.3.0"
     kotlin("plugin.spring") version "2.3.0"
@@ -76,12 +76,13 @@ dependencies {
     implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.36")
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.36")
 
+    runtimeOnly("org.postgresql:postgresql")
+
+    implementation("net.javacrumbs.shedlock:shedlock-spring:${shedlockVersion}")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlockVersion}")
+
     // PDF/A-2u validation i tester - veraPDF Greenfield parser med Jakarta (Spring Boot 4)
     testImplementation("org.verapdf:validation-model-jakarta:1.28.2")
-    implementation("net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion")
-    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:$shedlockVersion")
-
-    runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")

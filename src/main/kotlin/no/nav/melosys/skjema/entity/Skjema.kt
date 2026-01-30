@@ -22,12 +22,10 @@ class Skjema(
     @Column(name = "type", nullable = false)
     val type: String = "A1",
 
-    // Denne burde ikke være nullable lenger
-    @Column(name = "fnr", length = 11)
+    @Column(name = "fnr", nullable = false, length = 11)
     val fnr: String,
 
-    // Denne burde muligens ligge i
-    @Column(name = "orgnr", length = 9)
+    @Column(name = "orgnr", nullable = false, length = 9)
     val orgnr: String,
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -35,7 +33,7 @@ class Skjema(
     var data: JsonNode? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata")
+    @Column(name = "metadata", nullable = false)
     var metadata: JsonNode,
 
     @Column(name = "opprettet_dato", nullable = false)
