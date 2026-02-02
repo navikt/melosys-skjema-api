@@ -46,6 +46,7 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":melosys-skjema-api-types"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-jackson")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")

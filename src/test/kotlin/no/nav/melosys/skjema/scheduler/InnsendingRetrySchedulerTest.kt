@@ -6,7 +6,7 @@ import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.service.InnsendingProsesseringService

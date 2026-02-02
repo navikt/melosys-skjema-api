@@ -3,8 +3,8 @@ package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 import no.nav.melosys.skjema.translations.dto.ArbeidsstedIUtlandetTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import org.springframework.stereotype.Component
 
 @Component

@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.repository
 
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

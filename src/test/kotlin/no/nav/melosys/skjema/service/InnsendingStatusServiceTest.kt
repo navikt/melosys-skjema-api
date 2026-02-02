@@ -5,11 +5,11 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

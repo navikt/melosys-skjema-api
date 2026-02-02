@@ -7,9 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*

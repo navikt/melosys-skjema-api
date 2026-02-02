@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.extensions
 
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 

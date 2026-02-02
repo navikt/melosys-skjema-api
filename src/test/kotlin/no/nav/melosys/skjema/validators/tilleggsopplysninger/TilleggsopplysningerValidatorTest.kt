@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.tilleggsopplysninger
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
-import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest

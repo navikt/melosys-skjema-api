@@ -3,8 +3,8 @@ package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paLandFastArbeidsstedDtoMedDefaultVerdier
 import org.junit.jupiter.api.TestInstance

@@ -10,10 +10,10 @@ import io.mockk.clearMocks
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
-import no.nav.melosys.skjema.dto.OrganisasjonDto
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.UtkastListeResponse
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.UtkastListeResponse
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.korrektSyntetiskFnr

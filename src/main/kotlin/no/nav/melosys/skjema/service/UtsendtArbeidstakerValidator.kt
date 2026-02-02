@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.Representasjonstype
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.types.Representasjonstype
 import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger { }
@@ -102,8 +102,8 @@ class UtsendtArbeidstakerValidator(
         }
 
         // 2. Rådgiverfirma finnes
-        if (!eregService.organisasjonsnummerEksisterer(request.radgiverfirma.orgnr)) {
-            throw IllegalArgumentException("Rådgiverfirma med organisasjonsnummer ${request.radgiverfirma.orgnr} finnes ikke")
+        if (!eregService.organisasjonsnummerEksisterer(request.radgiverfirma!!.orgnr)) {
+            throw IllegalArgumentException("Rådgiverfirma med organisasjonsnummer ${request.radgiverfirma!!.orgnr} finnes ikke")
         }
 
         // 4. Validere Altinn-tilgang til arbeidsgiver
@@ -173,7 +173,7 @@ class UtsendtArbeidstakerValidator(
             try {
                 pdlService.verifiserOgHentPerson(
                     request.arbeidstaker.fnr,
-                    request.arbeidstaker.etternavn
+                    request.arbeidstaker.etternavn!!
                 )
             } catch (e: Exception) {
                 log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }

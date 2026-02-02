@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.entity
 
 import jakarta.persistence.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
 import java.time.Instant
 import java.util.*

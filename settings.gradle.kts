@@ -1,5 +1,7 @@
 rootProject.name = "melosys-skjema-api"
 
+include("melosys-skjema-api-types")
+
 // Configure plugin repositories to avoid Maven Central 403 issues
 pluginManagement {
     repositories {

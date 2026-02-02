@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 
 private val log = KotlinLogging.logger { }
 

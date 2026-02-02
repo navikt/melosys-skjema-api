@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.tilleggsopplysninger
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.TilleggsopplysningerTranslation
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import org.springframework.stereotype.Component
 
 @Component

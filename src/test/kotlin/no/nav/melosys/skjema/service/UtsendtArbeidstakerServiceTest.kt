@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -11,8 +12,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -29,6 +30,8 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.HentUtkastRequest
+import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import tools.jackson.databind.JsonNode
 
@@ -40,7 +43,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockAltinnService = mockk<AltinnService>()
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
-    val jsonMapper: JsonMapper = JsonMapper.builder().build()
+    val jsonMapper: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
     val innsendingStatusService = mockk<InnsendingStatusService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
@@ -240,6 +243,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             // Metadata med fullmektigFnr
             val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 harFullmakt = true,
                 fullmektigFnr = currentUser
@@ -401,7 +405,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
 
@@ -457,15 +461,15 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             val altinnTilganger = listOf(
-                no.nav.melosys.skjema.dto.OrganisasjonDto("111222333", "Bedrift A AS", "AS"),
-                no.nav.melosys.skjema.dto.OrganisasjonDto("444555666", "Bedrift B AS", "AS")
+                OrganisasjonDto("111222333", "Bedrift A AS", "AS"),
+                OrganisasjonDto("444555666", "Bedrift B AS", "AS")
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
 
@@ -513,7 +517,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirmaOrgnr = radgiverfirmaOrgnr
             )
@@ -530,7 +534,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirmaOrgnr = null
             )
@@ -607,7 +611,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.hentKanRepresentere() } returns fullmakter
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
             )
 
@@ -626,7 +630,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
 
@@ -657,7 +661,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
 
@@ -700,7 +704,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastDegSelv, utkastArbeidsgiver)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
             )
 
@@ -743,14 +747,14 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             val altinnTilganger = listOf(
-                no.nav.melosys.skjema.dto.OrganisasjonDto("111222333", "Bedrift A AS", "AS")
+                OrganisasjonDto("111222333", "Bedrift A AS", "AS")
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastArbeidsgiver, utkastDegSelv)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
             )
 
@@ -798,7 +802,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastRadgiver, utkastArbeidsgiver)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirmaOrgnr = radgiverfirmaOrgnr
             )
@@ -857,7 +861,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.hentKanRepresentere() } returns fullmakter
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastAnnenPerson, utkastDegSelv)
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
             )
 
@@ -875,7 +879,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.hentKanRepresentere() } throws RuntimeException("Feil fra repr-api")
             every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
 
-            val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+            val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
             )
 

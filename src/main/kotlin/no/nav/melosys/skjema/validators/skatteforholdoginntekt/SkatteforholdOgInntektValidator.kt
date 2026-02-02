@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.skatteforholdoginntekt
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import org.springframework.stereotype.Component
 
 @Component

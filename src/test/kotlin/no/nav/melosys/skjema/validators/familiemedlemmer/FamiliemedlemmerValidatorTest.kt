@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.familiemedlemmer
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.familiemedlemMedDefaultVerdier
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator

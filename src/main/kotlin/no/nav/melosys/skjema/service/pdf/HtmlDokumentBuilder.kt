@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.service.pdf
 
-import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.common.Språk
 import java.time.format.DateTimeFormatter
 
 /**
