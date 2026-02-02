@@ -1,0 +1,17 @@
+name: Publish Types (Java 17)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'melosys-skjema-api-types/**'
+      - '.github/workflows/publish-types*.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: ./.github/workflows/publish-types.yml
+    with:
+      java-version: '17'
+      version-suffix: '-java17'

@@ -1,0 +1,17 @@
+name: Publish Types (Java 21)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'melosys-skjema-api-types/**'
+      - '.github/workflows/publish-types*.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: ./.github/workflows/publish-types.yml
+    with:
+      java-version: '21'
+      version-suffix: ''
