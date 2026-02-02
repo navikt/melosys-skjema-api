@@ -73,8 +73,8 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.36")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.36")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.37")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.37")
 
     runtimeOnly("org.postgresql:postgresql")
 
