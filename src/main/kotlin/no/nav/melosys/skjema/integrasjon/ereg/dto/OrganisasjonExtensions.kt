@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.ereg.dto
 
-import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 
 /**
  * Finner organisasjonsnummeret til den øverste juridiske enheten ved å traversere organisasjonshierarkiet.

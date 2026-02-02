@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.controller
 
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
-import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException

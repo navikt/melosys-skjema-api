@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.OrganisasjonDto
+import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity

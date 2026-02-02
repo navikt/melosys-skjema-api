@@ -4,10 +4,10 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.Farvann
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.offshoreDtoMedDefaultVerdier
 import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
 import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier

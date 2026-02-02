@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.service.pdf
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
-import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream

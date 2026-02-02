@@ -6,7 +6,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach

@@ -4,13 +4,13 @@ import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.felles.PeriodeDto
-import no.nav.melosys.skjema.dto.m2m.UtsendtArbeidstakerM2MSkjemaData
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr

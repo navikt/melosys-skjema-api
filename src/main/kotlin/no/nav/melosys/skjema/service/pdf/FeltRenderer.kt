@@ -1,11 +1,11 @@
 package no.nav.melosys.skjema.service.pdf
 
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
-import no.nav.melosys.skjema.dto.felles.LandKode
-import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
-import no.nav.melosys.skjema.dto.felles.PeriodeDto
-import no.nav.melosys.skjema.dto.skjemadefinisjon.*
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
+import no.nav.melosys.skjema.types.felles.LandKode
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.*
+import no.nav.melosys.skjema.types.common.Språk
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

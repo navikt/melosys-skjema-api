@@ -7,24 +7,29 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
-import no.nav.melosys.skjema.dto.InnsendtSkjemaResponse
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstResponse
-import no.nav.melosys.skjema.dto.SkjemaInnsendtKvittering
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDto
-import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
-import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
+import no.nav.melosys.skjema.types.HentUtkastRequest
+import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
+import no.nav.melosys.skjema.types.UtkastListeResponse
+import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.validators.ApiInputValidator
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
@@ -62,12 +67,12 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Liste over utkast hentet")
     @ApiResponse(responseCode = "400", description = "Ugyldig forespørsel")
     fun hentUtkast(
-        @RequestParam representasjonstype: no.nav.melosys.skjema.dto.Representasjonstype,
+        @RequestParam representasjonstype: Representasjonstype,
         @RequestParam(required = false) radgiverfirmaOrgnr: String?
-    ): ResponseEntity<no.nav.melosys.skjema.dto.UtkastListeResponse> {
+    ): ResponseEntity<UtkastListeResponse> {
         log.info { "Henter utkast for representasjonstype: $representasjonstype" }
 
-        val request = no.nav.melosys.skjema.dto.HentUtkastRequest(
+        val request = HentUtkastRequest(
             representasjonstype = representasjonstype,
             radgiverfirmaOrgnr = radgiverfirmaOrgnr
         )
@@ -81,8 +86,8 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Paginert liste over innsendte søknader hentet")
     @ApiResponse(responseCode = "400", description = "Ugyldig forespørsel")
     fun hentInnsendteSoknader(
-        @RequestBody @Valid request: no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
-    ): ResponseEntity<no.nav.melosys.skjema.dto.InnsendteSoknaderResponse> {
+        @RequestBody @Valid request: HentInnsendteSoknaderRequest
+    ): ResponseEntity<InnsendteSoknaderResponse> {
         log.info { "Henter innsendte søknader for representasjonstype: ${request.representasjonstype}, side: ${request.side}" }
         val response = hentInnsendteSoknaderService.hentInnsendteSoknader(request)
         return ResponseEntity.ok(response)

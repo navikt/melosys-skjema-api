@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.validators.familiemedlemmer
 
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.FamiliemedlemmerTranslation

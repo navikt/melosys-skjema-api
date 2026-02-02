@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.entity
 
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import tools.jackson.databind.JsonNode
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
@@ -52,17 +53,3 @@ class Skjema(
     @Column(name = "journalpost_id")
     var journalpostId: String? = null
 )
-
-/**
- * Status for et skjema i søknadsprosessen.
- *
- * Dette er den overordnede statusen som vises til bruker i skjema-web.
- * For detaljert sporing av asynkron prosessering, se [Skjema.innsendingStatus].
- */
-enum class SkjemaStatus {
-    /** Bruker jobber med søknaden - ikke sendt ennå */
-    UTKAST,
-
-    /** Bruker har sendt inn søknaden. Asynkron prosessering pågår eller er fullført. */
-    SENDT
-}

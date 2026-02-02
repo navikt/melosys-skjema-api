@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service.skjemadefinisjon
 
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
+import no.nav.melosys.skjema.types.common.Språk
 
 /**
  * JPA AttributeConverter for Språk enum.

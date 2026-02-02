@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.felles
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.PeriodeTranslation
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Component
 
 object PeriodeValidator {

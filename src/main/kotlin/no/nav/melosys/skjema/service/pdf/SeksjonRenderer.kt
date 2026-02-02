@@ -1,17 +1,18 @@
 package no.nav.melosys.skjema.service.pdf
 
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.*
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
-import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.dto.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.*
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
 /**
  * Rendrer seksjoner til HTML med typede DTO-er.
@@ -64,7 +65,7 @@ class SeksjonRenderer(
 
     private fun byggUtenlandsoppdragetArbeidstaker(
         data: UtenlandsoppdragetArbeidstakersDelDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("utsendelsesLand", data.utsendelsesLand)
@@ -74,7 +75,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidssituasjon(
         data: ArbeidssituasjonDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt(
@@ -92,7 +93,7 @@ class SeksjonRenderer(
 
     private fun byggSkatteforholdOgInntekt(
         data: SkatteforholdOgInntektDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("erSkattepliktigTilNorgeIHeleutsendingsperioden", data.erSkattepliktigTilNorgeIHeleutsendingsperioden)
@@ -105,7 +106,7 @@ class SeksjonRenderer(
 
     private fun byggFamiliemedlemmer(
         data: FamiliemedlemmerDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("skalHaMedFamiliemedlemmer", data.skalHaMedFamiliemedlemmer)
@@ -115,7 +116,7 @@ class SeksjonRenderer(
 
     private fun byggTilleggsopplysninger(
         data: TilleggsopplysningerDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("harFlereOpplysningerTilSoknaden", data.harFlereOpplysningerTilSoknaden)
@@ -164,7 +165,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidsgiverensVirksomhetINorge(
         data: ArbeidsgiverensVirksomhetINorgeDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("erArbeidsgiverenOffentligVirksomhet", data.erArbeidsgiverenOffentligVirksomhet)
@@ -175,7 +176,7 @@ class SeksjonRenderer(
 
     private fun byggUtenlandsoppdragetArbeidsgiver(
         data: UtenlandsoppdragetDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("utsendelseLand", data.utsendelseLand)
@@ -196,7 +197,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidstakerensLonn(
         data: ArbeidstakerensLonnDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt(
@@ -252,7 +253,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedPaLand(
         data: PaLandDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
@@ -271,7 +272,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedOffshore(
         data: OffshoreDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
@@ -283,7 +284,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedPaSkip(
         data: PaSkipDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
@@ -297,7 +298,7 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedOmBordPaFly(
         data: OmBordPaFlyDto,
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
@@ -319,7 +320,7 @@ class SeksjonRenderer(
     // ==================== HELPERS ====================
 
     private fun byggSeksjon(
-        seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto,
+        seksjon: SeksjonDefinisjonDto,
         block: SeksjonBuilder.() -> Unit
     ): String {
         val builder = SeksjonBuilder(seksjon, feltRenderer)
@@ -331,7 +332,7 @@ class SeksjonRenderer(
      * Builder for å bygge en seksjon med felter.
      */
     inner class SeksjonBuilder(
-        private val seksjon: no.nav.melosys.skjema.dto.skjemadefinisjon.SeksjonDefinisjonDto,
+        private val seksjon: SeksjonDefinisjonDto,
         private val feltRenderer: FeltRenderer
     ) {
         private val html = StringBuilder()

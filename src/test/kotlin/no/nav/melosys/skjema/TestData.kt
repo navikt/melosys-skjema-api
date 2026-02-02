@@ -2,54 +2,55 @@ package no.nav.melosys.skjema
 
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 import java.time.Instant
 import java.time.LocalDate
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.service.skjemadefinisjon.Språk
-import no.nav.melosys.skjema.dto.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.Farvann
-import no.nav.melosys.skjema.dto.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
-import no.nav.melosys.skjema.dto.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
-import no.nav.melosys.skjema.dto.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.dto.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.dto.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.dto.felles.NorskVirksomhet
-import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhet
-import no.nav.melosys.skjema.dto.felles.UtenlandskVirksomhetMedAnsettelsesform
-import no.nav.melosys.skjema.dto.felles.Ansettelsesform
-import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheter
-import no.nav.melosys.skjema.dto.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
-import no.nav.melosys.skjema.dto.felles.PeriodeDto
-import no.nav.melosys.skjema.dto.felles.LandKode
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaLandFastArbeidsstedDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.Farvann
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
+import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.NorskVirksomhet
+import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhet
+import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
+import no.nav.melosys.skjema.types.felles.Ansettelsesform
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
+import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import no.nav.melosys.skjema.integrasjon.ereg.dto.*
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import java.util.UUID
-import no.nav.melosys.skjema.dto.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.dto.PersonDto
-import no.nav.melosys.skjema.dto.RadgiverfirmaInfo
-import no.nav.melosys.skjema.dto.SimpleOrganisasjonDto
-import no.nav.melosys.skjema.dto.Skjemadel
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.dto.arbeidstaker.familiemedlemmer.Familiemedlem
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.types.PersonDto
+import no.nav.melosys.skjema.types.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -311,7 +312,7 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     radgiverfirma: RadgiverfirmaInfo? = null
 ): JsonNode {
 
-    return JsonMapper.builder().build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
+    return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
         representasjonstype = representasjonstype,
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,

@@ -2,15 +2,15 @@ package no.nav.melosys.skjema.service
 
 import tools.jackson.databind.json.JsonMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.dto.HentInnsendteSoknaderRequest
-import no.nav.melosys.skjema.dto.InnsendtSoknadOversiktDto
-import no.nav.melosys.skjema.dto.InnsendteSoknaderResponse
-import no.nav.melosys.skjema.dto.Representasjonstype
-import no.nav.melosys.skjema.dto.SorteringsFelt
-import no.nav.melosys.skjema.dto.Sorteringsretning
-import no.nav.melosys.skjema.dto.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
+import no.nav.melosys.skjema.types.InnsendtSoknadOversiktDto
+import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.SorteringsFelt
+import no.nav.melosys.skjema.types.Sorteringsretning
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.entity.SkjemaStatus
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository

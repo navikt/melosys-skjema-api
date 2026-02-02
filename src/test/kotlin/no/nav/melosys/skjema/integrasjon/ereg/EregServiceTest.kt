@@ -5,7 +5,7 @@ import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
-import no.nav.melosys.skjema.dto.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import org.assertj.core.api.Assertions.assertThat

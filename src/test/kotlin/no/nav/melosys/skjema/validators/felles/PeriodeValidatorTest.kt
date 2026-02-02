@@ -4,7 +4,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.time.LocalDate
 import java.util.stream.Stream
-import no.nav.melosys.skjema.dto.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
