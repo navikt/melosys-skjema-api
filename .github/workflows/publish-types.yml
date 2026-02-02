@@ -1,35 +1,30 @@
-name: Publish Types Library
+name: Publish Types Library (Reusable)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'melosys-skjema-api-types/**'
-      - '.github/workflows/publish-types.yml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      java-version:
+        required: true
+        type: string
+      version-suffix:
+        required: false
+        type: string
+        default: ''
 
 jobs:
   publish:
-    name: Publish to GitHub Packages
+    name: Publish with Java ${{ inputs.java-version }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        include:
-          - java-version: '17'
-            version-suffix: '-java17'
-          - java-version: '21'
-            version-suffix: ''
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK ${{ matrix.java-version }}
+      - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
 
       - name: Setup Gradle
@@ -37,9 +32,9 @@ jobs:
 
       - name: Build and publish
         run: |
-          VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)${{ matrix.version-suffix }}"
-          echo "Publishing melosys-skjema-api-types version: $VERSION (Java ${{ matrix.java-version }})"
-          ./gradlew :melosys-skjema-api-types:publish -Pversion=$VERSION -PjavaVersion=${{ matrix.java-version }}
+          VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)${{ inputs.version-suffix }}"
+          echo "Publishing melosys-skjema-api-types version: $VERSION"
+          ./gradlew :melosys-skjema-api-types:clean :melosys-skjema-api-types:publish -Pversion=$VERSION -PjavaVersion=${{ inputs.java-version }} --no-build-cache
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
