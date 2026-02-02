@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'melosys-skjema-api-types/**'
+      - '.github/workflows/publish-types.yml'
   workflow_dispatch:
 
 jobs:
@@ -15,13 +16,20 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - java-version: '17'
+            version-suffix: '-java17'
+          - java-version: '21'
+            version-suffix: ''
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: ${{ matrix.java-version }}
           distribution: 'temurin'
 
       - name: Setup Gradle
@@ -29,9 +37,9 @@ jobs:
 
       - name: Build and publish
         run: |
-          VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)"
-          echo "Publishing melosys-skjema-api-types version: $VERSION"
-          ./gradlew :melosys-skjema-api-types:publish -Pversion=$VERSION
+          VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)${{ matrix.version-suffix }}"
+          echo "Publishing melosys-skjema-api-types version: $VERSION (Java ${{ matrix.java-version }})"
+          ./gradlew :melosys-skjema-api-types:publish -Pversion=$VERSION -PjavaVersion=${{ matrix.java-version }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
