@@ -5,6 +5,8 @@ plugins {
 
 group = "no.nav.melosys"
 
+val javaVersion = (project.findProperty("javaVersion") as String?)?.toInt() ?: 21
+
 repositories {
     mavenCentral()
     maven {
@@ -14,7 +16,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(javaVersion)
     }
     withSourcesJar()
 }
