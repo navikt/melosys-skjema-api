@@ -9,6 +9,10 @@ on:
       - '.github/workflows/publish-types*.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   publish:
     uses: ./.github/workflows/publish-types.yml
