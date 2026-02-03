@@ -24,7 +24,7 @@ java {
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     compileOnly("com.fasterxml.jackson.core:jackson-annotations:2.21")
-    compileOnly("jakarta.validation:jakarta.validation-api:3.1.0")
+    compileOnly("jakarta.validation:jakarta.validation-api:3.1.1")
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.28")
 }
 
