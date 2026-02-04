@@ -12,6 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
 
 class SkjemaMottattProducerTest {
 

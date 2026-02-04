@@ -1,6 +1,7 @@
-package no.nav.melosys.skjema.kafka
+package no.nav.melosys.skjema.types.kafka
 
 import java.util.UUID
+import no.nav.melosys.skjema.types.SkjemaType
 
 /**
  * Kafka-melding som sendes når et skjema er mottatt og journalført.

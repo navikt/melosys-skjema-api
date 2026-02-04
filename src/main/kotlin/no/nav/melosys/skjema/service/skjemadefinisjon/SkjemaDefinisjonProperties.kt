@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service.skjemadefinisjon
 
+import no.nav.melosys.skjema.types.SkjemaType
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
@@ -9,8 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * ```yaml
  * skjemadefinisjon:
  *   aktive-versjoner:
- *     A1: "1"
- *     A2: "2"
+ *     UTSENDT_ARBEIDSTAKER: "1"
  * ```
  */
 @ConfigurationProperties(prefix = "skjemadefinisjon")
@@ -20,5 +20,5 @@ data class SkjemaDefinisjonProperties(
      * Nøkkel: Skjematype (f.eks. "A1")
      * Verdi: Versjonsnummer (f.eks. "1")
      */
-    val aktiveVersjoner: Map<String, String> = mapOf("A1" to "1")
+    val aktiveVersjoner: Map<SkjemaType, String> = mapOf(SkjemaType.UTSENDT_ARBEIDSTAKER to "1")
 )

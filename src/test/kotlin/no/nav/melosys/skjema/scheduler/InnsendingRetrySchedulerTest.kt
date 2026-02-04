@@ -4,15 +4,11 @@ import io.kotest.core.spec.style.FunSpec
 import io.mockk.*
 import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
-import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.Innsending
-import no.nav.melosys.skjema.types.common.SkjemaStatus
-import no.nav.melosys.skjema.innsendingMedDefaultVerdier
-import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.service.InnsendingProsesseringService
-import no.nav.melosys.skjema.skjemaMedDefaultVerdier
-import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.service.InnsendingService
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 
 class InnsendingRetrySchedulerTest : FunSpec({
 
@@ -24,8 +20,8 @@ class InnsendingRetrySchedulerTest : FunSpec({
         LockAssert.TestHelper.makeAllAssertsPass(false)
     }
 
-    val mockRepository = mockk<InnsendingRepository>()
-    val mockProsesseringService = mockk<InnsendingProsesseringService>()
+    val innsendingService = mockk<InnsendingService>()
+
     val retryConfig = InnsendingRetryConfig().apply {
         fixedDelayMinutes = 5
         initialDelaySeconds = 60
@@ -33,66 +29,51 @@ class InnsendingRetrySchedulerTest : FunSpec({
         staleThresholdMinutes = 5
     }
 
-    val scheduler = InnsendingRetryScheduler(mockRepository, mockProsesseringService, retryConfig)
+    val scheduler = InnsendingRetryScheduler(innsendingService, retryConfig)
 
     afterTest {
-        clearMocks(mockRepository, mockProsesseringService)
+        clearAllMocks()
     }
 
-    context("retryFeiledeInnsendinger") {
+    fun retryKandidat() = innsendingMedDefaultVerdier(
+        id = UUID.randomUUID(),
+        skjema = skjemaMedDefaultVerdier(id = UUID.randomUUID()),
+        status = InnsendingStatus.KAFKA_FEILET
+    )
 
-        test("skal ikke kalle prosesserInnsendingAsync når ingen kandidater finnes") {
-            every { mockRepository.findRetryKandidater(any(), any()) } returns emptyList()
+    test("Skal kjøre retry på kandidater fra innsendingService") {
 
-            scheduler.retryFeiledeInnsendinger()
+        val kandidat1 = retryKandidat()
+        val kandidat2 = retryKandidat()
 
-            verify(exactly = 0) { mockProsesseringService.prosesserInnsendingAsync(any()) }
-        }
+        every { innsendingService.hentRetryKandidater(
+            any(), eq(retryConfig.maxAttempts))
+        } returns listOf(kandidat1, kandidat2)
+        every { innsendingService.prosesserInnsending(any()) } returns Unit
 
-        test("skal kalle prosesserInnsendingAsync for hver kandidat med skjemaId") {
-            val innsending1 = createTestInnsending()
-            val innsending2 = createTestInnsending()
+        scheduler.retryFeiledeInnsendinger()
 
-            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(innsending1, innsending2)
-            every { mockProsesseringService.prosesserInnsendingAsync(any()) } just runs
-
-            scheduler.retryFeiledeInnsendinger()
-
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) }
-        }
-
-        test("skal fortsette med neste kandidat selv om en feiler") {
-            val innsending1 = createTestInnsending()
-            val innsending2 = createTestInnsending()
-
-            every { mockRepository.findRetryKandidater(any(), any()) } returns listOf(innsending1, innsending2)
-            every { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) } throws RuntimeException("Test error")
-            every { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) } just runs
-
-            scheduler.retryFeiledeInnsendinger()
-
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending1.skjema.id!!) }
-            verify(exactly = 1) { mockProsesseringService.prosesserInnsendingAsync(innsending2.skjema.id!!) }
-        }
-
-        test("skal bruke maxAttempts fra config") {
-            every { mockRepository.findRetryKandidater(any(), eq(5)) } returns emptyList()
-
-            scheduler.retryFeiledeInnsendinger()
-
-            verify { mockRepository.findRetryKandidater(any(), eq(5)) }
-        }
+        verify { innsendingService.prosesserInnsending(kandidat1.skjema.id!!) }
+        verify { innsendingService.prosesserInnsending(kandidat2.skjema.id!!) }
     }
+
+    test("Skal håndtere feil ved prosessering av innsending uten å stoppe hele jobben") {
+
+        val kandidat1 = retryKandidat()
+        val kandidat2 = retryKandidat()
+
+        every { innsendingService.hentRetryKandidater(
+            any(), eq(retryConfig.maxAttempts))
+        } returns listOf(kandidat1, kandidat2)
+        every { innsendingService.prosesserInnsending(kandidat1.skjema.id!!) } throws RuntimeException("Test feil")
+        every { innsendingService.prosesserInnsending(kandidat2.skjema.id!!) } returns Unit
+
+        scheduler.retryFeiledeInnsendinger()
+
+        verify { innsendingService.prosesserInnsending(kandidat1.skjema.id!!) }
+        verify { innsendingService.prosesserInnsending(kandidat2.skjema.id!!) }
+    }
+
+
 })
 
-private fun createTestInnsending(): Innsending {
-    return innsendingMedDefaultVerdier(
-        id = UUID.randomUUID(),
-        skjema = skjemaMedDefaultVerdier(id = UUID.randomUUID(), status = SkjemaStatus.SENDT),
-        status = InnsendingStatus.JOURNALFORING_FEILET,
-        antallForsok = 1,
-        sisteForsoekTidspunkt = Instant.now().minusSeconds(600),
-        referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
-    )
-}

@@ -32,6 +32,7 @@ import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import tools.jackson.databind.JsonNode
 
@@ -44,7 +45,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockReprService = mockk<ReprService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val jsonMapper: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
-    val innsendingStatusService = mockk<InnsendingStatusService>()
+    val innsendingService = mockk<InnsendingService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
@@ -57,7 +58,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockReprService,
         jsonMapper,
         mockSubjectHandler,
-        innsendingStatusService,
+        innsendingService,
         eventPublisher,
         referanseIdGenerator,
         mockSkjemaDefinisjonService
@@ -68,7 +69,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     beforeTest {
-        every { mockSkjemaDefinisjonService.hentAktivVersjon("A1") } returns "1"
+        every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "1"
     }
 
     context("opprettMedKontekst") {

@@ -88,23 +88,6 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             kandidater.shouldBeEmpty()
         }
 
-        @Test
-        @DisplayName("Skal finne JOURNALFORING_FEILET med færre enn maxAttempts")
-        fun `skal finne JOURNALFORING_FEILET med færre enn maxAttempts`() {
-            val innsending = innsendingRepository.save(
-                innsendingMedDefaultVerdier(
-                    skjema = opprettSkjema(),
-                    status = InnsendingStatus.JOURNALFORING_FEILET,
-                    antallForsok = 2
-                )
-            )
-
-            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
-            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
-
-            kandidater shouldHaveSize 1
-            kandidater[0].id shouldBe innsending.id
-        }
 
         @Test
         @DisplayName("Skal finne KAFKA_FEILET med færre enn maxAttempts")
@@ -130,7 +113,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),
-                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    status = InnsendingStatus.KAFKA_FEILET,
                     antallForsok = 5
                 )
             )
@@ -175,14 +158,14 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
                     opprettetDato = gammelOpprettetDato
                 )
             )
-            val journalforingFeiletInnsending = innsendingRepository.save(
+            val kafkaFeiletInnsending1 = innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),
-                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    status = InnsendingStatus.KAFKA_FEILET,
                     antallForsok = 1
                 )
             )
-            val kafkaFeiletInnsending = innsendingRepository.save(
+            val kafkaFeiletInnsending2 = innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),
                     status = InnsendingStatus.KAFKA_FEILET,
@@ -202,7 +185,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),
-                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    status = InnsendingStatus.KAFKA_FEILET,
                     antallForsok = 5 // Max nådd
                 )
             )
@@ -213,8 +196,8 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             kandidater shouldHaveSize 3
             kandidater.map { it.id } shouldContainExactlyInAnyOrder listOf(
                 mottattInnsending.id,
-                journalforingFeiletInnsending.id,
-                kafkaFeiletInnsending.id
+                kafkaFeiletInnsending1.id,
+                kafkaFeiletInnsending2.id
             )
         }
 
@@ -224,7 +207,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),
-                    status = InnsendingStatus.JOURNALFORING_FEILET,
+                    status = InnsendingStatus.KAFKA_FEILET,
                     antallForsok = 2
                 )
             )

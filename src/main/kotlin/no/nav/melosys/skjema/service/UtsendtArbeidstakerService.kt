@@ -53,7 +53,7 @@ class UtsendtArbeidstakerService(
     private val reprService: ReprService,
     private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler,
-    private val innsendingStatusService: InnsendingStatusService,
+    private val innsendingService: InnsendingService,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
     private val skjemaDefinisjonService: SkjemaDefinisjonService
@@ -341,7 +341,7 @@ class UtsendtArbeidstakerService(
         val savedSkjema = skjemaRepository.save(skjema)
 
         // 4. Opprett innsending-rad med versjon og språk
-        innsendingStatusService.opprettInnsending(
+        innsendingService.opprettInnsending(
             skjema = savedSkjema,
             referanseId = referanseId,
             skjemaDefinisjonVersjon = aktivVersjon,

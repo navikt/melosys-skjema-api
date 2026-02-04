@@ -9,6 +9,7 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import java.util.concurrent.ConcurrentHashMap
+import no.nav.melosys.skjema.types.SkjemaType
 
 private val log = KotlinLogging.logger {}
 
@@ -51,7 +52,7 @@ class SkjemaDefinisjonService(
      * @return Skjemadefinisjon
      * @throws IllegalArgumentException hvis type/versjon ikke finnes
      */
-    fun hent(type: String, versjon: String?, språk: Språk): SkjemaDefinisjonDto {
+    fun hent(type: SkjemaType, versjon: String?, språk: Språk): SkjemaDefinisjonDto {
         val faktiskVersjon = versjon ?: hentAktivVersjon(type)
         val cacheKey = "$type:$faktiskVersjon:${språk.kode}"
 
@@ -65,7 +66,7 @@ class SkjemaDefinisjonService(
     /**
      * Henter flerspråklig skjemadefinisjon fra cache eller fil.
      */
-    private fun hentFlerspraklig(type: String, versjon: String): FlersprakligSkjemaDefinisjonModel {
+    private fun hentFlerspraklig(type: SkjemaType, versjon: String): FlersprakligSkjemaDefinisjonModel {
         val cacheKey = "$type:$versjon"
         return flersprakligCache.getOrPut(cacheKey) {
             log.debug { "Laster flerspråklig skjemadefinisjon fra fil: type=$type, versjon=$versjon" }
@@ -80,7 +81,7 @@ class SkjemaDefinisjonService(
      * @return Aktiv versjon
      * @throws IllegalArgumentException hvis type ikke er kjent
      */
-    fun hentAktivVersjon(type: String): String {
+    fun hentAktivVersjon(type: SkjemaType): String {
         return properties.aktiveVersjoner[type]
             ?: throw IllegalArgumentException("Ukjent skjematype: $type. Støttede typer: ${properties.aktiveVersjoner.keys}")
     }
@@ -88,14 +89,14 @@ class SkjemaDefinisjonService(
     /**
      * Henter liste over alle støttede skjematyper.
      */
-    fun hentStøttedeTyper(): Set<String> {
+    fun hentStøttedeTyper(): Set<SkjemaType> {
         return properties.aktiveVersjoner.keys
     }
 
     /**
      * Laster flerspråklig skjemadefinisjon fra fil.
      */
-    private fun lastFlersprakligFraFil(type: String, versjon: String): FlersprakligSkjemaDefinisjonModel {
+    private fun lastFlersprakligFraFil(type: SkjemaType, versjon: String): FlersprakligSkjemaDefinisjonModel {
         val path = byggFilsti(type, versjon)
         val resource = ClassPathResource(path)
 
@@ -119,7 +120,7 @@ class SkjemaDefinisjonService(
     /**
      * Bygger filsti for en flerspråklig skjemadefinisjon.
      */
-    private fun byggFilsti(type: String, versjon: String): String {
+    private fun byggFilsti(type: SkjemaType, versjon: String): String {
         return "skjema-definisjoner/$type/v$versjon/definisjon.json"
     }
 

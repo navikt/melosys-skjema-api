@@ -48,6 +48,7 @@ import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.PersonDto
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
@@ -326,7 +327,7 @@ fun skjemaMedDefaultVerdier(
     fnr: String = korrektSyntetiskFnr,
     orgnr: String = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
-    type: String = "A1",
+    type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
     data: JsonNode? = null,
     metadata: JsonNode = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),

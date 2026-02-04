@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.config
 
 import no.nav.melosys.skjema.config.observability.CorrelationIdKafkaProducerInterceptor
-import no.nav.melosys.skjema.kafka.SkjemaMottattMelding
+import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value

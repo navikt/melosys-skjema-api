@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.MediaType
@@ -45,7 +46,7 @@ class SkjemaDefinisjonController(
     )
     fun hentDefinisjon(
         @Parameter(description = "Skjematype (f.eks. 'A1')", required = true)
-        @PathVariable type: String,
+        @PathVariable type: SkjemaType,
 
         @Parameter(description = "Versjon (valgfri - bruker aktiv versjon hvis ikke spesifisert)")
         @RequestParam(required = false) versjon: String?,
@@ -68,7 +69,7 @@ class SkjemaDefinisjonController(
     )
     fun hentAktivVersjon(
         @Parameter(description = "Skjematype (f.eks. 'A1')", required = true)
-        @PathVariable type: String
+        @PathVariable type: SkjemaType
     ): AktivVersjonResponse {
         return AktivVersjonResponse(
             type = type,
@@ -94,7 +95,7 @@ class SkjemaDefinisjonController(
 @Schema(description = "Informasjon om aktiv versjon for en skjematype")
 data class AktivVersjonResponse(
     @param:Schema(description = "Skjematype", example = "A1")
-    val type: String,
+    val type: SkjemaType,
 
     @param:Schema(description = "Aktiv versjon", example = "1")
     val aktivVersjon: String
@@ -106,5 +107,5 @@ data class AktivVersjonResponse(
 @Schema(description = "Liste over støttede skjematyper")
 data class StøttedeTyperResponse(
     @param:Schema(description = "Støttede skjematyper", example = "[\"A1\"]")
-    val typer: Set<String>
+    val typer: Set<SkjemaType>
 )

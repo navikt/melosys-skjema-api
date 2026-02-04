@@ -1,7 +1,7 @@
 CREATE TABLE skjema (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     status VARCHAR(50) NOT NULL CHECK (status IN ('UTKAST', 'SENDT', 'MOTTATT')),
-    type VARCHAR(50) NOT NULL DEFAULT 'A1',
+    type VARCHAR(50) NOT NULL,
     fnr VARCHAR(11) NOT NULL,
     orgnr VARCHAR(9) NOT NULL,
     arbeidsgiver_data JSONB,
