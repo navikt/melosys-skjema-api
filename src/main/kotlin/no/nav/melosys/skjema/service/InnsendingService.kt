@@ -5,12 +5,15 @@ import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.common.Språk
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
+import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
+import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
+
 
 private val log = KotlinLogging.logger {}
 
@@ -21,9 +24,9 @@ private val log = KotlinLogging.logger {}
  * problemet med Spring @Transactional.
  */
 @Service
-class InnsendingStatusService(
+class InnsendingService(
     private val innsendingRepository: InnsendingRepository,
-    private val skjemaRepository: SkjemaRepository
+    private val skjemaMottattProducer: SkjemaMottattProducer
 ) {
 
     /**
@@ -47,10 +50,44 @@ class InnsendingStatusService(
     }
 
     /**
-     * Oppdaterer innsendingsstatus og inkrementerer antallForsok.
+     * Prosesserer en innsendt søknad.
+     *
+     * Kalles fra InnsendingEventListener (etter commit) og fra retryFeiledeInnsendinger.
      */
     @Transactional
-    fun oppdaterStatus(
+    fun prosesserInnsending(skjemaId: UUID) {
+        log.info { "Starter asynkron prosessering av skjema $skjemaId" }
+
+        try {
+            // Marker som under behandling (med sisteForsoek for hung detection)
+            startProsessering(skjemaId)
+
+            // TODO MELOSYS-7759: Journalfør til Joark
+            // val journalpostId = joarkService.journalfor(skjemaId)
+            // innsendingStatusService.oppdaterSkjemaJournalpostId(skjemaId, journalpostId)
+            // innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.JOURNALFORT)
+
+            // MELOSYS-7760: Send til Kafka
+            skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
+                SkjemaMottattMelding(skjemaId = skjemaId)
+            )
+
+            // TODO MELOSYS-7763: Varsle arbeidstaker (best effort)
+            // varselService.varsleArbeidstaker(skjemaId)
+
+            oppdaterStatus(skjemaId, InnsendingStatus.FERDIG)
+            log.info { "Fullført prosessering av skjema $skjemaId" }
+
+        } catch (e: SendSkjemaMottattMeldingFeilet) {
+            log.error(e) { "Kafka-feil ved prosessering av skjema $skjemaId" }
+            oppdaterStatus(skjemaId, InnsendingStatus.KAFKA_FEILET, feilmelding = e.message)
+        }
+    }
+
+    /**
+     * Oppdaterer innsendingsstatus og inkrementerer antallForsok.
+     */
+    private fun oppdaterStatus(
         skjemaId: UUID,
         status: InnsendingStatus,
         feilmelding: String? = null
@@ -74,8 +111,8 @@ class InnsendingStatusService(
      * Setter status til UNDER_BEHANDLING for å markere at prosessering er startet.
      * Oppdaterer også sisteForsoekTidspunkt for å kunne detektere "hengende" prosesseringer.
      */
-    @Transactional
-    fun startProsessering(skjemaId: UUID) {
+
+    private fun startProsessering(skjemaId: UUID) {
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: error("Innsending for skjema $skjemaId ikke funnet")
 
@@ -85,14 +122,7 @@ class InnsendingStatusService(
         log.debug { "Startet prosessering av skjema $skjemaId" }
     }
 
-    /**
-     * Oppdaterer journalpostId på skjemaet.
-     */
-    @Transactional
-    fun oppdaterSkjemaJournalpostId(skjemaId: UUID, journalpostId: String) {
-        val skjema = skjemaRepository.findById(skjemaId).orElse(null)
-            ?: error("Skjema $skjemaId ikke funnet")
-        skjema.journalpostId = journalpostId
-        skjemaRepository.save(skjema)
+    fun hentRetryKandidater(sisteForsoekTidspunktGrense: Instant, maxAttempts: Int): List<Innsending> {
+        return innsendingRepository.findRetryKandidater(sisteForsoekTidspunktGrense, maxAttempts)
     }
 }

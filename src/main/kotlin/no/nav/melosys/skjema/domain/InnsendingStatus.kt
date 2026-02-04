@@ -25,9 +25,6 @@ enum class InnsendingStatus {
     /** Alt OK - journalført og sendt til melosys-api */
     FERDIG,
 
-    /** Journalføring feilet - vil bli forsøkt på nytt av scheduler */
-    JOURNALFORING_FEILET,
-
     /** Kafka-sending feilet - vil bli forsøkt på nytt av scheduler */
     KAFKA_FEILET
 }

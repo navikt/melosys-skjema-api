@@ -43,6 +43,7 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
@@ -717,7 +718,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 fnr = korrektSyntetiskFnr,
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                type = "A1",
+                type = SkjemaType.UTSENDT_ARBEIDSTAKER,
                 data = jsonMapper.valueToTree(
                     arbeidstakersSkjemaDataDtoMedDefaultVerdier()
                 ),

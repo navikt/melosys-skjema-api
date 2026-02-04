@@ -30,6 +30,7 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
+import no.nav.melosys.skjema.types.SkjemaType
 
 private val log = KotlinLogging.logger {}
 
@@ -56,7 +57,7 @@ class PdfGeneratorServiceTest : FunSpec({
         arbeidstakerData: ArbeidstakersSkjemaDataDto? = null,
         arbeidsgiverData: ArbeidsgiversSkjemaDataDto? = null
     ): InnsendtSkjemaResponse {
-        val definisjon = skjemaDefinisjonService.hent("A1", null, språk)
+        val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
         return InnsendtSkjemaResponse(
             skjemaId = UUID.randomUUID(),
             referanseId = referanseId,

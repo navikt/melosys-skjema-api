@@ -6,6 +6,7 @@ import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
 import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
+import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
 
 @Service
 class SkjemaMottattProducer(

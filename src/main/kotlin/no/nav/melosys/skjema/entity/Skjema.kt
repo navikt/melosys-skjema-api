@@ -7,6 +7,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.*
+import no.nav.melosys.skjema.types.SkjemaType
 
 @Entity
 @Table(name = "skjema")
@@ -20,8 +21,9 @@ class Skjema(
     @Column(name = "status", nullable = false)
     var status: SkjemaStatus,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    val type: String = "A1",
+    val type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
 
     @Column(name = "fnr", nullable = false, length = 11)
     val fnr: String,

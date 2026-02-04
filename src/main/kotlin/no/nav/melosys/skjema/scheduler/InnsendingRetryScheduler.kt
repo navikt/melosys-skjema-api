@@ -4,14 +4,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.core.LockAssert
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
-import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.service.InnsendingProsesseringService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.config.observability.MDCOperations.Companion.withCorrelationId
+import no.nav.melosys.skjema.service.InnsendingService
 
 private val log = KotlinLogging.logger {}
 
@@ -27,8 +25,7 @@ private val log = KotlinLogging.logger {}
  */
 @Component
 class InnsendingRetryScheduler(
-    private val innsendingRepository: InnsendingRepository,
-    private val innsendingProsesseringService: InnsendingProsesseringService,
+    private val innsendingService: InnsendingService,
     private val retryConfig: InnsendingRetryConfig
 ) {
 
@@ -42,24 +39,18 @@ class InnsendingRetryScheduler(
         LockAssert.assertLocked()
         log.debug { "Kjører retry-jobb for feilede innsendinger" }
 
-        val sisteForsoekTidspunktGrense = Instant.now().minus(retryConfig.staleThresholdMinutes, ChronoUnit.MINUTES)
-        val kandidater = innsendingRepository.findRetryKandidater(sisteForsoekTidspunktGrense, retryConfig.maxAttempts)
-
-        if (kandidater.isEmpty()) {
-            return
-        }
-
-        log.info { "Fant ${kandidater.size} innsendinger for retry" }
-
-        kandidater.forEach { innsending ->
+        innsendingService.hentRetryKandidater(
+            sisteForsoekTidspunktGrense = Instant.now().minus(retryConfig.staleThresholdMinutes, ChronoUnit.MINUTES),
+            maxAttempts = retryConfig.maxAttempts
+        ).forEach { innsendingRetryKandidat ->
             try {
-                withCorrelationId(innsending.correlationId){
-                    val skjemaId = innsending.skjema.id!!
+                withCorrelationId(innsendingRetryKandidat.correlationId){
+                    val skjemaId = innsendingRetryKandidat.skjema.id!!
                     log.info { "Starter retry av innsending for skjema $skjemaId" }
-                    innsendingProsesseringService.prosesserInnsendingAsync(skjemaId)
+                    innsendingService.prosesserInnsending(skjemaId)
                 }
             } catch (e: Exception) {
-                log.error(e) { "Feil ved retry av innsending for skjema ${innsending.skjema.id}" }
+                log.error(e) { "Feil ved retry av innsending for skjema ${innsendingRetryKandidat.skjema.id}" }
             }
         }
     }
