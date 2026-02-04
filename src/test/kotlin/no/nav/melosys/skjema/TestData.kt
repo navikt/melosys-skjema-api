@@ -255,10 +255,10 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-    arbeidsgiverNavn: String? = null,
+    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
-    juridiskEnhetOrgnr: String? = null,
+    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
 
@@ -319,11 +319,11 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
 fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
-    arbeidsgiverNavn: String? = null,
+    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-    juridiskEnhetOrgnr: String? = null,
+    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null
 ): JsonNode {
 

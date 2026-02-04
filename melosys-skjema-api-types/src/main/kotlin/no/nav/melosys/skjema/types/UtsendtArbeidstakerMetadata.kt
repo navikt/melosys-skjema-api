@@ -12,14 +12,15 @@ data class UtsendtArbeidstakerMetadata(
     val harFullmakt: Boolean,
     val skjemadel: Skjemadel,
     val radgiverfirma: RadgiverfirmaInfo? = null,
-    val arbeidsgiverNavn: String? = null,
+    /** Navn på arbeidsgiver-organisasjonen */
+    val arbeidsgiverNavn: String,
     val fullmektigFnr: String? = null,
     /**
      * Juridisk enhet orgnr fra Enhetsregisteret.
      * Brukes for kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
      * Ulike underenheter kan tilhøre samme juridiske enhet.
      */
-    val juridiskEnhetOrgnr: String? = null,
+    val juridiskEnhetOrgnr: String,
     /**
      * Referanse til koblet skjema-instans.
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen

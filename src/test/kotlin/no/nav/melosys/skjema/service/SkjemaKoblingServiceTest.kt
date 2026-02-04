@@ -36,27 +36,6 @@ class SkjemaKoblingServiceTest : FunSpec({
     val arbeidstakerFnr = korrektSyntetiskFnr
 
     context("finnOgKoblMotpart") {
-        test("skal returnere null når juridiskEnhetOrgnr mangler") {
-            val skjemaId = UUID.randomUUID()
-            val metadataUtenJuridiskEnhet = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.DEG_SELV,
-                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-                juridiskEnhetOrgnr = null
-            )
-
-            val skjema = skjemaMedDefaultVerdier(
-                id = skjemaId,
-                fnr = arbeidstakerFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadataUtenJuridiskEnhet
-            )
-
-            val resultat = service.finnOgKoblMotpart(skjema)
-
-            resultat.kobletSkjemaId shouldBe null
-            resultat.journalpostId shouldBe null
-        }
-
         test("skal returnere null når ingen kandidater finnes") {
             val skjemaId = UUID.randomUUID()
             val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(

@@ -57,11 +57,6 @@ class SkjemaKoblingService(
     fun finnOgKoblMotpart(skjema: Skjema): KoblingsResultat {
         val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
-        if (metadata.juridiskEnhetOrgnr == null) {
-            log.warn { "Skjema ${skjema.id} mangler juridiskEnhetOrgnr, kan ikke utføre kobling" }
-            return KoblingsResultat(null, null)
-        }
-
         log.info { "Søker etter matchende skjema for ${skjema.id} (fnr=${skjema.fnr.take(6)}***, juridiskEnhet=${metadata.juridiskEnhetOrgnr}, skjemadel=${metadata.skjemadel})" }
 
         val matchendeSkjema = finnMatchendeSkjema(skjema, metadata)

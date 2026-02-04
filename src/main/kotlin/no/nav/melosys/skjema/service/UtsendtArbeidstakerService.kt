@@ -548,7 +548,7 @@ class UtsendtArbeidstakerService(
     private fun byggMetadata(
         request: OpprettSoknadMedKontekstRequest,
         innloggetBrukerFnr: String,
-        juridiskEnhetOrgnr: String?
+        juridiskEnhetOrgnr: String
     ): UtsendtArbeidstakerMetadata {
         val fullmektigFnr = when {
             request.representasjonstype == Representasjonstype.DEG_SELV -> null // Ingen fullmektig
@@ -564,7 +564,7 @@ class UtsendtArbeidstakerService(
             radgiverfirma = request.radgiverfirma?.let {
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
-            arbeidsgiverNavn = request.arbeidsgiver?.navn,
+            arbeidsgiverNavn = request.arbeidsgiver.navn,
             fullmektigFnr = fullmektigFnr,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr
         )
@@ -575,17 +575,13 @@ class UtsendtArbeidstakerService(
      * Brukes for kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
      *
      * @param orgnr Organisasjonsnummer (kan være underenhet)
-     * @return Orgnr til juridisk enhet, eller null ved feil
+     * @return Orgnr til juridisk enhet
+     * @throws IllegalStateException hvis juridisk enhet ikke kan hentes
      */
-    private fun hentJuridiskEnhetOrgnr(orgnr: String): String? {
-        return try {
-            val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(orgnr)
-            organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
-                log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${orgnr.take(3)}***" }
-            }
-        } catch (e: Exception) {
-            log.warn(e) { "Kunne ikke hente juridisk enhet for org ${orgnr.take(3)}***" }
-            null
+    private fun hentJuridiskEnhetOrgnr(orgnr: String): String {
+        val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(orgnr)
+        return organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
+            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${orgnr.take(3)}***" }
         }
     }
 
