@@ -10,6 +10,7 @@ import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -60,6 +61,8 @@ class UtsendtArbeidstakerService(
     private val validator: UtsendtArbeidstakerValidator,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
+    private val eregService: EregService,
+    private val skjemaKoblingService: SkjemaKoblingService,
     private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler,
     private val innsendingService: InnsendingService,
@@ -84,8 +87,11 @@ class UtsendtArbeidstakerService(
         // Valider forespørsel
         validator.validerOpprettelse(request)
 
-        // Bygg metadata med korrekt fullmektig-logikk
-        val metadata = byggMetadata(request, innloggetBrukerFnr)
+        // Hent juridisk enhet fra Enhetsregisteret for kobling av separate søknader
+        val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
+
+        // Bygg metadata med korrekt fullmektig-logikk og juridisk enhet
+        val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr)
         val metadataJson = jsonMapper.valueToTree<JsonNode>(metadata)
 
         // Opprett skjema med riktig fnr og orgnr basert på representasjonstype
@@ -349,7 +355,20 @@ class UtsendtArbeidstakerService(
         // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 4. Opprett innsending-rad med versjon og språk
+        // 4. Koble med matchende skjema fra motpart (arbeidsgiver-del ↔ arbeidstaker-del)
+        val koblingsResultat = skjemaKoblingService.finnOgKoblMotpart(savedSkjema)
+        if (koblingsResultat.kobletSkjemaId != null) {
+            log.info { "Skjema $skjemaId koblet med ${koblingsResultat.kobletSkjemaId}" }
+
+            // Gjenbruk journalpostId fra matchende skjema hvis tilgjengelig
+            if (koblingsResultat.journalpostId != null) {
+                savedSkjema.journalpostId = koblingsResultat.journalpostId
+                skjemaRepository.save(savedSkjema)
+                log.info { "Gjenbruker journalpostId ${koblingsResultat.journalpostId} fra koblet skjema" }
+            }
+        }
+
+        // 5. Opprett innsending-rad med versjon og språk
         innsendingService.opprettInnsending(
             skjema = savedSkjema,
             referanseId = referanseId,
@@ -357,7 +376,7 @@ class UtsendtArbeidstakerService(
             innsendtSprak = sprak
         )
 
-        // 5. Publiser event - async prosessering starter ETTER at transaksjonen er committed
+        // 6. Publiser event - async prosessering starter ETTER at transaksjonen er committed
         eventPublisher.publishEvent(
             InnsendingOpprettetEvent(
                 skjemaId = savedSkjema.id!!,
@@ -367,7 +386,7 @@ class UtsendtArbeidstakerService(
 
         log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=${sprak.kode}, referanseId=$referanseId" }
 
-        // 6. Returner kvittering med referanseId
+        // 7. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
             skjemaId = savedSkjema.id,
             referanseId = referanseId,
@@ -521,10 +540,15 @@ class UtsendtArbeidstakerService(
      *   → Arbeidstaker må selv fylle sin del (validert at person finnes i PDL)
      *
      * Merk: Validering har allerede bekreftet at fullmakt eksisterer når harFullmakt=true
+     *
+     * @param request Opprettelsesforespørselen
+     * @param innloggetBrukerFnr FNR til innlogget bruker
+     * @param juridiskEnhetOrgnr Orgnr til juridisk enhet (fra EREG) - brukes for kobling av separate søknader
      */
     private fun byggMetadata(
         request: OpprettSoknadMedKontekstRequest,
-        innloggetBrukerFnr: String
+        innloggetBrukerFnr: String,
+        juridiskEnhetOrgnr: String?
     ): UtsendtArbeidstakerMetadata {
         val fullmektigFnr = when {
             request.representasjonstype == Representasjonstype.DEG_SELV -> null // Ingen fullmektig
@@ -541,8 +565,28 @@ class UtsendtArbeidstakerService(
                 RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
             },
             arbeidsgiverNavn = request.arbeidsgiver?.navn,
-            fullmektigFnr = fullmektigFnr
+            fullmektigFnr = fullmektigFnr,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr
         )
+    }
+
+    /**
+     * Henter juridisk enhet orgnr fra Enhetsregisteret.
+     * Brukes for kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
+     *
+     * @param orgnr Organisasjonsnummer (kan være underenhet)
+     * @return Orgnr til juridisk enhet, eller null ved feil
+     */
+    private fun hentJuridiskEnhetOrgnr(orgnr: String): String? {
+        return try {
+            val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(orgnr)
+            organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
+                log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${orgnr.take(3)}***" }
+            }
+        } catch (e: Exception) {
+            log.warn(e) { "Kunne ikke hente juridisk enhet for org ${orgnr.take(3)}***" }
+            null
+        }
     }
 
     /**

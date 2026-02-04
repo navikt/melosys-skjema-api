@@ -258,6 +258,8 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
+    juridiskEnhetOrgnr: String? = null,
+    kobletSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
@@ -267,6 +269,8 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
         radgiverfirma = radgiverfirma,
+        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+        kobletSkjemaId = kobletSkjemaId,
     )
 }
 
@@ -317,7 +321,10 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     harFullmakt: Boolean = false,
     arbeidsgiverNavn: String? = null,
     fullmektigFnr: String? = null,
-    radgiverfirma: RadgiverfirmaInfo? = null
+    radgiverfirma: RadgiverfirmaInfo? = null,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+    juridiskEnhetOrgnr: String? = null,
+    kobletSkjemaId: UUID? = null
 ): JsonNode {
 
     return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -325,7 +332,10 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma
+        radgiverfirma = radgiverfirma,
+        skjemadel = skjemadel,
+        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+        kobletSkjemaId = kobletSkjemaId
     ))
 }
 
