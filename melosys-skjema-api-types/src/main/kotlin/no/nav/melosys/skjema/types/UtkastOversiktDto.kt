@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.types
 
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 
 /**
  * DTO for utkastoversikt.

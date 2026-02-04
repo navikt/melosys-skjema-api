@@ -1,21 +1,21 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.repository.SkjemaRepository
-import org.springframework.stereotype.Service
 import java.util.UUID
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
-import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }

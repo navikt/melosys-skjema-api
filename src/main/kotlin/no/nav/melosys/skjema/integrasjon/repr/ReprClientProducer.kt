@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import no.nav.melosys.skjema.integrasjon.felles.TokenXContextExchangeFilter
 import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
@@ -16,8 +18,6 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import reactor.netty.http.client.HttpClient
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger { }
 

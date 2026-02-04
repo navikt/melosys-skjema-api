@@ -1,9 +1,9 @@
 package no.nav.melosys.skjema.validators.felles
 
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.FellesTranslation
 import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import org.springframework.stereotype.Component
 
 @Component

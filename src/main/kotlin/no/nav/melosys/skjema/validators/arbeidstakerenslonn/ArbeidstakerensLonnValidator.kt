@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.validators.arbeidstakerenslonn
 
 import no.nav.melosys.skjema.translations.dto.ArbeidstakerensLonnTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
-import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.OrganisasjonsnummerValidator
 import org.springframework.stereotype.Component
 

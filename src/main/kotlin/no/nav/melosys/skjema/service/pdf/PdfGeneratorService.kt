@@ -2,11 +2,11 @@ package no.nav.melosys.skjema.service.pdf
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
 
 /**
  * Service for å generere PDF/A fra innsendt skjema.

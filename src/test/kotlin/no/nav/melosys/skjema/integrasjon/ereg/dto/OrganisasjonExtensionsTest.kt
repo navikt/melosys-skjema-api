@@ -3,7 +3,10 @@ package no.nav.melosys.skjema.integrasjon.ereg.dto
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import no.nav.melosys.skjema.*
+import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
+import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
+import no.nav.melosys.skjema.organisasjonsleddMedDefaultVerdier
+import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import org.junit.jupiter.api.Test
 
 class OrganisasjonExtensionsTest {

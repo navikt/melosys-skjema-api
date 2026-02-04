@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.service.pdf
 
-import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.LandKode
 
 /**
  * Mapper fra landskoder til landnavn.

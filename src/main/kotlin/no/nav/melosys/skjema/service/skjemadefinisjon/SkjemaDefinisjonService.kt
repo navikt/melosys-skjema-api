@@ -1,6 +1,8 @@
 package no.nav.melosys.skjema.service.skjemadefinisjon
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.concurrent.ConcurrentHashMap
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.flerspraklig.FlersprakligSkjemaDefinisjonModel
@@ -8,8 +10,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
-import java.util.concurrent.ConcurrentHashMap
-import no.nav.melosys.skjema.types.SkjemaType
 
 private val log = KotlinLogging.logger {}
 

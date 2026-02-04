@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.kafka
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.support.SendResult
-import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
 import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
+import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.SendResult
+import org.springframework.stereotype.Service
 
 @Service
 class SkjemaMottattProducer(

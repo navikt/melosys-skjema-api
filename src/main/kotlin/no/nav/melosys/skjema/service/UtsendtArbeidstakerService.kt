@@ -1,21 +1,30 @@
 package no.nav.melosys.skjema.service
 
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.databind.JsonNode
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.types.*
+import java.util.UUID
+import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
+import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
-import org.springframework.data.repository.findByIdOrNull
-import org.springframework.stereotype.Service
-import java.util.*
-import no.nav.melosys.skjema.config.observability.MDCOperations
+import no.nav.melosys.skjema.types.HentUtkastRequest
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.types.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
+import no.nav.melosys.skjema.types.UtkastListeResponse
+import no.nav.melosys.skjema.types.UtkastOversiktDto
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -28,15 +37,15 @@ import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.Arbeidssituasjo
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
-import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
-import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
-import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }
 

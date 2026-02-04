@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.config
 
+import java.lang.reflect.Method
 import org.springframework.cache.interceptor.KeyGenerator
 import org.springframework.stereotype.Component
-import java.lang.reflect.Method
 
 /**
  * Custom key generator for PDL bulk queries.

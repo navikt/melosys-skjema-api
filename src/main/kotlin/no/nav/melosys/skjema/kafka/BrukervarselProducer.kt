@@ -1,6 +1,9 @@
 package no.nav.melosys.skjema.kafka
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.UUID
 import no.nav.melosys.skjema.kafka.exception.SendBrukervarselFeilet
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
@@ -9,9 +12,6 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.builder.VarselActionBuilder
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.util.UUID
 
 @Service
 class BrukervarselProducer(

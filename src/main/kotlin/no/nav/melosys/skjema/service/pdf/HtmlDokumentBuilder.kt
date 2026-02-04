@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.service.pdf
 
+import java.time.format.DateTimeFormatter
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.common.Språk
-import java.time.format.DateTimeFormatter
 
 /**
  * Bygger HTML-dokument fra innsendt skjema.

@@ -2,10 +2,10 @@ package no.nav.melosys.skjema.service
 
 import io.mockk.every
 import io.mockk.mockk
+import java.time.Duration
 import no.nav.melosys.skjema.config.RateLimitConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Duration
 
 class RateLimiterServiceTest {
 

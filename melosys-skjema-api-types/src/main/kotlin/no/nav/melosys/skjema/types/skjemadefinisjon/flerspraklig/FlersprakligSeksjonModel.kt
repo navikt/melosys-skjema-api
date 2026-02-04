@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.types.skjemadefinisjon.flerspraklig
 
-import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 
 /**
  * Flerspråklig definisjon av en seksjon i et skjema.

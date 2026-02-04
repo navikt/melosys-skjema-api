@@ -4,9 +4,9 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.time.LocalDate
 import java.util.stream.Stream
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.familiemedlemMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest

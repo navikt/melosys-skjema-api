@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.LocalDate
 import no.nav.melosys.skjema.controller.dto.PersonMedFullmaktDto
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.stereotype.Service
-import java.time.LocalDate
 
 private val log = KotlinLogging.logger { }
 

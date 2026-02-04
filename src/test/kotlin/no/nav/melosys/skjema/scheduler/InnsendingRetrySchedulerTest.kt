@@ -1,10 +1,13 @@
 package no.nav.melosys.skjema.scheduler
 
 import io.kotest.core.spec.style.FunSpec
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import java.util.UUID
 import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
-import java.util.*
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.service.InnsendingService

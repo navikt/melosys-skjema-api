@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.service
 
+import java.security.SecureRandom
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import org.springframework.stereotype.Component
-import java.security.SecureRandom
 
 /**
  * Genererer unike, brukervennlige referanse-IDer for søknader.

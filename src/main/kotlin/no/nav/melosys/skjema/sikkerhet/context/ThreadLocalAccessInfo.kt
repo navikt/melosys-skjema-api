@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.sikkerhet.context
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.util.*
+import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 

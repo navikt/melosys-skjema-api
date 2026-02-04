@@ -2,8 +2,17 @@ package no.nav.melosys.skjema.types.skjemadefinisjon.flerspraklig
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import no.nav.melosys.skjema.types.skjemadefinisjon.*
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.AlternativDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.FeltDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.ListeFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.PeriodeFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.SelectFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.TextFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.TextareaFeltDefinisjon
 
 /**
  * Sealed class for flerspråklige feltdefinisjoner.

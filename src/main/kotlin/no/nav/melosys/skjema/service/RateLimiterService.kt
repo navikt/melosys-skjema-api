@@ -3,11 +3,11 @@ package no.nav.melosys.skjema.service
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.config.RateLimitConfig
-import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedQueue
+import no.nav.melosys.skjema.config.RateLimitConfig
+import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
 

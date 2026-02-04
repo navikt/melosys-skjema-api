@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.types
 
 import io.swagger.v3.oas.annotations.media.Schema
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
-import no.nav.melosys.skjema.types.common.Språk
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
 /**
  * Response for en innsendt søknad med 

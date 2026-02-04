@@ -1,11 +1,11 @@
 package no.nav.melosys.skjema.config
 
-import org.hibernate.type.format.FormatMapper
+import java.lang.reflect.Type
 import org.hibernate.type.descriptor.WrapperOptions
 import org.hibernate.type.descriptor.java.JavaType
-import tools.jackson.module.kotlin.kotlinModule
-import java.lang.reflect.Type
+import org.hibernate.type.format.FormatMapper
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 
 /**
  * Egen FormatMapper som kobler Hibernate 7 med Jackson 3.

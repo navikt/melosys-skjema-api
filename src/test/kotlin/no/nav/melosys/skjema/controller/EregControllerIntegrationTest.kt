@@ -4,14 +4,17 @@ import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
+import java.util.stream.Stream
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.Test
@@ -22,9 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import java.util.stream.Stream
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
-import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 
 /**
  * Integrasjonstest for EregController med MockOAuth2Server og WebTestClient.

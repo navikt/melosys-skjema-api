@@ -3,15 +3,15 @@ package no.nav.melosys.skjema.integrasjon.pdl
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
+import no.nav.melosys.skjema.korrektSyntetiskFnr
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.LocalDate
-import no.nav.melosys.skjema.korrektSyntetiskFnr
 
 class PdlServiceTest {
 

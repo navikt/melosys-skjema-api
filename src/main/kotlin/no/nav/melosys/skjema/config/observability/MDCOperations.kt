@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.config.observability
 
 import jakarta.servlet.http.HttpServletRequest
+import java.util.UUID
 import org.slf4j.MDC
-import java.util.*
 
 /**
  * Utility-klasse for håndtering av MDC (Mapped Diagnostic Context).
