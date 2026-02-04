@@ -1,7 +1,5 @@
 package no.nav.melosys.skjema.controller
 
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -18,20 +16,11 @@ import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
-import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
-import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
@@ -43,7 +32,16 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
@@ -61,6 +59,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
 
 data class SkjemaStegTestFixture<T>(
     val stepKey: String = "",

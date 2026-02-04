@@ -3,11 +3,11 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhet
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.dto.finnJuridiskEnhetOrganisasjonsnummer
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }

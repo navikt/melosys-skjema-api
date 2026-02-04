@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.controller
 
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

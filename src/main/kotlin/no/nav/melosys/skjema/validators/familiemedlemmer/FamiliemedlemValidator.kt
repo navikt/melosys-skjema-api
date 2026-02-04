@@ -1,9 +1,9 @@
 package no.nav.melosys.skjema.validators.familiemedlemmer
 
-import no.nav.melosys.skjema.validators.Violation
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.FamiliemedlemmerTranslation
+import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
+import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
 import org.springframework.stereotype.Component
 

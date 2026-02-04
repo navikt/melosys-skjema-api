@@ -1,13 +1,20 @@
 package no.nav.melosys.skjema.entity
 
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+import java.time.Instant
+import java.util.UUID
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
-import tools.jackson.databind.JsonNode
-import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.Instant
-import java.util.*
-import no.nav.melosys.skjema.types.SkjemaType
+import tools.jackson.databind.JsonNode
 
 @Entity
 @Table(name = "skjema")

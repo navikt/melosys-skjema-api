@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.UUID
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLError
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLResponse
@@ -11,7 +12,6 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import java.util.*
 
 private val log = KotlinLogging.logger { }
 

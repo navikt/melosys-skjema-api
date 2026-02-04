@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.service
 
-import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -9,9 +8,6 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
-import no.nav.melosys.skjema.types.*
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
@@ -21,10 +17,16 @@ import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
+import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Integrasjonstester for HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService.

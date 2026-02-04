@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.controller
 
-import tools.jackson.databind.json.JsonMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -9,11 +8,6 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
-import no.nav.melosys.skjema.types.OrganisasjonDto
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.UtkastListeResponse
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.korrektSyntetiskFnr
@@ -22,6 +16,11 @@ import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.UtkastListeResponse
+import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Integrasjonstester for henting av utkast.

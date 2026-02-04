@@ -1,11 +1,11 @@
 package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
-import org.springframework.stereotype.Service
 import java.time.LocalDate
+import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
 

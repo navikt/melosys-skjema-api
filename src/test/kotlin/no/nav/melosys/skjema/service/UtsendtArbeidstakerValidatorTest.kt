@@ -6,7 +6,6 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
@@ -14,6 +13,7 @@ import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.Representasjonstype
 
 class UtsendtArbeidstakerValidatorTest : FunSpec({
 

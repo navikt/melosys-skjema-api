@@ -3,10 +3,10 @@ package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
+import no.nav.melosys.skjema.paSkipDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.Farvann
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
 import no.nav.melosys.skjema.types.felles.LandKode
-import no.nav.melosys.skjema.paSkipDtoMedDefaultVerdier
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments

@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.validators.arbeidssituasjon
 
 import no.nav.melosys.skjema.translations.dto.ArbeidssituasjonTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
-import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
+import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
 @Component

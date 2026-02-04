@@ -3,11 +3,11 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
-import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
-import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
+import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

@@ -1,9 +1,9 @@
 package no.nav.melosys.skjema.config
 
+import java.time.Duration
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
-import java.time.Duration
 
 @Configuration
 @ConfigurationProperties(prefix = "rate-limit")

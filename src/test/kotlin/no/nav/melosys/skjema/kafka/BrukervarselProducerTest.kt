@@ -5,12 +5,12 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.concurrent.CompletableFuture
 import no.nav.melosys.skjema.kafka.exception.SendBrukervarselFeilet
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
-import java.util.concurrent.CompletableFuture
 
 class BrukervarselProducerTest {
 

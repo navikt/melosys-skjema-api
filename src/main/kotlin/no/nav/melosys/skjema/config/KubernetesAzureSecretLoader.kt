@@ -1,14 +1,14 @@
 package no.nav.melosys.skjema.config
 
-import org.springframework.boot.SpringApplication
-import org.springframework.boot.env.EnvironmentPostProcessor
-import org.springframework.core.env.ConfigurableEnvironment
-import org.springframework.core.env.MapPropertySource
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.env.EnvironmentPostProcessor
+import org.springframework.core.env.ConfigurableEnvironment
+import org.springframework.core.env.MapPropertySource
 
 /**
  * Laster Azure client secret fra Kubernetes når applikasjonen kjører med local-q2 profil.

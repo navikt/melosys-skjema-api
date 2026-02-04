@@ -6,10 +6,12 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.mockk.clearMocks
 import io.mockk.every
-import no.nav.melosys.skjema.*
-import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.altinnTilgangerResponseMedDefaultVerdier
+import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
+import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

@@ -1,13 +1,13 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.UUID
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonClient
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.util.UUID
 
 private val log = KotlinLogging.logger { }
 

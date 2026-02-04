@@ -1,9 +1,9 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnFilter
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerRequest
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
-import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnFilter
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 

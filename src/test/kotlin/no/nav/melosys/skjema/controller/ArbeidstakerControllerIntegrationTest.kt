@@ -5,6 +5,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
+import java.time.LocalDate
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonRequest
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonResponse
@@ -19,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import java.time.LocalDate
 
 /**
  * Integrasjonstest for ArbeidstakerController med MockOAuth2Server og WebTestClient.

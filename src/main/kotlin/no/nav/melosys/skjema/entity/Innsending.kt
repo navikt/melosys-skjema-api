@@ -1,12 +1,23 @@
 package no.nav.melosys.skjema.entity
 
-import jakarta.persistence.*
-import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.types.common.Språk
-import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
+import jakarta.persistence.Column
+import jakarta.persistence.Convert
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToOne
+import jakarta.persistence.Table
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import no.nav.melosys.skjema.config.observability.MDCOperations
+import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
+import no.nav.melosys.skjema.types.common.Språk
 
 /**
  * Sporer prosesseringsstatus for innsendte skjemaer.

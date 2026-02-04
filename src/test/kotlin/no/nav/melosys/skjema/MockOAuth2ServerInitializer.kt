@@ -1,10 +1,10 @@
 package no.nav.melosys.skjema
 
 import java.util.function.Supplier
+import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.springframework.context.support.GenericApplicationContext
 
 class MockOAuth2ServerInitializer : ApplicationContextInitializer<ConfigurableApplicationContext> {

@@ -1,22 +1,23 @@
 package no.nav.melosys.skjema.service
 
 import io.kotest.matchers.shouldBe
+import java.time.LocalDate
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
@@ -26,7 +27,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import tools.jackson.databind.json.JsonMapper
-import java.time.LocalDate
 
 data class HentUtsendtArbeidstakerSkjemaDataTestScenario(
     val beskrivelse: String,

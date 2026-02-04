@@ -4,18 +4,18 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 /**
  * Integrasjonstester for InnsendingRepository.

@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.types.arbeidsgiver
 
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import java.util.UUID
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 
 data class ArbeidsgiversSkjemaDto(
     val id: UUID,

@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.types.skjemadefinisjon.flerspraklig
 
-import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
 /**
  * Flerspråklig hovedklasse for en 

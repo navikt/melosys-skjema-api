@@ -1,10 +1,10 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.OrganisasjonMedTilgang
+import no.nav.melosys.skjema.types.OrganisasjonDto
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
