@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
  */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "metadatatype"
 )
 @JsonSubTypes(
@@ -27,4 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 sealed class SkjemaMetadata {
     /** Skjematype for denne metadataen */
     abstract val skjemaType: SkjemaType
+
+    /** Diskriminator for Jackson-serialisering. Skal ikke endres - lagres i database. */
+    abstract val metadatatype: String
 }
