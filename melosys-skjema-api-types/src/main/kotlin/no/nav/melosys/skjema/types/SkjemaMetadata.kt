@@ -25,9 +25,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = AnnenPersonMetadata::class, name = "UTSENDT_ARBEIDSTAKER_ANNEN_PERSON")
 )
 sealed class SkjemaMetadata {
-    /** Skjematype for denne metadataen */
-    abstract val skjemaType: SkjemaType
-
     /** Diskriminator for Jackson-serialisering. Skal ikke endres - lagres i database. */
     abstract val metadatatype: String
 }

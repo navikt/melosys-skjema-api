@@ -14,7 +14,6 @@ package no.nav.melosys.skjema.types
  * ikke her, siden det er felles for alle skjematyper.
  */
 sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata() {
-    override val skjemaType: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER
     /** Hvilken del av skjemaet (arbeidstaker eller arbeidsgiver) */
     abstract val skjemadel: Skjemadel
     /** Navn på arbeidsgiver-organisasjonen */
