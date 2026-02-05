@@ -12,7 +12,9 @@ import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
@@ -43,6 +45,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockValidator = mockk<UtsendtArbeidstakerValidator>(relaxed = true)
     val mockAltinnService = mockk<AltinnService>()
     val mockReprService = mockk<ReprService>()
+    val mockEregService = mockk<EregService>()
+    val mockSkjemaKoblingService = mockk<SkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val jsonMapper: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
     val innsendingService = mockk<InnsendingService>()
@@ -56,6 +60,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockValidator,
         mockAltinnService,
         mockReprService,
+        mockEregService,
+        mockSkjemaKoblingService,
         jsonMapper,
         mockSubjectHandler,
         innsendingService,
@@ -70,6 +76,13 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
     beforeTest {
         every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "1"
+        // Default: EregService returnerer juridisk enhet
+        every { mockEregService.hentOrganisasjonMedJuridiskEnhet(any()) } returns OrganisasjonMedJuridiskEnhetDto(
+            organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
+            juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS")
+        )
+        // Default: Ingen kobling
+        every { mockSkjemaKoblingService.finnOgKoblMotpart(any()) } returns KoblingsResultat(kobletSkjemaId = null)
     }
 
     context("opprettMedKontekst") {

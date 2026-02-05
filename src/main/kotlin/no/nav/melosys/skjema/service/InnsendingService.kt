@@ -62,11 +62,6 @@ class InnsendingService(
             // Marker som under behandling (med sisteForsoek for hung detection)
             startProsessering(skjemaId)
 
-            // TODO MELOSYS-7759: Journalfør til Joark
-            // val journalpostId = joarkService.journalfor(skjemaId)
-            // innsendingStatusService.oppdaterSkjemaJournalpostId(skjemaId, journalpostId)
-            // innsendingStatusService.oppdaterStatus(skjemaId, InnsendingStatus.JOURNALFORT)
-
             // MELOSYS-7760: Send til Kafka
             skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
                 SkjemaMottattMelding(skjemaId = skjemaId)

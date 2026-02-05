@@ -40,8 +40,7 @@ class M2MSkjemaService(
         return UtsendtArbeidstakerM2MSkjemaData(
             arbeidstakersDel = arbeidstakersDel,
             arbeidsgiversDel = arbeidsgiversDel,
-            referanseId = innsending.referanseId,
-            journaposteringId = "Her skal det ligge en journapostering ID"
+            referanseId = innsending.referanseId
         )
 
     }

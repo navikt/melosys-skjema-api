@@ -255,9 +255,11 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-    arbeidsgiverNavn: String? = null,
+    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
     fullmektigFnr: String? = null,
     radgiverfirma: RadgiverfirmaInfo? = null,
+    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
+    kobletSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
@@ -267,6 +269,8 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
         radgiverfirma = radgiverfirma,
+        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+        kobletSkjemaId = kobletSkjemaId,
     )
 }
 
@@ -315,9 +319,12 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
 fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     harFullmakt: Boolean = false,
-    arbeidsgiverNavn: String? = null,
+    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
     fullmektigFnr: String? = null,
-    radgiverfirma: RadgiverfirmaInfo? = null
+    radgiverfirma: RadgiverfirmaInfo? = null,
+    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
+    kobletSkjemaId: UUID? = null
 ): JsonNode {
 
     return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -325,7 +332,10 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
         harFullmakt = harFullmakt,
         arbeidsgiverNavn = arbeidsgiverNavn,
         fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma
+        radgiverfirma = radgiverfirma,
+        skjemadel = skjemadel,
+        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+        kobletSkjemaId = kobletSkjemaId
     ))
 }
 

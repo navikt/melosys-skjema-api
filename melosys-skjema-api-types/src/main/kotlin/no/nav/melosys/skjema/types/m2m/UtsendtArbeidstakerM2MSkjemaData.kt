@@ -7,5 +7,4 @@ data class UtsendtArbeidstakerM2MSkjemaData(
     val arbeidstakersDel: ArbeidstakersSkjemaDataDto?,
     val arbeidsgiversDel: ArbeidsgiversSkjemaDataDto?,
     val referanseId: String,
-    val journaposteringId: String = "Her skal det ligge en journapostering ID",
 )
