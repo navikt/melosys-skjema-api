@@ -55,7 +55,7 @@ class SkjemaKoblingService(
     fun finnOgKoblMotpart(skjema: Skjema): KoblingsResultat {
         val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
 
-        log.info { "Søker etter matchende skjema for ${skjema.id} (fnr=${skjema.fnr.take(6)}***, juridiskEnhet=${metadata.juridiskEnhetOrgnr}, skjemadel=${metadata.skjemadel})" }
+        log.info { "Søker etter matchende skjema for ${skjema.id}, skjemadel=${metadata.skjemadel})" }
 
         val matchendeSkjema = finnMatchendeSkjema(skjema, metadata)
 
