@@ -7,11 +7,14 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.PrePersist
+import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.types.SkjemaMetadata
 import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -58,4 +61,21 @@ class Skjema(
 
     @Column(name = "endret_av", nullable = false, length = 11)
     var endretAv: String
-)
+) {
+    /**
+     * Validerer at metadata-typen matcher skjematypen.
+     *
+     * NB: Når du legger til en ny SkjemaType, husk å:
+     * 1. Legge til en ny branch i when-blokken under
+     * 2. Skrive en test som verifiserer at valideringen feiler med feil metadata-type
+     */
+    @PrePersist
+    @PreUpdate
+    fun validerMetadataType() {
+        when (type) {
+            SkjemaType.UTSENDT_ARBEIDSTAKER -> require(metadata is UtsendtArbeidstakerMetadata) {
+                "metadata må være UtsendtArbeidstakerMetadata for skjematype $type"
+            }
+        }
+    }
+}
