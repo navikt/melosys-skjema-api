@@ -158,7 +158,7 @@ class SkjemaKoblingService(
     private fun utforKobling(nyttSkjema: Skjema, matchendeSkjema: Skjema) {
         // Oppdater matchende skjema med referanse til nytt skjema
         val matchendeMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(matchendeSkjema.metadata)
-        val oppdatertMatchendeMetadata = matchendeMetadata.copy(kobletSkjemaId = nyttSkjema.id)
+        val oppdatertMatchendeMetadata = matchendeMetadata.medKobletSkjemaId(nyttSkjema.id)
         matchendeSkjema.metadata = jsonMapper.valueToTree(oppdatertMatchendeMetadata)
         skjemaRepository.save(matchendeSkjema)
 
@@ -166,7 +166,7 @@ class SkjemaKoblingService(
 
         // Oppdater nytt skjema med referanse til matchende skjema
         val nyttMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(nyttSkjema.metadata)
-        val oppdatertNyttMetadata = nyttMetadata.copy(kobletSkjemaId = matchendeSkjema.id)
+        val oppdatertNyttMetadata = nyttMetadata.medKobletSkjemaId(matchendeSkjema.id)
         nyttSkjema.metadata = jsonMapper.valueToTree(oppdatertNyttMetadata)
         skjemaRepository.save(nyttSkjema)
 

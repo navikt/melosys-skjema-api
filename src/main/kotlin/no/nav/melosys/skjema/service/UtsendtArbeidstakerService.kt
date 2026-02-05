@@ -20,6 +20,10 @@ import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.types.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.DegSelvMetadata
+import no.nav.melosys.skjema.types.RadgiverMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
@@ -543,24 +547,36 @@ class UtsendtArbeidstakerService(
         innloggetBrukerFnr: String,
         juridiskEnhetOrgnr: String
     ): UtsendtArbeidstakerMetadata {
-        val fullmektigFnr = when {
-            request.representasjonstype == Representasjonstype.DEG_SELV -> null // Ingen fullmektig
-            request.representasjonstype == Representasjonstype.ANNEN_PERSON -> innloggetBrukerFnr // Fullmektig er innlogget bruker
-            request.harFullmakt -> innloggetBrukerFnr // Arbeidsgiver/rådgiver MED fullmakt (validert)
-            else -> null // Arbeidsgiver/rådgiver UTEN fullmakt (arbeidstaker fyller selv)
+        return when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> DegSelvMetadata(
+                skjemadel = request.skjemadel,
+                arbeidsgiverNavn = request.arbeidsgiver.navn,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+            Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
+                skjemadel = request.skjemadel,
+                arbeidsgiverNavn = request.arbeidsgiver.navn,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                harFullmakt = request.harFullmakt,
+                fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null
+            )
+            Representasjonstype.RADGIVER -> RadgiverMetadata(
+                skjemadel = request.skjemadel,
+                arbeidsgiverNavn = request.arbeidsgiver.navn,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                harFullmakt = request.harFullmakt,
+                fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null,
+                radgiverfirma = request.radgiverfirma?.let {
+                    RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
+                }
+            )
+            Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
+                skjemadel = request.skjemadel,
+                arbeidsgiverNavn = request.arbeidsgiver.navn,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                fullmektigFnr = innloggetBrukerFnr
+            )
         }
-
-        return UtsendtArbeidstakerMetadata(
-            representasjonstype = request.representasjonstype,
-            harFullmakt = request.harFullmakt,
-            skjemadel = request.skjemadel,
-            radgiverfirma = request.radgiverfirma?.let {
-                RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
-            },
-            arbeidsgiverNavn = request.arbeidsgiver.navn,
-            fullmektigFnr = fullmektigFnr,
-            juridiskEnhetOrgnr = juridiskEnhetOrgnr
-        )
     }
 
     /**

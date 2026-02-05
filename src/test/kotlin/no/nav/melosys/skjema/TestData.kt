@@ -19,6 +19,10 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.Virksomhet
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.PersonDto
+import no.nav.melosys.skjema.types.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.DegSelvMetadata
+import no.nav.melosys.skjema.types.RadgiverMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
@@ -261,17 +265,38 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
-
-    return UtsendtArbeidstakerMetadata(
-        representasjonstype = representasjonstype,
-        harFullmakt = harFullmakt,
-        skjemadel = skjemadel,
-        arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma,
-        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-        kobletSkjemaId = kobletSkjemaId,
-    )
+    return when (representasjonstype) {
+        Representasjonstype.DEG_SELV -> DegSelvMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            harFullmakt = harFullmakt,
+            fullmektigFnr = fullmektigFnr,
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.RADGIVER -> RadgiverMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            harFullmakt = harFullmakt,
+            fullmektigFnr = fullmektigFnr,
+            kobletSkjemaId = kobletSkjemaId,
+            radgiverfirma = radgiverfirma
+        )
+        Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
+            kobletSkjemaId = kobletSkjemaId
+        )
+    }
 }
 
 fun radgiverfirmaInfoMedDefaultVerdier(
