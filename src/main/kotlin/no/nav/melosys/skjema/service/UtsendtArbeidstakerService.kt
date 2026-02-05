@@ -359,13 +359,6 @@ class UtsendtArbeidstakerService(
         val koblingsResultat = skjemaKoblingService.finnOgKoblMotpart(savedSkjema)
         if (koblingsResultat.kobletSkjemaId != null) {
             log.info { "Skjema $skjemaId koblet med ${koblingsResultat.kobletSkjemaId}" }
-
-            // Gjenbruk journalpostId fra matchende skjema hvis tilgjengelig
-            if (koblingsResultat.journalpostId != null) {
-                savedSkjema.journalpostId = koblingsResultat.journalpostId
-                skjemaRepository.save(savedSkjema)
-                log.info { "Gjenbruker journalpostId ${koblingsResultat.journalpostId} fra koblet skjema" }
-            }
         }
 
         // 5. Opprett innsending-rad med versjon og språk

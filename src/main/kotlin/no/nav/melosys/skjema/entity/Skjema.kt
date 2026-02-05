@@ -56,9 +56,5 @@ class Skjema(
     val opprettetAv: String,
 
     @Column(name = "endret_av", nullable = false, length = 11)
-    var endretAv: String,
-
-    /** Journalpost-ID fra Joark etter vellykket journalføring */
-    @Column(name = "journalpost_id")
-    var journalpostId: String? = null
+    var endretAv: String
 )

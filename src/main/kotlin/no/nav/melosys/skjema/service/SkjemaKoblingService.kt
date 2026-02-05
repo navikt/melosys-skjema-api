@@ -22,9 +22,7 @@ private val log = KotlinLogging.logger { }
  */
 data class KoblingsResultat(
     /** ID til matchende skjema, eller null hvis ingen match */
-    val kobletSkjemaId: UUID?,
-    /** JournalpostId fra matchende skjema, eller null hvis ingen match */
-    val journalpostId: String?
+    val kobletSkjemaId: UUID?
 )
 
 /**
@@ -51,7 +49,7 @@ class SkjemaKoblingService(
      * Finner og kobler matchende skjema for det innsendte skjemaet.
      *
      * @param skjema Det innsendte skjemaet som skal kobles
-     * @return KoblingsResultat med kobletSkjemaId og journalpostId hvis match ble funnet
+     * @return KoblingsResultat med kobletSkjemaId hvis match ble funnet
      */
     @Transactional
     fun finnOgKoblMotpart(skjema: Skjema): KoblingsResultat {
@@ -64,13 +62,10 @@ class SkjemaKoblingService(
         return if (matchendeSkjema != null) {
             log.info { "Fant matchende skjema ${matchendeSkjema.id} for ${skjema.id}" }
             utforKobling(skjema, matchendeSkjema)
-            KoblingsResultat(
-                kobletSkjemaId = matchendeSkjema.id,
-                journalpostId = matchendeSkjema.journalpostId
-            )
+            KoblingsResultat(kobletSkjemaId = matchendeSkjema.id)
         } else {
             log.info { "Ingen matchende skjema funnet for ${skjema.id}" }
-            KoblingsResultat(null, null)
+            KoblingsResultat(kobletSkjemaId = null)
         }
     }
 

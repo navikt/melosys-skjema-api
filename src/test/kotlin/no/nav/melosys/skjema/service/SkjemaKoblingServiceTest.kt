@@ -56,8 +56,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             val resultat = service.finnOgKoblMotpart(skjema)
 
             resultat.kobletSkjemaId shouldBe null
-            resultat.journalpostId shouldBe null
-        }
+                    }
 
         test("skal returnere null når kandidat allerede er koblet") {
             val skjemaId = UUID.randomUUID()
@@ -177,7 +176,6 @@ class SkjemaKoblingServiceTest : FunSpec({
         test("skal koble skjemaer med matchende kriterier") {
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
-            val journalpostId = "JOARK-123456"
 
             // Overlappende perioder
             val overlappendePeriode = PeriodeDto(
@@ -225,7 +223,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatMetadata,
                 data = jsonMapper.valueToTree(arbeidsgiverData)
-            ).also { it.journalpostId = journalpostId }
+            )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
@@ -233,7 +231,6 @@ class SkjemaKoblingServiceTest : FunSpec({
             val resultat = service.finnOgKoblMotpart(skjema)
 
             resultat.kobletSkjemaId shouldBe kandidatId
-            resultat.journalpostId shouldBe journalpostId
 
             // Verifiser at begge skjemaer ble lagret med kobling
             verify(exactly = 2) { mockSkjemaRepository.save(any()) }

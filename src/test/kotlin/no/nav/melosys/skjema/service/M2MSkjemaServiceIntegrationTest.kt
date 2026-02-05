@@ -127,8 +127,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
                 forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
                     arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
                     arbeidsgiversDel = arbeidsgiversDataMedOverlappendePeriode,
-                    referanseId = "MEL-TEST01",
-                    journaposteringId = "Her skal det ligge en journapostering ID"
+                    referanseId = "MEL-TEST01"
                 )
             ),
             HentUtsendtArbeidstakerSkjemaDataTestScenario(
@@ -143,8 +142,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
                 forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
                     arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
                     arbeidsgiversDel = null,
-                    referanseId = "MEL-TEST02",
-                    journaposteringId = "Her skal det ligge en journapostering ID"
+                    referanseId = "MEL-TEST02"
                 )
             ),
             HentUtsendtArbeidstakerSkjemaDataTestScenario(
@@ -159,8 +157,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
                 forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
                     arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
                     arbeidsgiversDel = null,
-                    referanseId = "MEL-TEST03",
-                    journaposteringId = "Her skal det ligge en journapostering ID"
+                    referanseId = "MEL-TEST03"
                 )
             ),
             HentUtsendtArbeidstakerSkjemaDataTestScenario(
@@ -175,8 +172,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
                 forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
                     arbeidstakersDel = null,
                     arbeidsgiversDel = arbeidsgiversDataMedOverlappendePeriode,
-                    referanseId = "MEL-TEST04",
-                    journaposteringId = "Her skal det ligge en journapostering ID"
+                    referanseId = "MEL-TEST04"
                 )
             )
         )
