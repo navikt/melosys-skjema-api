@@ -6,10 +6,10 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -51,8 +51,8 @@ class M2MSkjemaService(
         val skjemaErArbeidstakersDel = erArbeidstakersDel(skjema)
 
         val innsendtSoknadForSammeFnrOgOrgISammeTidsrom = skjemaRepository.findByFnrAndOrgnrAndStatus(
-            skjema.fnr!!,
-            skjema.orgnr!!,
+            skjema.fnr,
+            skjema.orgnr,
             status = SkjemaStatus.SENDT
         )
             .filter { it.id != skjema.id }
@@ -93,7 +93,7 @@ class M2MSkjemaService(
     // TODO: Vi må innføre et nytt felt i metadata for å kunne utlede enklere
     // Denne blir redundant når vi har lagt til eget metadatafelt for denne informasjonen
     fun erArbeidstakersDel(skjema: Skjema): Boolean =
-        jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata!!).representasjonstype in listOf(
+        (skjema.metadata as UtsendtArbeidstakerMetadata).representasjonstype in listOf(
             Representasjonstype.DEG_SELV,
             Representasjonstype.ANNEN_PERSON
         )

@@ -1,8 +1,5 @@
 package no.nav.melosys.skjema.types
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-
 /**
  * Metadata for Utsendt Arbeidstaker skjema.
  * Lagres i skjema.metadata som JSONB.
@@ -16,18 +13,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
  * Merk: Innsendingsstatus ligger på egne felt i Skjema-entiteten,
  * ikke her, siden det er felles for alle skjematyper.
  */
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "representasjonstype"
-)
-@JsonSubTypes(
-    JsonSubTypes.Type(value = DegSelvMetadata::class, name = "DEG_SELV"),
-    JsonSubTypes.Type(value = ArbeidsgiverMetadata::class, name = "ARBEIDSGIVER"),
-    JsonSubTypes.Type(value = RadgiverMetadata::class, name = "RADGIVER"),
-    JsonSubTypes.Type(value = AnnenPersonMetadata::class, name = "ANNEN_PERSON")
-)
-sealed class UtsendtArbeidstakerMetadata {
+sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata() {
+    override val skjemaType: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER
     /** Hvilken del av skjemaet (arbeidstaker eller arbeidsgiver) */
     abstract val skjemadel: Skjemadel
     /** Navn på arbeidsgiver-organisasjonen */

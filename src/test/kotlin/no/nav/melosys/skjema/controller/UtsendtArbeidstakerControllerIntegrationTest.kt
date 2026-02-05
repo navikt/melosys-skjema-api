@@ -44,7 +44,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
@@ -326,10 +326,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 fnr = etAnnetKorrektSyntetiskFnr,
-                metadata = jsonMapper.valueToTree(
-                    utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                        representasjonstype = Representasjonstype.ARBEIDSGIVER
-                    )
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER
                 )
             )
         )
@@ -365,9 +363,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = korrektSyntetiskOrgnr,
                 fnr = etAnnetKorrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                metadata = jsonMapper.valueToTree(utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                )),
+                ),
             )
         )
 
@@ -722,10 +720,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 data = jsonMapper.valueToTree(
                     arbeidstakersSkjemaDataDtoMedDefaultVerdier()
                 ),
-                metadata = jsonMapper.valueToTree(
-                    utsendtArbeidstakerMetadataMedDefaultVerdier(
-                        representasjonstype = Representasjonstype.DEG_SELV
-                    )
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV
                 )
             )
         )

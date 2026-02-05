@@ -6,7 +6,6 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
@@ -53,7 +52,7 @@ class SkjemaKoblingService(
      */
     @Transactional
     fun finnOgKoblMotpart(skjema: Skjema): KoblingsResultat {
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
         log.info { "Søker etter matchende skjema for ${skjema.id}, skjemadel=${metadata.skjemadel})" }
 
@@ -86,7 +85,7 @@ class SkjemaKoblingService(
 
         // Filtrer på kriteriene
         return kandidater.find { kandidat ->
-            val kandidatMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(kandidat.metadata)
+            val kandidatMetadata = kandidat.metadata as UtsendtArbeidstakerMetadata
 
             // 1. Ikke allerede koblet
             val ikkeKoblet = kandidatMetadata.kobletSkjemaId == null
@@ -157,17 +156,17 @@ class SkjemaKoblingService(
      */
     private fun utforKobling(nyttSkjema: Skjema, matchendeSkjema: Skjema) {
         // Oppdater matchende skjema med referanse til nytt skjema
-        val matchendeMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(matchendeSkjema.metadata)
+        val matchendeMetadata = matchendeSkjema.metadata as UtsendtArbeidstakerMetadata
         val oppdatertMatchendeMetadata = matchendeMetadata.medKobletSkjemaId(nyttSkjema.id)
-        matchendeSkjema.metadata = jsonMapper.valueToTree(oppdatertMatchendeMetadata)
+        matchendeSkjema.metadata = oppdatertMatchendeMetadata
         skjemaRepository.save(matchendeSkjema)
 
         log.info { "Koblet skjema ${matchendeSkjema.id} til ${nyttSkjema.id}" }
 
         // Oppdater nytt skjema med referanse til matchende skjema
-        val nyttMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(nyttSkjema.metadata)
+        val nyttMetadata = nyttSkjema.metadata as UtsendtArbeidstakerMetadata
         val oppdatertNyttMetadata = nyttMetadata.medKobletSkjemaId(matchendeSkjema.id)
-        nyttSkjema.metadata = jsonMapper.valueToTree(oppdatertNyttMetadata)
+        nyttSkjema.metadata = oppdatertNyttMetadata
         skjemaRepository.save(nyttSkjema)
 
         log.info { "Koblet skjema ${nyttSkjema.id} til ${matchendeSkjema.id}" }

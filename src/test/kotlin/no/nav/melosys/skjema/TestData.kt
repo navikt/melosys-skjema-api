@@ -260,7 +260,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     harFullmakt: Boolean = false,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
-    fullmektigFnr: String? = null,
+    fullmektigFnr: String? = etAnnetKorrektSyntetiskFnr,
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
@@ -341,29 +341,6 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
     harFullmakt = harFullmakt
 )
 
-fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
-    harFullmakt: Boolean = false,
-    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
-    fullmektigFnr: String? = null,
-    radgiverfirma: RadgiverfirmaInfo? = null,
-    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
-    kobletSkjemaId: UUID? = null
-): JsonNode {
-
-    return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
-        representasjonstype = representasjonstype,
-        harFullmakt = harFullmakt,
-        arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma,
-        skjemadel = skjemadel,
-        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-        kobletSkjemaId = kobletSkjemaId
-    ))
-}
-
 fun skjemaMedDefaultVerdier(
     id: UUID? = null,
     fnr: String = korrektSyntetiskFnr,
@@ -371,7 +348,7 @@ fun skjemaMedDefaultVerdier(
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
     data: JsonNode? = null,
-    metadata: JsonNode = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
+    metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,

@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.SkjemaMetadata
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.hibernate.annotations.JdbcTypeCode
@@ -44,7 +45,7 @@ class Skjema(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", nullable = false)
-    var metadata: JsonNode,
+    var metadata: SkjemaMetadata,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),

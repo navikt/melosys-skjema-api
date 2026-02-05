@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -13,6 +12,7 @@ import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SorteringsFelt
 import no.nav.melosys.skjema.types.Sorteringsretning
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -232,7 +232,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(

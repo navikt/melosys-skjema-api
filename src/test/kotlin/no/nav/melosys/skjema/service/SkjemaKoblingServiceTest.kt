@@ -18,7 +18,7 @@ import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.kotlinModule
 
@@ -38,7 +38,7 @@ class SkjemaKoblingServiceTest : FunSpec({
     context("finnOgKoblMotpart") {
         test("skal returnere null når ingen kandidater finnes") {
             val skjemaId = UUID.randomUUID()
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -62,7 +62,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -76,7 +76,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             // Kandidat som allerede er koblet til et annet skjema
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
@@ -101,7 +101,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -115,7 +115,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             // Kandidat med samme skjemadel
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL, // Samme som skjema
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -139,7 +139,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -153,7 +153,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             // Kandidat med annen juridisk enhet
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = "111222333" // Annen juridisk enhet
@@ -190,7 +190,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -211,7 +211,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -258,7 +258,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -278,7 +278,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -321,7 +321,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -341,7 +341,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -377,7 +377,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr

@@ -20,7 +20,7 @@ import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.common.SkjemaStatus
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -70,7 +70,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett et utkast for brukeren
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         val skjema = skjemaMedDefaultVerdier(
@@ -137,7 +137,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         )
 
         // Opprett utkast for organisasjon med tilgang
-        val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER,
             arbeidsgiverNavn = "Bedrift A AS"
         )
@@ -151,7 +151,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.save(skjema1)
 
         // Opprett utkast for organisasjon uten tilgang (skal ikke returneres)
-        val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER
         )
         val skjema2 = skjemaMedDefaultVerdier(
@@ -188,7 +188,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett utkast med rådgiverfirma i metadata
-        val metadata1 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )
@@ -202,7 +202,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.save(skjema1)
 
         // Opprett utkast med annet rådgiverfirma (skal ikke returneres)
-        val metadata2 = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = "111111111")
         )
@@ -239,7 +239,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett utkast for en annen bruker
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         val skjema = skjemaMedDefaultVerdier(
@@ -273,7 +273,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett en SENDT søknad (skal ikke returneres som utkast)
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         val skjema = skjemaMedDefaultVerdier(
@@ -322,7 +322,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett utkast med DEG_SELV
-        val metadataDegSelv = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         val skjemaDegSelv = skjemaMedDefaultVerdier(
@@ -335,7 +335,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.save(skjemaDegSelv)
 
         // Opprett utkast med ARBEIDSGIVER (skal ikke returneres for DEG_SELV-query)
-        val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER
         )
         val skjemaArbeidsgiver = skjemaMedDefaultVerdier(
@@ -370,7 +370,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett 3 utkast for samme bruker
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         repeat(3) {
@@ -422,7 +422,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         )
 
         // Opprett utkast med ARBEIDSGIVER
-        val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER,
             arbeidsgiverNavn = "Bedrift A AS"
         )
@@ -436,7 +436,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.save(skjemaArbeidsgiver)
 
         // Opprett utkast med DEG_SELV for samme orgnr (skal ikke returneres)
-        val metadataDegSelv = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataDegSelv = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
         val skjemaDegSelv = skjemaMedDefaultVerdier(
@@ -472,7 +472,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(userFnr)
 
         // Opprett utkast med RADGIVER
-        val metadataRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataRadgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )
@@ -486,7 +486,7 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaRepository.save(skjemaRadgiver)
 
         // Opprett utkast med ARBEIDSGIVER for samme rådgiverfirma (skal ikke returneres)
-        val metadataArbeidsgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataArbeidsgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
         )

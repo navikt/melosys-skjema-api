@@ -20,7 +20,7 @@ import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
@@ -83,7 +83,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         orgnr = korrektSyntetiskOrgnr,
         status = SkjemaStatus.SENDT,
         data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.DEG_SELV
         )
     )
@@ -93,7 +93,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         orgnr = korrektSyntetiskOrgnr,
         status = SkjemaStatus.SENDT,
         data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER
         )
     )
@@ -103,7 +103,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         orgnr = korrektSyntetiskOrgnr,
         status = SkjemaStatus.SENDT,
         data = jsonMapper.valueToTree(arbeidsgiversDataMedIkkeOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER
         )
     )

@@ -9,7 +9,6 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -96,7 +95,6 @@ class UtsendtArbeidstakerService(
 
         // Bygg metadata med korrekt fullmektig-logikk og juridisk enhet
         val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr)
-        val metadataJson = jsonMapper.valueToTree<JsonNode>(metadata)
 
         // Opprett skjema med riktig fnr og orgnr basert på representasjonstype
         val skjema = when (request.representasjonstype) {
@@ -106,7 +104,7 @@ class UtsendtArbeidstakerService(
                     status = SkjemaStatus.UTKAST,
                     fnr = innloggetBrukerFnr,
                     orgnr = request.arbeidsgiver.orgnr,
-                    metadata = metadataJson,
+                    metadata = metadata,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -118,7 +116,7 @@ class UtsendtArbeidstakerService(
                     status = SkjemaStatus.UTKAST,
                     orgnr = request.arbeidsgiver.orgnr,
                     fnr = request.arbeidstaker.fnr,
-                    metadata = metadataJson,
+                    metadata = metadata,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -130,7 +128,7 @@ class UtsendtArbeidstakerService(
                     status = SkjemaStatus.UTKAST,
                     fnr = request.arbeidstaker.fnr,
                     orgnr = request.arbeidsgiver.orgnr,
-                    metadata = metadataJson,
+                    metadata = metadata,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -212,7 +210,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sikre at representasjonstype i metadata er DEG_SELV
-                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
                     skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
                 }
             }
@@ -228,7 +226,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at representasjonstype er ARBEIDSGIVER
-                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
                     skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER && tilgangOrgnr.contains(skjema.orgnr)
                 }
@@ -245,7 +243,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
                     skjemaMetadata.representasjonstype == Representasjonstype.RADGIVER &&
                             skjemaMetadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
@@ -267,7 +265,7 @@ class UtsendtArbeidstakerService(
                 // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
                 skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
                     .filter { skjema ->
-                        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+                        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
                         // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
                         skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON && personerMedFullmaktFnr.contains(skjema.fnr)
                     }
@@ -408,7 +406,7 @@ class UtsendtArbeidstakerService(
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        return jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        return skjema.metadata as UtsendtArbeidstakerMetadata
     }
 
     /**
@@ -599,7 +597,7 @@ class UtsendtArbeidstakerService(
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
         return UtkastOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
@@ -631,7 +629,7 @@ class UtsendtArbeidstakerService(
             return true
         }
 
-        val skjemaMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
         return when(skjemaMetadata.representasjonstype){
             Representasjonstype.DEG_SELV -> false
