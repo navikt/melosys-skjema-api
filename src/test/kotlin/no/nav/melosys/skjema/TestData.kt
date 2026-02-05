@@ -260,6 +260,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
+    erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
 
     return UtsendtArbeidstakerMetadata(
@@ -271,6 +272,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
         radgiverfirma = radgiverfirma,
         juridiskEnhetOrgnr = juridiskEnhetOrgnr,
         kobletSkjemaId = kobletSkjemaId,
+        erstatterSkjemaId = erstatterSkjemaId,
     )
 }
 
@@ -324,7 +326,8 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
     radgiverfirma: RadgiverfirmaInfo? = null,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
-    kobletSkjemaId: UUID? = null
+    kobletSkjemaId: UUID? = null,
+    erstatterSkjemaId: UUID? = null
 ): JsonNode {
 
     return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -335,7 +338,8 @@ fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
         radgiverfirma = radgiverfirma,
         skjemadel = skjemadel,
         juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-        kobletSkjemaId = kobletSkjemaId
+        kobletSkjemaId = kobletSkjemaId,
+        erstatterSkjemaId = erstatterSkjemaId
     ))
 }
 

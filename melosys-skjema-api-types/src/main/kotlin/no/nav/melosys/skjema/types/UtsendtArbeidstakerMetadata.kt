@@ -22,11 +22,16 @@ data class UtsendtArbeidstakerMetadata(
      */
     val juridiskEnhetOrgnr: String,
     /**
-     * Referanse til koblet skjema-instans.
+     * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
      * basert på fnr, juridisk enhet og overlappende perioder.
      */
-    val kobletSkjemaId: java.util.UUID? = null
+    val kobletSkjemaId: java.util.UUID? = null,
+    /**
+     * Referanse til forrige versjon av samme skjemadel.
+     * Settes når bruker sender inn samme del på nytt (ny versjon av samme søknad).
+     */
+    val erstatterSkjemaId: java.util.UUID? = null
 )
 
 data class RadgiverfirmaInfo(
