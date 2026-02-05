@@ -192,6 +192,67 @@ class SkjemaKoblingServiceTest : FunSpec({
             verify(exactly = 2) { mockSkjemaRepository.save(any()) }
         }
 
+        test("skal koble når perioder overlapper med kun 1 dag") {
+            val skjemaId = UUID.randomUUID()
+            val kandidatId = UUID.randomUUID()
+
+            val arbeidstakerPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 1, 1),
+                tilDato = LocalDate.of(2024, 6, 30)
+            )
+            val arbeidsgiverPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 6, 30),
+                tilDato = LocalDate.of(2024, 12, 31)
+            )
+
+            val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    utsendelsePeriode = arbeidstakerPeriode
+                )
+            )
+
+            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = metadata,
+                data = jsonMapper.valueToTree(arbeidstakerData)
+            )
+
+            val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    arbeidstakerUtsendelsePeriode = arbeidsgiverPeriode
+                )
+            )
+
+            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val kandidat = skjemaMedDefaultVerdier(
+                id = kandidatId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = kandidatMetadata,
+                data = jsonMapper.valueToTree(arbeidsgiverData)
+            )
+
+            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.save(any()) } returnsArgument 0
+
+            val resultat = service.finnOgKobl(skjema)
+
+            resultat.kobletSkjemaId shouldBe kandidatId
+        }
+
         test("skal returnere null når perioder ikke overlapper") {
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()

@@ -23,6 +23,21 @@ data class KoblingsResultat(
     val erstatterSkjemaId: UUID?
 )
 
+/**
+ * Kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
+ *
+ * Håndterer to typer koblinger:
+ * - **Motpart-kobling**: Kobler arbeidsgiver-del og arbeidstaker-del som hører til samme søknad.
+ * - **Erstatter-kobling**: Når samme del sendes inn på nytt, arver det nye skjemaet koblingen fra forrige versjon.
+ *
+ * Matching-kriterier:
+ * 1. Samme arbeidstaker-fnr
+ * 2. Status = SENDT
+ * 3. Samme juridisk enhet (orgnr)
+ * 4. Overlappende perioder (minst 1 dag felles)
+ * 5. For motpart: motsatt skjemadel og ikke allerede koblet
+ * 6. For erstatter: samme skjemadel
+ */
 @Service
 class SkjemaKoblingService(
     private val skjemaRepository: SkjemaRepository,
