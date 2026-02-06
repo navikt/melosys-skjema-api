@@ -387,6 +387,93 @@ class SkjemaKoblingServiceTest : FunSpec({
             resultat.kobletSkjemaId shouldBe null
             resultat.erstatterSkjemaId shouldBe null
         }
+        test("skal matche med samlet periode over flere kandidater") {
+            val skjemaId = UUID.randomUUID()
+            val kandidatAId = UUID.randomUUID()
+            val kandidatBId = UUID.randomUUID()
+
+            // Nytt skjema (arbeidstaker) med periode apr-jun
+            val arbeidstakerPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 4, 1),
+                tilDato = LocalDate.of(2024, 6, 30)
+            )
+
+            val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    utsendelsePeriode = arbeidstakerPeriode
+                )
+            )
+
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = metadata,
+                data = jsonMapper.valueToTree(arbeidstakerData)
+            )
+
+            // Kandidat A (arbeidsgiver) med periode jan-mar
+            val kandidatAData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    arbeidstakerUtsendelsePeriode = PeriodeDto(
+                        fraDato = LocalDate.of(2024, 1, 1),
+                        tilDato = LocalDate.of(2024, 3, 31)
+                    )
+                )
+            )
+
+            val kandidatAMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val kandidatA = skjemaMedDefaultVerdier(
+                id = kandidatAId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = kandidatAMetadata,
+                data = jsonMapper.valueToTree(kandidatAData)
+            )
+
+            // Kandidat B (arbeidsgiver) med periode jul-des
+            val kandidatBData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    arbeidstakerUtsendelsePeriode = PeriodeDto(
+                        fraDato = LocalDate.of(2024, 7, 1),
+                        tilDato = LocalDate.of(2024, 12, 31)
+                    )
+                )
+            )
+
+            val kandidatBMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val kandidatB = skjemaMedDefaultVerdier(
+                id = kandidatBId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = kandidatBMetadata,
+                data = jsonMapper.valueToTree(kandidatBData)
+            )
+
+            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidatA, kandidatB)
+            every { mockSkjemaRepository.save(any()) } returnsArgument 0
+
+            val resultat = service.finnOgKobl(skjema)
+
+            // Samlet periode (jan-des) overlapper med apr-jun, så motpart-kobling skal skje
+            resultat.kobletSkjemaId shouldBe kandidatAId
+        }
     }
 
     context("erstatter-kobling") {

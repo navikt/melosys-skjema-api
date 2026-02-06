@@ -68,13 +68,20 @@ class SkjemaKoblingService(
         sammeDel: Boolean
     ): Skjema? {
         val ønsketDel = if (sammeDel) metadata.skjemadel else metadata.skjemadel.motpart()
-        return kandidater.find { kandidat ->
+        val matchendeKandidater = kandidater.filter { kandidat ->
             val km = kandidat.metadata as UtsendtArbeidstakerMetadata
             km.skjemadel == ønsketDel
                 && km.juridiskEnhetOrgnr == metadata.juridiskEnhetOrgnr
                 && (sammeDel || km.kobletSkjemaId == null)
-                && perioderOverlapper(skjema, kandidat)
         }
+        if (matchendeKandidater.isEmpty()) return null
+
+        val samletPeriode = samletPeriode(matchendeKandidater) ?: return null
+        val skjemaPeriode = hentPeriode(skjema) ?: return null
+
+        if (!skjemaPeriode.overlapper(samletPeriode)) return null
+
+        return matchendeKandidater.first()
     }
 
     private fun Skjemadel.motpart() = when (this) {
@@ -82,10 +89,13 @@ class SkjemaKoblingService(
         Skjemadel.ARBEIDSGIVERS_DEL -> Skjemadel.ARBEIDSTAKERS_DEL
     }
 
-    private fun perioderOverlapper(skjema1: Skjema, skjema2: Skjema): Boolean {
-        val p1 = hentPeriode(skjema1) ?: return false
-        val p2 = hentPeriode(skjema2) ?: return false
-        return p1.overlapper(p2)
+    private fun samletPeriode(skjemaer: List<Skjema>): PeriodeDto? {
+        val perioder = skjemaer.mapNotNull { hentPeriode(it) }
+        if (perioder.isEmpty()) return null
+        return PeriodeDto(
+            fraDato = perioder.minOf { it.fraDato },
+            tilDato = perioder.maxOf { it.tilDato }
+        )
     }
 
     private fun hentPeriode(skjema: Skjema): PeriodeDto? = try {
@@ -95,7 +105,10 @@ class SkjemaKoblingService(
             Skjemadel.ARBEIDSGIVERS_DEL ->
                 jsonMapper.parseArbeidsgiversSkjemaDataDto(skjema.data!!).utenlandsoppdraget?.arbeidstakerUtsendelsePeriode
         }
-    } catch (_: Exception) { null }
+    } catch (e: Exception) {
+        log.warn(e) { "Kunne ikke hente periode for skjema ${skjema.id}" }
+        null
+    }
 
     private fun utforErstatterKobling(nyttSkjema: Skjema, gammelSkjema: Skjema): UUID? {
         val arvetKobletSkjemaId = (gammelSkjema.metadata as UtsendtArbeidstakerMetadata).kobletSkjemaId
