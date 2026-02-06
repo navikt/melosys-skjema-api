@@ -111,10 +111,10 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.referanseId shouldBe "MEL-TEST01"
         result.arbeidstakersDeler shouldHaveSize 1
         result.arbeidsgiversDeler shouldHaveSize 1
-        result.arbeidstakersDeler[0].skjemaId shouldBe arbeidstakersSkjema.id
-        result.arbeidstakersDeler[0].utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
-        result.arbeidsgiversDeler[0].skjemaId shouldBe arbeidsgiversSkjema.id
-        result.arbeidsgiversDeler[0].utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
+        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
+        result.arbeidstakersDeler[0].data.utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
+        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
+        result.arbeidsgiversDeler[0].data.utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
     }
 
     @Test
@@ -141,7 +141,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.referanseId shouldBe "MEL-TEST02"
         result.arbeidstakersDeler shouldHaveSize 1
         result.arbeidsgiversDeler.shouldBeEmpty()
-        result.arbeidstakersDeler[0].skjemaId shouldBe arbeidstakersSkjema.id
+        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
     }
 
     @Test
@@ -168,7 +168,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.referanseId shouldBe "MEL-TEST04"
         result.arbeidstakersDeler.shouldBeEmpty()
         result.arbeidsgiversDeler shouldHaveSize 1
-        result.arbeidsgiversDeler[0].skjemaId shouldBe arbeidsgiversSkjema.id
+        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
     }
 
     @Test

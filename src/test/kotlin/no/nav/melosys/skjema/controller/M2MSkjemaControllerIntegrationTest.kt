@@ -80,8 +80,8 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
             responseBody.referanseId shouldBe innsending.referanseId
             responseBody.arbeidsgiversDeler shouldBe emptyList()
             responseBody.arbeidstakersDeler.size shouldBe 1
-            responseBody.arbeidstakersDeler[0].skjemaId shouldBe skjema.id
-            responseBody.arbeidstakersDeler[0].utenlandsoppdraget shouldBe
+            responseBody.arbeidstakersDeler[0].id shouldBe skjema.id
+            responseBody.arbeidstakersDeler[0].data.utenlandsoppdraget shouldBe
                 jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!).utenlandsoppdraget
         }
 

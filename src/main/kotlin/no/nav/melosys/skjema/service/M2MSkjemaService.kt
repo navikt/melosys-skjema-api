@@ -2,12 +2,16 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -34,24 +38,13 @@ class M2MSkjemaService(
         val erArbeidstakersDel = metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
 
         // Bygg hovedskjemaets data med metadata
-        val skjemaData = skjema.data!!
-        val arbeidstakersDeler = mutableListOf<no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto>()
-        val arbeidsgiversDeler = mutableListOf<no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto>()
+        val arbeidstakersDeler = mutableListOf<ArbeidstakersSkjemaDto>()
+        val arbeidsgiversDeler = mutableListOf<ArbeidsgiversSkjemaDto>()
 
         if (erArbeidstakersDel) {
-            val data = jsonMapper.parseArbeidstakersSkjemaDataDto(skjemaData)
-            arbeidstakersDeler.add(data.copy(
-                skjemaId = skjema.id,
-                innsendtDato = skjema.endretDato,
-                erstatterSkjemaId = metadata.erstatterSkjemaId
-            ))
+            arbeidstakersDeler.add(byggArbeidstakersDto(skjema, metadata))
         } else {
-            val data = jsonMapper.parseArbeidsgiversSkjemaDataDto(skjemaData)
-            arbeidsgiversDeler.add(data.copy(
-                skjemaId = skjema.id,
-                innsendtDato = skjema.endretDato,
-                erstatterSkjemaId = metadata.erstatterSkjemaId
-            ))
+            arbeidsgiversDeler.add(byggArbeidsgiversDto(skjema, metadata))
         }
 
         // Hent koblet motpart via kobletSkjemaId
@@ -60,24 +53,11 @@ class M2MSkjemaService(
             val kobletSkjema = skjemaRepository.findByIdOrNull(kobletSkjemaId)
             if (kobletSkjema != null) {
                 val kobletMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(kobletSkjema.metadata)
-                val kobletData = kobletSkjema.data!!
 
                 if (erArbeidstakersDel) {
-                    // Motpart er arbeidsgiver
-                    val data = jsonMapper.parseArbeidsgiversSkjemaDataDto(kobletData)
-                    arbeidsgiversDeler.add(data.copy(
-                        skjemaId = kobletSkjema.id,
-                        innsendtDato = kobletSkjema.endretDato,
-                        erstatterSkjemaId = kobletMetadata.erstatterSkjemaId
-                    ))
+                    arbeidsgiversDeler.add(byggArbeidsgiversDto(kobletSkjema, kobletMetadata))
                 } else {
-                    // Motpart er arbeidstaker
-                    val data = jsonMapper.parseArbeidstakersSkjemaDataDto(kobletData)
-                    arbeidstakersDeler.add(data.copy(
-                        skjemaId = kobletSkjema.id,
-                        innsendtDato = kobletSkjema.endretDato,
-                        erstatterSkjemaId = kobletMetadata.erstatterSkjemaId
-                    ))
+                    arbeidstakersDeler.add(byggArbeidstakersDto(kobletSkjema, kobletMetadata))
                 }
             } else {
                 log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema $id" }
@@ -88,6 +68,30 @@ class M2MSkjemaService(
             arbeidstakersDeler = arbeidstakersDeler,
             arbeidsgiversDeler = arbeidsgiversDeler,
             referanseId = innsending.referanseId
+        )
+    }
+
+    private fun byggArbeidstakersDto(skjema: Skjema, metadata: UtsendtArbeidstakerMetadata): ArbeidstakersSkjemaDto {
+        val data = jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!)
+        return ArbeidstakersSkjemaDto(
+            id = skjema.id!!,
+            fnr = skjema.fnr,
+            status = skjema.status,
+            innsendtDato = skjema.endretDato,
+            erstatterSkjemaId = metadata.erstatterSkjemaId,
+            data = data
+        )
+    }
+
+    private fun byggArbeidsgiversDto(skjema: Skjema, metadata: UtsendtArbeidstakerMetadata): ArbeidsgiversSkjemaDto {
+        val data = jsonMapper.parseArbeidsgiversSkjemaDataDto(skjema.data!!)
+        return ArbeidsgiversSkjemaDto(
+            id = skjema.id!!,
+            orgnr = skjema.orgnr,
+            status = skjema.status,
+            innsendtDato = skjema.endretDato,
+            erstatterSkjemaId = metadata.erstatterSkjemaId,
+            data = data
         )
     }
 }
