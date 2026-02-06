@@ -473,6 +473,7 @@ class SkjemaKoblingServiceTest : FunSpec({
 
             // Samlet periode (jan-des) overlapper med apr-jun, så motpart-kobling skal skje
             resultat.kobletSkjemaId shouldBe kandidatAId
+            resultat.erstatterSkjemaId shouldBe null
         }
     }
 
