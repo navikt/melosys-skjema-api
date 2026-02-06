@@ -1,13 +1,13 @@
 package no.nav.melosys.skjema.service
 
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import java.time.LocalDate
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.entity.Innsending
-import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
@@ -15,28 +15,17 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import tools.jackson.databind.json.JsonMapper
 
-data class HentUtsendtArbeidstakerSkjemaDataTestScenario(
-    val beskrivelse: String,
-    val hovedSkjema: Skjema,
-    val innsending: Innsending,
-    val andreEksisterendeSkjemaer: List<Skjema>,
-    val forventetResultat: UtsendtArbeidstakerM2MSkjemaData
-)
-
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
     @Autowired
@@ -55,11 +44,6 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         tilDato = LocalDate.of(2024, 12, 31)
     )
 
-    private val ikkeOverlappendePeriode = PeriodeDto(
-        fraDato = LocalDate.of(2025, 1, 1),
-        tilDato = LocalDate.of(2025, 12, 31)
-    )
-
     private val arbeidstakersDataMedOverlappendePeriode = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
         utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
             utsendelsePeriode = overlappendePeriode
@@ -72,136 +56,135 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         )
     )
 
-    private val arbeidsgiversDataMedIkkeOverlappendePeriode = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-        utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-            arbeidstakerUtsendelsePeriode = ikkeOverlappendePeriode
-        )
-    )
-
-    private fun arbeidstakersSkjemaMedOverlappendePeriode() = skjemaMedDefaultVerdier(
-        fnr = korrektSyntetiskFnr,
-        orgnr = korrektSyntetiskOrgnr,
-        status = SkjemaStatus.SENDT,
-        data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-    )
-
-    private fun arbeidsgiversSkjemaMedOverlappendePeriode() = skjemaMedDefaultVerdier(
-        fnr = korrektSyntetiskFnr,
-        orgnr = korrektSyntetiskOrgnr,
-        status = SkjemaStatus.SENDT,
-        data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-            representasjonstype = Representasjonstype.ARBEIDSGIVER
-        )
-    )
-
-    private fun arbeidsgiversSkjemaMedIkkeOverlappendePeriode() = skjemaMedDefaultVerdier(
-        fnr = korrektSyntetiskFnr,
-        orgnr = korrektSyntetiskOrgnr,
-        status = SkjemaStatus.SENDT,
-        data = jsonMapper.valueToTree(arbeidsgiversDataMedIkkeOverlappendePeriode),
-        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-            representasjonstype = Representasjonstype.ARBEIDSGIVER
-        )
-    )
-
-    fun testScenarioer(): List<HentUtsendtArbeidstakerSkjemaDataTestScenario> {
-        val scenario1HovedSkjema = arbeidstakersSkjemaMedOverlappendePeriode()
-        val scenario2HovedSkjema = arbeidstakersSkjemaMedOverlappendePeriode()
-        val scenario3HovedSkjema = arbeidstakersSkjemaMedOverlappendePeriode()
-        val scenario4HovedSkjema = arbeidsgiversSkjemaMedOverlappendePeriode()
-
-        return listOf(
-            HentUtsendtArbeidstakerSkjemaDataTestScenario(
-                beskrivelse = "returnerer arbeidstakersDel og arbeidsgiversDel når begge finnes med overlappende perioder",
-                hovedSkjema = scenario1HovedSkjema,
-                innsending = innsendingMedDefaultVerdier(
-                    skjema = scenario1HovedSkjema,
-                    status = InnsendingStatus.FERDIG,
-                    referanseId = "MEL-TEST01"
-                ),
-                andreEksisterendeSkjemaer = listOf(arbeidsgiversSkjemaMedOverlappendePeriode()),
-                forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
-                    arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
-                    arbeidsgiversDel = arbeidsgiversDataMedOverlappendePeriode,
-                    referanseId = "MEL-TEST01"
-                )
-            ),
-            HentUtsendtArbeidstakerSkjemaDataTestScenario(
-                beskrivelse = "returnerer kun arbeidstakersDel når ingen arbeidsgiversDel finnes",
-                hovedSkjema = scenario2HovedSkjema,
-                innsending = innsendingMedDefaultVerdier(
-                    skjema = scenario2HovedSkjema,
-                    status = InnsendingStatus.FERDIG,
-                    referanseId = "MEL-TEST02"
-                ),
-                andreEksisterendeSkjemaer = emptyList(),
-                forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
-                    arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
-                    arbeidsgiversDel = null,
-                    referanseId = "MEL-TEST02"
-                )
-            ),
-            HentUtsendtArbeidstakerSkjemaDataTestScenario(
-                beskrivelse = "returnerer kun arbeidstakersDel når arbeidsgiversDel har ikke-overlappende periode",
-                hovedSkjema = scenario3HovedSkjema,
-                innsending = innsendingMedDefaultVerdier(
-                    skjema = scenario3HovedSkjema,
-                    status = InnsendingStatus.FERDIG,
-                    referanseId = "MEL-TEST03"
-                ),
-                andreEksisterendeSkjemaer = listOf(arbeidsgiversSkjemaMedIkkeOverlappendePeriode()),
-                forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
-                    arbeidstakersDel = arbeidstakersDataMedOverlappendePeriode,
-                    arbeidsgiversDel = null,
-                    referanseId = "MEL-TEST03"
-                )
-            ),
-            HentUtsendtArbeidstakerSkjemaDataTestScenario(
-                beskrivelse = "returnerer kun arbeidsgiversDel når arbeidstakersDel ikke finnes",
-                hovedSkjema = scenario4HovedSkjema,
-                innsending = innsendingMedDefaultVerdier(
-                    skjema = scenario4HovedSkjema,
-                    status = InnsendingStatus.FERDIG,
-                    referanseId = "MEL-TEST04"
-                ),
-                andreEksisterendeSkjemaer = emptyList(),
-                forventetResultat = UtsendtArbeidstakerM2MSkjemaData(
-                    arbeidstakersDel = null,
-                    arbeidsgiversDel = arbeidsgiversDataMedOverlappendePeriode,
-                    referanseId = "MEL-TEST04"
-                )
-            )
-        )
-    }
-
     @BeforeEach
     fun setUp() {
         innsendingRepository.deleteAll()
         skjemaRepository.deleteAll()
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("testScenarioer")
-    fun hentUtsendtArbeidstakerSkjemaData(scenario: HentUtsendtArbeidstakerSkjemaDataTestScenario) {
-        // Arrange
-        val lagretHovedSkjema = skjemaRepository.save(scenario.hovedSkjema)
-        innsendingRepository.save(
-            innsendingMedDefaultVerdier(
-                skjema = lagretHovedSkjema,
-                status = scenario.innsending.status,
-                referanseId = scenario.innsending.referanseId
+    @Test
+    fun `returnerer arbeidstakersDel og arbeidsgiversDel via kobletSkjemaId`() {
+        // Lagre arbeidsgiver-del
+        val arbeidsgiversSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
             )
-        )
-        scenario.andreEksisterendeSkjemaer.forEach { skjemaRepository.save(it) }
+        ))
 
-        // Act
-        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(lagretHovedSkjema.id!!)
+        // Lagre arbeidstaker-del med kobling til arbeidsgiver
+        val arbeidstakersSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                kobletSkjemaId = arbeidsgiversSkjema.id
+            )
+        ))
 
-        // Assert
-        result shouldBe scenario.forventetResultat
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = arbeidstakersSkjema,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "MEL-TEST01"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
+
+        result.referanseId shouldBe "MEL-TEST01"
+        result.arbeidstakersDeler shouldHaveSize 1
+        result.arbeidsgiversDeler shouldHaveSize 1
+        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
+        result.arbeidstakersDeler[0].data.utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
+        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
+        result.arbeidsgiversDeler[0].data.utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
+    }
+
+    @Test
+    fun `returnerer kun arbeidstakersDel når ingen kobling finnes`() {
+        val arbeidstakersSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+            )
+        ))
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = arbeidstakersSkjema,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "MEL-TEST02"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
+
+        result.referanseId shouldBe "MEL-TEST02"
+        result.arbeidstakersDeler shouldHaveSize 1
+        result.arbeidsgiversDeler.shouldBeEmpty()
+        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
+    }
+
+    @Test
+    fun `returnerer kun arbeidsgiversDel når det er hovedskjema uten kobling`() {
+        val arbeidsgiversSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+            )
+        ))
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = arbeidsgiversSkjema,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "MEL-TEST04"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidsgiversSkjema.id!!)
+
+        result.referanseId shouldBe "MEL-TEST04"
+        result.arbeidstakersDeler.shouldBeEmpty()
+        result.arbeidsgiversDeler shouldHaveSize 1
+        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
+    }
+
+    @Test
+    fun `inkluderer erstatterSkjemaId i respons når skjema erstatter et annet`() {
+        val gammelSkjemaId = java.util.UUID.randomUUID()
+
+        val arbeidstakersSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                erstatterSkjemaId = gammelSkjemaId
+            )
+        ))
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = arbeidstakersSkjema,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "MEL-TEST05"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
+
+        result.arbeidstakersDeler shouldHaveSize 1
+        result.arbeidstakersDeler[0].erstatterSkjemaId shouldBe gammelSkjemaId
     }
 }

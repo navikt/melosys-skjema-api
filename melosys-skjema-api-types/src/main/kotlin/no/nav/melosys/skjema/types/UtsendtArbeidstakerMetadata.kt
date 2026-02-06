@@ -27,17 +27,25 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata() {
      */
     abstract val juridiskEnhetOrgnr: String
     /**
-     * Referanse til koblet skjema-instans.
+     * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
      * basert på fnr, juridisk enhet og overlappende perioder.
      */
     abstract val kobletSkjemaId: java.util.UUID?
+    /**
+     * Referanse til forrige versjon av samme skjemadel.
+     * Settes når bruker sender inn samme del på nytt (ny versjon av samme søknad).
+     */
+    abstract val erstatterSkjemaId: java.util.UUID?
 
     /** Representasjonstype for denne metadataen */
     abstract val representasjonstype: Representasjonstype
 
     /** Oppretter en kopi med ny kobletSkjemaId */
     abstract fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?): UtsendtArbeidstakerMetadata
+
+    /** Oppretter en kopi med ny erstatterSkjemaId */
+    abstract fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?): UtsendtArbeidstakerMetadata
 }
 
 /**
@@ -47,11 +55,13 @@ data class DegSelvMetadata(
     override val skjemadel: Skjemadel,
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
-    override val kobletSkjemaId: java.util.UUID? = null
+    override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_DEG_SELV"
     override val representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 /**
@@ -61,11 +71,13 @@ data class ArbeidsgiverMetadata(
     override val skjemadel: Skjemadel,
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
-    override val kobletSkjemaId: java.util.UUID? = null
+    override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER"
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 /**
@@ -77,11 +89,13 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override val juridiskEnhetOrgnr: String,
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
-    override val kobletSkjemaId: java.util.UUID? = null
+    override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT"
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 /**
@@ -92,12 +106,14 @@ data class RadgiverMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null,
     /** Informasjon om rådgiverfirmaet */
     val radgiverfirma: RadgiverfirmaInfo
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_RADGIVER"
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 /**
@@ -110,12 +126,14 @@ data class RadgiverMedFullmaktMetadata(
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
     override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null,
     /** Informasjon om rådgiverfirmaet */
     val radgiverfirma: RadgiverfirmaInfo
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 /**
@@ -127,11 +145,13 @@ data class AnnenPersonMetadata(
     override val juridiskEnhetOrgnr: String,
     /** Fødselsnummer til fullmektig (påkrevd for annen person) */
     val fullmektigFnr: String,
-    override val kobletSkjemaId: java.util.UUID? = null
+    override val kobletSkjemaId: java.util.UUID? = null,
+    override val erstatterSkjemaId: java.util.UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_ANNEN_PERSON"
     override val representasjonstype: Representasjonstype = Representasjonstype.ANNEN_PERSON
     override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+    override fun medErstatterSkjemaId(erstatterSkjemaId: java.util.UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
 }
 
 data class RadgiverfirmaInfo(

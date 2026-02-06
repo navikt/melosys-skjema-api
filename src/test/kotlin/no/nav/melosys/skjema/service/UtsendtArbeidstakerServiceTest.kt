@@ -80,7 +80,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS")
         )
         // Default: Ingen kobling
-        every { mockSkjemaKoblingService.finnOgKoblMotpart(any()) } returns KoblingsResultat(kobletSkjemaId = null)
+        every { mockSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
     }
 
     context("opprettMedKontekst") {

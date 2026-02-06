@@ -366,10 +366,13 @@ class UtsendtArbeidstakerService(
         // 3. Lagre skjema
         val savedSkjema = skjemaRepository.save(skjema)
 
-        // 4. Koble med matchende skjema fra motpart (arbeidsgiver-del ↔ arbeidstaker-del)
-        val koblingsResultat = skjemaKoblingService.finnOgKoblMotpart(savedSkjema)
+        // 4. Koble med erstatter (forrige versjon) og/eller motpart
+        val koblingsResultat = skjemaKoblingService.finnOgKobl(savedSkjema)
+        if (koblingsResultat.erstatterSkjemaId != null) {
+            log.info { "Skjema $skjemaId erstatter ${koblingsResultat.erstatterSkjemaId}" }
+        }
         if (koblingsResultat.kobletSkjemaId != null) {
-            log.info { "Skjema $skjemaId koblet med ${koblingsResultat.kobletSkjemaId}" }
+            log.info { "Skjema $skjemaId koblet med motpart ${koblingsResultat.kobletSkjemaId}" }
         }
 
         // 5. Opprett innsending-rad med versjon og språk

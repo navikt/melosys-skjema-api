@@ -3,16 +3,14 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -29,74 +27,70 @@ class M2MSkjemaService(
 
     fun hentUtsendtArbeidstakerSkjemaData(id: UUID): UtsendtArbeidstakerM2MSkjemaData {
         log.info { "Henter skjemadata for id: $id" }
-        val skjema =  skjemaRepository.findByIdOrNull(id)
+        val skjema = skjemaRepository.findByIdOrNull(id)
             ?: throw NoSuchElementException("Skjema med id $id ikke funnet")
 
         val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
-            ?: throw NoSuchElementException("Skjema med id $id ikke funnet")
+            ?: throw NoSuchElementException("Innsending for skjema med id $id ikke funnet")
 
-       val (arbeidstakersDel, arbeidsgiversDel) = utledArbeidstakerOgArbeidsgiversDel(skjema)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val erArbeidstakersDel = metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
+
+        // Bygg hovedskjemaets data med metadata
+        val arbeidstakersDeler = mutableListOf<ArbeidstakersSkjemaDto>()
+        val arbeidsgiversDeler = mutableListOf<ArbeidsgiversSkjemaDto>()
+
+        if (erArbeidstakersDel) {
+            arbeidstakersDeler.add(byggArbeidstakersDto(skjema, metadata))
+        } else {
+            arbeidsgiversDeler.add(byggArbeidsgiversDto(skjema, metadata))
+        }
+
+        // Hent koblet motpart via kobletSkjemaId
+        val kobletSkjemaId = metadata.kobletSkjemaId
+        if (kobletSkjemaId != null) {
+            val kobletSkjema = skjemaRepository.findByIdOrNull(kobletSkjemaId)
+            if (kobletSkjema != null) {
+                val kobletMetadata = kobletSkjema.metadata as UtsendtArbeidstakerMetadata
+
+                if (erArbeidstakersDel) {
+                    arbeidsgiversDeler.add(byggArbeidsgiversDto(kobletSkjema, kobletMetadata))
+                } else {
+                    arbeidstakersDeler.add(byggArbeidstakersDto(kobletSkjema, kobletMetadata))
+                }
+            } else {
+                log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema $id" }
+            }
+        }
 
         return UtsendtArbeidstakerM2MSkjemaData(
-            arbeidstakersDel = arbeidstakersDel,
-            arbeidsgiversDel = arbeidsgiversDel,
+            arbeidstakersDeler = arbeidstakersDeler,
+            arbeidsgiversDeler = arbeidsgiversDeler,
             referanseId = innsending.referanseId
         )
-
     }
 
-
-    private fun utledArbeidstakerOgArbeidsgiversDel(skjema: Skjema): Pair<ArbeidstakersSkjemaDataDto?, ArbeidsgiversSkjemaDataDto?> {
-
-        val skjemaErArbeidstakersDel = erArbeidstakersDel(skjema)
-
-        val innsendtSoknadForSammeFnrOgOrgISammeTidsrom = skjemaRepository.findByFnrAndOrgnrAndStatus(
-            skjema.fnr,
-            skjema.orgnr,
-            status = SkjemaStatus.SENDT
+    private fun byggArbeidstakersDto(skjema: Skjema, metadata: UtsendtArbeidstakerMetadata): ArbeidstakersSkjemaDto {
+        val data = jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!)
+        return ArbeidstakersSkjemaDto(
+            id = skjema.id!!,
+            fnr = skjema.fnr,
+            status = skjema.status,
+            innsendtDato = skjema.endretDato,
+            erstatterSkjemaId = metadata.erstatterSkjemaId,
+            data = data
         )
-            .filter { it.id != skjema.id }
-            .filter { erArbeidstakersDel(it) != skjemaErArbeidstakersDel }
-            .find {
-                if (skjemaErArbeidstakersDel) {
-                    utsendtArbeidstakerSkjemaPerioderOverlapper(skjema, it)
-                } else {
-                    utsendtArbeidstakerSkjemaPerioderOverlapper(it, skjema)
-                }
-            }
-
-        return if (skjemaErArbeidstakersDel) {
-            Pair(
-                jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!),
-                innsendtSoknadForSammeFnrOgOrgISammeTidsrom?.let {
-                    jsonMapper.parseArbeidsgiversSkjemaDataDto(it.data!!)
-                }
-            )
-        } else {
-            Pair(
-                innsendtSoknadForSammeFnrOgOrgISammeTidsrom?.let {
-                    jsonMapper.parseArbeidstakersSkjemaDataDto(it.data!!)
-                },
-                jsonMapper.parseArbeidsgiversSkjemaDataDto(skjema.data!!)
-            )
-        }
     }
 
-    private fun utsendtArbeidstakerSkjemaPerioderOverlapper(
-        arbeidstakersDel: Skjema,
-        arbeidsgiversDel: Skjema
-    ): Boolean =
-        jsonMapper.parseArbeidstakersSkjemaDataDto(arbeidstakersDel.data!!).utenlandsoppdraget!!.utsendelsePeriode.overlapper(
-            jsonMapper.parseArbeidsgiversSkjemaDataDto(arbeidsgiversDel.data!!).utenlandsoppdraget!!.arbeidstakerUtsendelsePeriode
+    private fun byggArbeidsgiversDto(skjema: Skjema, metadata: UtsendtArbeidstakerMetadata): ArbeidsgiversSkjemaDto {
+        val data = jsonMapper.parseArbeidsgiversSkjemaDataDto(skjema.data!!)
+        return ArbeidsgiversSkjemaDto(
+            id = skjema.id!!,
+            orgnr = skjema.orgnr,
+            status = skjema.status,
+            innsendtDato = skjema.endretDato,
+            erstatterSkjemaId = metadata.erstatterSkjemaId,
+            data = data
         )
-
-    // TODO: Vi må innføre et nytt felt i metadata for å kunne utlede enklere
-    // Denne blir redundant når vi har lagt til eget metadatafelt for denne informasjonen
-    fun erArbeidstakersDel(skjema: Skjema): Boolean =
-        (skjema.metadata as UtsendtArbeidstakerMetadata).representasjonstype in listOf(
-            Representasjonstype.DEG_SELV,
-            Representasjonstype.ANNEN_PERSON
-        )
-
-
+    }
 }

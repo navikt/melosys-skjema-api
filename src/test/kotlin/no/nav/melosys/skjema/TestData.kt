@@ -62,7 +62,6 @@ import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
-import tools.jackson.databind.JsonNode
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -263,32 +262,37 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
+    erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
     return when (representasjonstype) {
         Representasjonstype.DEG_SELV -> DegSelvMetadata(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            kobletSkjemaId = kobletSkjemaId
+            kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId
         )
         Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            kobletSkjemaId = kobletSkjemaId
+            kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId
         )
         Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
-            kobletSkjemaId = kobletSkjemaId
+            kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId
         )
         Representasjonstype.RADGIVER -> RadgiverMetadata(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
         )
         Representasjonstype.RADGIVER_MED_FULLMAKT -> RadgiverMedFullmaktMetadata(
@@ -297,6 +301,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
             kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
         )
         Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
@@ -304,7 +309,8 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
-            kobletSkjemaId = kobletSkjemaId
+            kobletSkjemaId = kobletSkjemaId,
+            erstatterSkjemaId = erstatterSkjemaId
         )
     }
 }
@@ -355,7 +361,7 @@ fun skjemaMedDefaultVerdier(
     orgnr: String = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
-    data: JsonNode? = null,
+    data: tools.jackson.databind.JsonNode? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),

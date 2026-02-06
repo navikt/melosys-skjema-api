@@ -77,11 +77,12 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .expectBody<UtsendtArbeidstakerM2MSkjemaData>()
                 .returnResult().responseBody.shouldNotBeNull()
 
-            responseBody shouldBe UtsendtArbeidstakerM2MSkjemaData(
-                arbeidstakersDel = jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!),
-                arbeidsgiversDel = null,
-                referanseId = innsending.referanseId
-            )
+            responseBody.referanseId shouldBe innsending.referanseId
+            responseBody.arbeidsgiversDeler shouldBe emptyList()
+            responseBody.arbeidstakersDeler.size shouldBe 1
+            responseBody.arbeidstakersDeler[0].id shouldBe skjema.id
+            responseBody.arbeidstakersDeler[0].data.utenlandsoppdraget shouldBe
+                jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!).utenlandsoppdraget
         }
 
         @Test
