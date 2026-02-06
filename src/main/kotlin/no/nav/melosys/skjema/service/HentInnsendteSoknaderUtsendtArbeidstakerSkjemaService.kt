@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.entity.Skjema
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -13,13 +12,13 @@ import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SorteringsFelt
 import no.nav.melosys.skjema.types.Sorteringsretning
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
-import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }
 
@@ -37,7 +36,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private val innsendingRepository: InnsendingRepository,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
-    private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler
 ) {
 
@@ -130,8 +128,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm)
-            Representasjonstype.ARBEIDSGIVER -> hentForArbeidsgiver(pageable, searchTerm)
-            Representasjonstype.RADGIVER -> {
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm)
+            Representasjonstype.RADGIVER,
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
                 // RADGIVER bruker native SQL, så vi må konvertere JPA field names til kolonne-navn
                 val nativePageable = konverterTilNativePageable(pageable)
                 hentForRadgiver(request.radgiverfirmaOrgnr, nativePageable, searchTerm)
@@ -232,7 +232,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
         return InnsendtSoknadOversiktDto(

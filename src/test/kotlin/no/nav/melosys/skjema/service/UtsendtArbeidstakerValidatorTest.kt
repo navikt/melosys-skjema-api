@@ -64,50 +64,14 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
             exception.message shouldContain "finnes ikke"
         }
-
-        test("skal feile når harFullmakt er true") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.DEG_SELV,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
-            )
-
-            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
-            }
-
-            exception.message shouldContain "harFullmakt kan ikke være true"
-        }
     }
 
-    context("ARBEIDSGIVER validering") {
-        test("skal godkjenne gyldig ARBEIDSGIVER request med fullmakt") {
+    context("ARBEIDSGIVER validering (uten fullmakt)") {
+        test("skal godkjenne gyldig ARBEIDSGIVER request med PDL-validering") {
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
-            )
-
-            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
-            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
-            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
-
-            validator.validerOpprettelse(request)
-
-            verify { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) }
-            verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
-        }
-
-        test("skal godkjenne gyldig ARBEIDSGIVER request uten fullmakt") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstakerMedEtternavn,
-                harFullmakt = false
+                arbeidstaker = testArbeidstakerMedEtternavn
             )
 
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
@@ -138,31 +102,11 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             exception.message shouldContain "ikke Altinn-tilgang"
         }
 
-        test("skal feile når fullmakt mangler") {
+        test("skal feile når arbeidstaker ikke finnes i PDL") {
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
-            )
-
-            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
-            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
-            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
-
-            val exception = shouldThrow<AccessDeniedException> {
-                validator.validerOpprettelse(request)
-            }
-
-            exception.message shouldContain "ikke fullmakt"
-        }
-
-        test("skal feile når arbeidstaker ikke finnes i PDL (uten fullmakt)") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstakerMedEtternavn,
-                harFullmakt = false
+                arbeidstaker = testArbeidstakerMedEtternavn
             )
 
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
@@ -179,25 +123,64 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
     }
 
-    context("RADGIVER validering") {
-        test("skal godkjenne gyldig RADGIVER request med fullmakt") {
+    context("ARBEIDSGIVER_MED_FULLMAKT validering") {
+        test("skal godkjenne gyldig ARBEIDSGIVER_MED_FULLMAKT request") {
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.RADGIVER,
-                radgiverfirma = testRadgiverfirma,
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
-            every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns true
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
 
             validator.validerOpprettelse(request)
 
-            verify { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) }
+            verify { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) }
             verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
+        }
+
+        test("skal feile når fullmakt mangler") {
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                arbeidsgiver = testArbeidsgiver,
+                arbeidstaker = testArbeidstaker
+            )
+
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
+
+            val exception = shouldThrow<AccessDeniedException> {
+                validator.validerOpprettelse(request)
+            }
+
+            exception.message shouldContain "ikke fullmakt"
+        }
+    }
+
+    context("RADGIVER validering (uten fullmakt)") {
+        test("skal godkjenne gyldig RADGIVER request med PDL-validering") {
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+                representasjonstype = Representasjonstype.RADGIVER,
+                radgiverfirma = testRadgiverfirma,
+                arbeidsgiver = testArbeidsgiver,
+                arbeidstaker = testArbeidstakerMedEtternavn
+            )
+
+            every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns true
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) } returns Pair(
+                "Test Testesen",
+                java.time.LocalDate.of(1990, 1, 1)
+            )
+
+            validator.validerOpprettelse(request)
+
+            verify { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) }
+            verify { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) }
         }
 
         test("skal feile når rådgiverfirma mangler") {
@@ -234,13 +217,53 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
     }
 
+    context("RADGIVER_MED_FULLMAKT validering") {
+        test("skal godkjenne gyldig RADGIVER_MED_FULLMAKT request") {
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                radgiverfirma = testRadgiverfirma,
+                arbeidsgiver = testArbeidsgiver,
+                arbeidstaker = testArbeidstaker
+            )
+
+            every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns true
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
+
+            validator.validerOpprettelse(request)
+
+            verify { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) }
+            verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
+        }
+
+        test("skal feile når fullmakt mangler") {
+            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                radgiverfirma = testRadgiverfirma,
+                arbeidsgiver = testArbeidsgiver,
+                arbeidstaker = testArbeidstaker
+            )
+
+            every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns true
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
+
+            val exception = shouldThrow<AccessDeniedException> {
+                validator.validerOpprettelse(request)
+            }
+
+            exception.message shouldContain "ikke fullmakt"
+        }
+    }
+
     context("ANNEN_PERSON validering") {
         test("skal godkjenne gyldig ANNEN_PERSON request") {
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
@@ -255,8 +278,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
@@ -266,24 +288,6 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             }
 
             exception.message shouldContain "ikke fullmakt"
-        }
-
-        test("skal feile når harFullmakt er false") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ANNEN_PERSON,
-                arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = false
-            )
-
-            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
-            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
-
-            val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
-            }
-
-            exception.message shouldContain "harFullmakt må være true"
         }
     }
 })

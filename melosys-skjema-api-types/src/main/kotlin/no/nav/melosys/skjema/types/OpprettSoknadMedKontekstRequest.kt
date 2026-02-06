@@ -7,8 +7,7 @@ data class OpprettSoknadMedKontekstRequest(
     val skjemadel: Skjemadel,
     val radgiverfirma: SimpleOrganisasjonDto?,
     val arbeidsgiver: SimpleOrganisasjonDto,
-    val arbeidstaker: PersonDto,
-    val harFullmakt: Boolean
+    val arbeidstaker: PersonDto
 )
 
 data class PersonDto(

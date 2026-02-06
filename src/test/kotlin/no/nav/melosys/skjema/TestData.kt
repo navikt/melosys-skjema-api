@@ -19,6 +19,12 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.Virksomhet
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.PersonDto
+import no.nav.melosys.skjema.types.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.DegSelvMetadata
+import no.nav.melosys.skjema.types.RadgiverMetadata
+import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
@@ -57,8 +63,6 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
 import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.kotlinModule
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -253,25 +257,56 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
-    harFullmakt: Boolean = false,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
-    fullmektigFnr: String? = null,
+    fullmektigFnr: String? = etAnnetKorrektSyntetiskFnr,
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     kobletSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
-
-    return UtsendtArbeidstakerMetadata(
-        representasjonstype = representasjonstype,
-        harFullmakt = harFullmakt,
-        skjemadel = skjemadel,
-        arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma,
-        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-        kobletSkjemaId = kobletSkjemaId,
-    )
+    return when (representasjonstype) {
+        Representasjonstype.DEG_SELV -> DegSelvMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.RADGIVER -> RadgiverMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            kobletSkjemaId = kobletSkjemaId,
+            radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
+        )
+        Representasjonstype.RADGIVER_MED_FULLMAKT -> RadgiverMedFullmaktMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
+            kobletSkjemaId = kobletSkjemaId,
+            radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
+        )
+        Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
+            kobletSkjemaId = kobletSkjemaId
+        )
+    }
 }
 
 fun radgiverfirmaInfoMedDefaultVerdier(
@@ -305,39 +340,14 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     radgiverfirma: SimpleOrganisasjonDto? = null,
     arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
-    arbeidstaker: PersonDto = personDtoMedDefaultVerdier(),
-    harFullmakt: Boolean = false
+    arbeidstaker: PersonDto = personDtoMedDefaultVerdier()
 ) = OpprettSoknadMedKontekstRequest(
     representasjonstype = representasjonstype,
     skjemadel = skjemadel,
     radgiverfirma = radgiverfirma,
     arbeidsgiver = arbeidsgiver,
-    arbeidstaker = arbeidstaker,
-    harFullmakt = harFullmakt
+    arbeidstaker = arbeidstaker
 )
-
-fun utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-    representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
-    harFullmakt: Boolean = false,
-    arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
-    fullmektigFnr: String? = null,
-    radgiverfirma: RadgiverfirmaInfo? = null,
-    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-    juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
-    kobletSkjemaId: UUID? = null
-): JsonNode {
-
-    return JsonMapper.builder().addModule(kotlinModule()).build().valueToTree(utsendtArbeidstakerMetadataMedDefaultVerdier(
-        representasjonstype = representasjonstype,
-        harFullmakt = harFullmakt,
-        arbeidsgiverNavn = arbeidsgiverNavn,
-        fullmektigFnr = fullmektigFnr,
-        radgiverfirma = radgiverfirma,
-        skjemadel = skjemadel,
-        juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-        kobletSkjemaId = kobletSkjemaId
-    ))
-}
 
 fun skjemaMedDefaultVerdier(
     id: UUID? = null,
@@ -346,7 +356,7 @@ fun skjemaMedDefaultVerdier(
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
     data: JsonNode? = null,
-    metadata: JsonNode = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(),
+    metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,
