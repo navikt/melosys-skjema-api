@@ -31,7 +31,7 @@ import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -45,7 +45,7 @@ import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.TypeInnretning
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
@@ -91,7 +91,7 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
     orgNrTilTilganger = emptyMap()
 )
 
-fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = ArbeidsgiversSkjemaDataDto(
+fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
     arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
     utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
     arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
@@ -246,7 +246,7 @@ fun norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier() = Norsk
     utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier())
 )
 
-fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
+fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
     skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
     familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
@@ -361,7 +361,7 @@ fun skjemaMedDefaultVerdier(
     orgnr: String = korrektSyntetiskOrgnr,
     status: SkjemaStatus = SkjemaStatus.UTKAST,
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
-    data: tools.jackson.databind.JsonNode? = null,
+    data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),

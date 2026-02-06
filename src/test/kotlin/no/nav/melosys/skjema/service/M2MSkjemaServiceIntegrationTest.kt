@@ -1,6 +1,5 @@
 package no.nav.melosys.skjema.service
 
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import java.time.LocalDate
@@ -16,6 +15,9 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
@@ -24,7 +26,6 @@ import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import tools.jackson.databind.json.JsonMapper
 
 class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
@@ -36,8 +37,6 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
-
-    private val jsonMapper = JsonMapper.builder().build()
 
     private val overlappendePeriode = PeriodeDto(
         fraDato = LocalDate.of(2024, 1, 1),
@@ -69,7 +68,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
-            data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
+            data = arbeidsgiversDataMedOverlappendePeriode,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
@@ -81,7 +80,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
-            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            data = arbeidstakersDataMedOverlappendePeriode,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
@@ -98,12 +97,20 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "MEL-TEST01"
-        result.arbeidstakersDeler shouldHaveSize 1
-        result.arbeidsgiversDeler shouldHaveSize 1
-        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
-        result.arbeidstakersDeler[0].data.utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
-        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
-        result.arbeidsgiversDeler[0].data.utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
+        result.skjemaer shouldHaveSize 2
+
+        // Finn arbeidstakers og arbeidsgivers skjema fra listen
+        val arbeidstakerSkjemaDto = result.skjemaer.find {
+            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
+        }!!
+        val arbeidsgiversSkjemaDto = result.skjemaer.find {
+            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSGIVERS_DEL
+        }!!
+
+        arbeidstakerSkjemaDto.id shouldBe arbeidstakersSkjema.id
+        (arbeidstakerSkjemaDto.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
+        arbeidsgiversSkjemaDto.id shouldBe arbeidsgiversSkjema.id
+        (arbeidsgiversSkjemaDto.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
     }
 
     @Test
@@ -112,7 +119,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
-            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            data = arbeidstakersDataMedOverlappendePeriode,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
@@ -128,9 +135,8 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "MEL-TEST02"
-        result.arbeidstakersDeler shouldHaveSize 1
-        result.arbeidsgiversDeler.shouldBeEmpty()
-        result.arbeidstakersDeler[0].id shouldBe arbeidstakersSkjema.id
+        result.skjemaer shouldHaveSize 1
+        result.skjemaer[0].id shouldBe arbeidstakersSkjema.id
     }
 
     @Test
@@ -139,7 +145,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
-            data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
+            data = arbeidsgiversDataMedOverlappendePeriode,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
@@ -155,20 +161,19 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidsgiversSkjema.id!!)
 
         result.referanseId shouldBe "MEL-TEST04"
-        result.arbeidstakersDeler.shouldBeEmpty()
-        result.arbeidsgiversDeler shouldHaveSize 1
-        result.arbeidsgiversDeler[0].id shouldBe arbeidsgiversSkjema.id
+        result.skjemaer shouldHaveSize 1
+        result.skjemaer[0].id shouldBe arbeidsgiversSkjema.id
     }
 
     @Test
-    fun `inkluderer erstatterSkjemaId i respons når skjema erstatter et annet`() {
+    fun `inkluderer erstatterSkjemaId i metadata når skjema erstatter et annet`() {
         val gammelSkjemaId = java.util.UUID.randomUUID()
 
         val arbeidstakersSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
-            data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
+            data = arbeidstakersDataMedOverlappendePeriode,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
@@ -184,7 +189,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
-        result.arbeidstakersDeler shouldHaveSize 1
-        result.arbeidstakersDeler[0].erstatterSkjemaId shouldBe gammelSkjemaId
+        result.skjemaer shouldHaveSize 1
+        (result.skjemaer[0].metadata as UtsendtArbeidstakerMetadata).erstatterSkjemaId shouldBe gammelSkjemaId
     }
 }

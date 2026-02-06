@@ -3,8 +3,8 @@ package no.nav.melosys.skjema.types
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.UUID
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -30,10 +30,10 @@ data class InnsendtSkjemaResponse(
     val skjemaDefinisjonVersjon: String,
 
     @param:Schema(description = "Arbeidstakers del av søknaden")
-    val arbeidstakerData: ArbeidstakersSkjemaDataDto?,
+    val arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto?,
 
     @param:Schema(description = "Arbeidsgivers del av søknaden")
-    val arbeidsgiverData: ArbeidsgiversSkjemaDataDto?,
+    val arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?,
 
     @param:Schema(description = "Skjemadefinisjon for visning (basert på lagret versjon)")
     val definisjon: SkjemaDefinisjonDto

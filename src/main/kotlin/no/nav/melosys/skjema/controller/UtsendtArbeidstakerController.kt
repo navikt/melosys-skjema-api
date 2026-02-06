@@ -18,12 +18,11 @@ import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
@@ -57,7 +56,7 @@ class UtsendtArbeidstakerController(
     @GetMapping
     @Operation(summary = "List skjemaer for current user")
     @ApiResponse(responseCode = "200", description = "List of skjemaer")
-    fun listSkjemaer(): ResponseEntity<List<ArbeidstakersSkjemaDto>> {
+    fun listSkjemaer(): ResponseEntity<List<UtsendtArbeidstakerSkjemaDto>> {
         log.info { "Henter alle skjemaer for bruker" }
         return ResponseEntity.ok(utsendtArbeidstakerService.listAlleSkjemaerForBruker())
     }
@@ -98,7 +97,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Skjema hentet")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-visning")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
-    fun getArbeidsgiverView(@PathVariable id: UUID): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun getArbeidsgiverView(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Henter arbeidsgiver-view for skjema: $id" }
         return ResponseEntity.ok(utsendtArbeidstakerService.getSkjemaArbeidsgiversDel(id))
     }
@@ -108,7 +107,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Skjema hentet")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-visning")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
-    fun getArbeidstakerView(@PathVariable id: UUID): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun getArbeidstakerView(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Henter arbeidstaker-view for skjema: $id" }
         return ResponseEntity.ok(utsendtArbeidstakerService.getSkjemaArbeidstakersDel(id))
     }
@@ -186,7 +185,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Virksomhet information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidsgiverensVirksomhetINorgeDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerVirksomhet(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidsgiverensVirksomhetINorgeDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering virksomhet information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveVirksomhetInfo(skjemaId, request)
@@ -198,7 +197,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdrag information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody @Valid request: UtenlandsoppdragetDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerUtenlandsoppdrag(@PathVariable skjemaId: UUID, @RequestBody @Valid request: UtenlandsoppdragetDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering utenlandsoppdrag" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveUtenlandsoppdragInfo(skjemaId, request)
@@ -210,7 +209,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Arbeidstaker lønn information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidstakerensLonnDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerArbeidstakerLonn(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidstakerensLonnDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering arbeidstaker lønn information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveArbeidstakerLonnInfo(skjemaId, request)
@@ -222,7 +221,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Arbeidssted i utlandet information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidsstedIUtlandet(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidsstedIUtlandetDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerArbeidsstedIUtlandet(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidsstedIUtlandetDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering arbeidssted i utlandet information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveArbeidsstedIUtlandetInfo(skjemaId, request)
@@ -234,7 +233,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Tilleggsopplysninger information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerTilleggsopplysningerAsArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody @Valid request: TilleggsopplysningerDto): ResponseEntity<ArbeidsgiversSkjemaDto> {
+    fun registerTilleggsopplysningerAsArbeidsgiver(@PathVariable skjemaId: UUID, @RequestBody @Valid request: TilleggsopplysningerDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering tilleggsopplysninger information from arbeidsgiver" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId, request)
@@ -247,7 +246,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Utenlandsoppdraget information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerUtenlandsoppdragetArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody @Valid request: UtenlandsoppdragetArbeidstakersDelDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun registerUtenlandsoppdragetArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody @Valid request: UtenlandsoppdragetArbeidstakersDelDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering utenlandsoppdraget information for arbeidstaker" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId, request)
@@ -259,7 +258,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Arbeidssituasjon information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerArbeidssituasjon(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidssituasjonDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun registerArbeidssituasjon(@PathVariable skjemaId: UUID, @RequestBody @Valid request: ArbeidssituasjonDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering arbeidssituasjon information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveArbeidssituasjonInfo(skjemaId, request)
@@ -271,7 +270,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Skatteforhold og inntekt information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody @Valid request: SkatteforholdOgInntektDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun registerSkatteforholdOgInntekt(@PathVariable skjemaId: UUID, @RequestBody @Valid request: SkatteforholdOgInntektDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering skatteforhold og inntekt information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveSkatteforholdOgInntektInfo(skjemaId, request)
@@ -283,7 +282,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Familiemedlemmer information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerFamiliemedlemmer(@PathVariable skjemaId: UUID, @RequestBody @Valid request: FamiliemedlemmerDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun registerFamiliemedlemmer(@PathVariable skjemaId: UUID, @RequestBody @Valid request: FamiliemedlemmerDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering familiemedlemmer information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveFamiliemedlemmerInfo(skjemaId, request)
@@ -295,7 +294,7 @@ class UtsendtArbeidstakerController(
     @ApiResponse(responseCode = "200", description = "Tilleggsopplysninger information registered")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-del")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun registerTilleggsopplysninger(@PathVariable skjemaId: UUID, @RequestBody @Valid request: TilleggsopplysningerDto): ResponseEntity<ArbeidstakersSkjemaDto> {
+    fun registerTilleggsopplysninger(@PathVariable skjemaId: UUID, @RequestBody @Valid request: TilleggsopplysningerDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering tilleggsopplysninger information" }
         apiInputValidator.validate(request)
         val skjema = utsendtArbeidstakerService.saveTilleggsopplysningerInfo(skjemaId, request)
