@@ -4,16 +4,15 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
-import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }
 
@@ -39,8 +38,7 @@ data class KoblingsResultat(
  */
 @Service
 class SkjemaKoblingService(
-    private val skjemaRepository: SkjemaRepository,
-    private val jsonMapper: JsonMapper
+    private val skjemaRepository: SkjemaRepository
 ) {
 
     @Transactional
@@ -101,9 +99,9 @@ class SkjemaKoblingService(
     private fun hentPeriode(skjema: Skjema): PeriodeDto? = try {
         when ((skjema.metadata as UtsendtArbeidstakerMetadata).skjemadel) {
             Skjemadel.ARBEIDSTAKERS_DEL ->
-                jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!).utenlandsoppdraget?.utsendelsePeriode
+                (skjema.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).utenlandsoppdraget?.utsendelsePeriode
             Skjemadel.ARBEIDSGIVERS_DEL ->
-                jsonMapper.parseArbeidsgiversSkjemaDataDto(skjema.data!!).utenlandsoppdraget?.arbeidstakerUtsendelsePeriode
+                (skjema.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget?.arbeidstakerUtsendelsePeriode
         }
     } catch (e: Exception) {
         log.warn(e) { "Kunne ikke hente periode for skjema ${skjema.id}" }

@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.service.pdf
 
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -10,7 +10,7 @@ import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
@@ -30,7 +30,7 @@ class SeksjonRenderer(
     // ==================== ARBEIDSTAKER ====================
 
     fun byggArbeidstakerSeksjoner(
-        data: ArbeidstakersSkjemaDataDto,
+        data: UtsendtArbeidstakerArbeidstakersSkjemaDataDto,
         definisjon: SkjemaDefinisjonDto
     ): String {
         val builder = StringBuilder()
@@ -132,7 +132,7 @@ class SeksjonRenderer(
     // ==================== ARBEIDSGIVER ====================
 
     fun byggArbeidsgiverSeksjoner(
-        data: ArbeidsgiversSkjemaDataDto,
+        data: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto,
         definisjon: SkjemaDefinisjonDto
     ): String {
         val builder = StringBuilder()

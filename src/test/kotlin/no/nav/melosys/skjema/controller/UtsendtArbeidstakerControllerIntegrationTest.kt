@@ -35,16 +35,14 @@ import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
@@ -59,8 +57,6 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
 
 data class SkjemaStegTestFixture<T>(
     val stepKey: String = "",
@@ -86,9 +82,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
-
-    @Autowired
-    private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
     private lateinit var notificationService: NotificationService
@@ -140,7 +133,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<List<ArbeidstakersSkjemaDto>>()
+            .expectBody<List<UtsendtArbeidstakerSkjemaDto>>()
             .consumeWith { response ->
                 val responseBody = response.responseBody
                 responseBody.shouldNotBeNull()
@@ -157,7 +150,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                data = jsonMapper.valueToTree(skjemaData)
+                data = skjemaData
             )
         )
 
@@ -170,17 +163,15 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<ArbeidstakersSkjemaDto>()
+            .expectBody<UtsendtArbeidstakerSkjemaDto>()
             .returnResult().responseBody
 
         responseBody.run {
             this.shouldNotBeNull()
-            this shouldBe ArbeidstakersSkjemaDto(
-                id = savedSkjema.id!!,
-                fnr = savedSkjema.fnr,
-                status = SkjemaStatus.UTKAST,
-                data = skjemaData
-            )
+            this.id shouldBe savedSkjema.id!!
+            this.fnr shouldBe savedSkjema.fnr
+            this.status shouldBe SkjemaStatus.UTKAST
+            (this.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto) shouldBe skjemaData
         }
     }
 
@@ -192,7 +183,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                data = jsonMapper.valueToTree(skjemaData)
+                data = skjemaData
             )
         )
 
@@ -205,17 +196,15 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<ArbeidsgiversSkjemaDto>()
+            .expectBody<UtsendtArbeidstakerSkjemaDto>()
             .returnResult().responseBody
 
         responseBody.run {
             this.shouldNotBeNull()
-            this shouldBe ArbeidsgiversSkjemaDto(
-                id = savedSkjema.id!!,
-                orgnr = savedSkjema.orgnr,
-                status = savedSkjema.status,
-                data = skjemaData
-            )
+            this.id shouldBe savedSkjema.id!!
+            this.orgnr shouldBe savedSkjema.orgnr
+            this.status shouldBe savedSkjema.status
+            (this.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) shouldBe skjemaData
         }
     }
 
@@ -262,12 +251,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @ParameterizedTest(name = "{0}")
     @MethodSource("arbeidsgiverStegTestFixtures")
     @DisplayName("POST arbeidsgiver steg endpoints skal lagre data korrekt")
-    fun `POST arbeidsgiver steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>) {
+    fun `POST arbeidsgiver steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>) {
         val existingSkjemaBeforePOST = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                data = jsonMapper.valueToTree(fixture.dataBeforePost)
+                data = fixture.dataBeforePost
             )
         )
 
@@ -282,23 +271,19 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
 
-        val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidsgiversSkjemaDataDto>(
-            skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data
-        )
+        val persistedSkjemaDataAfterPOST = skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
         persistedSkjemaDataAfterPOST shouldBe fixture.expectedDataAfterPost
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("arbeidstakerStegTestFixtures")
     @DisplayName("POST arbeidstaker steg endpoints skal lagre data korrekt")
-    fun `POST arbeidstaker steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>) {
-        val data = jsonMapper.valueToTree<JsonNode>(fixture.dataBeforePost)
-
+    fun `POST arbeidstaker steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>) {
         val existingSkjemaBeforePOST = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,
                 status = SkjemaStatus.UTKAST,
-                data = jsonMapper.valueToTree(fixture.dataBeforePost)
+                data = fixture.dataBeforePost
             )
         )
 
@@ -313,9 +298,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
 
-        val persistedSkjemaDataAfterPOST = convertJsonToDto<ArbeidstakersSkjemaDataDto>(
-            skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data
-        )
+        val persistedSkjemaDataAfterPOST = skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
         persistedSkjemaDataAfterPOST shouldBe fixture.expectedDataAfterPost
     }
 
@@ -628,7 +611,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidsgiverens-virksomhet-i-norge",
             requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 erArbeidsgiverenOffentligVirksomhet = false,
@@ -637,7 +620,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "arbeidsgiverensVirksomhetINorgeTranslation.maaOppgiOmBemanningsbyraa")
         ),
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
             requestBody = utenlandsoppdragetDtoMedDefaultVerdier().copy(
                 arbeidstakerUtsendelsePeriode = PeriodeDto(
@@ -647,7 +630,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("arbeidstakerUtsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
         ),
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
             requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
@@ -655,7 +638,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("virksomheterSomUtbetalerLonnOgNaturalytelser" to "arbeidstakerensLonnTranslation.virksomheterSkalIkkeOppgis")
         ),
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
             requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
                 arbeidsstedType = ArbeidsstedType.PA_LAND,
@@ -663,7 +646,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("paLand" to "arbeidsstedIUtlandetTranslation.maaOppgiArbeidsstedPaLand")
         ),
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
@@ -672,7 +655,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "tilleggsopplysningerTranslation.maaOppgiTilleggsopplysninger")
         ),
         // Arbeidstaker endpoints
-        SkjemaStegTestFixture<ArbeidsgiversSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
             requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
                 utsendelsePeriode = PeriodeDto(
@@ -682,7 +665,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("utsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
         ),
-        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
             requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
                 harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
@@ -690,7 +673,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("aktivitetIMaanedenFoerUtsendingen" to "arbeidssituasjonTranslation.maaOppgiAktivitetFoerUtsending")
         ),
-        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
             requestBody = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
                 mottarPengestotteFraAnnetEosLandEllerSveits = true,
@@ -698,7 +681,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("landSomUtbetalerPengestotte" to "skatteforholdOgInntektTranslation.maaOppgiLandSomUtbetalerPengestotte")
         ),
-        SkjemaStegTestFixture<ArbeidstakersSkjemaDataDto>(
+        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
             uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
@@ -717,9 +700,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
                 type = SkjemaType.UTSENDT_ARBEIDSTAKER,
-                data = jsonMapper.valueToTree(
-                    arbeidstakersSkjemaDataDtoMedDefaultVerdier()
-                ),
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
                 metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = Representasjonstype.DEG_SELV
                 )
@@ -783,9 +764,5 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         return mockOAuth2Server.getToken(
             claims = mapOf("pid" to pid)
         )
-    }
-
-    private inline fun <reified T> convertJsonToDto(jsonNode: JsonNode?): T? {
-        return jsonNode?.let { jsonMapper.treeToValue(it, T::class.java) }
     }
 }
