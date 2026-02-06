@@ -20,7 +20,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,11 +44,6 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         tilDato = LocalDate.of(2024, 12, 31)
     )
 
-    private val ikkeOverlappendePeriode = PeriodeDto(
-        fraDato = LocalDate.of(2025, 1, 1),
-        tilDato = LocalDate.of(2025, 12, 31)
-    )
-
     private val arbeidstakersDataMedOverlappendePeriode = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
         utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
             utsendelsePeriode = overlappendePeriode
@@ -58,12 +53,6 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
     private val arbeidsgiversDataMedOverlappendePeriode = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
         utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier().copy(
             arbeidstakerUtsendelsePeriode = overlappendePeriode
-        )
-    )
-
-    private val arbeidsgiversDataMedIkkeOverlappendePeriode = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-        utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-            arbeidstakerUtsendelsePeriode = ikkeOverlappendePeriode
         )
     )
 
@@ -81,7 +70,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
             data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
-            metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
             )
@@ -93,7 +82,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
             data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
-            metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 kobletSkjemaId = arbeidsgiversSkjema.id
@@ -124,7 +113,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
             data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
-            metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
             )
@@ -151,7 +140,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
             data = jsonMapper.valueToTree(arbeidsgiversDataMedOverlappendePeriode),
-            metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
             )
@@ -180,7 +169,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
             data = jsonMapper.valueToTree(arbeidstakersDataMedOverlappendePeriode),
-            metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 erstatterSkjemaId = gammelSkjemaId

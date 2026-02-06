@@ -6,6 +6,11 @@ plugins {
 group = "no.nav.melosys"
 
 val javaVersion = (project.findProperty("javaVersion") as String?)?.toInt() ?: 21
+val jacksonVersion = "2.21"
+val jakartaValidationVersion = "3.1.1"
+val swaggerVersion = "2.2.42"
+val junitVersion = "5.12.2"
+val kotestVersion = "5.9.1"
 
 repositories {
     mavenCentral()
@@ -23,9 +28,19 @@ java {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    compileOnly("com.fasterxml.jackson.core:jackson-annotations:2.21")
-    compileOnly("jakarta.validation:jakarta.validation-api:3.1.1")
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.42")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    compileOnly("jakarta.validation:jakarta.validation-api:$jakartaValidationVersion")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:$swaggerVersion")
+
+    testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
+    testImplementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 publishing {

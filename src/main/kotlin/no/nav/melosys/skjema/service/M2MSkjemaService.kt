@@ -5,7 +5,6 @@ import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Skjemadel
@@ -34,7 +33,7 @@ class M2MSkjemaService(
         val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
             ?: throw NoSuchElementException("Innsending for skjema med id $id ikke funnet")
 
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val erArbeidstakersDel = metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
 
         // Bygg hovedskjemaets data med metadata
@@ -52,7 +51,7 @@ class M2MSkjemaService(
         if (kobletSkjemaId != null) {
             val kobletSkjema = skjemaRepository.findByIdOrNull(kobletSkjemaId)
             if (kobletSkjema != null) {
-                val kobletMetadata = jsonMapper.parseUtsendtArbeidstakerMetadata(kobletSkjema.metadata)
+                val kobletMetadata = kobletSkjema.metadata as UtsendtArbeidstakerMetadata
 
                 if (erArbeidstakersDel) {
                     arbeidsgiversDeler.add(byggArbeidsgiversDto(kobletSkjema, kobletMetadata))

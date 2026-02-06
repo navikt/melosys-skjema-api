@@ -6,7 +6,6 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.parseArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.extensions.parseArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.extensions.parseUtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
@@ -46,7 +45,7 @@ class SkjemaKoblingService(
 
     @Transactional
     fun finnOgKobl(skjema: Skjema): KoblingsResultat {
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val kandidater = skjemaRepository.findByFnrAndStatus(skjema.fnr, SkjemaStatus.SENDT)
             .filter { it.id != skjema.id }
 
@@ -70,7 +69,7 @@ class SkjemaKoblingService(
     ): Skjema? {
         val ønsketDel = if (sammeDel) metadata.skjemadel else metadata.skjemadel.motpart()
         return kandidater.find { kandidat ->
-            val km = jsonMapper.parseUtsendtArbeidstakerMetadata(kandidat.metadata)
+            val km = kandidat.metadata as UtsendtArbeidstakerMetadata
             km.skjemadel == ønsketDel
                 && km.juridiskEnhetOrgnr == metadata.juridiskEnhetOrgnr
                 && (sammeDel || km.kobletSkjemaId == null)
@@ -90,7 +89,7 @@ class SkjemaKoblingService(
     }
 
     private fun hentPeriode(skjema: Skjema): PeriodeDto? = try {
-        when (jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata).skjemadel) {
+        when ((skjema.metadata as UtsendtArbeidstakerMetadata).skjemadel) {
             Skjemadel.ARBEIDSTAKERS_DEL ->
                 jsonMapper.parseArbeidstakersSkjemaDataDto(skjema.data!!).utenlandsoppdraget?.utsendelsePeriode
             Skjemadel.ARBEIDSGIVERS_DEL ->
@@ -99,28 +98,30 @@ class SkjemaKoblingService(
     } catch (_: Exception) { null }
 
     private fun utforErstatterKobling(nyttSkjema: Skjema, gammelSkjema: Skjema): UUID? {
-        val arvetKobletSkjemaId = jsonMapper.parseUtsendtArbeidstakerMetadata(gammelSkjema.metadata).kobletSkjemaId
+        val arvetKobletSkjemaId = (gammelSkjema.metadata as UtsendtArbeidstakerMetadata).kobletSkjemaId
 
-        oppdaterMetadata(nyttSkjema) { it.copy(erstatterSkjemaId = gammelSkjema.id, kobletSkjemaId = arvetKobletSkjemaId) }
+        oppdaterMetadata(nyttSkjema) {
+            it.medErstatterSkjemaId(gammelSkjema.id).medKobletSkjemaId(arvetKobletSkjemaId)
+        }
 
         if (arvetKobletSkjemaId != null) {
             skjemaRepository.findById(arvetKobletSkjemaId).ifPresent { motpart ->
-                oppdaterMetadata(motpart) { it.copy(kobletSkjemaId = nyttSkjema.id) }
+                oppdaterMetadata(motpart) { it.medKobletSkjemaId(nyttSkjema.id) }
             }
-            oppdaterMetadata(gammelSkjema) { it.copy(kobletSkjemaId = null) }
+            oppdaterMetadata(gammelSkjema) { it.medKobletSkjemaId(null) }
         }
 
         return arvetKobletSkjemaId
     }
 
     private fun utforMotpartKobling(nyttSkjema: Skjema, matchendeSkjema: Skjema) {
-        oppdaterMetadata(matchendeSkjema) { it.copy(kobletSkjemaId = nyttSkjema.id) }
-        oppdaterMetadata(nyttSkjema) { it.copy(kobletSkjemaId = matchendeSkjema.id) }
+        oppdaterMetadata(matchendeSkjema) { it.medKobletSkjemaId(nyttSkjema.id) }
+        oppdaterMetadata(nyttSkjema) { it.medKobletSkjemaId(matchendeSkjema.id) }
     }
 
     private fun oppdaterMetadata(skjema: Skjema, transform: (UtsendtArbeidstakerMetadata) -> UtsendtArbeidstakerMetadata) {
-        val metadata = jsonMapper.parseUtsendtArbeidstakerMetadata(skjema.metadata)
-        skjema.metadata = jsonMapper.valueToTree(transform(metadata))
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        skjema.metadata = transform(metadata)
         skjemaRepository.save(skjema)
     }
 }

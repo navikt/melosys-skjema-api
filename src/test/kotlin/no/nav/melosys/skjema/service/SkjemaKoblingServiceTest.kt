@@ -17,7 +17,7 @@ import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.kotlinModule
 
@@ -42,7 +42,7 @@ class SkjemaKoblingServiceTest : FunSpec({
     context("motpart-kobling") {
         test("skal returnere null når ingen kandidater finnes") {
             val skjemaId = UUID.randomUUID()
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -67,7 +67,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -80,7 +80,8 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = metadata
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            // Kandidat som allerede er koblet til et annet skjema
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
@@ -101,11 +102,11 @@ class SkjemaKoblingServiceTest : FunSpec({
             resultat.kobletSkjemaId shouldBe null
         }
 
-        test("skal returnere null når kandidat har annen juridisk enhet") {
+        test("skal returnere null når kandidat har samme skjemadel") {
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -118,7 +119,47 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = metadata
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            // Kandidat med samme skjemadel
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL, // Samme som skjema
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val kandidat = skjemaMedDefaultVerdier(
+                id = kandidatId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = kandidatMetadata
+            )
+
+            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+
+            val resultat = service.finnOgKobl(skjema)
+
+            // Samme del → erstatter-match, ikke motpart. Ingen kobling fordi erstatter ikke har arvet kobling.
+            resultat.kobletSkjemaId shouldBe null
+        }
+
+        test("skal returnere null når kandidat har annen juridisk enhet") {
+            val skjemaId = UUID.randomUUID()
+            val kandidatId = UUID.randomUUID()
+
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = metadata
+            )
+
+            // Kandidat med annen juridisk enhet
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = "111222333"
@@ -148,7 +189,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -168,7 +209,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -192,16 +233,19 @@ class SkjemaKoblingServiceTest : FunSpec({
             verify(exactly = 2) { mockSkjemaRepository.save(any()) }
         }
 
-        test("skal koble når perioder overlapper med kun 1 dag") {
+        test("skal returnere null når perioder ikke overlapper") {
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
+            // Arbeidstakers periode: jan-jun 2024
             val arbeidstakerPeriode = PeriodeDto(
                 fraDato = LocalDate.of(2024, 1, 1),
                 tilDato = LocalDate.of(2024, 6, 30)
             )
+
+            // Arbeidsgivers periode: jul-des 2024 (ingen overlapp)
             val arbeidsgiverPeriode = PeriodeDto(
-                fraDato = LocalDate.of(2024, 6, 30),
+                fraDato = LocalDate.of(2024, 7, 1),
                 tilDato = LocalDate.of(2024, 12, 31)
             )
 
@@ -211,7 +255,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -231,7 +275,67 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val kandidat = skjemaMedDefaultVerdier(
+                id = kandidatId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = kandidatMetadata,
+                data = jsonMapper.valueToTree(arbeidsgiverData)
+            )
+
+            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+
+            val resultat = service.finnOgKobl(skjema)
+
+            resultat.kobletSkjemaId shouldBe null
+        }
+
+        test("skal koble når perioder overlapper med kun 1 dag") {
+            val skjemaId = UUID.randomUUID()
+            val kandidatId = UUID.randomUUID()
+
+            val arbeidstakerPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 1, 1),
+                tilDato = LocalDate.of(2024, 6, 30)
+            )
+            val arbeidsgiverPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 6, 30),
+                tilDato = LocalDate.of(2024, 12, 31)
+            )
+
+            val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    utsendelsePeriode = arbeidstakerPeriode
+                )
+            )
+
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = metadata,
+                data = jsonMapper.valueToTree(arbeidstakerData)
+            )
+
+            val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                    arbeidstakerUtsendelsePeriode = arbeidsgiverPeriode
+                )
+            )
+
+            val kandidatMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -253,66 +357,6 @@ class SkjemaKoblingServiceTest : FunSpec({
             resultat.kobletSkjemaId shouldBe kandidatId
         }
 
-        test("skal returnere null når perioder ikke overlapper") {
-            val skjemaId = UUID.randomUUID()
-            val kandidatId = UUID.randomUUID()
-
-            val arbeidstakerPeriode = PeriodeDto(
-                fraDato = LocalDate.of(2024, 1, 1),
-                tilDato = LocalDate.of(2024, 6, 30)
-            )
-            val arbeidsgiverPeriode = PeriodeDto(
-                fraDato = LocalDate.of(2024, 7, 1),
-                tilDato = LocalDate.of(2024, 12, 31)
-            )
-
-            val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    utsendelsePeriode = arbeidstakerPeriode
-                )
-            )
-
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.DEG_SELV,
-                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
-            )
-
-            val skjema = skjemaMedDefaultVerdier(
-                id = skjemaId,
-                fnr = arbeidstakerFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
-            )
-
-            val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = arbeidsgiverPeriode
-                )
-            )
-
-            val kandidatMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
-            )
-
-            val kandidat = skjemaMedDefaultVerdier(
-                id = kandidatId,
-                fnr = arbeidstakerFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = kandidatMetadata,
-                data = jsonMapper.valueToTree(arbeidsgiverData)
-            )
-
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
-
-            val resultat = service.finnOgKobl(skjema)
-
-            resultat.kobletSkjemaId shouldBe null
-        }
-
         test("skal ikke inkludere seg selv som kandidat") {
             val skjemaId = UUID.randomUUID()
 
@@ -322,7 +366,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -356,7 +400,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val gammelMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val gammelMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -370,7 +414,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = jsonMapper.valueToTree(arbeidstakerData)
             )
 
-            val nyMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -405,7 +449,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             // Gammel versjon er allerede koblet til motpart
-            val gammelMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val gammelMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
@@ -420,7 +464,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = jsonMapper.valueToTree(arbeidstakerData)
             )
 
-            val nyMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -435,7 +479,7 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             // Motpart-skjema
-            val motpartMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val motpartMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
@@ -470,7 +514,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val gammelMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val gammelMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = "111222333" // Annen juridisk enhet
@@ -484,7 +528,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = jsonMapper.valueToTree(arbeidstakerData)
             )
 
-            val nyMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -524,7 +568,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 )
             )
 
-            val gammelMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val gammelMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
@@ -538,7 +582,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = jsonMapper.valueToTree(gammelData)
             )
 
-            val nyMetadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+            val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr

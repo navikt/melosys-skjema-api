@@ -21,7 +21,7 @@ import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.OrganisasjonDto
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.common.SkjemaStatus
-import no.nav.melosys.skjema.utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -74,7 +74,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         every { subjectHandler.getUserID() } returns userFnr
 
         // Opprett SENDT søknad for brukeren
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
         val skjema = skjemaMedDefaultVerdier(
             fnr = userFnr,
             orgnr = korrektSyntetiskOrgnr,
@@ -107,7 +107,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         every { subjectHandler.getUserID() } returns userFnr
 
         // Opprett kun UTKAST (skal ikke vises)
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
@@ -136,7 +136,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
 
         // Opprett SENDT - skal inkluderes
         skjemaRepository.save(
@@ -177,7 +177,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val annenBrukerFnr = etAnnetKorrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
 
         // Opprett søknad for annen bruker
         skjemaRepository.save(
@@ -217,7 +217,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             OrganisasjonDto(orgnr2, "Bedrift B AS", "AS")
         )
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ARBEIDSGIVER,
             arbeidsgiverNavn = "Bedrift A AS"
         )
@@ -289,7 +289,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             OrganisasjonDto(orgnr2, "Bedrift B AS", "AS")
         )
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER)
 
         // Opprett søknader for begge orgnr
         skjemaRepository.save(
@@ -339,7 +339,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         )
 
         // Opprett metadata med rådgiverfirma
-        val metadataRiktigRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataRiktigRadgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr=radgiverfirmaOrgnr)
         )
@@ -356,7 +356,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         )
 
         // Opprett søknad med annet rådgiverfirma (skal ikke returneres)
-        val metadataFeilRadgiver = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadataFeilRadgiver = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.RADGIVER,
             radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr="111111111")
         )
@@ -431,7 +431,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             )
         )
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
             representasjonstype = Representasjonstype.ANNEN_PERSON,
             fullmektigFnr = userFnr
         )
@@ -498,7 +498,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
 
         // Opprett 15 søknader
         repeat(15) {
@@ -543,7 +543,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
 
         // Opprett kun 5 søknader
         repeat(5) {
@@ -579,7 +579,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
@@ -606,7 +606,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
 
         // Opprett søknader med forskjellige orgnr
         skjemaRepository.save(
@@ -655,7 +655,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
-        val metadata = utsendtArbeidstakerMetadataJsonNodeMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = userFnr,
