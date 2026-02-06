@@ -61,8 +61,6 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
 import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.kotlinModule
 
 // Defaultverdiene tar utgangspunkt i gyldige data hva gjelder formater og sammenhenger mtp validatorene (no/nav/melosys/skjema/controller/validators).
 // NB! Endringer i defaultverdier i testdata skal sjeldent føre til at tester feiler.
@@ -287,7 +285,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             harFullmakt = harFullmakt,
             fullmektigFnr = fullmektigFnr,
             kobletSkjemaId = kobletSkjemaId,
-            radgiverfirma = radgiverfirma
+            radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
         )
         Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
             skjemadel = skjemadel,

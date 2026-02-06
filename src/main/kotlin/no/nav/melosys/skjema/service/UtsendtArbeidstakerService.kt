@@ -48,7 +48,6 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }
@@ -243,10 +242,10 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+                    val skjemaMetadata = skjema.metadata as? RadgiverMetadata
+                        ?: return@filter false
 
-                    skjemaMetadata.representasjonstype == Representasjonstype.RADGIVER &&
-                            skjemaMetadata.radgiverfirma?.orgnr == radgiverfirmaOrgnr
+                    skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
                 }
             }
 
@@ -558,16 +557,18 @@ class UtsendtArbeidstakerService(
                 harFullmakt = request.harFullmakt,
                 fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null
             )
-            Representasjonstype.RADGIVER -> RadgiverMetadata(
-                skjemadel = request.skjemadel,
-                arbeidsgiverNavn = request.arbeidsgiver.navn,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                harFullmakt = request.harFullmakt,
-                fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null,
-                radgiverfirma = request.radgiverfirma?.let {
-                    RadgiverfirmaInfo(orgnr = it.orgnr, navn = it.navn)
-                }
-            )
+            Representasjonstype.RADGIVER -> {
+                val radgiverfirmaInfo = request.radgiverfirma
+                    ?: throw IllegalArgumentException("radgiverfirma er påkrevd for RADGIVER")
+                RadgiverMetadata(
+                    skjemadel = request.skjemadel,
+                    arbeidsgiverNavn = request.arbeidsgiver.navn,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    harFullmakt = request.harFullmakt,
+                    fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null,
+                    radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
+                )
+            }
             Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
                 skjemadel = request.skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
@@ -639,7 +640,8 @@ class UtsendtArbeidstakerService(
             }
 
             Representasjonstype.ANNEN_PERSON -> {
-                skjemaMetadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+                val annenPersonMetadata = skjemaMetadata as AnnenPersonMetadata
+                annenPersonMetadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
         }
     }

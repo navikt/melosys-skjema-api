@@ -36,7 +36,8 @@ class MetadatatypeTest {
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
-            harFullmakt = false
+            harFullmakt = false,
+            radgiverfirma = RadgiverfirmaInfo(orgnr = "", navn = "")
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_RADGIVER"
 
         mappings[AnnenPersonMetadata::class.java] shouldBe AnnenPersonMetadata(
