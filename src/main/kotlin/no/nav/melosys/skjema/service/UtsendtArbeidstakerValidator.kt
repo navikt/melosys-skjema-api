@@ -36,8 +36,10 @@ class UtsendtArbeidstakerValidator(
 
         when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> validerDegSelv(request)
-            Representasjonstype.ARBEIDSGIVER -> validerArbeidsgiver(request)
-            Representasjonstype.RADGIVER -> validerRadgiver(request)
+            Representasjonstype.ARBEIDSGIVER -> validerArbeidsgiverUtenFullmakt(request)
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> validerArbeidsgiverMedFullmakt(request)
+            Representasjonstype.RADGIVER -> validerRadgiverUtenFullmakt(request)
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> validerRadgiverMedFullmakt(request)
             Representasjonstype.ANNEN_PERSON -> validerAnnenPerson(request)
         }
 
@@ -48,7 +50,6 @@ class UtsendtArbeidstakerValidator(
      * Validerer DEG_SELV scenario:
      * - Innlogget person er arbeidstaker
      * - Arbeidsgiver finnes
-     * - Ingen fullmakt (selv-representasjon)
      */
     private fun validerDegSelv(request: OpprettSoknadMedKontekstRequest) {
         log.debug { "Validerer DEG_SELV scenario" }
@@ -56,132 +57,145 @@ class UtsendtArbeidstakerValidator(
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
-
-        // 3. Ingen fullmakt (selv-representasjon)
-        if (request.harFullmakt) {
-            throw IllegalArgumentException("harFullmakt kan ikke være true for DEG_SELV")
-        }
     }
 
     /**
-     * Validerer ARBEIDSGIVER scenario:
+     * Validerer ARBEIDSGIVER scenario (uten fullmakt):
      * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
      * - Arbeidsgiver finnes
-     * - Arbeidstaker valideres (med eller uten fullmakt)
+     * - Arbeidstaker valideres via PDL med etternavn
      */
-    private fun validerArbeidsgiver(request: OpprettSoknadMedKontekstRequest) {
-        log.debug { "Validerer ARBEIDSGIVER scenario" }
+    private fun validerArbeidsgiverUtenFullmakt(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer ARBEIDSGIVER scenario (uten fullmakt)" }
 
-        // 2. Validere Altinn-tilgang
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
             throw AccessDeniedException("Innlogget bruker har ikke Altinn-tilgang til arbeidsgiver ${request.arbeidsgiver.orgnr}")
         }
 
-        // 3. Arbeidsgiver finnes (Altinn validerer delvis, men sjekk også EREG)
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
 
-        // 4. Arbeidstaker-validering
-        validerArbeidstakerForArbeidsgiver(request)
+        validerArbeidstakerViaPdl(request)
     }
 
     /**
-     * Validerer RADGIVER scenario:
+     * Validerer ARBEIDSGIVER_MED_FULLMAKT scenario:
+     * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
+     * - Arbeidsgiver finnes
+     * - Innlogget bruker har fullmakt fra arbeidstaker
+     */
+    private fun validerArbeidsgiverMedFullmakt(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer ARBEIDSGIVER_MED_FULLMAKT scenario" }
+
+        if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
+            throw AccessDeniedException("Innlogget bruker har ikke Altinn-tilgang til arbeidsgiver ${request.arbeidsgiver.orgnr}")
+        }
+
+        if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
+            throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
+        }
+
+        validerFullmaktFraArbeidstaker(request)
+    }
+
+    /**
+     * Validerer RADGIVER scenario (uten fullmakt):
      * - Rådgiverfirma må oppgis og finnes
      * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
      * - Arbeidsgiver finnes
-     * - Arbeidstaker valideres (med eller uten fullmakt)
+     * - Arbeidstaker valideres via PDL med etternavn
      */
-    private fun validerRadgiver(request: OpprettSoknadMedKontekstRequest) {
-        log.debug { "Validerer RADGIVER scenario" }
+    private fun validerRadgiverUtenFullmakt(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer RADGIVER scenario (uten fullmakt)" }
 
-        // 1. Rådgiverfirma må oppgis
-        if (request.radgiverfirma == null) {
-            throw IllegalArgumentException("Rådgiverfirma må oppgis for RADGIVER")
-        }
+        validerRadgiverfirma(request)
 
-        // 2. Rådgiverfirma finnes
-        if (!eregService.organisasjonsnummerEksisterer(request.radgiverfirma!!.orgnr)) {
-            throw IllegalArgumentException("Rådgiverfirma med organisasjonsnummer ${request.radgiverfirma!!.orgnr} finnes ikke")
-        }
-
-        // 4. Validere Altinn-tilgang til arbeidsgiver
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
             throw AccessDeniedException("Innlogget bruker har ikke Altinn-tilgang til arbeidsgiver ${request.arbeidsgiver.orgnr}")
         }
 
-        // 5. Arbeidsgiver finnes (Altinn validerer delvis, men sjekk også EREG)
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
 
-        // 6. Arbeidstaker-validering (samme som ARBEIDSGIVER)
-        validerArbeidstakerForArbeidsgiver(request)
+        validerArbeidstakerViaPdl(request)
+    }
+
+    /**
+     * Validerer RADGIVER_MED_FULLMAKT scenario:
+     * - Rådgiverfirma må oppgis og finnes
+     * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
+     * - Arbeidsgiver finnes
+     * - Innlogget bruker har fullmakt fra arbeidstaker
+     */
+    private fun validerRadgiverMedFullmakt(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer RADGIVER_MED_FULLMAKT scenario" }
+
+        validerRadgiverfirma(request)
+
+        if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
+            throw AccessDeniedException("Innlogget bruker har ikke Altinn-tilgang til arbeidsgiver ${request.arbeidsgiver.orgnr}")
+        }
+
+        if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
+            throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
+        }
+
+        validerFullmaktFraArbeidstaker(request)
     }
 
     /**
      * Validerer ANNEN_PERSON scenario:
-     * - Arbeidstaker må oppgis
      * - Innlogget bruker må ha fullmakt fra arbeidstaker
      * - Arbeidsgiver finnes
-     * - harFullmakt må være true
      */
     private fun validerAnnenPerson(request: OpprettSoknadMedKontekstRequest) {
         log.debug { "Validerer ANNEN_PERSON scenario" }
 
-        // 2. Innlogget bruker må ha fullmakt fra arbeidstaker
-        if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
-            throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
-        }
-        // Dette sjekker også at arbeidstaker finnes i PDL (repr-api validerer det)
+        validerFullmaktFraArbeidstaker(request)
 
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
+    }
 
-        // 4. harFullmakt må være true (siden dette er fullmektig-scenario)
-        if (!request.harFullmakt) {
-            throw IllegalArgumentException("harFullmakt må være true for ANNEN_PERSON")
+    private fun validerRadgiverfirma(request: OpprettSoknadMedKontekstRequest) {
+        if (request.radgiverfirma == null) {
+            throw IllegalArgumentException("Rådgiverfirma må oppgis for ${request.representasjonstype}")
+        }
+
+        if (!eregService.organisasjonsnummerEksisterer(request.radgiverfirma!!.orgnr)) {
+            throw IllegalArgumentException("Rådgiverfirma med organisasjonsnummer ${request.radgiverfirma!!.orgnr} finnes ikke")
         }
     }
 
-    /**
-     * Validerer arbeidstaker for ARBEIDSGIVER og RADGIVER scenarioer.
-     *
-     * Med fullmakt: Validerer via repr-api (som også verifiserer PDL)
-     * Uten fullmakt: Validerer direkte mot PDL med etternavn
-     */
-    private fun validerArbeidstakerForArbeidsgiver(
-        request: OpprettSoknadMedKontekstRequest
-    ) {
-        if (request.harFullmakt) {
-            // Med fullmakt: Validere via repr-api
-            log.debug { "Validerer arbeidstaker med fullmakt via repr-api" }
-            if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
-                throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
-            }
-            // repr-api validerer også at person finnes i PDL
-        } else {
-            // Uten fullmakt: Validere at person finnes i PDL med etternavn-matching
-            log.debug { "Validerer arbeidstaker uten fullmakt via PDL" }
+    private fun validerFullmaktFraArbeidstaker(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer fullmakt fra arbeidstaker via repr-api" }
+        if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
+            throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
+        }
+        // repr-api validerer også at person finnes i PDL
+    }
 
-            if (request.arbeidstaker.etternavn == null) {
-                throw IllegalArgumentException("Etternavn må oppgis for arbeidstaker uten fullmakt")
-            }
+    private fun validerArbeidstakerViaPdl(request: OpprettSoknadMedKontekstRequest) {
+        log.debug { "Validerer arbeidstaker via PDL" }
 
-            try {
-                pdlService.verifiserOgHentPerson(
-                    request.arbeidstaker.fnr,
-                    request.arbeidstaker.etternavn!!
-                )
-            } catch (e: Exception) {
-                log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
-                throw IllegalArgumentException(
-                    "Arbeidstaker med fødselsnummer ${request.arbeidstaker.fnr} finnes ikke eller etternavn matcher ikke",
-                    e
-                )
-            }
+        if (request.arbeidstaker.etternavn == null) {
+            throw IllegalArgumentException("Etternavn må oppgis for arbeidstaker uten fullmakt")
+        }
+
+        try {
+            pdlService.verifiserOgHentPerson(
+                request.arbeidstaker.fnr,
+                request.arbeidstaker.etternavn!!
+            )
+        } catch (e: Exception) {
+            log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
+            throw IllegalArgumentException(
+                "Arbeidstaker med fødselsnummer ${request.arbeidstaker.fnr} finnes ikke eller etternavn matcher ikke",
+                e
+            )
         }
     }
 }

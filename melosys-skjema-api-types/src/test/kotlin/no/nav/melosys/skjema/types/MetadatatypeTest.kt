@@ -28,17 +28,30 @@ class MetadatatypeTest {
         mappings[ArbeidsgiverMetadata::class.java] shouldBe ArbeidsgiverMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
-            juridiskEnhetOrgnr = "",
-            harFullmakt = false
+            juridiskEnhetOrgnr = ""
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER"
+
+        mappings[ArbeidsgiverMedFullmaktMetadata::class.java] shouldBe ArbeidsgiverMedFullmaktMetadata(
+            skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+            arbeidsgiverNavn = "",
+            juridiskEnhetOrgnr = "",
+            fullmektigFnr = ""
+        ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT"
 
         mappings[RadgiverMetadata::class.java] shouldBe RadgiverMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
-            harFullmakt = false,
             radgiverfirma = RadgiverfirmaInfo(orgnr = "", navn = "")
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_RADGIVER"
+
+        mappings[RadgiverMedFullmaktMetadata::class.java] shouldBe RadgiverMedFullmaktMetadata(
+            skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+            arbeidsgiverNavn = "",
+            juridiskEnhetOrgnr = "",
+            fullmektigFnr = "",
+            radgiverfirma = RadgiverfirmaInfo(orgnr = "", navn = "")
+        ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"
 
         mappings[AnnenPersonMetadata::class.java] shouldBe AnnenPersonMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,

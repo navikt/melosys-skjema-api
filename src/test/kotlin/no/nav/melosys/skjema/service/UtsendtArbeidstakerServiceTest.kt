@@ -116,17 +116,16 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("skal opprette skjema for ARBEIDSGIVER med fullmakt") {
             val currentUser = "99999999999"
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
             val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER, harFullmakt = true),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -146,18 +145,17 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("skal opprette skjema for RADGIVER") {
             val currentUser = "99999999999"
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
-                representasjonstype = Representasjonstype.RADGIVER,
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
             val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.RADGIVER, harFullmakt = true),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -178,15 +176,14 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
-                arbeidstaker = testArbeidstaker,
-                harFullmakt = true
+                arbeidstaker = testArbeidstaker
             )
 
             val savedSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 fnr = testArbeidstaker.fnr,
                 orgnr = testArbeidsgiver.orgnr,
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ANNEN_PERSON, harFullmakt = true),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ANNEN_PERSON),
                 opprettetAv = currentUser,
                 endretAv = currentUser
             )
@@ -228,7 +225,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                harFullmakt = false
+                
             )
 
             val skjema = skjemaMedDefaultVerdier(
@@ -257,7 +254,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
 
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                harFullmakt = true,
+                
                 fullmektigFnr = currentUser
             )
 
@@ -287,7 +284,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                harFullmakt = true,
+                
                 fullmektigFnr = currentUser
             )
 
@@ -387,11 +384,11 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                harFullmakt = false
+                
             )
             val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                harFullmakt = false
+                
             )
 
             val utkast1 = skjemaMedDefaultVerdier(
@@ -565,12 +562,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             val metadata1 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                harFullmakt = true,
+                
                 fullmektigFnr = currentUser
             )
             val metadata2 = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                harFullmakt = true,
+                
                 fullmektigFnr = currentUser
             )
 
@@ -656,7 +653,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
-                harFullmakt = false
+                
             )
 
             val utkast = skjemaMedDefaultVerdier(
@@ -833,7 +830,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             // Utkast med ANNEN_PERSON (skal returneres)
             val metadataAnnenPerson = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
-                harFullmakt = true,
+                
                 fullmektigFnr = currentUser
             )
             val utkastAnnenPerson = skjemaMedDefaultVerdier(

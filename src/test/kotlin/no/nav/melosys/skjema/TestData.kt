@@ -21,8 +21,10 @@ import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.PersonDto
 import no.nav.melosys.skjema.types.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.DegSelvMetadata
 import no.nav.melosys.skjema.types.RadgiverMetadata
+import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
@@ -255,7 +257,6 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = ArbeidstakersSkjemaDataDto(
 
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
-    harFullmakt: Boolean = false,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
     fullmektigFnr: String? = etAnnetKorrektSyntetiskFnr,
@@ -274,16 +275,27 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            harFullmakt = harFullmakt,
-            fullmektigFnr = fullmektigFnr,
+            kobletSkjemaId = kobletSkjemaId
+        )
+        Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
             kobletSkjemaId = kobletSkjemaId
         )
         Representasjonstype.RADGIVER -> RadgiverMetadata(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            harFullmakt = harFullmakt,
-            fullmektigFnr = fullmektigFnr,
+            kobletSkjemaId = kobletSkjemaId,
+            radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
+        )
+        Representasjonstype.RADGIVER_MED_FULLMAKT -> RadgiverMedFullmaktMetadata(
+            skjemadel = skjemadel,
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
             kobletSkjemaId = kobletSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
         )
@@ -328,15 +340,13 @@ fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     radgiverfirma: SimpleOrganisasjonDto? = null,
     arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
-    arbeidstaker: PersonDto = personDtoMedDefaultVerdier(),
-    harFullmakt: Boolean = false
+    arbeidstaker: PersonDto = personDtoMedDefaultVerdier()
 ) = OpprettSoknadMedKontekstRequest(
     representasjonstype = representasjonstype,
     skjemadel = skjemadel,
     radgiverfirma = radgiverfirma,
     arbeidsgiver = arbeidsgiver,
-    arbeidstaker = arbeidstaker,
-    harFullmakt = harFullmakt
+    arbeidstaker = arbeidstaker
 )
 
 fun skjemaMedDefaultVerdier(

@@ -10,7 +10,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
  * Diskrimineres basert på `metadatatype`:
  * - [DegSelvMetadata] for UTSENDT_ARBEIDSTAKER_DEG_SELV
  * - [ArbeidsgiverMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER
+ * - [ArbeidsgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT
  * - [RadgiverMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER
+ * - [RadgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT
  * - [AnnenPersonMetadata] for UTSENDT_ARBEIDSTAKER_ANNEN_PERSON
  */
 @JsonTypeInfo(
@@ -21,7 +23,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 @JsonSubTypes(
     JsonSubTypes.Type(value = DegSelvMetadata::class, name = "UTSENDT_ARBEIDSTAKER_DEG_SELV"),
     JsonSubTypes.Type(value = ArbeidsgiverMetadata::class, name = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER"),
+    JsonSubTypes.Type(value = ArbeidsgiverMedFullmaktMetadata::class, name = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT"),
     JsonSubTypes.Type(value = RadgiverMetadata::class, name = "UTSENDT_ARBEIDSTAKER_RADGIVER"),
+    JsonSubTypes.Type(value = RadgiverMedFullmaktMetadata::class, name = "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"),
     JsonSubTypes.Type(value = AnnenPersonMetadata::class, name = "UTSENDT_ARBEIDSTAKER_ANNEN_PERSON")
 )
 sealed class SkjemaMetadata {

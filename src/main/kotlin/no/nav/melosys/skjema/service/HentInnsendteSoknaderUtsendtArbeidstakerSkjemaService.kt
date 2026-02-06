@@ -19,7 +19,6 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
-import tools.jackson.databind.json.JsonMapper
 
 private val log = KotlinLogging.logger { }
 
@@ -37,7 +36,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private val innsendingRepository: InnsendingRepository,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
-    private val jsonMapper: JsonMapper,
     private val subjectHandler: SubjectHandler
 ) {
 
@@ -130,8 +128,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm)
-            Representasjonstype.ARBEIDSGIVER -> hentForArbeidsgiver(pageable, searchTerm)
-            Representasjonstype.RADGIVER -> {
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm)
+            Representasjonstype.RADGIVER,
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
                 // RADGIVER bruker native SQL, så vi må konvertere JPA field names til kolonne-navn
                 val nativePageable = konverterTilNativePageable(pageable)
                 hentForRadgiver(request.radgiverfirmaOrgnr, nativePageable, searchTerm)

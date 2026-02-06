@@ -6,8 +6,10 @@ package no.nav.melosys.skjema.types
  *
  * Sealed class hierarki basert på representasjonstype:
  * - [DegSelvMetadata] - Arbeidstaker fyller ut selv
- * - [ArbeidsgiverMetadata] - Arbeidsgiver fyller ut (med eller uten fullmakt)
- * - [RadgiverMetadata] - Rådgiver fyller ut (med eller uten fullmakt)
+ * - [ArbeidsgiverMetadata] - Arbeidsgiver fyller ut uten fullmakt
+ * - [ArbeidsgiverMedFullmaktMetadata] - Arbeidsgiver fyller ut med fullmakt
+ * - [RadgiverMetadata] - Rådgiver fyller ut uten fullmakt
+ * - [RadgiverMedFullmaktMetadata] - Rådgiver fyller ut med fullmakt
  * - [AnnenPersonMetadata] - Annen person med fullmakt fyller ut
  *
  * Merk: Innsendingsstatus ligger på egne felt i Skjema-entiteten,
@@ -53,15 +55,12 @@ data class DegSelvMetadata(
 }
 
 /**
- * Metadata når arbeidsgiver fyller ut skjemaet.
- * Kan være med eller uten fullmakt.
+ * Metadata når arbeidsgiver fyller ut skjemaet uten fullmakt.
  */
 data class ArbeidsgiverMetadata(
     override val skjemadel: Skjemadel,
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
-    val harFullmakt: Boolean,
-    val fullmektigFnr: String? = null,
     override val kobletSkjemaId: java.util.UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
     override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER"
@@ -70,16 +69,28 @@ data class ArbeidsgiverMetadata(
 }
 
 /**
- * Metadata når rådgiver fyller ut skjemaet.
- * Inkluderer informasjon om rådgiverfirmaet.
- * Kan være med eller uten fullmakt.
+ * Metadata når arbeidsgiver fyller ut skjemaet med fullmakt.
+ */
+data class ArbeidsgiverMedFullmaktMetadata(
+    override val skjemadel: Skjemadel,
+    override val arbeidsgiverNavn: String,
+    override val juridiskEnhetOrgnr: String,
+    /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
+    val fullmektigFnr: String,
+    override val kobletSkjemaId: java.util.UUID? = null
+) : UtsendtArbeidstakerMetadata() {
+    override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT"
+    override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
+    override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+}
+
+/**
+ * Metadata når rådgiver fyller ut skjemaet uten fullmakt.
  */
 data class RadgiverMetadata(
     override val skjemadel: Skjemadel,
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
-    val harFullmakt: Boolean,
-    val fullmektigFnr: String? = null,
     override val kobletSkjemaId: java.util.UUID? = null,
     /** Informasjon om rådgiverfirmaet */
     val radgiverfirma: RadgiverfirmaInfo
@@ -90,8 +101,25 @@ data class RadgiverMetadata(
 }
 
 /**
+ * Metadata når rådgiver fyller ut skjemaet med fullmakt.
+ */
+data class RadgiverMedFullmaktMetadata(
+    override val skjemadel: Skjemadel,
+    override val arbeidsgiverNavn: String,
+    override val juridiskEnhetOrgnr: String,
+    /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
+    val fullmektigFnr: String,
+    override val kobletSkjemaId: java.util.UUID? = null,
+    /** Informasjon om rådgiverfirmaet */
+    val radgiverfirma: RadgiverfirmaInfo
+) : UtsendtArbeidstakerMetadata() {
+    override val metadatatype: String = "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"
+    override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
+    override fun medKobletSkjemaId(kobletSkjemaId: java.util.UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
+}
+
+/**
  * Metadata når annen person med fullmakt fyller ut skjemaet.
- * Fullmakt er alltid påkrevd for denne typen.
  */
 data class AnnenPersonMetadata(
     override val skjemadel: Skjemadel,
@@ -114,7 +142,9 @@ data class RadgiverfirmaInfo(
 enum class Representasjonstype {
     DEG_SELV,
     ARBEIDSGIVER,
+    ARBEIDSGIVER_MED_FULLMAKT,
     RADGIVER,
+    RADGIVER_MED_FULLMAKT,
     ANNEN_PERSON
 }
 

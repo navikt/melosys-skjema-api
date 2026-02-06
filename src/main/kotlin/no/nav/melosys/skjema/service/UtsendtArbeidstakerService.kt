@@ -21,8 +21,10 @@ import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
 import no.nav.melosys.skjema.types.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.ArbeidsgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.DegSelvMetadata
 import no.nav.melosys.skjema.types.RadgiverMetadata
+import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
@@ -109,7 +111,10 @@ class UtsendtArbeidstakerService(
                 )
             }
 
-            Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+            Representasjonstype.RADGIVER,
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
                 // Arbeidsgiver eller rådgiver fyller ut på vegne av arbeidstaker
                 Skjema(
                     status = SkjemaStatus.UTKAST,
@@ -214,7 +219,7 @@ class UtsendtArbeidstakerService(
                 }
             }
 
-            Representasjonstype.ARBEIDSGIVER -> {
+            Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
                 // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
                 val tilganger = altinnService.hentBrukersTilganger()
                 val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
@@ -224,14 +229,14 @@ class UtsendtArbeidstakerService(
                     innloggetBrukerFnr,
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
-                    // Sjekk at representasjonstype er ARBEIDSGIVER
+                    // Sjekk at representasjonstype er ARBEIDSGIVER eller ARBEIDSGIVER_MED_FULLMAKT
                     val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
-                    skjemaMetadata.representasjonstype == Representasjonstype.ARBEIDSGIVER && tilgangOrgnr.contains(skjema.orgnr)
+                    skjemaMetadata.representasjonstype == request.representasjonstype && tilgangOrgnr.contains(skjema.orgnr)
                 }
             }
 
-            Representasjonstype.RADGIVER -> {
+            Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT -> {
                 // Rådgiver - kun utkast for det spesifikke rådgiverfirmaet
                 val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
                     ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
@@ -242,10 +247,15 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val skjemaMetadata = skjema.metadata as? RadgiverMetadata
+                    val skjemaMetadata = skjema.metadata as? UtsendtArbeidstakerMetadata
                         ?: return@filter false
 
-                    skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
+                    skjemaMetadata.representasjonstype == request.representasjonstype &&
+                        when (skjemaMetadata) {
+                            is RadgiverMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
+                            is RadgiverMedFullmaktMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
+                            else -> false
+                        }
                 }
             }
 
@@ -533,8 +543,6 @@ class UtsendtArbeidstakerService(
      *   → Arbeidsgiver/rådgiver fyller kun sin egen del
      *   → Arbeidstaker må selv fylle sin del (validert at person finnes i PDL)
      *
-     * Merk: Validering har allerede bekreftet at fullmakt eksisterer når harFullmakt=true
-     *
      * @param request Opprettelsesforespørselen
      * @param innloggetBrukerFnr FNR til innlogget bruker
      * @param juridiskEnhetOrgnr Orgnr til juridisk enhet (fra EREG) - brukes for kobling av separate søknader
@@ -553,9 +561,13 @@ class UtsendtArbeidstakerService(
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
                 skjemadel = request.skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
+                skjemadel = request.skjemadel,
+                arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                harFullmakt = request.harFullmakt,
-                fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null
+                fullmektigFnr = innloggetBrukerFnr
             )
             Representasjonstype.RADGIVER -> {
                 val radgiverfirmaInfo = request.radgiverfirma
@@ -564,8 +576,17 @@ class UtsendtArbeidstakerService(
                     skjemadel = request.skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                    harFullmakt = request.harFullmakt,
-                    fullmektigFnr = if (request.harFullmakt) innloggetBrukerFnr else null,
+                    radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
+                )
+            }
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                val radgiverfirmaInfo = request.radgiverfirma
+                    ?: throw IllegalArgumentException("radgiverfirma er påkrevd for RADGIVER_MED_FULLMAKT")
+                RadgiverMedFullmaktMetadata(
+                    skjemadel = request.skjemadel,
+                    arbeidsgiverNavn = request.arbeidsgiver.navn,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    fullmektigFnr = innloggetBrukerFnr,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
             }
@@ -635,8 +656,19 @@ class UtsendtArbeidstakerService(
         return when(skjemaMetadata.representasjonstype){
             Representasjonstype.DEG_SELV -> false
 
-            Representasjonstype.ARBEIDSGIVER, Representasjonstype.RADGIVER -> {
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER -> {
                 altinnService.harBrukerTilgang(skjema.orgnr)
+            }
+
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as ArbeidsgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as RadgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
 
             Representasjonstype.ANNEN_PERSON -> {
