@@ -9,7 +9,7 @@ val javaVersion = (project.findProperty("javaVersion") as String?)?.toInt() ?: 2
 val jacksonVersion = "2.21"
 val jakartaValidationVersion = "3.1.1"
 val swaggerVersion = "2.2.42"
-val junitVersion = "5.12.2"
+val junitVersion = "6.0.2"
 val kotestVersion = "6.1.2"
 
 repositories {
