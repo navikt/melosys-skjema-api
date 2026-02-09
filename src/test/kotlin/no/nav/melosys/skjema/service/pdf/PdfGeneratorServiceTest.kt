@@ -28,9 +28,9 @@ import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.common.Språk
@@ -66,8 +66,8 @@ class PdfGeneratorServiceTest : FunSpec({
     fun lagInnsendtSkjema(
         referanseId: String,
         språk: Språk = Språk.NORSK_BOKMAL,
-        arbeidstakerData: ArbeidstakersSkjemaDataDto? = null,
-        arbeidsgiverData: ArbeidsgiversSkjemaDataDto? = null
+        arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto? = null,
+        arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
     ): InnsendtSkjemaResponse {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
         return InnsendtSkjemaResponse(
@@ -529,8 +529,8 @@ class PdfGeneratorServiceTest : FunSpec({
     }
 })
 
-private fun lagKomplettArbeidstakerData(): ArbeidstakersSkjemaDataDto {
-    return ArbeidstakersSkjemaDataDto(
+private fun lagKomplettArbeidstakerData(): UtsendtArbeidstakerArbeidstakersSkjemaDataDto {
+    return UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
         utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
         arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
@@ -542,8 +542,8 @@ private fun lagKomplettArbeidstakerData(): ArbeidstakersSkjemaDataDto {
     )
 }
 
-private fun lagKomplettArbeidsgiverData(): ArbeidsgiversSkjemaDataDto {
-    return ArbeidsgiversSkjemaDataDto(
+private fun lagKomplettArbeidsgiverData(): UtsendtArbeidstakerArbeidsgiversSkjemaDataDto {
+    return UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
         arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
         utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
         arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),

@@ -1,0 +1,67 @@
+## Refaktorering av innsending-servicer
+
+### Før: 2 servicer + scheduler med repository
+
+```
+InnsendingRetryScheduler
+    ├── innsendingRepository (direkte)
+    └── innsendingProsesseringService
+
+InnsendingProsesseringService
+    ├── @TransactionalEventListener onInnsendingOpprettet()
+    ├── @Async prosesserInnsendingAsync()
+    └── innsendingStatusService
+
+InnsendingStatusService
+    ├── opprettInnsending()
+    ├── oppdaterStatus()
+    ├── startProsessering()
+    └── oppdaterSkjemaJournalpostId()
+```
+
+### Etter: 1 service + event listener + enklere scheduler
+
+```
+InnsendingRetryScheduler
+    └── innsendingService (kun)
+
+InnsendingEventListener
+    └── @TransactionalEventListener onInnsendingOpprettet()
+
+InnsendingService
+    ├── opprettInnsending()
+    ├── prosesserInnsending()
+    ├── oppdaterStatus()
+    ├── startProsessering()
+    └── hentRetryKandidater()
+```
+
+### Endringer
+
+- `InnsendingProsesseringService` → slettet, logikk flyttet til `InnsendingService`
+- `InnsendingStatusService` → slettet, logikk flyttet til `InnsendingService`
+- `@Async` → fjernet, prosessering skjer synkront
+- `oppdaterSkjemaJournalpostId()` → fjernet
+- `InnsendingEventListener` → skilt ut til egen klasse (var tidligere i `InnsendingProsesseringService`)
+- Scheduler bruker kun `InnsendingService`, ikke repository direkte
+
+---
+
+## Fordeler vs ulemper
+
+### Fordeler med ny løsning
+
+1. **Enklere arkitektur** - 1 service i stedet for 2, lettere å finne hvor ting skjer
+2. **Bedre innkapsling** - scheduler snakker ikke direkte med repository, kun service-laget
+3. **Lettere å teste scheduler** - bare én mock (InnsendingService) i stedet for to (repository + service)
+4. **All innsending-logikk samlet** - slipper å hoppe mellom `InnsendingStatusService` og `InnsendingProsesseringService`
+
+### Ulemper med ny løsning
+
+1. **Større `InnsendingService`** - mer ansvar i én klasse (men `oppdaterStatus()` og `startProsessering()` er nå private)
+
+### Vurdering
+
+Fordelene veier tyngst. Den gamle løsningen med 2 servicer var fragmentert uten god grunn - `InnsendingStatusService` og `InnsendingProsesseringService` jobbet begge med samme domene (Innsending) og hadde ingen klar separasjon av ansvar.
+
+Den nye løsningen er mer koherent. Fjerning av `@Async` er en bevisst endring - synkron prosessering er enklere å følge og debugge.

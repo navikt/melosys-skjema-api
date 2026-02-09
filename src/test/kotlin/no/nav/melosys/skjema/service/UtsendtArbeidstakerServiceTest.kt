@@ -33,8 +33,6 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.kotlinModule
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
 
@@ -46,7 +44,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockEregService = mockk<EregService>()
     val mockSkjemaKoblingService = mockk<SkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
-    val jsonMapper: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
     val innsendingService = mockk<InnsendingService>()
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
@@ -60,7 +57,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockReprService,
         mockEregService,
         mockSkjemaKoblingService,
-        jsonMapper,
         mockSubjectHandler,
         innsendingService,
         eventPublisher,

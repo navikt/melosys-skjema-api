@@ -18,17 +18,13 @@ import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.kotlinModule
 
 class SkjemaKoblingServiceTest : FunSpec({
 
     val mockSkjemaRepository = mockk<SkjemaRepository>(relaxed = true)
-    val jsonMapper: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
 
     val service = SkjemaKoblingService(
-        mockSkjemaRepository,
-        jsonMapper
+        mockSkjemaRepository
     )
 
     val juridiskEnhetOrgnr = "999888777"
@@ -200,7 +196,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
@@ -220,7 +216,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatMetadata,
-                data = jsonMapper.valueToTree(arbeidsgiverData)
+                data = arbeidsgiverData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
@@ -266,7 +262,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
@@ -286,7 +282,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatMetadata,
-                data = jsonMapper.valueToTree(arbeidsgiverData)
+                data = arbeidsgiverData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
@@ -326,7 +322,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
@@ -346,7 +342,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatMetadata,
-                data = jsonMapper.valueToTree(arbeidsgiverData)
+                data = arbeidsgiverData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
@@ -377,7 +373,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(skjema)
@@ -415,7 +411,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             // Kandidat A (arbeidsgiver) med periode jan-mar
@@ -439,7 +435,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatAMetadata,
-                data = jsonMapper.valueToTree(kandidatAData)
+                data = kandidatAData
             )
 
             // Kandidat B (arbeidsgiver) med periode jul-des
@@ -463,7 +459,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatBMetadata,
-                data = jsonMapper.valueToTree(kandidatBData)
+                data = kandidatBData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidatA, kandidatB)
@@ -499,7 +495,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = gammelMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -513,7 +509,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = nyMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
@@ -549,7 +545,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = gammelMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -563,7 +559,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = nyMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             // Motpart-skjema
@@ -579,7 +575,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = motpartMetadata,
-                data = jsonMapper.valueToTree(arbeidsgiversSkjemaDataDtoMedDefaultVerdier())
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema, motpartSkjema)
@@ -613,7 +609,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = gammelMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -627,7 +623,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = nyMetadata,
-                data = jsonMapper.valueToTree(arbeidstakerData)
+                data = arbeidstakerData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
@@ -667,7 +663,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = gammelMetadata,
-                data = jsonMapper.valueToTree(gammelData)
+                data = gammelData
             )
 
             val nyMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
@@ -681,7 +677,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = nyMetadata,
-                data = jsonMapper.valueToTree(nyData)
+                data = nyData
             )
 
             every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)

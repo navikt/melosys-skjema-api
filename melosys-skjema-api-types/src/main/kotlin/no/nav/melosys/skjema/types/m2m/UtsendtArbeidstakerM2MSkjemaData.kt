@@ -1,10 +1,8 @@
 package no.nav.melosys.skjema.types.m2m
 
-import no.nav.melosys.skjema.types.arbeidsgiver.ArbeidsgiversSkjemaDto
-import no.nav.melosys.skjema.types.arbeidstaker.ArbeidstakersSkjemaDto
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 
 data class UtsendtArbeidstakerM2MSkjemaData(
-    val arbeidstakersDeler: List<ArbeidstakersSkjemaDto>,
-    val arbeidsgiversDeler: List<ArbeidsgiversSkjemaDto>,
+    val skjemaer: List<UtsendtArbeidstakerSkjemaDto>,
     val referanseId: String,
 )
