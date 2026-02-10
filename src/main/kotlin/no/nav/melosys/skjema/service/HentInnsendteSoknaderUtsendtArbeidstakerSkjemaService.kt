@@ -282,8 +282,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
         // D-nummer: dag har 40 lagt til
         val justerDag = if (dag > 40) dag - 40 else dag
-        // H-nummer: måned har 40 lagt til
-        val justerMaaned = if (maaned > 40) maaned - 40 else maaned
+        // FH-nummer: måned har 80 lagt til, H-nummer: måned har 40 lagt til
+        val justerMaaned = when {
+            maaned > 80 -> maaned - 80
+            maaned > 40 -> maaned - 40
+            else -> maaned
+        }
 
         val aarhundre = when {
             individnummer <= 499 -> 19
