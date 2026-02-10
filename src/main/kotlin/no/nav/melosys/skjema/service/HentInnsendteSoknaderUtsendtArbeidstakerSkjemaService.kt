@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.LocalDate
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -241,7 +242,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert =  maskerFnr(skjema.fnr),
+            arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
+            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
@@ -262,4 +264,45 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             "***********"
         }
     }
+
+}
+
+/**
+ * Utleder fødselsdato fra fødselsnummer som LocalDate.
+ * Håndterer D-nummer (dag + 40), H-nummer (måned + 40) og FH-nummer (måned + 80).
+ * Bestemmer århundre basert på individnummer (siffer 7-9) iht. Skatteetatens regler.
+ *
+ * @param fnr Fødselsnummer (11 siffer)
+ * @return Fødselsdato som LocalDate
+ * @throws IllegalArgumentException hvis fnr er ugyldig
+ */
+fun hentFodselsdatoFraFnr(fnr: String): LocalDate {
+    require(fnr.length == 11) { "Fødselsnummer må være 11 siffer, var ${fnr.length}" }
+
+    val dag = fnr.substring(0, 2).toInt()
+    val maaned = fnr.substring(2, 4).toInt()
+    val toSifferAar = fnr.substring(4, 6).toInt()
+    val individnummer = fnr.substring(6, 9).toInt()
+
+    // D-nummer: dag har 40 lagt til
+    val justerDag = if (dag > 40) dag - 40 else dag
+    // FH-nummer: måned har 80 lagt til, H-nummer: måned har 40 lagt til
+    val justerMaaned = when {
+        maaned > 80 -> maaned - 80
+        maaned > 40 -> maaned - 40
+        else -> maaned
+    }
+
+    val aarhundre = when {
+        individnummer <= 499 -> 19
+        individnummer <= 749 -> if (toSifferAar <= 39) 20 else 18
+        individnummer <= 899 -> {
+            require(toSifferAar <= 39) { "Ugyldig kombinasjon: individnummer $individnummer med år $toSifferAar" }
+            20
+        }
+        else -> if (toSifferAar <= 39) 20 else 19
+    }
+
+    val fullAar = aarhundre * 100 + toSifferAar
+    return LocalDate.of(fullAar, justerMaaned, justerDag)
 }
