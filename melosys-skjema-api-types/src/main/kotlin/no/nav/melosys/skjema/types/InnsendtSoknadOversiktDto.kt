@@ -15,6 +15,7 @@ data class InnsendtSoknadOversiktDto(
     val arbeidsgiverOrgnr: String,
     val arbeidstakerNavn: String?,
     val arbeidstakerFnrMaskert: String?, // Maskert fnr (f.eks. "010190*****")
+    val arbeidstakerFodselsdato: String?, // Fødselsdato utledet fra fnr (f.eks. "01.01.90")
     val innsendtDato: Instant,
     val status: SkjemaStatus,
     val harPdf: Boolean = false // For fremtidig PDF-funksjonalitet

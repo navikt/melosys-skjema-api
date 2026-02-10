@@ -241,7 +241,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert =  maskerFnr(skjema.fnr),
+            arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
+            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
@@ -261,5 +262,27 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         } else {
             "***********"
         }
+    }
+
+    /**
+     * Utleder fødselsdato fra fødselsnummer og formaterer som DD.MM.YY.
+     * Håndterer D-nummer (dag + 40) og H-nummer (måned + 40).
+     *
+     * @param fnr Fødselsnummer (11 siffer)
+     * @return Formatert fødselsdato (f.eks. "01.01.90"), eller null hvis fnr er ugyldig
+     */
+    private fun hentFodselsdatoFraFnr(fnr: String): String? {
+        if (fnr.length != 11) return null
+
+        val dag = fnr.substring(0, 2).toIntOrNull() ?: return null
+        val maaned = fnr.substring(2, 4).toIntOrNull() ?: return null
+        val aar = fnr.substring(4, 6)
+
+        // D-nummer: dag har 40 lagt til
+        val justerDag = if (dag > 40) dag - 40 else dag
+        // H-nummer: måned har 40 lagt til
+        val justerMaaned = if (maaned > 40) maaned - 40 else maaned
+
+        return "${justerDag.toString().padStart(2, '0')}.${justerMaaned.toString().padStart(2, '0')}.$aar"
     }
 }
