@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component
 /**
  * Genererer unike, brukervennlige referanse-IDer for søknader.
  *
- * Format: MEL-XXXXXX (prefiks + 6 alfanumeriske tegn)
- * Eksempel: MEL-AB12CD
+ * Format: XXXXXX (6 alfanumeriske tegn)
+ * Eksempel: AB12CD
  *
  * Unngår forvekslingsbare tegn (0/O, 1/I/L) for bedre lesbarhet.
  */
@@ -19,7 +19,6 @@ class ReferanseIdGenerator(
     private val random = SecureRandom()
 
     companion object {
-        private const val PREFIKS = "MEL"
         private const val KODE_LENGDE = 6
         private const val MAKS_FORSOK = 5
         // Unngår forvekslingsbare tegn: 0/O, 1/I/L
@@ -28,10 +27,9 @@ class ReferanseIdGenerator(
 
     fun generer(): String {
         repeat(MAKS_FORSOK) {
-            val kode = (1..KODE_LENGDE)
+            val referanseId = (1..KODE_LENGDE)
                 .map { GYLDIGE_TEGN[random.nextInt(GYLDIGE_TEGN.length)] }
                 .joinToString("")
-            val referanseId = "$PREFIKS-$kode"
 
             if (!innsendingRepository.existsByReferanseId(referanseId)) {
                 return referanseId

@@ -446,7 +446,7 @@ fun innsendingMedDefaultVerdier(
     opprettetDato: Instant = Instant.now(),
     sisteForsoekTidspunkt: Instant? = null,
     feilmelding: String? = null,
-    referanseId: String = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}",
+    referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
     skjemaDefinisjonVersjon: String = "1",
     innsendtSprak: Språk = Språk.NORSK_BOKMAL
 ) = Innsending(
