@@ -243,7 +243,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
-            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
+            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr)
+                ?: throw IllegalStateException("Kunne ikke utlede fødselsdato fra fnr for skjema ${skjema.id}"),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
