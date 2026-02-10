@@ -61,7 +61,7 @@ class InnsendingServiceTest : ApiTestBase() {
 
             val innsending = innsendingService.opprettInnsending(
                 skjema = skjema,
-                referanseId = "MEL-TEST01",
+                referanseId = "TEST01",
                 skjemaDefinisjonVersjon = "1",
                 innsendtSprak = Språk.NORSK_BOKMAL
             )
@@ -69,14 +69,14 @@ class InnsendingServiceTest : ApiTestBase() {
             innsending.skjema.id shouldBe skjema.id
             innsending.status shouldBe InnsendingStatus.MOTTATT
             innsending.antallForsok shouldBe 0
-            innsending.referanseId shouldBe "MEL-TEST01"
+            innsending.referanseId shouldBe "TEST01"
             innsending.skjemaDefinisjonVersjon shouldBe "1"
             innsending.innsendtSprak shouldBe Språk.NORSK_BOKMAL
 
             val lagret = innsendingRepository.findBySkjemaId(skjema.id!!)
             lagret shouldNotBe null
             lagret!!.status shouldBe InnsendingStatus.MOTTATT
-            lagret.referanseId shouldBe "MEL-TEST01"
+            lagret.referanseId shouldBe "TEST01"
             lagret.skjemaDefinisjonVersjon shouldBe "1"
             lagret.innsendtSprak shouldBe Språk.NORSK_BOKMAL
         }
@@ -93,7 +93,7 @@ class InnsendingServiceTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = skjema,
-                    referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+                    referanseId = UUID.randomUUID().toString().take(6).uppercase()
                 )
             )
 
@@ -116,7 +116,7 @@ class InnsendingServiceTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = skjema,
-                    referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+                    referanseId = UUID.randomUUID().toString().take(6).uppercase()
                 )
             )
 
@@ -138,7 +138,7 @@ class InnsendingServiceTest : ApiTestBase() {
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = skjema,
-                    referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+                    referanseId = UUID.randomUUID().toString().take(6).uppercase()
                 )
             )
             val langFeilmelding = "x".repeat(3000)
@@ -174,7 +174,7 @@ class InnsendingServiceTest : ApiTestBase() {
         val innsending = innsendingRepository.save(
             innsendingMedDefaultVerdier(
                 skjema = skjema,
-                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}",
+                referanseId = UUID.randomUUID().toString().take(6).uppercase(),
                 status = InnsendingStatus.MOTTATT
             )
         )

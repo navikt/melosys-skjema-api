@@ -56,7 +56,7 @@ class Innsending(
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 
-    /** Brukervennlig referanse-ID for søknaden (f.eks. MEL-AB12CD) */
+    /** Brukervennlig referanse-ID for søknaden (f.eks. AB12CD) */
     @Column(name = "referanse_id", nullable = false, unique = true)
     val referanseId: String,
 

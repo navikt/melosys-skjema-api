@@ -91,12 +91,12 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         innsendingRepository.save(innsendingMedDefaultVerdier(
             skjema = arbeidstakersSkjema,
             status = InnsendingStatus.FERDIG,
-            referanseId = "MEL-TEST01"
+            referanseId = "TEST01"
         ))
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
-        result.referanseId shouldBe "MEL-TEST01"
+        result.referanseId shouldBe "TEST01"
         result.skjemaer shouldHaveSize 2
 
         // Finn arbeidstakers og arbeidsgivers skjema fra listen
@@ -129,12 +129,12 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         innsendingRepository.save(innsendingMedDefaultVerdier(
             skjema = arbeidstakersSkjema,
             status = InnsendingStatus.FERDIG,
-            referanseId = "MEL-TEST02"
+            referanseId = "TEST02"
         ))
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
-        result.referanseId shouldBe "MEL-TEST02"
+        result.referanseId shouldBe "TEST02"
         result.skjemaer shouldHaveSize 1
         result.skjemaer[0].id shouldBe arbeidstakersSkjema.id
     }
@@ -155,12 +155,12 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         innsendingRepository.save(innsendingMedDefaultVerdier(
             skjema = arbeidsgiversSkjema,
             status = InnsendingStatus.FERDIG,
-            referanseId = "MEL-TEST04"
+            referanseId = "TEST04"
         ))
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidsgiversSkjema.id!!)
 
-        result.referanseId shouldBe "MEL-TEST04"
+        result.referanseId shouldBe "TEST04"
         result.skjemaer shouldHaveSize 1
         result.skjemaer[0].id shouldBe arbeidsgiversSkjema.id
     }
@@ -184,7 +184,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         innsendingRepository.save(innsendingMedDefaultVerdier(
             skjema = arbeidstakersSkjema,
             status = InnsendingStatus.FERDIG,
-            referanseId = "MEL-TEST05"
+            referanseId = "TEST05"
         ))
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)

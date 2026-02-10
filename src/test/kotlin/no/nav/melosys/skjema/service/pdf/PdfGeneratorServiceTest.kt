@@ -85,7 +85,7 @@ class PdfGeneratorServiceTest : FunSpec({
     context("PDF-generering") {
         test("genererer gyldig PDF med korrekt signatur") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-VALID",
+                referanseId = "VALID1",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
@@ -98,7 +98,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("genererer PDF/A-2u kompatibel fil") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-PDFA",
+                referanseId = "PDFA12",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
@@ -123,7 +123,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("genererer PDF med forventet størrelse for komplett søknad") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-KOMPLETT",
+                referanseId = "KMPLTT",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
@@ -139,7 +139,7 @@ class PdfGeneratorServiceTest : FunSpec({
     context("HTML-innhold - Norsk") {
         test("inneholder korrekte overskrifter og seksjoner") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-NORSK",
+                referanseId = "NORSK1",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
@@ -157,7 +157,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser landnavn på norsk") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-LAND-NO",
+                referanseId = "LANDNO",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
@@ -169,7 +169,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser boolean-verdier som Ja/Nei") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-BOOL-NO",
+                referanseId = "BOOLNO",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
@@ -182,7 +182,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser datoer i norsk format") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-DATO",
+                referanseId = "DATO12",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
@@ -195,7 +195,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser perioder som separate fra/til-felter") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-PERIODE",
+                referanseId = "PERIOD",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
@@ -209,7 +209,7 @@ class PdfGeneratorServiceTest : FunSpec({
     context("HTML-innhold - Engelsk") {
         test("inneholder engelske overskrifter") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-ENG",
+                referanseId = "ENG123",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
@@ -225,7 +225,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser landnavn på engelsk") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-LAND-EN",
+                referanseId = "LANDEN",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
@@ -237,7 +237,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("viser boolean-verdier som Yes/No") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-BOOL-EN",
+                referanseId = "BOOLEN",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
@@ -267,7 +267,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-FAM-FNR",
+                referanseId = "FAMFNR",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -296,7 +296,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-FAM-DATO",
+                referanseId = "FAMDTO",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -319,7 +319,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-FAM-FLERE",
+                referanseId = "FAMFLR",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -343,7 +343,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-LAND",
+                referanseId = "LAND12",
                 arbeidsgiverData = arbeidsgiverData
             )
 
@@ -365,7 +365,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-OFFSHORE",
+                referanseId = "OFFSHR",
                 arbeidsgiverData = arbeidsgiverData
             )
 
@@ -387,7 +387,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-SKIP",
+                referanseId = "SKIP12",
                 arbeidsgiverData = arbeidsgiverData
             )
 
@@ -409,7 +409,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-FLY",
+                referanseId = "FLY123",
                 arbeidsgiverData = arbeidsgiverData
             )
 
@@ -430,7 +430,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-XSS",
+                referanseId = "XSS123",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -450,7 +450,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-AMP",
+                referanseId = "AMP123",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -476,7 +476,7 @@ class PdfGeneratorServiceTest : FunSpec({
             )
 
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-NORSKE-TEGN",
+                referanseId = "NRTEGN",
                 arbeidstakerData = arbeidstakerData
             )
 
@@ -494,7 +494,7 @@ class PdfGeneratorServiceTest : FunSpec({
     context("Delvis utfylte skjemaer") {
         test("genererer PDF for kun arbeidstakers del") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-ARB",
+                referanseId = "ARB123",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = null
             )
@@ -512,7 +512,7 @@ class PdfGeneratorServiceTest : FunSpec({
 
         test("genererer PDF for kun arbeidsgivers del") {
             val skjema = lagInnsendtSkjema(
-                referanseId = "MEL-AG",
+                referanseId = "AGV123",
                 arbeidstakerData = null,
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )

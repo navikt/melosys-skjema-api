@@ -17,7 +17,7 @@ data class InnsendtSkjemaResponse(
     @param:Schema(description = "Skjema-ID")
     val skjemaId: UUID,
 
-    @param:Schema(description = "Referansenummer", example = "MEL-AB12CD")
+    @param:Schema(description = "Referansenummer", example = "AB12CD")
     val referanseId: String,
 
     @param:Schema(description = "Tidspunkt for innsending")

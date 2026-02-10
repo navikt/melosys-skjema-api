@@ -235,7 +235,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         innsendingRepository.save(
             innsendingMedDefaultVerdier(
                 skjema = savedSkjema,
-                referanseId = "MEL-${UUID.randomUUID().toString().take(6).uppercase()}"
+                referanseId = UUID.randomUUID().toString().take(6).uppercase()
             )
         )
 
@@ -722,7 +722,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         skjemaInnsendtKvittering.run {
             skjemaInnsendtKvittering.skjemaId shouldBe skjemaSomSkalSendesInn.id
             skjemaInnsendtKvittering.status shouldBe SkjemaStatus.SENDT
-            skjemaInnsendtKvittering.referanseId shouldMatch "^MEL-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
+            skjemaInnsendtKvittering.referanseId shouldMatch "^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
         }
     }
 
@@ -740,7 +740,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             innsendingMedDefaultVerdier(
                 skjema = skjema,
                 status = InnsendingStatus.MOTTATT,
-                referanseId = "MEL-ABC123"
+                referanseId = "ABC123"
             )
         )
 
@@ -756,7 +756,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         kvittering.shouldNotBeNull()
         kvittering.skjemaId shouldBe skjema.id
-        kvittering.referanseId shouldBe "MEL-ABC123"
+        kvittering.referanseId shouldBe "ABC123"
         kvittering.status shouldBe SkjemaStatus.SENDT
     }
 
