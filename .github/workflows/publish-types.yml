@@ -31,10 +31,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Build and publish
+        id: publish
         run: |
           VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)${{ inputs.version-suffix }}"
           echo "Publishing melosys-skjema-api-types version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           ./gradlew :melosys-skjema-api-types:clean :melosys-skjema-api-types:publish -Pversion=$VERSION -PjavaVersion=${{ inputs.java-version }} --no-build-cache
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write release info to summary
+        run: |
+          echo "### Published version" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ steps.publish.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
