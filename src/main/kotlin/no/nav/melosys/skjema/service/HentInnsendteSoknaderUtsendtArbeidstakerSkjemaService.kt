@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.LocalDate
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -265,14 +266,14 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Utleder fødselsdato fra fødselsnummer og formaterer som DD.MM.YYYY.
-     * Håndterer D-nummer (dag + 40) og H-nummer (måned + 40).
+     * Utleder fødselsdato fra fødselsnummer som LocalDate.
+     * Håndterer D-nummer (dag + 40), H-nummer (måned + 40) og FH-nummer (måned + 80).
      * Bestemmer århundre basert på individnummer (siffer 7-9) iht. Skatteetatens regler.
      *
      * @param fnr Fødselsnummer (11 siffer)
-     * @return Formatert fødselsdato (f.eks. "01.01.1990"), eller null hvis fnr er ugyldig
+     * @return Fødselsdato som LocalDate, eller null hvis fnr er ugyldig
      */
-    private fun hentFodselsdatoFraFnr(fnr: String): String? {
+    internal fun hentFodselsdatoFraFnr(fnr: String): LocalDate? {
         if (fnr.length != 11) return null
 
         val dag = fnr.substring(0, 2).toIntOrNull() ?: return null
@@ -297,6 +298,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         }
 
         val fullAar = aarhundre * 100 + toSifferAar
-        return "${justerDag.toString().padStart(2, '0')}.${justerMaaned.toString().padStart(2, '0')}.$fullAar"
+
+        return try {
+            LocalDate.of(fullAar, justerMaaned, justerDag)
+        } catch (e: Exception) {
+            log.warn { "Kunne ikke utlede fødselsdato fra fnr: ${e.message}" }
+            null
+        }
     }
 }

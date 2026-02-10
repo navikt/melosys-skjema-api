@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.types
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 
@@ -15,7 +16,7 @@ data class InnsendtSoknadOversiktDto(
     val arbeidsgiverOrgnr: String,
     val arbeidstakerNavn: String?,
     val arbeidstakerFnrMaskert: String?, // Maskert fnr (f.eks. "010190*****")
-    val arbeidstakerFodselsdato: String?, // Fødselsdato utledet fra fnr (f.eks. "01.01.90")
+    val arbeidstakerFodselsdato: LocalDate?,
     val innsendtDato: Instant,
     val status: SkjemaStatus,
     val harPdf: Boolean = false // For fremtidig PDF-funksjonalitet
