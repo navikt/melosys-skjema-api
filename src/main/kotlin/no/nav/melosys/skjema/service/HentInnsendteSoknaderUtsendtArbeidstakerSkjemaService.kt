@@ -265,24 +265,34 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Utleder fødselsdato fra fødselsnummer og formaterer som DD.MM.YY.
+     * Utleder fødselsdato fra fødselsnummer og formaterer som DD.MM.YYYY.
      * Håndterer D-nummer (dag + 40) og H-nummer (måned + 40).
+     * Bestemmer århundre basert på individnummer (siffer 7-9) iht. Skatteetatens regler.
      *
      * @param fnr Fødselsnummer (11 siffer)
-     * @return Formatert fødselsdato (f.eks. "01.01.90"), eller null hvis fnr er ugyldig
+     * @return Formatert fødselsdato (f.eks. "01.01.1990"), eller null hvis fnr er ugyldig
      */
     private fun hentFodselsdatoFraFnr(fnr: String): String? {
         if (fnr.length != 11) return null
 
         val dag = fnr.substring(0, 2).toIntOrNull() ?: return null
         val maaned = fnr.substring(2, 4).toIntOrNull() ?: return null
-        val aar = fnr.substring(4, 6)
+        val toSifferAar = fnr.substring(4, 6).toIntOrNull() ?: return null
+        val individnummer = fnr.substring(6, 9).toIntOrNull() ?: return null
 
         // D-nummer: dag har 40 lagt til
         val justerDag = if (dag > 40) dag - 40 else dag
         // H-nummer: måned har 40 lagt til
         val justerMaaned = if (maaned > 40) maaned - 40 else maaned
 
-        return "${justerDag.toString().padStart(2, '0')}.${justerMaaned.toString().padStart(2, '0')}.$aar"
+        val aarhundre = when {
+            individnummer <= 499 -> 19
+            individnummer <= 749 -> if (toSifferAar <= 39) 20 else 18
+            individnummer <= 899 -> if (toSifferAar <= 39) 20 else return null
+            else -> if (toSifferAar <= 39) 20 else 19
+        }
+
+        val fullAar = aarhundre * 100 + toSifferAar
+        return "${justerDag.toString().padStart(2, '0')}.${justerMaaned.toString().padStart(2, '0')}.$fullAar"
     }
 }
