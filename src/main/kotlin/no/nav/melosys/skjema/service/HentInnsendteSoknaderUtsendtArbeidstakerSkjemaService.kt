@@ -243,8 +243,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
-            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr)
-                ?: throw IllegalStateException("Kunne ikke utlede fødselsdato fra fnr for skjema ${skjema.id}"),
+            arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
             innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
             status = skjema.status,
             harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
@@ -272,15 +271,16 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Bestemmer århundre basert på individnummer (siffer 7-9) iht. Skatteetatens regler.
      *
      * @param fnr Fødselsnummer (11 siffer)
-     * @return Fødselsdato som LocalDate, eller null hvis fnr er ugyldig
+     * @return Fødselsdato som LocalDate
+     * @throws IllegalArgumentException hvis fnr er ugyldig
      */
-    internal fun hentFodselsdatoFraFnr(fnr: String): LocalDate? {
-        if (fnr.length != 11) return null
+    internal fun hentFodselsdatoFraFnr(fnr: String): LocalDate {
+        require(fnr.length == 11) { "Fødselsnummer må være 11 siffer, var ${fnr.length}" }
 
-        val dag = fnr.substring(0, 2).toIntOrNull() ?: return null
-        val maaned = fnr.substring(2, 4).toIntOrNull() ?: return null
-        val toSifferAar = fnr.substring(4, 6).toIntOrNull() ?: return null
-        val individnummer = fnr.substring(6, 9).toIntOrNull() ?: return null
+        val dag = fnr.substring(0, 2).toInt()
+        val maaned = fnr.substring(2, 4).toInt()
+        val toSifferAar = fnr.substring(4, 6).toInt()
+        val individnummer = fnr.substring(6, 9).toInt()
 
         // D-nummer: dag har 40 lagt til
         val justerDag = if (dag > 40) dag - 40 else dag
@@ -294,17 +294,14 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         val aarhundre = when {
             individnummer <= 499 -> 19
             individnummer <= 749 -> if (toSifferAar <= 39) 20 else 18
-            individnummer <= 899 -> if (toSifferAar <= 39) 20 else return null
+            individnummer <= 899 -> {
+                require(toSifferAar <= 39) { "Ugyldig kombinasjon: individnummer $individnummer med år $toSifferAar" }
+                20
+            }
             else -> if (toSifferAar <= 39) 20 else 19
         }
 
         val fullAar = aarhundre * 100 + toSifferAar
-
-        return try {
-            LocalDate.of(fullAar, justerMaaned, justerDag)
-        } catch (e: Exception) {
-            log.warn { "Kunne ikke utlede fødselsdato fra fnr: ${e.message}" }
-            null
-        }
+        return LocalDate.of(fullAar, justerMaaned, justerDag)
     }
 }

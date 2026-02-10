@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.mockk
@@ -85,18 +86,28 @@ class HentFodselsdatoFraFnrTest : FunSpec({
         service.hentFodselsdatoFraFnr("15819012345") shouldBe LocalDate.of(1990, 1, 15)
     }
 
-    test("ugyldig fnr med feil lengde returnerer null") {
-        service.hentFodselsdatoFraFnr("1234567890") shouldBe null
-        service.hentFodselsdatoFraFnr("123456789012") shouldBe null
-        service.hentFodselsdatoFraFnr("") shouldBe null
+    test("ugyldig fnr med feil lengde kaster IllegalArgumentException") {
+        shouldThrow<IllegalArgumentException> {
+            service.hentFodselsdatoFraFnr("1234567890")
+        }
+        shouldThrow<IllegalArgumentException> {
+            service.hentFodselsdatoFraFnr("123456789012")
+        }
+        shouldThrow<IllegalArgumentException> {
+            service.hentFodselsdatoFraFnr("")
+        }
     }
 
-    test("fnr med ikke-numeriske tegn returnerer null") {
-        service.hentFodselsdatoFraFnr("abcdefghijk") shouldBe null
+    test("fnr med ikke-numeriske tegn kaster NumberFormatException") {
+        shouldThrow<NumberFormatException> {
+            service.hentFodselsdatoFraFnr("abcdefghijk")
+        }
     }
 
-    test("individnummer 750-899 med år >= 40 returnerer null") {
+    test("individnummer 750-899 med år >= 40 kaster IllegalArgumentException") {
         // Ugyldig kombinasjon
-        service.hentFodselsdatoFraFnr("01019080012") shouldBe null
+        shouldThrow<IllegalArgumentException> {
+            service.hentFodselsdatoFraFnr("01019080012")
+        }
     }
 })
