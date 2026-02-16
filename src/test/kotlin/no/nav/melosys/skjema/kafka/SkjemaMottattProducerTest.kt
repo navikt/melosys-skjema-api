@@ -17,7 +17,7 @@ import org.springframework.kafka.support.SendResult
 class SkjemaMottattProducerTest {
 
     private val kafkaTemplate: KafkaTemplate<String, SkjemaMottattMelding> = mockk()
-    private val producer = SkjemaMottattProducer(kafkaTemplate)
+    private val producer = SkjemaMottattProducerKafka(kafkaTemplate)
 
     @Test
     fun `blokkerendeSendSkjemaMottatt skal sende melding til Kafka`() {
