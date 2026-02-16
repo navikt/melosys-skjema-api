@@ -2,6 +2,8 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
+import no.nav.melosys.skjema.kafka.BrukervarselMelding
+import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.kafka.Varseltekst
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.common.Språk
@@ -19,7 +21,7 @@ private val log = KotlinLogging.logger {}
 
 @Service
 class ArbeidstakerVarslingService(
-    private val notificationService: NotificationService,
+    private val brukervarselProducer: BrukervarselProducer,
     private val skjemaRepository: SkjemaRepository,
     @param:Value("\${varsling.arbeidstaker.skjema-lenke}") private val skjemaLenke: String
 ) {
@@ -71,13 +73,13 @@ class ArbeidstakerVarslingService(
         }
 
         val tekster = lagVarselteksterUtenFullmakt(metadata.arbeidsgiverNavn, orgnr)
-        notificationService.sendNotificationToArbeidstaker(fnr, tekster, skjemaLenke)
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, skjemaLenke))
         log.info { "Sendt varsel til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
     }
 
     private fun varsleOmFullmaktsInnsending(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
         val tekster = lagVarselteksterMedFullmakt(metadata.arbeidsgiverNavn, orgnr)
-        notificationService.sendNotificationToArbeidstaker(fnr, tekster)
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster))
         log.info { "Sendt informasjonsvarsel til arbeidstaker om fullmaktsinnsending" }
     }
 

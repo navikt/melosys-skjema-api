@@ -1,12 +1,12 @@
 package no.nav.melosys.skjema.service
 
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import java.util.Optional
 import java.util.UUID
+import no.nav.melosys.skjema.kafka.BrukervarselMelding
+import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.kafka.Varseltekst
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
@@ -21,11 +21,11 @@ import org.junit.jupiter.api.Test
 
 class ArbeidstakerVarslingServiceTest {
 
-    private val notificationService: NotificationService = mockk(relaxed = true)
+    private val brukervarselProducer: BrukervarselProducer = mockk(relaxed = true)
     private val skjemaRepository: SkjemaRepository = mockk()
     private val skjemaLenke = "https://test.nav.no/melosys-skjema/utsendt-arbeidstaker"
 
-    private val service = ArbeidstakerVarslingService(notificationService, skjemaRepository, skjemaLenke)
+    private val service = ArbeidstakerVarslingService(brukervarselProducer, skjemaRepository, skjemaLenke)
 
     @Test
     fun `AG uten fullmakt og ingen AT-utkast skal sende varsel med link`() {
@@ -43,14 +43,14 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            notificationService.sendNotificationToArbeidstaker(
-                skjema.fnr,
-                match<List<Varseltekst>> { tekster ->
-                    tekster.size == 2 &&
-                    tekster.any { it.språk == Språk.NORSK_BOKMAL && it.default } &&
-                    tekster.any { it.språk == Språk.ENGELSK }
-                },
-                skjemaLenke
+            brukervarselProducer.sendBrukervarsel(
+                match<BrukervarselMelding> { melding ->
+                    melding.ident == skjema.fnr &&
+                    melding.tekster.size == 2 &&
+                    melding.tekster.any { it.språk == Språk.NORSK_BOKMAL && it.default } &&
+                    melding.tekster.any { it.språk == Språk.ENGELSK } &&
+                    melding.link == skjemaLenke
+                }
             )
         }
     }
@@ -78,7 +78,7 @@ class ArbeidstakerVarslingServiceTest {
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
-        verify(exactly = 0) { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) }
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
 
     @Test
@@ -97,7 +97,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            notificationService.sendNotificationToArbeidstaker(skjema.fnr, any<List<Varseltekst>>(), skjemaLenke)
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == skjemaLenke })
         }
     }
 
@@ -116,7 +116,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            notificationService.sendNotificationToArbeidstaker(skjema.fnr, any<List<Varseltekst>>(), null)
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null })
         }
     }
 
@@ -135,7 +135,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            notificationService.sendNotificationToArbeidstaker(skjema.fnr, any<List<Varseltekst>>(), null)
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null })
         }
     }
 
@@ -153,7 +153,7 @@ class ArbeidstakerVarslingServiceTest {
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
-        verify(exactly = 0) { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) }
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
 
     @Test
@@ -170,11 +170,11 @@ class ArbeidstakerVarslingServiceTest {
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
-        verify(exactly = 0) { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) }
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
 
     @Test
-    fun `Feil i NotificationService skal fanges og ikke kastes videre`() {
+    fun `Feil i BrukervarselProducer skal fanges og ikke kastes videre`() {
         val skjema = skjemaMedDefaultVerdier(
             id = UUID.randomUUID(),
             status = SkjemaStatus.SENDT,
@@ -185,7 +185,7 @@ class ArbeidstakerVarslingServiceTest {
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
         every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns emptyList()
-        every { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) } throws RuntimeException("Kafka nede")
+        every { brukervarselProducer.sendBrukervarsel(any()) } throws RuntimeException("Kafka nede")
 
         // Skal ikke kaste exception
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
@@ -210,13 +210,11 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            notificationService.sendNotificationToArbeidstaker(
-                any(),
-                match<List<Varseltekst>> { tekster ->
-                    val nbTekst = tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst
+            brukervarselProducer.sendBrukervarsel(
+                match<BrukervarselMelding> { melding ->
+                    val nbTekst = melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst
                     nbTekst.contains(arbeidsgiverNavn) && nbTekst.contains(korrektSyntetiskOrgnr)
-                },
-                any()
+                }
             )
         }
     }
@@ -229,6 +227,6 @@ class ArbeidstakerVarslingServiceTest {
         // Skal ikke kaste exception
         service.varsleArbeidstakerHvisAktuelt(skjemaId)
 
-        verify(exactly = 0) { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) }
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
 }

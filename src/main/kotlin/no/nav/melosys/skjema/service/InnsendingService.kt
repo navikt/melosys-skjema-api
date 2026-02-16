@@ -63,7 +63,6 @@ class InnsendingService(
             // Marker som under behandling (med sisteForsoek for hung detection)
             startProsessering(skjemaId)
 
-            // MELOSYS-7760: Send til Kafka
             skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
                 SkjemaMottattMelding(skjemaId = skjemaId)
             )
@@ -76,7 +75,6 @@ class InnsendingService(
             oppdaterStatus(skjemaId, InnsendingStatus.KAFKA_FEILET, feilmelding = e.message)
         }
 
-        // MELOSYS-7763: Varsle arbeidstaker (best effort, kun én gang)
         varsleArbeidstakerHvisIkkeAlleredeVarslet(skjemaId)
     }
 
