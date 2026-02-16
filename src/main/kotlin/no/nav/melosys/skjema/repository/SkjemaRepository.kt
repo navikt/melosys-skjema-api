@@ -113,6 +113,19 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
         pageable: Pageable
     ): Page<Skjema>
 
+    // Varsling: Finn arbeidstaker-utkast for sjekk om AT allerede har startet søknad
+    @Query("""
+        SELECT * FROM skjema
+        WHERE fnr = :fnr
+        AND status = 'UTKAST'
+        AND jsonb_extract_path_text(metadata, 'juridiskEnhetOrgnr') = :juridiskEnhetOrgnr
+        AND jsonb_extract_path_text(metadata, 'skjemadel') = 'ARBEIDSTAKERS_DEL'
+    """, nativeQuery = true)
+    fun findArbeidstakerUtkastByFnrOgJuridiskEnhet(
+        @Param("fnr") fnr: String,
+        @Param("juridiskEnhetOrgnr") juridiskEnhetOrgnr: String
+    ): List<Skjema>
+
     // Innsendte søknader queries - ANNEN_PERSON (fullmektig)
     fun findByFnrInAndStatusIn(fnrs: List<String>, statuses: List<SkjemaStatus>, pageable: Pageable): Page<Skjema>
 

@@ -32,7 +32,7 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
         SELECT i FROM Innsending i
         WHERE (i.status = 'MOTTATT' AND i.opprettetDato < :sisteForsoekTidspunktGrense)
         OR (i.status = 'UNDER_BEHANDLING' AND (i.sisteForsoekTidspunkt IS NULL OR i.sisteForsoekTidspunkt < :sisteForsoekTidspunktGrense))
-        OR (i.status IN ('JOURNALFORING_FEILET', 'KAFKA_FEILET') AND i.antallForsok < :maxAttempts)
+        OR (i.status = 'KAFKA_FEILET' AND i.antallForsok < :maxAttempts)
     """)
     fun findRetryKandidater(@Param("sisteForsoekTidspunktGrense") sisteForsoekTidspunktGrense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
 

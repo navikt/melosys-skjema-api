@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonCl
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
+import no.nav.melosys.skjema.kafka.Varseltekst
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -17,8 +18,8 @@ class NotificationService(
     private val brukervarselProducer: BrukervarselProducer
 ) {
 
-    fun sendNotificationToArbeidstaker(ident: String, notificationText: String) {
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(ident, notificationText))
+    fun sendNotificationToArbeidstaker(ident: String, tekster: List<Varseltekst>, link: String? = null) {
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(ident, tekster, link))
     }
 
     fun sendNotificationToArbeidsgiver(

@@ -70,5 +70,8 @@ class Innsending(
     val innsendtSprak: Språk,
 
     @Column(name = "correlation_id")
-    var correlationId: String? = MDCOperations.getCorrelationId()
+    var correlationId: String? = MDCOperations.getCorrelationId(),
+
+    @Column(name = "brukervarsel_sendt", nullable = false)
+    var brukervarselSendt: Boolean = false
 )

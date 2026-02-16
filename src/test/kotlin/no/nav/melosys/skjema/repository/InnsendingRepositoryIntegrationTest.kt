@@ -136,17 +136,6 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        @DisplayName("Skal IKKE finne JOURNALFORT innsending")
-        fun `skal ikke finne JOURNALFORT innsending`() {
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.JOURNALFORT))
-
-            val grense = Instant.now().minus(5, ChronoUnit.MINUTES)
-            val kandidater = innsendingRepository.findRetryKandidater(grense, maxAttempts = 5)
-
-            kandidater.shouldBeEmpty()
-        }
-
-        @Test
         @DisplayName("Skal finne kombinasjon av MOTTATT og feilede innsendinger")
         fun `skal finne kombinasjon av MOTTATT og feilede innsendinger`() {
             val gammelOpprettetDato = Instant.now().minus(10, ChronoUnit.MINUTES)
@@ -174,7 +163,7 @@ class InnsendingRepositoryIntegrationTest : ApiTestBase() {
             )
             // Disse skal IKKE inkluderes:
             innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.FERDIG))
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = opprettSkjema(), status = InnsendingStatus.JOURNALFORT))
+            // FERDIG-innsending allerede sjekket over
             innsendingRepository.save(
                 innsendingMedDefaultVerdier(
                     skjema = opprettSkjema(),

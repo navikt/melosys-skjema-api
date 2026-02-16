@@ -140,6 +140,10 @@ kafka:
     namespace: ${NAIS_NAMESPACE}
     appname: ${NAIS_APP_NAME}
 
+varsling:
+  arbeidstaker:
+    skjema-lenke: ${VARSLING_ARBEIDSTAKER_SKJEMA_LENKE}
+
 logging:
   level:
     no.nav.melosys: INFO

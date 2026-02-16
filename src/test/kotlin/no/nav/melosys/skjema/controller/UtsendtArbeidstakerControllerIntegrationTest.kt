@@ -102,7 +102,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         every { altinnService.harBrukerTilgang(any()) } returns true
         every { altinnService.hentBrukersTilganger() } returns emptyList()
-        every { notificationService.sendNotificationToArbeidstaker(any(), any()) } returns Unit
+        every { notificationService.sendNotificationToArbeidstaker(any(), any(), any()) } returns Unit
         every {
             notificationService.sendNotificationToArbeidsgiver(
                 any(),
