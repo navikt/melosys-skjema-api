@@ -13,7 +13,9 @@ import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.DegSelvMetadata
 import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.RadgiverMetadata
+import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -30,44 +32,36 @@ class ArbeidstakerVarslingService(
      * Vurderer og sender varsel til arbeidstaker basert på representasjonstype
      * etter at arbeidsgiver/rådgiver har sendt inn sin del.
      *
-     * Best-effort: Feil logges men kastes aldri videre.
+     * Kaster exception ved feil slik at kaller kan avgjøre om varselet skal markeres som sendt.
      */
     fun varsleArbeidstakerHvisAktuelt(skjemaId: UUID) {
-        try {
-            val skjema = skjemaRepository.findById(skjemaId).orElse(null)
-            if (skjema == null) {
-                log.warn { "Fant ikke skjema $skjemaId for varsling" }
-                return
-            }
+        val skjema = skjemaRepository.findById(skjemaId).orElse(null)
+        if (skjema == null) {
+            log.warn { "Fant ikke skjema $skjemaId for varsling" }
+            return
+        }
 
-            val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata
-            if (metadata == null) {
-                log.debug { "Skjema $skjemaId har ikke UtsendtArbeidstakerMetadata, hopper over varsling" }
-                return
-            }
+        val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata
+        if (metadata == null) {
+            log.debug { "Skjema $skjemaId har ikke UtsendtArbeidstakerMetadata, hopper over varsling" }
+            return
+        }
 
-            when (metadata) {
-                is ArbeidsgiverMetadata, is RadgiverMetadata -> {
-                    varsleUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)
-                }
-                is ArbeidsgiverMedFullmaktMetadata, is RadgiverMedFullmaktMetadata -> {
-                    varsleOmFullmaktsInnsending(skjema.fnr, skjema.orgnr, metadata)
-                }
-                is DegSelvMetadata, is AnnenPersonMetadata -> {
-                    log.debug { "Ingen varsling for representasjonstype ${metadata.representasjonstype} (skjema $skjemaId)" }
-                }
+        when (metadata) {
+            is ArbeidsgiverMetadata, is RadgiverMetadata -> {
+                varsleUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)
             }
-        } catch (e: Exception) {
-            log.error(e) { "Feil ved varsling av arbeidstaker for skjema $skjemaId - fortsetter uten varsel" }
+            is ArbeidsgiverMedFullmaktMetadata, is RadgiverMedFullmaktMetadata -> {
+                varsleOmFullmaktsInnsending(skjema.fnr, skjema.orgnr, metadata)
+            }
+            is DegSelvMetadata, is AnnenPersonMetadata -> {
+                log.debug { "Ingen varsling for representasjonstype ${metadata.representasjonstype} (skjema $skjemaId)" }
+            }
         }
     }
 
     private fun varsleUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
-        val harEksisterendeUtkast = skjemaRepository
-            .findArbeidstakerUtkastByFnrOgJuridiskEnhet(fnr, metadata.juridiskEnhetOrgnr)
-            .isNotEmpty()
-
-        if (harEksisterendeUtkast) {
+        if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
             log.info { "Arbeidstaker har eksisterende utkast, sender ikke varsel" }
             return
         }
@@ -82,6 +76,12 @@ class ArbeidstakerVarslingService(
         brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster))
         log.info { "Sendt informasjonsvarsel til arbeidstaker om fullmaktsinnsending" }
     }
+
+    private fun harEksisterendeArbeidstakerUtkast(fnr: String, juridiskEnhetOrgnr: String): Boolean =
+        skjemaRepository.findByFnrAndStatus(fnr, SkjemaStatus.UTKAST).any { utkast ->
+            val m = utkast.metadata as? UtsendtArbeidstakerMetadata
+            m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
+        }
 
     private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String, orgnr: String): List<Varseltekst> {
         return listOf(

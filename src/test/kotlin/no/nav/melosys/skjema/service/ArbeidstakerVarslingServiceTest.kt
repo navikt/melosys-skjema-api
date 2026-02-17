@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -38,7 +39,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -74,7 +75,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns listOf(eksisterendeUtkast)
+        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns listOf(eksisterendeUtkast)
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -92,7 +93,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -174,7 +175,7 @@ class ArbeidstakerVarslingServiceTest {
     }
 
     @Test
-    fun `Feil i BrukervarselProducer skal fanges og ikke kastes videre`() {
+    fun `Feil i BrukervarselProducer skal propagere til kaller`() {
         val skjema = skjemaMedDefaultVerdier(
             id = UUID.randomUUID(),
             status = SkjemaStatus.SENDT,
@@ -184,11 +185,12 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
         every { brukervarselProducer.sendBrukervarsel(any()) } throws RuntimeException("Kafka nede")
 
-        // Skal ikke kaste exception
-        service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
+        shouldThrow<RuntimeException> {
+            service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
+        }
     }
 
     @Test
@@ -205,7 +207,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findArbeidstakerUtkastByFnrOgJuridiskEnhet(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
