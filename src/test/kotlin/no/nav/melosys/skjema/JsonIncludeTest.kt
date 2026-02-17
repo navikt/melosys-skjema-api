@@ -9,9 +9,11 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.json.JsonTest
+import org.springframework.test.context.ActiveProfiles
 import tools.jackson.databind.json.JsonMapper
 
 @JsonTest
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JsonIncludeTest {
 

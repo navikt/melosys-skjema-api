@@ -4,9 +4,11 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.json.JsonTest
+import org.springframework.test.context.ActiveProfiles
 import tools.jackson.databind.json.JsonMapper
 
 @JsonTest
+@ActiveProfiles("test")
 class FullmaktTest {
 
     @Autowired
