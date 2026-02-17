@@ -135,7 +135,7 @@ kafka:
   topic:
     skjema-mottak: ${KAFKA_SKJEMA_MOTTAK_TOPIC}
   brukervarsel:
-    topic: aapen-brukervarsel-v1
+    topic: ${KAFKA_BRUKERVARSEL_TOPIC}
     cluster: ${NAIS_CLUSTER_NAME}
     namespace: ${NAIS_NAMESPACE}
     appname: ${NAIS_APP_NAME}
@@ -147,6 +147,7 @@ varsling:
 logging:
   level:
     no.nav.melosys: INFO
+    org.hibernate.orm.connections.pooling: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
