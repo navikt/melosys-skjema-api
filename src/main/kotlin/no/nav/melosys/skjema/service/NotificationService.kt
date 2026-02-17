@@ -4,8 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.ArbeidsgiverNotifikasjonClient
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
-import no.nav.melosys.skjema.kafka.BrukervarselMelding
-import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -13,13 +11,8 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class NotificationService(
-    @param:Autowired(required = false) private val arbeidsgiverNotifikasjonClient: ArbeidsgiverNotifikasjonClient?,
-    private val brukervarselProducer: BrukervarselProducer
+    @param:Autowired(required = false) private val arbeidsgiverNotifikasjonClient: ArbeidsgiverNotifikasjonClient?
 ) {
-
-    fun sendNotificationToArbeidstaker(ident: String, notificationText: String) {
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(ident, notificationText))
-    }
 
     fun sendNotificationToArbeidsgiver(
         virksomhetsnummer: String,

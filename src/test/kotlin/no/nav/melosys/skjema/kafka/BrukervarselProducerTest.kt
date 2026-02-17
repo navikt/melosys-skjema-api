@@ -7,6 +7,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.util.concurrent.CompletableFuture
 import no.nav.melosys.skjema.kafka.exception.SendBrukervarselFeilet
+import no.nav.melosys.skjema.types.common.Språk
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.springframework.kafka.core.KafkaTemplate
@@ -21,13 +22,15 @@ class BrukervarselProducerTest {
         namespace = "test-namespace",
         appname = "test-app"
     )
-    private val producer = BrukervarselProducer(kafkaTemplate, properties)
+    private val producer = BrukervarselProducerKafka(kafkaTemplate, properties)
 
     @Test
     fun `sendBrukervarsel skal sende melding til Kafka`() {
         val ident = "12345678901"
-        val notificationText = "Test notifikasjon"
-        val melding = BrukervarselMelding(ident = ident, notificationText = notificationText)
+        val melding = BrukervarselMelding(
+            ident = ident,
+            tekster = listOf(Varseltekst(Språk.NORSK_BOKMAL, "Test notifikasjon", true))
+        )
         val sendResult: SendResult<String, String> = mockk(relaxed = true)
 
         every { kafkaTemplate.send(any<String>(), any(), any()) } returns CompletableFuture.completedFuture(sendResult)
@@ -40,8 +43,10 @@ class BrukervarselProducerTest {
     @Test
     fun `sendBrukervarsel skal kaste SendBrukervarselFeilet ved feil`() {
         val ident = "12345678901"
-        val notificationText = "Test notifikasjon"
-        val melding = BrukervarselMelding(ident = ident, notificationText = notificationText)
+        val melding = BrukervarselMelding(
+            ident = ident,
+            tekster = listOf(Varseltekst(Språk.NORSK_BOKMAL, "Test notifikasjon", true))
+        )
 
         val failedFuture = CompletableFuture<SendResult<String, String>>()
         failedFuture.completeExceptionally(RuntimeException("Kafka er nede"))
@@ -54,7 +59,7 @@ class BrukervarselProducerTest {
 
         exception.message.shouldNotBeNull()
         exception.message.run {
-            this shouldContain ident
+            this shouldContain "brukervarsel"
         }
     }
 }

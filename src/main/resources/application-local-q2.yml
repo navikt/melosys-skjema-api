@@ -7,7 +7,11 @@ TOKENX_AUDIENCE_ARBEIDSGIVER_ALTINN_TILGANGER: dev-gcp:fager:arbeidsgiver-altinn
 ALTINN_RESSURS: test-fager
 ARBEIDSGIVER_ALTINN_TILGANGER_URL: https://arbeidsgiver-altinn-tilganger.intern.dev.nav.no
 TOKENX_AUDIENCE_ARBEIDSGIVER_NOTIFIKASJON: test:fager:arbeidsgiver-notifikasjon
-KAFKA_BROKERS: localhost:29092
+KAFKA_BROKERS: unused-in-local-q2
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration
 FLYWAY_ENABLED: false
 NAIS_CLUSTER_NAME: dev-gcp
 NAIS_NAMESPACE: teammelosys
@@ -18,6 +22,7 @@ RESSURS_ID: test-fager
 SERVER_PORT: 8090
 EREG_URL: https://ereg-services.intern.dev.nav.no
 BRUK_SYNTETISK_FNR: true
+VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://melosys-skjema-web.intern.dev.nav.no
 REPR_URL: https://repr-api.intern.dev.nav.no
 REPR_CACHE_TTL_MINUTES: 0
 TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api

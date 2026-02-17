@@ -47,7 +47,7 @@ class InnsendingServiceTest : ApiTestBase() {
         innsendingRepository.deleteAll()
         skjemaRepository.deleteAll()
         clearAllMocks()
-        every { skjemaMottattProducer.blokkerendeSendSkjemaMottatt(any()) } answers { Result.success(mockk()) }
+        every { skjemaMottattProducer.blokkerendeSendSkjemaMottatt(any()) } returns Result.success(Unit)
     }
 
     @Nested

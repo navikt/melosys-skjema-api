@@ -1,0 +1,1 @@
+ALTER TABLE innsending ADD COLUMN brukervarsel_sendt BOOLEAN NOT NULL DEFAULT FALSE;

@@ -26,7 +26,8 @@ private val log = KotlinLogging.logger {}
 @Service
 class InnsendingService(
     private val innsendingRepository: InnsendingRepository,
-    private val skjemaMottattProducer: SkjemaMottattProducer
+    private val skjemaMottattProducer: SkjemaMottattProducer,
+    private val arbeidstakerVarslingService: ArbeidstakerVarslingService
 ) {
 
     /**
@@ -56,19 +57,15 @@ class InnsendingService(
      */
     @Transactional
     fun prosesserInnsending(skjemaId: UUID) {
-        log.info { "Starter asynkron prosessering av skjema $skjemaId" }
+        log.info { "Starter prosessering av skjema $skjemaId" }
 
         try {
             // Marker som under behandling (med sisteForsoek for hung detection)
             startProsessering(skjemaId)
 
-            // MELOSYS-7760: Send til Kafka
             skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
                 SkjemaMottattMelding(skjemaId = skjemaId)
             )
-
-            // TODO MELOSYS-7763: Varsle arbeidstaker (best effort)
-            // varselService.varsleArbeidstaker(skjemaId)
 
             oppdaterStatus(skjemaId, InnsendingStatus.FERDIG)
             log.info { "Fullført prosessering av skjema $skjemaId" }
@@ -76,6 +73,25 @@ class InnsendingService(
         } catch (e: SendSkjemaMottattMeldingFeilet) {
             log.error(e) { "Kafka-feil ved prosessering av skjema $skjemaId" }
             oppdaterStatus(skjemaId, InnsendingStatus.KAFKA_FEILET, feilmelding = e.message)
+        }
+
+        varsleArbeidstakerHvisIkkeAlleredeVarslet(skjemaId)
+    }
+
+    private fun varsleArbeidstakerHvisIkkeAlleredeVarslet(skjemaId: UUID) {
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId) ?: return
+
+        if (innsending.brukervarselSendt) {
+            log.debug { "Arbeidstaker allerede varslet for skjema $skjemaId, hopper over" }
+            return
+        }
+
+        try {
+            arbeidstakerVarslingService.varsleArbeidstakerHvisAktuelt(skjemaId)
+            innsending.brukervarselSendt = true
+            innsendingRepository.save(innsending)
+        } catch (e: Exception) {
+            log.error(e) { "Feil ved varsling av arbeidstaker for skjema $skjemaId - fortsetter" }
         }
     }
 
