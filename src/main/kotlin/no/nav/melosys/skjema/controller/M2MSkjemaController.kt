@@ -8,6 +8,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,5 +33,19 @@ class M2MSkjemaController(
     fun getSkjema(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerM2MSkjemaData> {
         log.info { "M2M: Henter skjema med id: $id" }
         return ResponseEntity.ok(m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(id))
+    }
+
+    @GetMapping("/{id}/pdf")
+    @M2MReadSkjemadata
+    @Operation(summary = "Hent PDF for innsendt skjema (M2M)")
+    @ApiResponse(responseCode = "200", description = "PDF generert")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
+    @ApiResponse(responseCode = "404", description = "Skjema ikke funnet eller ikke innsendt")
+    fun getPdf(@PathVariable id: UUID): ResponseEntity<ByteArray> {
+        log.info { "M2M: Genererer PDF for skjema med id: $id" }
+        val pdf = m2mSkjemaService.hentPdfForSkjema(id)
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(pdf)
     }
 }
