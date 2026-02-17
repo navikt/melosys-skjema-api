@@ -24,6 +24,7 @@ spring:
     properties:
       security.protocol: PLAINTEXT
 KAFKA_SKJEMA_MOTTAK_TOPIC: test-topic
+KAFKA_BRUKERVARSEL_TOPIC: test-brukervarsel-topic
 NAIS_CLUSTER_NAME: test-cluster
 NAIS_NAMESPACE: test-namespace
 NAIS_APP_NAME: test-app

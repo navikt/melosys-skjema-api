@@ -18,6 +18,7 @@ spring:
     properties:
       security.protocol: PLAINTEXT
 KAFKA_SKJEMA_MOTTAK_TOPIC: teammelosys.skjema.innsendt.v1-docker-compose
+KAFKA_BRUKERVARSEL_TOPIC: min-side.aapen-brukervarsel-v1
 NAIS_CLUSTER_NAME: local
 NAIS_NAMESPACE: teammelosys
 NAIS_APP_NAME: melosys-skjema-api

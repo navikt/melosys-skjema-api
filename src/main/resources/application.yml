@@ -135,7 +135,7 @@ kafka:
   topic:
     skjema-mottak: ${KAFKA_SKJEMA_MOTTAK_TOPIC}
   brukervarsel:
-    topic: aapen-brukervarsel-v1
+    topic: ${KAFKA_BRUKERVARSEL_TOPIC}
     cluster: ${NAIS_CLUSTER_NAME}
     namespace: ${NAIS_NAMESPACE}
     appname: ${NAIS_APP_NAME}
