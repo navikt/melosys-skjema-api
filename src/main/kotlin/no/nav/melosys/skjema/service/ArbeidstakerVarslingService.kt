@@ -66,13 +66,15 @@ class ArbeidstakerVarslingService(
             return
         }
 
-        val tekster = lagVarselteksterUtenFullmakt(metadata.arbeidsgiverNavn, orgnr)
+        val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
+        val tekster = lagVarselteksterUtenFullmakt(navn)
         brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, skjemaLenke))
         log.info { "Sendt varsel til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
     }
 
     private fun varsleOmFullmaktsInnsending(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
-        val tekster = lagVarselteksterMedFullmakt(metadata.arbeidsgiverNavn, orgnr)
+        val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
+        val tekster = lagVarselteksterMedFullmakt(navn)
         brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster))
         log.info { "Sendt informasjonsvarsel til arbeidstaker om fullmaktsinnsending" }
     }
@@ -83,33 +85,37 @@ class ArbeidstakerVarslingService(
             m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
         }
 
-    private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String, orgnr: String): List<Varseltekst> {
+    private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
             Varseltekst(
                 språk = Språk.NORSK_BOKMAL,
-                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn ($orgnr), har informert Nav om at du skal sendes ut for å jobbe innenfor EU/EØS eller Sveits. Du må derfor sende inn en søknad for at Nav skal kunne avklare om du kan beholde medlemskapet i folketrygden mens du jobber i utlandet.",
+                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn, har meldt til Nav at du skal jobbe i EU/EØS eller Sveits. Du må sende inn din del av søknaden slik at Nav kan vurdere om du beholder medlemskapet i folketrygden.",
                 default = true
             ),
             Varseltekst(
                 språk = Språk.ENGELSK,
-                tekst = "Your employer, $arbeidsgiverNavn ($orgnr), has informed Nav that you will be posted to work within the EU/EEA or Switzerland. You must therefore submit an application so that Nav can determine whether you can retain your membership in the National Insurance Scheme while working abroad.",
+                tekst = "Your employer, $arbeidsgiverNavn, has notified Nav that you will work in the EU/EEA or Switzerland. You must submit your part of the application so Nav can assess your National Insurance membership.",
                 default = false
             )
         )
     }
 
-    private fun lagVarselteksterMedFullmakt(arbeidsgiverNavn: String, orgnr: String): List<Varseltekst> {
+    private fun lagVarselteksterMedFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
             Varseltekst(
                 språk = Språk.NORSK_BOKMAL,
-                tekst = "En søknad om utsendt arbeidstaker har blitt sendt inn på dine vegne av $arbeidsgiverNavn ($orgnr). Du trenger ikke foreta deg noe.",
+                tekst = "En søknad om medlemskap i folketrygden under arbeid i utlandet er sendt til Nav på dine vegne av $arbeidsgiverNavn. Du trenger ikke foreta deg noe.",
                 default = true
             ),
             Varseltekst(
                 språk = Språk.ENGELSK,
-                tekst = "An application for posted worker has been submitted on your behalf by $arbeidsgiverNavn ($orgnr). You do not need to take any action.",
+                tekst = "An application for National Insurance membership while working abroad has been submitted to Nav on your behalf by $arbeidsgiverNavn. No action is needed.",
                 default = false
             )
         )
+    }
+
+    companion object {
+        private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
     }
 }
