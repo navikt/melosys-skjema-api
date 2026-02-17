@@ -30,6 +30,6 @@ NAIS_APP_NAME: test-app
 MERKELAPP: foo123
 RESSURS_ID: test123
 BRUK_SYNTETISK_FNR: true
-VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://test.nav.no/melosys-skjema/utsendt-arbeidstaker
+VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://melosys-skjema-web.intern.dev.nav.no
 AZURE_APP_WELL_KNOWN_URL: ${mock-oauth2-server.baseUrl}/azure/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: test-melosys-client-id

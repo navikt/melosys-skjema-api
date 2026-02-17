@@ -22,7 +22,7 @@ RESSURS_ID: test-fager
 SERVER_PORT: 8090
 EREG_URL: https://ereg-services.intern.dev.nav.no
 BRUK_SYNTETISK_FNR: true
-VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://www.intern.dev.nav.no/melosys-skjema/utsendt-arbeidstaker
+VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://melosys-skjema-web.intern.dev.nav.no
 REPR_URL: https://repr-api.intern.dev.nav.no
 REPR_CACHE_TTL_MINUTES: 0
 TOKENX_AUDIENCE_REPR: dev-gcp:repr:repr-api
