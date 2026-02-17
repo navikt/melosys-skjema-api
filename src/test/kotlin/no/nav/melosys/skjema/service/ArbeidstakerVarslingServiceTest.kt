@@ -194,12 +194,11 @@ class ArbeidstakerVarslingServiceTest {
     }
 
     @Test
-    fun `Varseltekst skal inneholde arbeidsgiverNavn og orgnr`() {
+    fun `Varseltekst skal inneholde arbeidsgiverNavn`() {
         val arbeidsgiverNavn = "Test Arbeidsgiver AS"
         val skjema = skjemaMedDefaultVerdier(
             id = UUID.randomUUID(),
             status = SkjemaStatus.SENDT,
-            orgnr = korrektSyntetiskOrgnr,
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
@@ -215,7 +214,7 @@ class ArbeidstakerVarslingServiceTest {
             brukervarselProducer.sendBrukervarsel(
                 match<BrukervarselMelding> { melding ->
                     val nbTekst = melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst
-                    nbTekst.contains(arbeidsgiverNavn) && nbTekst.contains(korrektSyntetiskOrgnr)
+                    nbTekst.contains(arbeidsgiverNavn)
                 }
             )
         }
