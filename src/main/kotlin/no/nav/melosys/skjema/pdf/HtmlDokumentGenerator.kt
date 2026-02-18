@@ -28,8 +28,8 @@ object HtmlDokumentGenerator {
         return buildString {
             append(byggHtmlStart())
             append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
-            append(byggArbeidstakerDel(skjema.arbeidstakerData, skjema.definisjon, seksjonRenderer, språk))
             append(byggArbeidsgiverDel(skjema.arbeidsgiverData, skjema.definisjon, seksjonRenderer, språk))
+            append(byggArbeidstakerDel(skjema.arbeidstakerData, skjema.definisjon, seksjonRenderer, språk))
             append(byggHtmlSlutt())
         }
     }
