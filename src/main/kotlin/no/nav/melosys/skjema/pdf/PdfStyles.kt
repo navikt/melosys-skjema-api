@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.service.pdf
+package no.nav.melosys.skjema.pdf
 
 /**
  * CSS-styling for PDF-generering.

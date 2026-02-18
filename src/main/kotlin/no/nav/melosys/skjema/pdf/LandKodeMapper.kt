@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.service.pdf
+package no.nav.melosys.skjema.pdf
 
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode

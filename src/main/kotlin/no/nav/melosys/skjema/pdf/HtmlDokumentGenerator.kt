@@ -1,37 +1,37 @@
-package no.nav.melosys.skjema.service.pdf
+package no.nav.melosys.skjema.pdf
 
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
 /**
- * Bygger HTML-dokument fra innsendt skjema.
- * Bruker typede DTO-er og skjemadefinisjon for korrekte labels.
- * Ingen Map-konvertering - direkte tilgang til felter.
+ * Genererer HTML-dokument fra skjemadata for PDF-generering.
  */
-class HtmlDokumentBuilder {
+object HtmlDokumentGenerator {
+
     private val datoTidFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-        .withZone(java.time.ZoneId.of("Europe/Oslo"))
+        .withZone(ZoneId.of("Europe/Oslo"))
 
     /**
      * Bygger komplett HTML-dokument fra skjemadata.
      * Bruker språket fra skjemaet for å vise riktige tekster.
      */
-    fun byggHtml(skjema: InnsendtSkjemaResponse): String {
-        // Opprett renderere med riktig språk fra skjemaet
+    fun byggHtml(skjema: SkjemaPdfData): String {
         val språk = skjema.innsendtSprak
         val feltRenderer = FeltRenderer(språk)
         val seksjonRenderer = SeksjonRenderer(feltRenderer)
 
-        val builder = StringBuilder()
-
-        builder.append(byggHtmlStart())
-        builder.append(byggHeader(skjema, språk))
-        builder.append(byggArbeidstakerDel(skjema, seksjonRenderer, språk))
-        builder.append(byggArbeidsgiverDel(skjema, seksjonRenderer, språk))
-        builder.append(byggHtmlSlutt())
-
-        return builder.toString()
+        return buildString {
+            append(byggHtmlStart())
+            append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
+            append(byggArbeidsgiverDel(skjema.arbeidsgiverData, skjema.definisjon, seksjonRenderer, språk))
+            append(byggArbeidstakerDel(skjema.arbeidstakerData, skjema.definisjon, seksjonRenderer, språk))
+            append(byggHtmlSlutt())
+        }
     }
 
     private fun byggHtmlStart(): String {
@@ -50,7 +50,7 @@ class HtmlDokumentBuilder {
 
     private fun byggHtmlSlutt(): String = "</body></html>"
 
-    private fun byggHeader(skjema: InnsendtSkjemaResponse, språk: Språk): String {
+    private fun byggHeader(referanseId: String, innsendtDato: Instant, språk: Språk): String {
         val tittel = when (språk) {
             Språk.NORSK_BOKMAL -> "Søknad om A1 for utsendte arbeidstakere i EØS/Sveits"
             Språk.ENGELSK -> "Application for posted worker within EU/EEA and Switzerland"
@@ -70,49 +70,49 @@ class HtmlDokumentBuilder {
             <div class="document-header">
                 <h1 class="document-title">${escapeHtml(tittel)}</h1>
                 <div class="document-meta">
-                    <p><strong>${escapeHtml(referanseTekst)}:</strong> ${escapeHtml(skjema.referanseId)}</p>
-                    <p><strong>${escapeHtml(innsendtTekst)}:</strong> ${datoTidFormatter.format(skjema.innsendtDato)}</p>
+                    <p><strong>${escapeHtml(referanseTekst)}:</strong> ${escapeHtml(referanseId)}</p>
+                    <p><strong>${escapeHtml(innsendtTekst)}:</strong> ${datoTidFormatter.format(innsendtDato)}</p>
                 </div>
             </div>
         """.trimIndent()
     }
 
     private fun byggArbeidstakerDel(
-        skjema: InnsendtSkjemaResponse,
+        arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto?,
+        definisjon: SkjemaDefinisjonDto,
         seksjonRenderer: SeksjonRenderer,
         språk: Språk
     ): String {
-        val arbeidstakerData = skjema.arbeidstakerData ?: return ""
+        if (arbeidstakerData == null) return ""
 
         val overskrift = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidstakers del"
             Språk.ENGELSK -> "Employee's section"
         }
 
-        val builder = StringBuilder()
-        builder.append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
-        builder.append(seksjonRenderer.byggArbeidstakerSeksjoner(arbeidstakerData, skjema.definisjon))
-
-        return builder.toString()
+        return buildString {
+            append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
+            append(seksjonRenderer.byggArbeidstakerSeksjoner(arbeidstakerData, definisjon))
+        }
     }
 
     private fun byggArbeidsgiverDel(
-        skjema: InnsendtSkjemaResponse,
+        arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?,
+        definisjon: SkjemaDefinisjonDto,
         seksjonRenderer: SeksjonRenderer,
         språk: Språk
     ): String {
-        val arbeidsgiverData = skjema.arbeidsgiverData ?: return ""
+        if (arbeidsgiverData == null) return ""
 
         val overskrift = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidsgivers del"
             Språk.ENGELSK -> "Employer's section"
         }
 
-        val builder = StringBuilder()
-        builder.append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
-        builder.append(seksjonRenderer.byggArbeidsgiverSeksjoner(arbeidsgiverData, skjema.definisjon))
-
-        return builder.toString()
+        return buildString {
+            append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
+            append(seksjonRenderer.byggArbeidsgiverSeksjoner(arbeidsgiverData, definisjon))
+        }
     }
 
     private fun escapeHtml(text: String): String {

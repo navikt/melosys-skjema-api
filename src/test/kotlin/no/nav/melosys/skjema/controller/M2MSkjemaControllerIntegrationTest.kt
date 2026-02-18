@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.controller
 
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
@@ -124,6 +125,88 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .uri("/m2m/api/skjema/utsendt-arbeidstaker/$ukjentId/data")
                 .header("Authorization", "Bearer $token")
                 .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isNotFound
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /m2m/api/skjema/{id}/pdf")
+    inner class GetPdf {
+
+        @Test
+        fun `skal returnere PDF når gyldig M2M-token med tillatt klient`() {
+            val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    status = SkjemaStatus.SENDT,
+                    data = skjemaData
+                )
+            )
+
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            val responseBody = webTestClient.get()
+                .uri("/m2m/api/skjema/${skjema.id}/pdf")
+                .header("Authorization", "Bearer $token")
+                .accept(MediaType.APPLICATION_PDF)
+                .exchange()
+                .expectStatus().isOk
+                .expectHeader().contentType(MediaType.APPLICATION_PDF)
+                .expectBody<ByteArray>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            // Verifiser at det er en gyldig PDF (starter med PDF magic bytes)
+            val pdfHeader = String(responseBody.take(5).toByteArray())
+            pdfHeader shouldStartWith "%PDF-"
+        }
+
+        @Test
+        fun `skal returnere 403 når azp ikke matcher tillatt klient`() {
+            val token = mockOAuth2Server.m2mTokenWithoutAccess()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/92fb319c-53f6-45e6-958a-9cbe1856973a/pdf")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `skal returnere 401 når token mangler`() {
+            webTestClient.get()
+                .uri("/m2m/api/skjema/92fb319c-53f6-45e6-958a-9cbe1856973a/pdf")
+                .exchange()
+                .expectStatus().isUnauthorized
+        }
+
+        @Test
+        fun `skal returnere 404 når skjema ikke finnes`() {
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            val ukjentId = UUID.randomUUID()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/$ukjentId/pdf")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 404 når skjema ikke er innsendt`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/${skjema.id}/pdf")
+                .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isNotFound
         }

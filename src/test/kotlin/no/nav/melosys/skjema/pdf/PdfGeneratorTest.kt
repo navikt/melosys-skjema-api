@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.service.pdf
+package no.nav.melosys.skjema.pdf
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.core.spec.style.FunSpec
@@ -26,7 +26,6 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonProperties
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
@@ -46,15 +45,13 @@ import tools.jackson.module.kotlin.kotlinModule
 
 private val log = KotlinLogging.logger {}
 
-class PdfGeneratorServiceTest : FunSpec({
+class PdfGeneratorTest : FunSpec({
 
     val jsonMapper = JsonMapper.builder()
         .addModule(kotlinModule())
         .build()
     val properties = SkjemaDefinisjonProperties()
     val skjemaDefinisjonService = SkjemaDefinisjonService(properties, jsonMapper)
-    val pdfGeneratorService = PdfGeneratorService()
-    val htmlBuilder = HtmlDokumentBuilder()
 
     fun lagrePdfForInspeksjon(filnavn: String, pdfBytes: ByteArray) {
         val outputFile = File("build/test-output/$filnavn")
@@ -63,19 +60,18 @@ class PdfGeneratorServiceTest : FunSpec({
         log.info { "PDF lagret til: ${outputFile.absolutePath}" }
     }
 
-    fun lagInnsendtSkjema(
+    fun lagSkjemaPdfData(
         referanseId: String,
         språk: Språk = Språk.NORSK_BOKMAL,
         arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto? = null,
         arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
-    ): InnsendtSkjemaResponse {
+    ): SkjemaPdfData {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
-        return InnsendtSkjemaResponse(
+        return SkjemaPdfData(
             skjemaId = UUID.randomUUID(),
             referanseId = referanseId,
             innsendtDato = Instant.now(),
             innsendtSprak = språk,
-            skjemaDefinisjonVersjon = "1",
             arbeidstakerData = arbeidstakerData,
             arbeidsgiverData = arbeidsgiverData,
             definisjon = definisjon
@@ -84,12 +80,12 @@ class PdfGeneratorServiceTest : FunSpec({
 
     context("PDF-generering") {
         test("genererer gyldig PDF med korrekt signatur") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "VALID1",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val pdfBytes = pdfGeneratorService.genererPdf(skjema)
+            val pdfBytes = genererPdf(skjema)
 
             pdfBytes shouldNotBe null
             pdfBytes.size shouldNotBe 0
@@ -97,13 +93,13 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("genererer PDF/A-2u kompatibel fil") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "PDFA12",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
 
-            val pdfBytes = pdfGeneratorService.genererPdf(skjema)
+            val pdfBytes = genererPdf(skjema)
             lagrePdfForInspeksjon("pdfa-validering.pdf", pdfBytes)
 
             // Valider PDF/A-2u compliance med veraPDF (offisielt valideringsverktøy)
@@ -112,7 +108,7 @@ class PdfGeneratorServiceTest : FunSpec({
             if (feil.isNotEmpty()) {
                 val feilTekst = feil.joinToString("\n") { "- ${it.ruleId}: ${it.message}" }
                 log.error { "PDF/A-2u valideringsfeil:\n$feilTekst" }
-                java.io.File("build/test-output/pdfa-errors.txt").apply {
+                File("build/test-output/pdfa-errors.txt").apply {
                     parentFile?.mkdirs()
                     writeText("PDF/A-2u valideringsfeil:\n$feilTekst")
                 }
@@ -122,13 +118,13 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("genererer PDF med forventet størrelse for komplett søknad") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "KMPLTT",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
 
-            val pdfBytes = pdfGeneratorService.genererPdf(skjema)
+            val pdfBytes = genererPdf(skjema)
 
             // PDF bør være minst 3KB for en komplett søknad
             pdfBytes.size shouldNotBe 0
@@ -138,13 +134,13 @@ class PdfGeneratorServiceTest : FunSpec({
 
     context("HTML-innhold - Norsk") {
         test("inneholder korrekte overskrifter og seksjoner") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "NORSK1",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Søknad om A1"
             html shouldContain "Arbeidstakers del"
@@ -156,24 +152,24 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("viser landnavn på norsk") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "LANDNO",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Sverige"
             html shouldNotContain "Sweden"
         }
 
         test("viser boolean-verdier som Ja/Nei") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "BOOLNO",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             // Sjekk at boolean-verdier vises som Ja eller Nei
             html shouldContain ">Ja<"
@@ -181,12 +177,12 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("viser datoer i norsk format") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "DATO12",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             // Datoer skal være på format dd.MM.yyyy
             html shouldContain "01.01.2024"
@@ -194,12 +190,12 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("viser perioder som separate fra/til-felter") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "PERIOD",
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Fra dato"
             html shouldContain "Til dato"
@@ -208,14 +204,14 @@ class PdfGeneratorServiceTest : FunSpec({
 
     context("HTML-innhold - Engelsk") {
         test("inneholder engelske overskrifter") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "ENG123",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Application for posted worker"
             html shouldContain "Employee"
@@ -224,25 +220,25 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("viser landnavn på engelsk") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "LANDEN",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Sweden"
         }
 
         test("viser boolean-verdier som Yes/No") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "BOOLEN",
                 språk = Språk.ENGELSK,
                 arbeidstakerData = lagKomplettArbeidstakerData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain ">Yes<"
             html shouldContain ">No<"
@@ -266,12 +262,12 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "FAMFNR",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Kari"
             html shouldContain "Nordmann"
@@ -295,12 +291,12 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "FAMDTO",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Ola"
             html shouldContain "Nordmann Jr."
@@ -318,12 +314,12 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "FAMFLR",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "1. familiemedlem"
             html shouldContain "2. familiemedlem"
@@ -342,15 +338,15 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "LAND12",
                 arbeidsgiverData = arbeidsgiverData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "På land"
-            lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", pdfGeneratorService.genererPdf(skjema))
+            lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", genererPdf(skjema))
         }
 
         test("viser arbeidssted offshore") {
@@ -364,15 +360,15 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "OFFSHR",
                 arbeidsgiverData = arbeidsgiverData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Offshore"
-            lagrePdfForInspeksjon("arbeidssted-offshore.pdf", pdfGeneratorService.genererPdf(skjema))
+            lagrePdfForInspeksjon("arbeidssted-offshore.pdf", genererPdf(skjema))
         }
 
         test("viser arbeidssted på skip") {
@@ -386,15 +382,15 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "SKIP12",
                 arbeidsgiverData = arbeidsgiverData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "På skip"
-            lagrePdfForInspeksjon("arbeidssted-pa-skip.pdf", pdfGeneratorService.genererPdf(skjema))
+            lagrePdfForInspeksjon("arbeidssted-pa-skip.pdf", genererPdf(skjema))
         }
 
         test("viser arbeidssted om bord på fly") {
@@ -408,15 +404,15 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "FLY123",
                 arbeidsgiverData = arbeidsgiverData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Om bord på fly"
-            lagrePdfForInspeksjon("arbeidssted-om-bord-pa-fly.pdf", pdfGeneratorService.genererPdf(skjema))
+            lagrePdfForInspeksjon("arbeidssted-om-bord-pa-fly.pdf", genererPdf(skjema))
         }
     }
 
@@ -429,12 +425,12 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "XSS123",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             // Script-tag skal være escaped
             html shouldNotContain "<script>"
@@ -449,12 +445,12 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "AMP123",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Tom &amp; Jerry"
         }
@@ -475,31 +471,31 @@ class PdfGeneratorServiceTest : FunSpec({
                 )
             )
 
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "NRTEGN",
                 arbeidstakerData = arbeidstakerData
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Bjørn Ærlig"
             html shouldContain "Østgård"
 
             // Verifiser at PDF kan genereres uten feil
-            val pdfBytes = pdfGeneratorService.genererPdf(skjema)
+            val pdfBytes = genererPdf(skjema)
             String(pdfBytes.take(4).toByteArray()) shouldBe "%PDF"
         }
     }
 
     context("Delvis utfylte skjemaer") {
         test("genererer PDF for kun arbeidstakers del") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "ARB123",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 arbeidsgiverData = null
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             // Sjekk at arbeidstaker-seksjoner er med
             html shouldContain "Arbeidstakers del"
@@ -511,13 +507,13 @@ class PdfGeneratorServiceTest : FunSpec({
         }
 
         test("genererer PDF for kun arbeidsgivers del") {
-            val skjema = lagInnsendtSkjema(
+            val skjema = lagSkjemaPdfData(
                 referanseId = "AGV123",
                 arbeidstakerData = null,
                 arbeidsgiverData = lagKomplettArbeidsgiverData()
             )
 
-            val html = htmlBuilder.byggHtml(skjema)
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             // Sjekk at arbeidsgiver-seksjoner er med
             html shouldContain "Arbeidsgivers del"

@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.service.pdf
+package no.nav.melosys.skjema.pdf
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
