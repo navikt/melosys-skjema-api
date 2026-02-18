@@ -42,25 +42,21 @@ class M2MSkjemaService(
 
         return UtsendtArbeidstakerSkjemaM2MDto(
             skjema = skjemaDto,
-            relaterteSkjemaer = hentKobledeSkjemaer(skjemaDto),
+            kobletSkjema = hentKobletSkjema(skjemaDto),
+            tidligereInnsendteSkjema = emptyList(),
             referanseId = innsending.referanseId,
             innsendtTidspunkt = innsending.opprettetDato.toOsloLocalDateTime(),
             innsenderFnr = innsending.innsenderFnr
         )
     }
 
-    private tailrec fun hentKobledeSkjemaer(
-        skjemaDto: UtsendtArbeidstakerSkjemaDto,
-        akkumulator: List<UtsendtArbeidstakerSkjemaDto> = emptyList()
-    ): List<UtsendtArbeidstakerSkjemaDto> {
-        val kobletSkjemaId = skjemaDto.metadata.kobletSkjemaId ?: return akkumulator
+    private fun hentKobletSkjema(skjemaDto: UtsendtArbeidstakerSkjemaDto): UtsendtArbeidstakerSkjemaDto? {
+        val kobletSkjemaId = skjemaDto.metadata.kobletSkjemaId ?: return null
 
-        val kobletDto = skjemaRepository.findByIdOrNull(kobletSkjemaId)?.toUtsendtArbeidstakerDto() ?: run {
+        return skjemaRepository.findByIdOrNull(kobletSkjemaId)?.toUtsendtArbeidstakerDto() ?: run {
             log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema ${skjemaDto.id}" }
-            return akkumulator
+            null
         }
-
-        return hentKobledeSkjemaer(kobletDto, akkumulator + kobletDto)
     }
 
     fun hentPdfForSkjema(skjemaId: UUID): ByteArray {

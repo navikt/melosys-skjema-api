@@ -85,7 +85,8 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
 
             responseBody shouldBe UtsendtArbeidstakerSkjemaM2MDto(
                 skjema = skjema.toUtsendtArbeidstakerDto(),
-                relaterteSkjemaer = emptyList(),
+                kobletSkjema = null,
+                tidligereInnsendteSkjema = emptyList(),
                 referanseId = "TEST01",
                 innsendtTidspunkt = opprettetDato.toOsloLocalDateTime(),
                 innsenderFnr = innsending.innsenderFnr

@@ -5,7 +5,8 @@ import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 
 data class UtsendtArbeidstakerSkjemaM2MDto(
     val skjema: UtsendtArbeidstakerSkjemaDto,
-    val relaterteSkjemaer: List<UtsendtArbeidstakerSkjemaDto>,
+    val kobletSkjema: UtsendtArbeidstakerSkjemaDto?,
+    val tidligereInnsendteSkjema: List<UtsendtArbeidstakerSkjemaDto>,
     val referanseId: String,
     val innsendtTidspunkt: LocalDateTime,
     val innsenderFnr: String,
