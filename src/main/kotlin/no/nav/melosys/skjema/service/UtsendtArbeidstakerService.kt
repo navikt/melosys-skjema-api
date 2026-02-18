@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -29,7 +30,6 @@ import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.UtkastOversiktDto
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
@@ -179,7 +179,7 @@ class UtsendtArbeidstakerService(
         // Kombiner og fjern duplikater
         val alleSkjemaer = (somArbeidstaker + somFullmektig + somArbeidsgiver)
             .distinctBy { it.id }
-            .map { convertToSkjemaDto(it, it.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto ?: UtsendtArbeidstakerArbeidstakersSkjemaDataDto()) }
+            .map { it.toUtsendtArbeidstakerDto() }
 
         log.debug { "Fant ${alleSkjemaer.size} skjemaer for bruker (arbeidstaker: ${somArbeidstaker.size}, fullmektig: ${somFullmektig.size}, arbeidsgiver: ${somArbeidsgiver.size})" }
 
@@ -292,14 +292,12 @@ class UtsendtArbeidstakerService(
 
     fun getSkjemaArbeidsgiversDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-        val data = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto ?: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
-        return convertToSkjemaDto(skjema, data)
+        return skjema.toUtsendtArbeidstakerDto()
     }
 
     fun getSkjemaArbeidstakersDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-        val data = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto ?: UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
-        return convertToSkjemaDto(skjema, data)
+        return skjema.toUtsendtArbeidstakerDto()
     }
 
 
@@ -697,7 +695,7 @@ class UtsendtArbeidstakerService(
         // Save and convert
         skjema.data = updatedDto
         val savedSkjema = skjemaRepository.save(skjema)
-        return convertToSkjemaDto(savedSkjema, updatedDto)
+        return savedSkjema.toUtsendtArbeidstakerDto()
     }
 
     private fun updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(
@@ -715,20 +713,10 @@ class UtsendtArbeidstakerService(
         // Save and convert
         skjema.data = updatedDto
         val savedSkjema = skjemaRepository.save(skjema)
-        return convertToSkjemaDto(savedSkjema, updatedDto)
+        return savedSkjema.toUtsendtArbeidstakerDto()
     }
 
-    private fun convertToSkjemaDto(skjema: Skjema, data: UtsendtArbeidstakerSkjemaData): UtsendtArbeidstakerSkjemaDto {
-        return UtsendtArbeidstakerSkjemaDto(
-            id = skjema.id ?: error("Skjema ID is null"),
-            status = skjema.status,
-            type = skjema.type,
-            fnr = skjema.fnr,
-            orgnr = skjema.orgnr,
-            metadata = skjema.metadata as UtsendtArbeidstakerMetadata,
-            data = data
-        )
-    }
+
 
     /**
      * Maskerer fødselsnummer for visning.

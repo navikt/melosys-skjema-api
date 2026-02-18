@@ -97,18 +97,10 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "TEST01"
-        result.skjemaer shouldHaveSize 2
+        result.relaterteSkjemaer shouldHaveSize 1
 
-        // Finn arbeidstakers og arbeidsgivers skjema fra listen
-        val arbeidstakerSkjemaDto = result.skjemaer.find {
-            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
-        }!!
-        val arbeidsgiversSkjemaDto = result.skjemaer.find {
-            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSGIVERS_DEL
-        }!!
-
-        arbeidstakerSkjemaDto.id shouldBe arbeidstakersSkjema.id
-        (arbeidstakerSkjemaDto.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
+        // relaterteSkjemaer inneholder kun koblet skjema (ikke hovedskjemaet)
+        val arbeidsgiversSkjemaDto = result.relaterteSkjemaer[0]
         arbeidsgiversSkjemaDto.id shouldBe arbeidsgiversSkjema.id
         (arbeidsgiversSkjemaDto.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
     }
@@ -135,8 +127,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "TEST02"
-        result.skjemaer shouldHaveSize 1
-        result.skjemaer[0].id shouldBe arbeidstakersSkjema.id
+        result.relaterteSkjemaer shouldHaveSize 0
     }
 
     @Test
@@ -161,8 +152,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidsgiversSkjema.id!!)
 
         result.referanseId shouldBe "TEST04"
-        result.skjemaer shouldHaveSize 1
-        result.skjemaer[0].id shouldBe arbeidsgiversSkjema.id
+        result.relaterteSkjemaer shouldHaveSize 0
     }
 
     @Test
@@ -189,7 +179,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
-        result.skjemaer shouldHaveSize 1
-        (result.skjemaer[0].metadata as UtsendtArbeidstakerMetadata).erstatterSkjemaId shouldBe gammelSkjemaId
+        result.relaterteSkjemaer shouldHaveSize 0
+        result.skjema.metadata.erstatterSkjemaId shouldBe gammelSkjemaId
     }
 }
