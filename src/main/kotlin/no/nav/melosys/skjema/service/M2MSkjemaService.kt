@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.ZoneId
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
@@ -57,7 +58,9 @@ class M2MSkjemaService(
 
         return UtsendtArbeidstakerM2MSkjemaData(
             skjemaer = skjemaer,
-            referanseId = innsending.referanseId
+            referanseId = innsending.referanseId,
+            innsendtTidspunkt = innsending.opprettetDato.atZone(ZoneId.of("Europe/Oslo")).toLocalDateTime(),
+            innsenderFnr = innsending.innsenderFnr
         )
     }
 

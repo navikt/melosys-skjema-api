@@ -38,14 +38,16 @@ class InnsendingService(
         skjema: Skjema,
         referanseId: String,
         skjemaDefinisjonVersjon: String,
-        innsendtSprak: Språk
+        innsendtSprak: Språk,
+        innsenderFnr: String
     ): Innsending {
         val innsending = Innsending(
             skjema = skjema,
             status = InnsendingStatus.MOTTATT,
             referanseId = referanseId,
             skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
-            innsendtSprak = innsendtSprak
+            innsendtSprak = innsendtSprak,
+            innsenderFnr = innsenderFnr
         )
         return innsendingRepository.save(innsending)
     }

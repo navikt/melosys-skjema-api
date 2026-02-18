@@ -69,6 +69,10 @@ class Innsending(
     @Convert(converter = SpråkConverter::class)
     val innsendtSprak: Språk,
 
+    /** Fødselsnummer til innlogget bruker som sendte inn skjemaet */
+    @Column(name = "innsender_fnr", nullable = false)
+    val innsenderFnr: String,
+
     @Column(name = "correlation_id")
     var correlationId: String? = MDCOperations.getCorrelationId(),
 

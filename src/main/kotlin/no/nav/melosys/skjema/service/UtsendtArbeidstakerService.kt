@@ -380,7 +380,8 @@ class UtsendtArbeidstakerService(
             skjema = savedSkjema,
             referanseId = referanseId,
             skjemaDefinisjonVersjon = aktivVersjon,
-            innsendtSprak = sprak
+            innsendtSprak = sprak,
+            innsenderFnr = subjectHandler.getUserID()
         )
 
         // 6. Publiser event - async prosessering starter ETTER at transaksjonen er committed
