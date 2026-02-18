@@ -63,7 +63,8 @@ class InnsendingServiceTest : ApiTestBase() {
                 skjema = skjema,
                 referanseId = "TEST01",
                 skjemaDefinisjonVersjon = "1",
-                innsendtSprak = Språk.NORSK_BOKMAL
+                innsendtSprak = Språk.NORSK_BOKMAL,
+                innsenderFnr = "12345678901"
             )
 
             innsending.skjema.id shouldBe skjema.id
@@ -72,6 +73,7 @@ class InnsendingServiceTest : ApiTestBase() {
             innsending.referanseId shouldBe "TEST01"
             innsending.skjemaDefinisjonVersjon shouldBe "1"
             innsending.innsendtSprak shouldBe Språk.NORSK_BOKMAL
+            innsending.innsenderFnr shouldBe "12345678901"
 
             val lagret = innsendingRepository.findBySkjemaId(skjema.id!!)
             lagret shouldNotBe null
@@ -79,6 +81,7 @@ class InnsendingServiceTest : ApiTestBase() {
             lagret.referanseId shouldBe "TEST01"
             lagret.skjemaDefinisjonVersjon shouldBe "1"
             lagret.innsendtSprak shouldBe Språk.NORSK_BOKMAL
+            lagret.innsenderFnr shouldBe "12345678901"
         }
     }
 

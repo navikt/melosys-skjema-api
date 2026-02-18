@@ -44,6 +44,7 @@ import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -182,7 +183,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaMedDefaultVerdier(
                 orgnr = korrektSyntetiskOrgnr,
                 status = SkjemaStatus.UTKAST,
-                data = skjemaData
+                data = skjemaData,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
             )
         )
 

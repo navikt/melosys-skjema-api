@@ -448,7 +448,8 @@ fun innsendingMedDefaultVerdier(
     feilmelding: String? = null,
     referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
     skjemaDefinisjonVersjon: String = "1",
-    innsendtSprak: Språk = Språk.NORSK_BOKMAL
+    innsendtSprak: Språk = Språk.NORSK_BOKMAL,
+    innsenderFnr: String = "12345678901"
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -459,5 +460,6 @@ fun innsendingMedDefaultVerdier(
     feilmelding = feilmelding,
     referanseId = referanseId,
     skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
-    innsendtSprak = innsendtSprak
+    innsendtSprak = innsendtSprak,
+    innsenderFnr = innsenderFnr
 )

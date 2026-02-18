@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
-import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import java.time.LocalDate
 import no.nav.melosys.skjema.ApiTestBase
@@ -97,20 +98,11 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "TEST01"
-        result.skjemaer shouldHaveSize 2
+        result.tidligereInnsendteSkjema shouldBe emptyList()
 
-        // Finn arbeidstakers og arbeidsgivers skjema fra listen
-        val arbeidstakerSkjemaDto = result.skjemaer.find {
-            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
-        }!!
-        val arbeidsgiversSkjemaDto = result.skjemaer.find {
-            (it.metadata as UtsendtArbeidstakerMetadata).skjemadel == Skjemadel.ARBEIDSGIVERS_DEL
-        }!!
-
-        arbeidstakerSkjemaDto.id shouldBe arbeidstakersSkjema.id
-        (arbeidstakerSkjemaDto.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).utenlandsoppdraget shouldBe arbeidstakersDataMedOverlappendePeriode.utenlandsoppdraget
-        arbeidsgiversSkjemaDto.id shouldBe arbeidsgiversSkjema.id
-        (arbeidsgiversSkjemaDto.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
+        val kobletSkjemaDto = result.kobletSkjema.shouldNotBeNull()
+        kobletSkjemaDto.id shouldBe arbeidsgiversSkjema.id
+        (kobletSkjemaDto.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget shouldBe arbeidsgiversDataMedOverlappendePeriode.utenlandsoppdraget
     }
 
     @Test
@@ -135,8 +127,8 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
         result.referanseId shouldBe "TEST02"
-        result.skjemaer shouldHaveSize 1
-        result.skjemaer[0].id shouldBe arbeidstakersSkjema.id
+        result.kobletSkjema.shouldBeNull()
+        result.tidligereInnsendteSkjema shouldBe emptyList()
     }
 
     @Test
@@ -161,8 +153,8 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidsgiversSkjema.id!!)
 
         result.referanseId shouldBe "TEST04"
-        result.skjemaer shouldHaveSize 1
-        result.skjemaer[0].id shouldBe arbeidsgiversSkjema.id
+        result.kobletSkjema.shouldBeNull()
+        result.tidligereInnsendteSkjema shouldBe emptyList()
     }
 
     @Test
@@ -189,7 +181,8 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
         val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(arbeidstakersSkjema.id!!)
 
-        result.skjemaer shouldHaveSize 1
-        (result.skjemaer[0].metadata as UtsendtArbeidstakerMetadata).erstatterSkjemaId shouldBe gammelSkjemaId
+        result.kobletSkjema.shouldBeNull()
+        result.tidligereInnsendteSkjema shouldBe emptyList()
+        result.skjema.metadata.erstatterSkjemaId shouldBe gammelSkjemaId
     }
 }

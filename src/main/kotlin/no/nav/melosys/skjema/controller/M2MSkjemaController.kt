@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
-import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerM2MSkjemaData
+import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,7 +30,7 @@ class M2MSkjemaController(
     @ApiResponse(responseCode = "200", description = "Skjema hentet")
     @ApiResponse(responseCode = "403", description = "Ingen tilgang")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
-    fun getSkjema(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerM2MSkjemaData> {
+    fun getSkjema(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaM2MDto> {
         log.info { "M2M: Henter skjema med id: $id" }
         return ResponseEntity.ok(m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(id))
     }
