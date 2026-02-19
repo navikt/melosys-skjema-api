@@ -82,6 +82,8 @@ spec:
         - application: pdl-api
           namespace: pdl
           cluster: dev-fss
+        - application: clamav
+          namespace: nais-system
   envFrom:
     - secret: melosys-skjema-api
   env:
