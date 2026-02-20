@@ -50,6 +50,12 @@ spec:
             envVarPrefix: DB
         diskAutoresize: true
         cascadingDelete: false
+    buckets:
+      - name: melosys-skjema-vedlegg-dev
+        retentionPeriodDays: 30
+        lifecycleCondition:
+          age: 30
+          withState: ANY
   tokenx:
     enabled: true
   azure:
@@ -82,6 +88,8 @@ spec:
         - application: pdl-api
           namespace: pdl
           cluster: dev-fss
+        - application: clamav
+          namespace: nais-system
   envFrom:
     - secret: melosys-skjema-api
   env:
@@ -95,5 +103,9 @@ spec:
       value: https://pdl-api.dev-fss-pub.nais.io/graphql
     - name: PDL_SCOPE
       value: api://dev-fss.pdl.pdl-api/.default
+    - name: VEDLEGG_BUCKET_NAME
+      value: melosys-skjema-vedlegg-dev
+    - name: CLAMAV_URL
+      value: http://clamav.nais-system
   kafka:
     pool: nav-dev
