@@ -33,6 +33,8 @@ AZURE_APP_WELL_KNOWN_URL: https://login.microsoftonline.com/966ac572-f5b7-4bbe-a
 MELOSYS_CLIENT_ID: placeholder-melosys-client-id
 KAFKA_SKJEMA_MOTTAK_TOPIC: teammelosys.skjema.innsendt.q2-local
 KAFKA_BRUKERVARSEL_TOPIC: min-side.aapen-brukervarsel-v1
+VEDLEGG_BUCKET_NAME: melosys-skjema-vedlegg-local
+CLAMAV_URL: http://not-used-in-local
 
 kubernetes:
   azure:

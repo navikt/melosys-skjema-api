@@ -41,6 +41,11 @@ spring:
       trust-store-location: file:${KAFKA_TRUSTSTORE_PATH}
       trust-store-password: ${KAFKA_CREDSTORE_PASSWORD}
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -143,6 +148,12 @@ kafka:
 varsling:
   arbeidstaker:
     skjema-lenke: ${VARSLING_ARBEIDSTAKER_SKJEMA_LENKE}
+
+vedlegg:
+  bucket-name: ${VEDLEGG_BUCKET_NAME}
+
+clamav:
+  url: ${CLAMAV_URL}
 
 logging:
   level:
