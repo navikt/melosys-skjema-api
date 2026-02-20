@@ -9,24 +9,21 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
-import no.nav.melosys.skjema.controller.dto.VedleggResponse
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.Vedlegg
-import no.nav.melosys.skjema.entity.VedleggFiltype
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.VedleggRepository
-import no.nav.melosys.skjema.service.vedlegg.FilValidator
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import org.springframework.web.multipart.MultipartFile
 
 class VedleggServiceTest : FunSpec({
 
     val mockUtsendtArbeidstakerService = mockk<UtsendtArbeidstakerService>()
     val mockVedleggRepository = mockk<VedleggRepository>()
-    val mockFilValidator = mockk<FilValidator>()
     val mockClamAvClient = mockk<ClamAvClient>()
     val mockVedleggStorageClient = mockk<VedleggStorageClient>()
     val mockSubjectHandler = mockk<SubjectHandler>()
@@ -34,7 +31,6 @@ class VedleggServiceTest : FunSpec({
     val vedleggService = VedleggService(
         mockUtsendtArbeidstakerService,
         mockVedleggRepository,
-        mockFilValidator,
         mockClamAvClient,
         mockVedleggStorageClient
     )
@@ -57,7 +53,7 @@ class VedleggServiceTest : FunSpec({
         every { fil.size } returns 1024
         every { fil.bytes } returns "%PDF-1.4 content".toByteArray()
         every { fil.contentType } returns "application/pdf"
-        every { fil.inputStream } returns "%PDF-1.4 content".toByteArray().inputStream()
+        every { fil.inputStream } answers { "%PDF-1.4 content".toByteArray().inputStream() }
         return fil
     }
 
@@ -73,10 +69,7 @@ class VedleggServiceTest : FunSpec({
 
             every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
-            every { mockFilValidator.valider(fil) } just Runs
-            every { mockFilValidator.detekterFiltype(fil) } returns VedleggFiltype.PDF
             every { mockClamAvClient.scan(fil) } just Runs
-            every { mockFilValidator.sanitizeFilnavn("test.pdf") } returns "test.pdf"
             every { mockVedleggStorageClient.lastOpp(any(), any(), any()) } just Runs
             every { mockVedleggRepository.save(any()) } answers {
                 val vedlegg = firstArg<Vedlegg>()
@@ -120,8 +113,6 @@ class VedleggServiceTest : FunSpec({
 
             every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
-            every { mockFilValidator.valider(fil) } just Runs
-            every { mockFilValidator.detekterFiltype(fil) } returns VedleggFiltype.PDF
             every { mockClamAvClient.scan(fil) } throws VedleggVirusFunnetException("Virus funnet")
 
             shouldThrow<VedleggVirusFunnetException> {

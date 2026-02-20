@@ -1,20 +1,16 @@
-package no.nav.melosys.skjema.service.vedlegg
+package no.nav.melosys.skjema.vedlegg
 
-import no.nav.melosys.skjema.entity.VedleggFiltype
-import org.springframework.stereotype.Component
+import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import org.springframework.web.multipart.MultipartFile
 
-@Component
-class FilValidator {
+object FilValidator {
 
-    companion object {
-        const val MAKS_FILSTORRELSE: Long = 10 * 1024 * 1024 // 10 MB
-        const val MAKS_FILNAVN_LENGDE = 200
+    const val MAKS_FILSTORRELSE: Long = 10 * 1024 * 1024 // 10 MB
+    const val MAKS_FILNAVN_LENGDE = 200
 
-        private val PDF_MAGIC_BYTES = byteArrayOf(0x25, 0x50, 0x44, 0x46) // %PDF
-        private val PNG_MAGIC_BYTES = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
-        private val JPEG_MAGIC_BYTES = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
-    }
+    private val PDF_MAGIC_BYTES = byteArrayOf(0x25, 0x50, 0x44, 0x46) // %PDF
+    private val PNG_MAGIC_BYTES = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+    private val JPEG_MAGIC_BYTES = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
 
     fun valider(fil: MultipartFile) {
         validerFilstorrelse(fil)

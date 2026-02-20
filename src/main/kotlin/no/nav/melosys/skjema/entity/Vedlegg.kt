@@ -14,11 +14,8 @@ import jakarta.persistence.Table
 import jakarta.persistence.Transient
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import org.springframework.data.domain.Persistable
-
-enum class VedleggFiltype {
-    PDF, JPEG, PNG
-}
 
 @Entity
 @Table(name = "vedlegg")

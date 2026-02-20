@@ -8,7 +8,6 @@ import io.mockk.every
 import io.mockk.just
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
-import no.nav.melosys.skjema.controller.dto.VedleggResponse
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
@@ -16,9 +15,8 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.service.NotificationService
-import no.nav.melosys.skjema.types.DegSelvMetadata
-import no.nav.melosys.skjema.types.Skjemadel
-import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -66,20 +64,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
     }
 
     private fun opprettSkjema(): Skjema {
-        return skjemaRepository.save(
-            Skjema(
-                status = SkjemaStatus.UTKAST,
-                fnr = pid,
-                orgnr = "123456789",
-                metadata = DegSelvMetadata(
-                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-                    arbeidsgiverNavn = "Test AS",
-                    juridiskEnhetOrgnr = "123456789"
-                ),
-                opprettetAv = pid,
-                endretAv = pid
-            )
-        )
+        return skjemaRepository.save(skjemaMedDefaultVerdier(fnr = pid))
     }
 
     @BeforeEach
@@ -93,7 +78,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    fun `lastOpp vedlegg - returnerer 200 med VedleggResponse`() {
+    fun `lastOpp vedlegg - returnerer 200 med VedleggDto`() {
         val skjema = opprettSkjema()
         val token = getToken()
 
@@ -109,7 +94,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isOk
-            .expectBody(VedleggResponse::class.java)
+            .expectBody(VedleggDto::class.java)
             .returnResult()
             .responseBody
 
@@ -128,7 +113,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
-            .expectBodyList(VedleggResponse::class.java)
+            .expectBodyList(VedleggDto::class.java)
             .hasSize(0)
     }
 
@@ -150,7 +135,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isOk
-            .expectBody(VedleggResponse::class.java)
+            .expectBody(VedleggDto::class.java)
             .returnResult()
             .responseBody!!
 
@@ -167,26 +152,13 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
-            .expectBodyList(VedleggResponse::class.java)
+            .expectBodyList(VedleggDto::class.java)
             .hasSize(0)
     }
 
     @Test
     fun `lastOpp vedlegg - returnerer 403 uten tilgang`() {
-        val skjema = skjemaRepository.save(
-            Skjema(
-                status = SkjemaStatus.UTKAST,
-                fnr = "99999999999",
-                orgnr = "123456789",
-                metadata = DegSelvMetadata(
-                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-                    arbeidsgiverNavn = "Test AS",
-                    juridiskEnhetOrgnr = "123456789"
-                ),
-                opprettetAv = "99999999999",
-                endretAv = "99999999999"
-            )
-        )
+        val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(fnr = "99999999999"))
         val token = getToken()
 
         val pdfBytes = "%PDF-1.4 test content".toByteArray()

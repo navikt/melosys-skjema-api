@@ -34,3 +34,5 @@ BRUK_SYNTETISK_FNR: true
 VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: https://melosys-skjema-web.intern.dev.nav.no
 AZURE_APP_WELL_KNOWN_URL: ${mock-oauth2-server.baseUrl}/azure/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: test-melosys-client-id
+VEDLEGG_BUCKET_NAME: test-vedlegg-bucket
+CLAMAV_URL: http://localhost:9999

@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.controller
 
 import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
-import no.nav.melosys.skjema.controller.dto.VedleggResponse
 import no.nav.melosys.skjema.service.VedleggService
+import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -28,12 +28,12 @@ class VedleggController(
     fun lastOppVedlegg(
         @PathVariable skjemaId: UUID,
         @RequestPart("fil") fil: MultipartFile
-    ): VedleggResponse {
+    ): VedleggDto {
         return vedleggService.lastOpp(skjemaId, fil)
     }
 
     @GetMapping
-    fun hentVedlegg(@PathVariable skjemaId: UUID): List<VedleggResponse> {
+    fun hentVedlegg(@PathVariable skjemaId: UUID): List<VedleggDto> {
         return vedleggService.list(skjemaId)
     }
 
