@@ -32,3 +32,5 @@ PDL_URL: http://host.docker.internal:8082/pdl
 REPR_URL: http://host.docker.internal:8082/repr
 AZURE_APP_WELL_KNOWN_URL: http://host.docker.internal:8082/azure/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: placeholder-melosys-client-id
+VEDLEGG_BUCKET_NAME: melosys-skjema-vedlegg-local
+CLAMAV_URL: http://clamav.nais-system
