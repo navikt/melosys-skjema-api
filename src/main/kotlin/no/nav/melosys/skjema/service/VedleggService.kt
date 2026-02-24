@@ -41,8 +41,7 @@ class VedleggService(
             "Maks antall vedlegg ($MAKS_ANTALL_VEDLEGG) er nådd"
         }
 
-        FilValidator.valider(fil)
-        val filtype = FilValidator.detekterFiltype(fil)
+        val filtype = FilValidator.validerOgDetekterFiltype(fil)
 
         clamAvClient.scan(fil)
 

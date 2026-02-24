@@ -39,14 +39,14 @@ class ClamAvClientNais(
             throw VedleggVirusFunnetException("Virusscanning feilet. Filen kan ikke lastes opp.")
         }
 
-        response.forEach { result ->
-            when (result.Result) {
+        response.forEach { scanResult ->
+            when (scanResult.result) {
                 ClamAvStatus.FOUND -> {
-                    log.warn { "Virus funnet i fil '${fil.originalFilename}': ${result.Filename}" }
+                    log.warn { "Virus funnet i fil '${fil.originalFilename}': ${scanResult.filename}" }
                     throw VedleggVirusFunnetException("Filen inneholder virus og kan ikke lastes opp.")
                 }
                 ClamAvStatus.ERROR -> {
-                    log.error { "ClamAV feilet ved scanning av '${fil.originalFilename}': ${result.Filename}" }
+                    log.error { "ClamAV feilet ved scanning av '${fil.originalFilename}': ${scanResult.filename}" }
                     throw VedleggVirusFunnetException("Virusscanning feilet. Filen kan ikke lastes opp.")
                 }
                 ClamAvStatus.OK -> {}
@@ -58,10 +58,11 @@ class ClamAvClientNais(
 }
 
 private data class ClamAvScanResult(
-    val Filename: String,
-    val Result: ClamAvStatus
+    val filename: String = "",
+    val result: ClamAvStatus = ClamAvStatus.OK
 )
 
 private enum class ClamAvStatus {
-    FOUND, OK, ERROR
+    @com.fasterxml.jackson.annotation.JsonEnumDefaultValue
+    OK, FOUND, ERROR
 }
