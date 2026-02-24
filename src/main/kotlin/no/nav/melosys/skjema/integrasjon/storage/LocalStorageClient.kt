@@ -31,4 +31,9 @@ class LocalStorageClient : VedleggStorageClient {
         log.info { "Lokal lagring: Vedlegg slettet fra $filePath" }
     }
 
+    override fun hent(storageReferanse: String): ByteArray {
+        val filePath = baseDir.resolve(storageReferanse)
+        log.info { "Lokal lagring: Henter vedlegg fra $filePath" }
+        return Files.readAllBytes(filePath)
+    }
 }

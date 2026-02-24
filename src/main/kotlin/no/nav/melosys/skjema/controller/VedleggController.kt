@@ -5,8 +5,11 @@ import java.util.UUID
 import no.nav.melosys.skjema.service.VedleggService
 import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import no.nav.security.token.support.core.api.Protected
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -35,6 +38,21 @@ class VedleggController(
     @GetMapping
     fun hentVedlegg(@PathVariable skjemaId: UUID): List<VedleggDto> {
         return vedleggService.list(skjemaId)
+    }
+
+    @GetMapping("/{vedleggId}/innhold")
+    fun hentVedleggInnhold(
+        @PathVariable skjemaId: UUID,
+        @PathVariable vedleggId: UUID
+    ): ResponseEntity<ByteArray> {
+        val innhold = vedleggService.hent(skjemaId, vedleggId)
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(innhold.contentType))
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.inline().filename(innhold.filnavn).build().toString()
+            )
+            .body(innhold.data)
     }
 
     @DeleteMapping("/{vedleggId}")

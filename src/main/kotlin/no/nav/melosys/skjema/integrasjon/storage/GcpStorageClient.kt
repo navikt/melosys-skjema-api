@@ -34,4 +34,9 @@ class GcpStorageClient(
         storage.delete(blobId)
     }
 
+    override fun hent(storageReferanse: String): ByteArray {
+        log.info { "Henter vedlegg fra GCP Storage: $storageReferanse" }
+        val blobId = BlobId.of(bucketName, storageReferanse)
+        return storage.readAllBytes(blobId)
+    }
 }
