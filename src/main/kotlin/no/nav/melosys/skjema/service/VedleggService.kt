@@ -72,12 +72,19 @@ class VedleggService(
 
     fun list(skjemaId: UUID): List<VedleggDto> {
         utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        return listBySkjemaId(skjemaId)
+    }
+
+    fun listBySkjemaId(skjemaId: UUID): List<VedleggDto> {
         return vedleggRepository.findBySkjemaId(skjemaId).map { it.toVedleggDto() }
     }
 
     fun hent(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        return hentInnhold(skjemaId, vedleggId)
+    }
 
+    fun hentInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
             ?: throw NoSuchElementException("Vedlegg med id $vedleggId ikke funnet for skjema $skjemaId")
 
