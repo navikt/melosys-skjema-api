@@ -27,6 +27,7 @@ private val log = KotlinLogging.logger { }
 class M2MSkjemaService(
     private val skjemaRepository: SkjemaRepository,
     private val innsendingRepository: InnsendingRepository,
+    private val vedleggService: VedleggService,
     private val skjemaDefinisjonService: SkjemaDefinisjonService
 ) {
 
@@ -40,13 +41,16 @@ class M2MSkjemaService(
 
         val skjemaDto = skjema.toUtsendtArbeidstakerDto()
 
+        val vedleggListe = vedleggService.listBySkjemaId(skjema.id)
+
         return UtsendtArbeidstakerSkjemaM2MDto(
             skjema = skjemaDto,
             kobletSkjema = hentKobletSkjema(skjemaDto),
             tidligereInnsendteSkjema = emptyList(),
             referanseId = innsending.referanseId,
             innsendtTidspunkt = innsending.opprettetDato.toOsloLocalDateTime(),
-            innsenderFnr = innsending.innsenderFnr
+            innsenderFnr = innsending.innsenderFnr,
+            vedlegg = vedleggListe
         )
     }
 
@@ -57,6 +61,11 @@ class M2MSkjemaService(
             log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema ${skjemaDto.id}" }
             null
         }
+    }
+
+    fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
+        log.info { "M2M: Henter vedlegg $vedleggId for skjema $skjemaId" }
+        return vedleggService.hentInnhold(skjemaId, vedleggId)
     }
 
     fun hentPdfForSkjema(skjemaId: UUID): ByteArray {

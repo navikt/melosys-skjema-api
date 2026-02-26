@@ -12,14 +12,10 @@ object FilValidator {
     private val PNG_MAGIC_BYTES = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     private val JPEG_MAGIC_BYTES = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
 
-    fun valider(fil: MultipartFile) {
+    fun validerOgDetekterFiltype(fil: MultipartFile): VedleggFiltype {
         validerFilstorrelse(fil)
-        validerMagicBytes(fil)
-    }
 
-    fun detekterFiltype(fil: MultipartFile): VedleggFiltype {
         val bytes = fil.inputStream.use { it.readNBytes(8) }
-
         return when {
             bytes.startsWith(PDF_MAGIC_BYTES) -> VedleggFiltype.PDF
             bytes.startsWith(PNG_MAGIC_BYTES) -> VedleggFiltype.PNG
@@ -44,18 +40,6 @@ object FilValidator {
         }
         require(fil.size > 0) {
             "Filen er tom."
-        }
-    }
-
-    private fun validerMagicBytes(fil: MultipartFile) {
-        val bytes = fil.inputStream.use { it.readNBytes(8) }
-
-        val erGyldig = bytes.startsWith(PDF_MAGIC_BYTES) ||
-            bytes.startsWith(PNG_MAGIC_BYTES) ||
-            bytes.startsWith(JPEG_MAGIC_BYTES)
-
-        require(erGyldig) {
-            "Ugyldig filformat. Kun PDF, JPEG og PNG er tillatt."
         }
     }
 

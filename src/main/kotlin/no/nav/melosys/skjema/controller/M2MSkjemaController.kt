@@ -8,6 +8,8 @@ import java.util.UUID
 import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -47,5 +49,26 @@ class M2MSkjemaController(
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_PDF)
             .body(pdf)
+    }
+
+    @GetMapping("/{skjemaId}/vedlegg/{vedleggId}/innhold")
+    @M2MReadSkjemadata
+    @Operation(summary = "Hent vedlegg-innhold for et skjema (M2M)")
+    @ApiResponse(responseCode = "200", description = "Vedlegg hentet")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
+    @ApiResponse(responseCode = "404", description = "Vedlegg ikke funnet")
+    fun getVedleggInnhold(
+        @PathVariable skjemaId: UUID,
+        @PathVariable vedleggId: UUID
+    ): ResponseEntity<ByteArray> {
+        log.info { "M2M: Henter vedlegg $vedleggId for skjema $skjemaId" }
+        val innhold = m2mSkjemaService.hentVedleggInnhold(skjemaId, vedleggId)
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(innhold.contentType))
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.inline().filename(innhold.filnavn).build().toString()
+            )
+            .body(innhold.data)
     }
 }

@@ -5,6 +5,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.entity.Vedlegg
 import no.nav.melosys.skjema.extensions.toVedleggDto
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
+import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -41,8 +42,7 @@ class VedleggService(
             "Maks antall vedlegg ($MAKS_ANTALL_VEDLEGG) er nådd"
         }
 
-        FilValidator.valider(fil)
-        val filtype = FilValidator.detekterFiltype(fil)
+        val filtype = FilValidator.validerOgDetekterFiltype(fil)
 
         clamAvClient.scan(fil)
 
@@ -72,7 +72,28 @@ class VedleggService(
 
     fun list(skjemaId: UUID): List<VedleggDto> {
         utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        return listBySkjemaId(skjemaId)
+    }
+
+    fun listBySkjemaId(skjemaId: UUID): List<VedleggDto> {
         return vedleggRepository.findBySkjemaId(skjemaId).map { it.toVedleggDto() }
+    }
+
+    fun hent(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
+        utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        return hentInnhold(skjemaId, vedleggId)
+    }
+
+    fun hentInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
+        val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
+            ?: throw NoSuchElementException("Vedlegg med id $vedleggId ikke funnet for skjema $skjemaId")
+
+        val data = vedleggStorageClient.hent(vedlegg.storageReferanse)
+        return VedleggInnhold(
+            data = data,
+            filnavn = vedlegg.originalFilnavn,
+            contentType = vedlegg.filtype.toContentType()
+        )
     }
 
     @Transactional
@@ -91,4 +112,16 @@ class VedleggService(
 
         log.info { "Vedlegg slettet: $vedleggId for skjema $skjemaId" }
     }
+}
+
+class VedleggInnhold(
+    val data: ByteArray,
+    val filnavn: String,
+    val contentType: String
+)
+
+private fun VedleggFiltype.toContentType(): String = when (this) {
+    VedleggFiltype.PDF -> "application/pdf"
+    VedleggFiltype.JPEG -> "image/jpeg"
+    VedleggFiltype.PNG -> "image/png"
 }
