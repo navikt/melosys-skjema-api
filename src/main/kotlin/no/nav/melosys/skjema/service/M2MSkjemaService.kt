@@ -12,12 +12,9 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -91,7 +88,10 @@ class M2MSkjemaService(
 
     private fun byggSkjemaPdfData(skjema: Skjema, innsending: Innsending): SkjemaPdfData {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
-        val (arbeidstakerData, arbeidsgiverData) = hentArbeidstakerOgArbeidsgiverData(skjema, metadata)
+
+        val kobletSkjemaData = metadata.kobletSkjemaId?.let { kobletId ->
+            skjemaRepository.findByIdOrNull(kobletId)?.data as? UtsendtArbeidstakerSkjemaData
+        }
 
         val definisjon = skjemaDefinisjonService.hent(
             type = skjema.type,
@@ -104,44 +104,9 @@ class M2MSkjemaService(
             referanseId = innsending.referanseId,
             innsendtDato = innsending.opprettetDato,
             innsendtSprak = innsending.innsendtSprak,
-            arbeidstakerData = arbeidstakerData,
-            arbeidsgiverData = arbeidsgiverData,
+            skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
+            kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
         )
-    }
-
-    private fun hentArbeidstakerOgArbeidsgiverData(
-        skjema: Skjema,
-        metadata: UtsendtArbeidstakerMetadata
-    ): Pair<UtsendtArbeidstakerArbeidstakersSkjemaDataDto?, UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?> {
-        var arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto? = null
-        var arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
-
-        // Data fra hovedskjema
-        when (metadata.skjemadel) {
-            Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-            Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
-                // Kombinert DTO - ingen kobling nødvendig, returner direkte
-                // arbeidstakerData og arbeidsgiverData forblir null; downstream må håndtere combined DTO
-            }
-        }
-
-        // Data fra koblet skjema (ikke relevant for kombinert DTO)
-        metadata.kobletSkjemaId?.let { kobletId ->
-            skjemaRepository.findByIdOrNull(kobletId)?.let { kobletSkjema ->
-                val kobletMetadata = kobletSkjema.metadata as UtsendtArbeidstakerMetadata
-                when (kobletMetadata.skjemadel) {
-                    Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = kobletSkjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-                    Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = kobletSkjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-                    Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
-                        // Koblet skjema bør ikke være kombinert, men håndter det gracefully
-                        log.warn { "Koblet skjema ${kobletId} er kombinert DTO - ignorerer" }
-                    }
-                }
-            }
-        }
-
-        return Pair(arbeidstakerData, arbeidsgiverData)
     }
 }
