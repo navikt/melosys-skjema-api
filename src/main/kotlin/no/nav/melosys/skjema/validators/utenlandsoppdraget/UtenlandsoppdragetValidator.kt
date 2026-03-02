@@ -13,12 +13,6 @@ class UtenlandsoppdragetValidator() {
     fun validate(dto: UtenlandsoppdragetDto?): List<Violation> {
         if (dto == null) return emptyList()
 
-        PeriodeValidator.validate(
-            dto.arbeidstakerUtsendelsePeriode,
-            fieldName = UtenlandsoppdragetDto::arbeidstakerUtsendelsePeriode.name
-        )
-            .takeIf { it.isNotEmpty() }?.let { return it }
-
         if (!dto.arbeidsgiverHarOppdragILandet) {
             if (dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()) {
                 return listOf(Violation(

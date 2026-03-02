@@ -10,13 +10,15 @@ import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.Arbeidssituasjo
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(
     override val type: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL",
     val arbeidsgiversData: ArbeidsgiversData = ArbeidsgiversData(),
     val arbeidstakersData: ArbeidstakersData = ArbeidstakersData(),
-    val tilleggsopplysninger: TilleggsopplysningerDto? = null
+    override val utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
+    override val tilleggsopplysninger: TilleggsopplysningerDto? = null
 ) : UtsendtArbeidstakerSkjemaData {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

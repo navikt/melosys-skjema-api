@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.Arbeidstaker
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
@@ -15,5 +16,6 @@ data class UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
     val utenlandsoppdraget: UtenlandsoppdragetDto? = null,
     val arbeidstakerensLonn: ArbeidstakerensLonnDto? = null,
     val arbeidsstedIUtlandet: ArbeidsstedIUtlandetDto? = null,
-    val tilleggsopplysninger: TilleggsopplysningerDto? = null
+    override val utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
+    override val tilleggsopplysninger: TilleggsopplysningerDto? = null
 ) : UtsendtArbeidstakerSkjemaData

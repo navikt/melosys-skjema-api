@@ -107,8 +107,6 @@ fun periodeDtoMedDefaultVerdier() = PeriodeDto(
 )
 
 fun utenlandsoppdragetDtoMedDefaultVerdier() = UtenlandsoppdragetDto(
-    utsendelseLand = LandKode.SE,
-    arbeidstakerUtsendelsePeriode = periodeDtoMedDefaultVerdier(),
     arbeidsgiverHarOppdragILandet = true,
     arbeidstakerBleAnsattForUtenlandsoppdraget = false,
     arbeidstakerForblirAnsattIHelePerioden = true,

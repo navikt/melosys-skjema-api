@@ -4,16 +4,16 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
     override val type: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSTAKERS_DEL",
-    val utenlandsoppdraget: UtenlandsoppdragetArbeidstakersDelDto? = null,
+    override val utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
     val arbeidssituasjon: ArbeidssituasjonDto? = null,
     val skatteforholdOgInntekt: SkatteforholdOgInntektDto? = null,
     val familiemedlemmer: FamiliemedlemmerDto? = null,
-    val tilleggsopplysninger: TilleggsopplysningerDto? = null
+    override val tilleggsopplysninger: TilleggsopplysningerDto? = null
 ) : UtsendtArbeidstakerSkjemaData

@@ -47,6 +47,11 @@ class ArbeidstakerVarslingService(
             return
         }
 
+        if (metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) {
+            log.debug { "Ingen varsling for kombinert skjemadel (skjema $skjemaId)" }
+            return
+        }
+
         when (metadata) {
             is ArbeidsgiverMetadata, is RadgiverMetadata -> {
                 varsleUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)

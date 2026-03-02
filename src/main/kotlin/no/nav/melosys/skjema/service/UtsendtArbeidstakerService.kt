@@ -30,8 +30,10 @@ import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.UtkastOversiktDto
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
@@ -40,10 +42,10 @@ import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakers
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -302,43 +304,35 @@ class UtsendtArbeidstakerService(
 
 
 
-    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
             dto.copy(arbeidsgiverensVirksomhetINorge = request)
         }
     }
 
-    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveUtenlandsoppdraget(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
             dto.copy(utenlandsoppdraget = request)
         }
     }
 
-    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidstakerensLonn(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
             dto.copy(arbeidstakerensLonn = request)
         }
     }
 
-    fun saveArbeidsstedIUtlandetInfo(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidsstedIUtlandet(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
             dto.copy(arbeidsstedIUtlandet = request)
-        }
-    }
-
-    fun saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
-
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(tilleggsopplysninger = request)
         }
     }
 
@@ -449,8 +443,7 @@ class UtsendtArbeidstakerService(
         )
 
         // Parse skjemadata
-        val arbeidstakerData = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-        val arbeidsgiverData = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+        val skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData
 
         return InnsendtSkjemaResponse(
             skjemaId = skjema.id!!,
@@ -458,8 +451,7 @@ class UtsendtArbeidstakerService(
             innsendtDato = skjema.endretDato,
             innsendtSprak = innsending.innsendtSprak,
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
-            arbeidstakerData = arbeidstakerData,
-            arbeidsgiverData = arbeidsgiverData,
+            skjemaData = skjemaData,
             definisjon = definisjon
         )
     }
@@ -485,44 +477,51 @@ class UtsendtArbeidstakerService(
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
     }
 
-    fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving utenlandsoppdraget info for skjema: $skjemaId" }
+    fun saveUtsendingsperiodeOgLandAsArbeidstaker(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(utenlandsoppdraget = request)
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
+            dto.copy(utsendingsperiodeOgLand = request)
         }
     }
 
-    fun saveArbeidssituasjonInfo(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidssituasjon(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
             dto.copy(arbeidssituasjon = request)
         }
     }
 
-    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveSkatteforholdOgInntekt(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
             dto.copy(skatteforholdOgInntekt = request)
         }
     }
 
-    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
             dto.copy(familiemedlemmer = request)
         }
     }
 
-    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+    fun saveTilleggsopplysninger(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving tilleggsopplysninger for skjema: $skjemaId" }
+        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(tilleggsopplysninger = request)
+        skjema.data = when (val data = skjema.data) {
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
+            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
+            else -> throw IllegalStateException("Ukjent skjemadata-type: ${data?.javaClass?.simpleName}")
         }
+
+        val savedSkjema = skjemaRepository.save(skjema)
+        return savedSkjema.toUtsendtArbeidstakerDto()
     }
 
     /**
@@ -680,32 +679,15 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    private fun updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(
+    private inline fun <reified T : UtsendtArbeidstakerSkjemaData> updateSkjemaData(
         skjemaId: UUID,
-        updateFunction: (UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+        default: () -> T,
+        updateFunction: (T) -> T
     ): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        // Read existing ArbeidsgiversSkjemaDataDto or create empty one
-        val existingDto = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto ?: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
-
-        // Apply the update function
-        val updatedDto = updateFunction(existingDto)
-
-        // Save and convert
-        skjema.data = updatedDto
-        val savedSkjema = skjemaRepository.save(skjema)
-        return savedSkjema.toUtsendtArbeidstakerDto()
-    }
-
-    private fun updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(
-        skjemaId: UUID,
-        updateFunction: (UtsendtArbeidstakerArbeidstakersSkjemaDataDto) -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-    ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-
-        // Read existing ArbeidstakersSkjemaDataDto or create empty one
-        val existingDto = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto ?: UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+        // Read existing DTO of the expected type, or create empty one
+        val existingDto = skjema.data as? T ?: default()
 
         // Apply the update function
         val updatedDto = updateFunction(existingDto)

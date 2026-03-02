@@ -170,5 +170,6 @@ enum class Representasjonstype {
 
 enum class Skjemadel {
     ARBEIDSTAKERS_DEL,
-    ARBEIDSGIVERS_DEL
+    ARBEIDSGIVERS_DEL,
+    ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
 }

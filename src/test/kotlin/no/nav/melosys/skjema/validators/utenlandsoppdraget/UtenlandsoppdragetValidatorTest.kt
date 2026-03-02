@@ -4,7 +4,6 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.TestInstance
@@ -18,11 +17,6 @@ class UtenlandsoppdragetValidatorTest {
     private val validator = UtenlandsoppdragetValidator()
 
     private val utenlandsoppdragetDtoMedGyldigeVerdier = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-        utsendelseLand = LandKode.SE,
-        arbeidstakerUtsendelsePeriode = PeriodeDto(
-            fraDato = java.time.LocalDate.of(2024, 1, 1),
-            tilDato = java.time.LocalDate.of(2024, 12, 31)
-        ),
         arbeidsgiverHarOppdragILandet = true,
         arbeidstakerBleAnsattForUtenlandsoppdraget = false,
         arbeidstakerForblirAnsattIHelePerioden = true,

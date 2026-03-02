@@ -17,6 +17,7 @@ import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -120,15 +121,23 @@ class M2MSkjemaService(
         when (metadata.skjemadel) {
             Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
             Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
+                // Kombinert DTO - ingen kobling nødvendig, returner direkte
+                // arbeidstakerData og arbeidsgiverData forblir null; downstream må håndtere combined DTO
+            }
         }
 
-        // Data fra koblet skjema
+        // Data fra koblet skjema (ikke relevant for kombinert DTO)
         metadata.kobletSkjemaId?.let { kobletId ->
             skjemaRepository.findByIdOrNull(kobletId)?.let { kobletSkjema ->
                 val kobletMetadata = kobletSkjema.metadata as UtsendtArbeidstakerMetadata
                 when (kobletMetadata.skjemadel) {
                     Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = kobletSkjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
                     Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = kobletSkjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+                    Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
+                        // Koblet skjema bør ikke være kombinert, men håndter det gracefully
+                        log.warn { "Koblet skjema ${kobletId} er kombinert DTO - ignorerer" }
+                    }
                 }
             }
         }

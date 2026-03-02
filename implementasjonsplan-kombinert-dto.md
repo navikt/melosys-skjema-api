@@ -237,6 +237,22 @@ Fiks eventuelle kompileringsfeil eller testfeil.
 
 ---
 
+## Steg 16: Revidere tilgangsstyring for skriveoperasjoner
+
+Nå som `/arbeidsgiver/` og `/arbeidstaker/` path-segmentene er fjernet og alle skriveendepunkter
+ligger under `/{skjemaId}/...`, må tilgangsstyringen revideres:
+
+- Gjennomgå `hentSkjemaMedTilgangsstyring()` og vurder om den gir riktig tilgangskontroll
+  for det kombinerte skjemaet (`ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`)
+- Vurder om det trengs differensiert tilgangsstyring per seksjon (f.eks. at arbeidsgiver
+  kun kan skrive til arbeidsgiver-seksjoner, og arbeidstaker kun til arbeidstaker-seksjoner)
+- For det kombinerte skjemaet: Bestem hvem som har skrivetilgang til hvilke seksjoner
+- Oppdater tilgangsstyring i `UtsendtArbeidstakerService` der nødvendig
+
+**NB:** Dette steget tas helt til slutt, etter at alt annet er på plass og tester passerer.
+
+---
+
 ## Relevante filer (referanse)
 
 ### Allerede modifisert:

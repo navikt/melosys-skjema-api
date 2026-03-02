@@ -14,8 +14,8 @@ import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakers
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -35,9 +35,9 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
-        data.utenlandsoppdraget?.let { dto ->
-            definisjon.seksjoner["utenlandsoppdragetArbeidstaker"]?.let { seksjon ->
-                builder.append(byggUtenlandsoppdragetArbeidstaker(dto, seksjon))
+        data.utsendingsperiodeOgLand?.let { dto ->
+            definisjon.seksjoner["utsendingsperiodeOgLand"]?.let { seksjon ->
+                builder.append(byggUtsendingsperiodeOgLand(dto, seksjon))
             }
         }
 
@@ -68,12 +68,12 @@ class SeksjonRenderer(
         return builder.toString()
     }
 
-    private fun byggUtenlandsoppdragetArbeidstaker(
-        data: UtenlandsoppdragetArbeidstakersDelDto,
+    private fun byggUtsendingsperiodeOgLand(
+        data: UtsendingsperiodeOgLandDto,
         seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
-            felt("utsendelsesLand", data.utsendelsesLand)
+            felt("utsendelseLand", data.utsendelseLand)
             felt("utsendelsePeriode", data.utsendelsePeriode)
         }
     }
@@ -184,8 +184,6 @@ class SeksjonRenderer(
         seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
-            felt("utsendelseLand", data.utsendelseLand)
-            felt("arbeidstakerUtsendelsePeriode", data.arbeidstakerUtsendelsePeriode)
             felt("arbeidsgiverHarOppdragILandet", data.arbeidsgiverHarOppdragILandet)
             felt("arbeidstakerBleAnsattForUtenlandsoppdraget", data.arbeidstakerBleAnsattForUtenlandsoppdraget)
             felt("arbeidstakerForblirAnsattIHelePerioden", data.arbeidstakerForblirAnsattIHelePerioden)

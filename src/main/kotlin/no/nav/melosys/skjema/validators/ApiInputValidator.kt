@@ -7,8 +7,8 @@ import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.Utenlandsoppd
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.validators.arbeidsgiverensvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeValidator
 import no.nav.melosys.skjema.validators.arbeidssituasjon.ArbeidssituasjonValidator
 import no.nav.melosys.skjema.validators.arbeidsstediutlandet.ArbeidsstedIUtlandetValidator
@@ -40,7 +40,7 @@ class ApiInputValidator(
         throwIfViolations(utenlandsoppdragetValidator.validate(dto))
     }
 
-    fun validate(dto: UtenlandsoppdragetArbeidstakersDelDto) {
+    fun validate(dto: UtsendingsperiodeOgLandDto) {
         throwIfViolations(utenlandsoppdragetArbeidstakersDelValidator.validate(dto))
     }
 
