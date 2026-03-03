@@ -21,7 +21,9 @@ import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
+import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
@@ -32,7 +34,9 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
@@ -40,8 +44,10 @@ import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgivers
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
 import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.types.Skjemadel
@@ -59,14 +65,20 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 
-data class SkjemaStegTestFixture<T>(
+data class UtsendtArbeidstakerControllerTestFixture<T>(
+    // Eksisterende felter (brukes av steg-tester og validerings-tester)
     val stepKey: String = "",
     val uri: String = "",
-    val requestBody: Any,
-    val dataBeforePost: T? = null,
+    val requestBody: Any? = null,
     val expectedDataAfterPost: T? = null,
     val httpMethod: HttpMethod? = null,
-    val expectedValidationError: Map<String, String>? = null
+    val expectedValidationError: Map<String, String>? = null,
+
+    // Nye felter for applyFixture()
+    val tokenFnr: String = korrektSyntetiskFnr,
+    val existingSkjemaer: List<Skjema> = emptyList(),
+    val altinnHarTilgang: Boolean? = null,
+    val reprHarFullmakt: Boolean? = null,
 )
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -93,12 +105,16 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @MockkBean
     private lateinit var eregService: EregService
 
+    @MockkBean
+    private lateinit var reprService: ReprService
+
 
     @BeforeEach
     fun setUp() {
         clearMocks(notificationService)
         clearMocks(altinnService)
         clearMocks(eregService)
+        clearMocks(reprService)
         skjemaRepository.deleteAll()
 
         every { altinnService.harBrukerTilgang(any()) } returns true
@@ -252,83 +268,25 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("arbeidsgiverStegTestFixtures")
-    @DisplayName("POST arbeidsgiver steg endpoints skal lagre data korrekt")
-    fun `POST arbeidsgiver steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>) {
-        val existingSkjemaBeforePOST = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST,
-                data = fixture.dataBeforePost
-            )
-        )
+    @MethodSource("stegTestFixtures")
+    @DisplayName("POST steg endpoints skal lagre data korrekt")
+    fun `POST steg endpoints skal lagre data korrekt`(fixture: UtsendtArbeidstakerControllerTestFixture<SkjemaData>) {
+        val savedSkjemaer = applyFixture(fixture)
+        val existingSkjema = savedSkjemaer.first()
 
-        val token = createTokenForUser(korrektSyntetiskFnr)
+        val token = createTokenForUser(fixture.tokenFnr)
 
         webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidsgiver/${existingSkjemaBeforePOST.id}/${fixture.stepKey}")
+            .uri("/api/skjema/utsendt-arbeidstaker/${existingSkjema.id}/${fixture.stepKey}")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(fixture.requestBody)
+            .bodyValue(fixture.requestBody!!)
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
 
-        val persistedSkjemaDataAfterPOST = skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-        persistedSkjemaDataAfterPOST shouldBe fixture.expectedDataAfterPost
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("arbeidstakerStegTestFixtures")
-    @DisplayName("POST arbeidstaker steg endpoints skal lagre data korrekt")
-    fun `POST arbeidstaker steg endpoints skal lagre data korrekt`(fixture: SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>) {
-        val existingSkjemaBeforePOST = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = korrektSyntetiskFnr,
-                status = SkjemaStatus.UTKAST,
-                data = fixture.dataBeforePost
-            )
-        )
-
-        val token = createTokenForUser(existingSkjemaBeforePOST.fnr!!)
-
-        webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/arbeidstaker/${existingSkjemaBeforePOST.id}/${fixture.stepKey}")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(fixture.requestBody)
-            .exchange()
-            .expectStatus().isOk
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
-
-        val persistedSkjemaDataAfterPOST = skjemaRepository.getReferenceById(existingSkjemaBeforePOST.id!!).data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-        persistedSkjemaDataAfterPOST shouldBe fixture.expectedDataAfterPost
-    }
-
-    @Test
-    @DisplayName("Get /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal ikke kunne aksessere andres skjemaer")
-    fun `Get skjema som arbeidsgiver skal ikke kunne aksessere andres skjemaer`() {
-        val savedSkjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                orgnr = korrektSyntetiskOrgnr,
-                fnr = etAnnetKorrektSyntetiskFnr,
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                    representasjonstype = Representasjonstype.ARBEIDSGIVER
-                )
-            )
-        )
-
-        val token = createTokenForUser(korrektSyntetiskFnr)
-
-        every { altinnService.harBrukerTilgang(savedSkjema.orgnr) } returns false
-
-
-        webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
-            .header("Authorization", "Bearer $token")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isForbidden
+        val persistedData = skjemaRepository.getReferenceById(existingSkjema.id!!).data
+        persistedData shouldBe fixture.expectedDataAfterPost
     }
 
     fun orgnummerHarVerdiOgOrgnnummerErNull(): List<Arguments> = listOf(
@@ -336,137 +294,185 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(null)
     )
 
-    @ParameterizedTest(name = "{0} {1}")
-    @MethodSource("arbeidsgiverEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang")
-    fun `Arbeidsgiver endpoints skal returnere 403 når bruker ikke har Altinn-tilgang`(
-        httpMethod: HttpMethod,
-        path: String,
-        requestBody: Any?
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("tilgangNektetFixtures")
+    @DisplayName("Endpoints skal returnere 403 når bruker ikke har tilgang")
+    fun `Endpoints skal returnere 403 når bruker ikke har tilgang`(
+        fixture: UtsendtArbeidstakerControllerTestFixture<*>
     ) {
-        val savedSkjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                orgnr = korrektSyntetiskOrgnr,
-                fnr = etAnnetKorrektSyntetiskFnr,
-                status = SkjemaStatus.UTKAST,
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+        val savedSkjemaer = applyFixture(fixture)
+        val existingSkjema = savedSkjemaer.first()
+
+        val token = createTokenForUser(fixture.tokenFnr)
+
+        val request = webTestClient.method(fixture.httpMethod!!)
+            .uri(fixture.uri, existingSkjema.id)
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+
+        fixture.requestBody?.let { request.bodyValue(it) }
+
+        request.exchange()
+            .expectStatus().isForbidden
+    }
+
+    fun tilgangNektetFixtures(): List<Arguments> {
+        fun arbeidsgiverSkjema() = skjemaMedDefaultVerdier(
+            orgnr = korrektSyntetiskOrgnr,
+            fnr = etAnnetKorrektSyntetiskFnr,
+            status = SkjemaStatus.UTKAST,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+            ),
+        )
+
+        // ARBEIDSGIVER uten Altinn-tilgang — alle tilgangsstyrte endepunkter
+        val arbeidsgiverUtenTilgang = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/innsendt-kvittering",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiverens-virksomhet-i-norge",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/utenlandsoppdraget",
+                httpMethod = HttpMethod.POST,
+                requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstakerens-lonn",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssted-i-utlandet",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/tilleggsopplysninger",
+                httpMethod = HttpMethod.POST,
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/utsendingsperiode-og-land",
+                httpMethod = HttpMethod.POST,
+                requestBody = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/skatteforhold-og-inntekt",
+                httpMethod = HttpMethod.POST,
+                requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer",
+                httpMethod = HttpMethod.POST,
+                requestBody = familiemedlemmerDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/send-inn",
+                httpMethod = HttpMethod.POST,
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+        )
+
+        // DEG_SELV med fnr mismatch — ett representativt endepunkt
+        val degSelvFnrMismatch = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(
+                    skjemaMedDefaultVerdier(
+                        fnr = etAnnetKorrektSyntetiskFnr,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            representasjonstype = Representasjonstype.DEG_SELV,
+                        ),
+                    )
                 ),
-            )
+            ),
         )
 
-        val token = createTokenForUser(korrektSyntetiskFnr)
-        every { altinnService.harBrukerTilgang(savedSkjema.orgnr!!) } returns false
+        // ARBEIDSGIVER_MED_FULLMAKT — fullmakt nektet av repr-api
+        val fullmaktNektet = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(
+                    skjemaMedDefaultVerdier(
+                        fnr = etAnnetKorrektSyntetiskFnr,
+                        orgnr = korrektSyntetiskOrgnr,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                            fullmektigFnr = korrektSyntetiskFnr,
+                        ),
+                    )
+                ),
+                reprHarFullmakt = false,
+            ),
+        )
 
-        val request = webTestClient.method(httpMethod)
-            .uri(path, savedSkjema.id)
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
+        // ARBEIDSGIVER_MED_FULLMAKT — feil fullmektig
+        val feilFullmektig = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
+                httpMethod = HttpMethod.GET,
+                existingSkjemaer = listOf(
+                    skjemaMedDefaultVerdier(
+                        fnr = etAnnetKorrektSyntetiskFnr,
+                        orgnr = korrektSyntetiskOrgnr,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                            fullmektigFnr = etAnnetKorrektSyntetiskFnr, // Noen andre er fullmektig
+                        ),
+                    )
+                ),
+            ),
+        )
 
-        requestBody?.let { request.bodyValue(it) }
-
-        request.exchange()
-            .expectStatus().isForbidden
+        return (arbeidsgiverUtenTilgang + degSelvFnrMismatch + fullmaktNektet + feilFullmektig)
+            .map { Arguments.of(it) }
     }
-
-    fun arbeidsgiverEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view", null),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge",
-            arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget",
-            utenlandsoppdragetDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn",
-            arbeidstakerensLonnDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet",
-            arbeidsstedIUtlandetDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger",
-            tilleggsopplysningerDtoMedDefaultVerdier()
-        )
-    )
-
-    @ParameterizedTest(name = "{0} {1}")
-    @MethodSource("arbeidstakerEndpointsSomKreverTilgang")
-    @DisplayName("Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet")
-    fun `Arbeidstaker endpoints skal returnere 403 når bruker ikke har tilgang til skjemaet`(
-        httpMethod: HttpMethod,
-        path: String,
-        requestBody: Any?
-    ) {
-        val savedSkjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = etAnnetKorrektSyntetiskFnr,
-                orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.UTKAST
-            )
-        )
-
-        val token =
-            createTokenForUser(korrektSyntetiskFnr) //  korrektSyntetiskFnr har ikke tilgang til skjemaet som tilhører etAnnetKorrektSyntetiskFnr
-
-        val request = webTestClient.method(httpMethod)
-            .uri(path, savedSkjema.id)
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-
-        requestBody?.let { request.bodyValue(it) }
-
-        request.exchange()
-            .expectStatus().isForbidden
-    }
-
-    fun arbeidstakerEndpointsSomKreverTilgang(): List<Arguments> = listOf(
-        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view", null),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget",
-            utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon",
-            arbeidssituasjonDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt",
-            skatteforholdOgInntektDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer",
-            familiemedlemmerDtoMedDefaultVerdier()
-        ),
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger",
-            tilleggsopplysningerDtoMedDefaultVerdier()
-        ),
-        // Teknisk sett endepunkt felles for arbeidstaker og arbeidsgiver
-        Arguments.of(
-            HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/{id}/send-inn",
-            null
-        ),
-        Arguments.of(
-            HttpMethod.GET,
-            "/api/skjema/utsendt-arbeidstaker/{id}/innsendt-kvittering",
-            null
-        ),
-    )
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("postEndpoints")
@@ -494,106 +500,150 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun postEndpoints(): List<Arguments> = listOf(
         Arguments.of(
             HttpMethod.POST,
-            "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidsgiverens-virksomhet-i-norge"
+            "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiverens-virksomhet-i-norge"
         ),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/utenlandsoppdraget"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidstakerens-lonn"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/arbeidssted-i-utlandet"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/{id}/tilleggsopplysninger"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/utenlandsoppdraget"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/arbeidssituasjon"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/skatteforhold-og-inntekt"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/familiemedlemmer"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/arbeidstaker/{id}/tilleggsopplysninger")
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/utenlandsoppdraget"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstakerens-lonn"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssted-i-utlandet"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/tilleggsopplysninger"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/utsendingsperiode-og-land"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/skatteforhold-og-inntekt"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer")
     )
 
-    fun arbeidsgiverStegTestFixtures(): List<Arguments> {
-        val baseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+    fun stegTestFixtures(): List<Arguments> {
+        val agBaseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+        val atBaseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+
+        fun arbeidsgiverSkjema(data: SkjemaData = agBaseData) = skjemaMedDefaultVerdier(
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = data,
+        )
+
+        fun fullmaktSkjema(data: SkjemaData = agBaseData) = skjemaMedDefaultVerdier(
+            fnr = etAnnetKorrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = data,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                fullmektigFnr = korrektSyntetiskFnr,
+            ),
+        )
+
+        fun arbeidstakerSkjema(data: SkjemaData = atBaseData) = skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            status = SkjemaStatus.UTKAST,
+            data = data,
+        )
 
         return listOf(
-            SkjemaStegTestFixture(
+            // Arbeidsgiver steg
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "arbeidsgiverens-virksomhet-i-norge",
                 requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = agBaseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "utenlandsoppdraget",
                 requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = agBaseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "arbeidstakerens-lonn",
                 requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = agBaseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "arbeidssted-i-utlandet",
                 requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = agBaseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "tilleggsopplysninger",
                 requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-
-            )
-        ).map { Arguments.of(it) }
-    }
-
-    fun arbeidstakerStegTestFixtures(): List<Arguments> {
-        val baseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
-
-        return listOf(
-            SkjemaStegTestFixture(
-                stepKey = "utenlandsoppdraget",
-                requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = agBaseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
             ),
-            SkjemaStegTestFixture(
+            // Arbeidsgiver med fullmakt steg
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidsgiverens-virksomhet-i-norge",
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agBaseData.copy(arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(fullmaktSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agBaseData.copy(utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(fullmaktSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidstakerens-lonn",
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agBaseData.copy(arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(fullmaktSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidssted-i-utlandet",
+                requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agBaseData.copy(arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(fullmaktSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agBaseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(fullmaktSkjema()),
+                reprHarFullmakt = true,
+            ),
+            // Arbeidstaker steg
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "utsendingsperiode-og-land",
+                requestBody = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+                expectedDataAfterPost = atBaseData.copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidstakerSkjema()),
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "arbeidssituasjon",
                 requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = atBaseData.copy(arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidstakerSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "skatteforhold-og-inntekt",
                 requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = atBaseData.copy(skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidstakerSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "familiemedlemmer",
                 requestBody = familiemedlemmerDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier())
-
+                expectedDataAfterPost = atBaseData.copy(familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidstakerSkjema()),
             ),
-            SkjemaStegTestFixture(
+            UtsendtArbeidstakerControllerTestFixture(
                 stepKey = "tilleggsopplysninger",
                 requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
-                dataBeforePost = baseData,
-                expectedDataAfterPost = baseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier())
-
-            )
+                expectedDataAfterPost = atBaseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()),
+                existingSkjemaer = listOf(arbeidstakerSkjema()),
+            ),
         ).map { Arguments.of(it) }
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("endepunkterMedUgyldigData")
-    fun `Påse at kjøres validering på alle request bodies`(fixture: SkjemaStegTestFixture<*>) {
+    fun `Påse at kjøres validering på alle request bodies`(fixture: UtsendtArbeidstakerControllerTestFixture<*>) {
         val token = createTokenForUser(korrektSyntetiskFnr)
         val testId = UUID.randomUUID()
 
@@ -601,7 +651,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .uri(fixture.uri, testId)
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(fixture.requestBody)
+            .bodyValue(fixture.requestBody!!)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(ErrorResponse::class.java)
@@ -614,8 +664,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidsgiverens-virksomhet-i-norge",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidsgiverens-virksomhet-i-norge",
             requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
                 erArbeidsgiverenOffentligVirksomhet = false,
                 erArbeidsgiverenBemanningsEllerVikarbyraa = null,
@@ -623,34 +673,32 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("erArbeidsgiverenBemanningsEllerVikarbyraa" to "arbeidsgiverensVirksomhetINorgeTranslation.maaOppgiOmBemanningsbyraa")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
             requestBody = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-                arbeidstakerUtsendelsePeriode = PeriodeDto(
-                    fraDato = java.time.LocalDate.of(2024, 12, 31),
-                    tilDato = java.time.LocalDate.of(2024, 1, 1)
-                )
+                arbeidsgiverHarOppdragILandet = false,
+                utenlandsoppholdetsBegrunnelse = ""
             ),
-            expectedValidationError = mapOf("arbeidstakerUtsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
+            expectedValidationError = mapOf("utenlandsoppholdetsBegrunnelse" to "utenlandsoppdragetTranslation.duMaOppgiBegrunnelse")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidstakerens-lonn",
             requestBody = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
                 virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
             ),
             expectedValidationError = mapOf("virksomheterSomUtbetalerLonnOgNaturalytelser" to "arbeidstakerensLonnTranslation.virksomheterSkalIkkeOppgis")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssted-i-utlandet",
             requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
                 arbeidsstedType = ArbeidsstedType.PA_LAND,
                 paLand = null,
             ),
             expectedValidationError = mapOf("paLand" to "arbeidsstedIUtlandetTranslation.maaOppgiArbeidsstedPaLand")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidsgiver/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
@@ -658,9 +706,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             expectedValidationError = mapOf("tilleggsopplysningerTilSoknad" to "tilleggsopplysningerTranslation.maaOppgiTilleggsopplysninger")
         ),
         // Arbeidstaker endpoints
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utenlandsoppdraget",
-            requestBody = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/utsendingsperiode-og-land",
+            requestBody = UtsendingsperiodeOgLandDto(
+                utsendelseLand = LandKode.SE,
                 utsendelsePeriode = PeriodeDto(
                     fraDato = java.time.LocalDate.of(2024, 12, 31),
                     tilDato = java.time.LocalDate.of(2024, 1, 1)
@@ -668,24 +717,24 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             ),
             expectedValidationError = mapOf("utsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/arbeidssituasjon",
             requestBody = arbeidssituasjonDtoMedDefaultVerdier().copy(
                 harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
                 aktivitetIMaanedenFoerUtsendingen = null
             ),
             expectedValidationError = mapOf("aktivitetIMaanedenFoerUtsendingen" to "arbeidssituasjonTranslation.maaOppgiAktivitetFoerUtsending")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/skatteforhold-og-inntekt",
             requestBody = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
                 mottarPengestotteFraAnnetEosLandEllerSveits = true,
                 landSomUtbetalerPengestotte = null
             ),
             expectedValidationError = mapOf("landSomUtbetalerPengestotte" to "skatteforholdOgInntektTranslation.maaOppgiLandSomUtbetalerPengestotte")
         ),
-        SkjemaStegTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
-            uri = "/api/skjema/utsendt-arbeidstaker/arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
+        UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidstakersSkjemaDataDto>(
+            uri = "/api/skjema/utsendt-arbeidstaker/f47ac10b-58cc-4372-a567-0e02b2c3d479/tilleggsopplysninger",
             requestBody = tilleggsopplysningerDtoMedDefaultVerdier().copy(
                 harFlereOpplysningerTilSoknaden = true,
                 tilleggsopplysningerTilSoknad = null
@@ -710,7 +759,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        val token = createTokenForUser(skjemaSomSkalSendesInn.fnr!!)
+        val token = createTokenForUser(skjemaSomSkalSendesInn.fnr)
 
         val skjemaInnsendtKvittering = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn")
@@ -761,6 +810,20 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         kvittering.skjemaId shouldBe skjema.id
         kvittering.referanseId shouldBe "ABC123"
         kvittering.status shouldBe SkjemaStatus.SENDT
+    }
+
+    private fun applyFixture(fixture: UtsendtArbeidstakerControllerTestFixture<*>): List<Skjema> {
+        val savedSkjemaer = skjemaRepository.saveAll(fixture.existingSkjemaer)
+
+        fixture.altinnHarTilgang?.let { harTilgang ->
+            every { altinnService.harBrukerTilgang(any()) } returns harTilgang
+        }
+
+        fixture.reprHarFullmakt?.let { harFullmakt ->
+            every { reprService.harSkriverettigheterForMedlemskap(any()) } returns harFullmakt
+        }
+
+        return savedSkjemaer
     }
 
     private fun createTokenForUser(pid: String): String {
