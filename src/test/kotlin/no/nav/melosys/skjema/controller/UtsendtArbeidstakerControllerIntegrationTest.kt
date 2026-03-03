@@ -446,6 +446,24 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 ),
                 reprHarFullmakt = false,
             ),
+            // Kombinert skjemadel — fullmakt nektet
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiverens-virksomhet-i-norge",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(
+                    skjemaMedDefaultVerdier(
+                        fnr = etAnnetKorrektSyntetiskFnr,
+                        orgnr = korrektSyntetiskOrgnr,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                            fullmektigFnr = korrektSyntetiskFnr,
+                            skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                        ),
+                    )
+                ),
+                reprHarFullmakt = false,
+            ),
         )
 
         // ARBEIDSGIVER_MED_FULLMAKT — feil fullmektig
@@ -460,6 +478,23 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                         metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                             representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                             fullmektigFnr = etAnnetKorrektSyntetiskFnr, // Noen andre er fullmektig
+                        ),
+                    )
+                ),
+            ),
+            // Kombinert skjemadel — feil fullmektig
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon",
+                httpMethod = HttpMethod.POST,
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                existingSkjemaer = listOf(
+                    skjemaMedDefaultVerdier(
+                        fnr = etAnnetKorrektSyntetiskFnr,
+                        orgnr = korrektSyntetiskOrgnr,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                            fullmektigFnr = etAnnetKorrektSyntetiskFnr, // Noen andre er fullmektig
+                            skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
                         ),
                     )
                 ),
