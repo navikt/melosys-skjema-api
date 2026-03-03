@@ -10,6 +10,7 @@ import io.mockk.every
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
@@ -34,7 +35,6 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
@@ -511,6 +511,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun stegTestFixtures(): List<Arguments> {
         val agBaseData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
         val atBaseData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+        val agOgAtBaseData = arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier()
 
         fun arbeidsgiverSkjema(data: SkjemaData = agBaseData) = skjemaMedDefaultVerdier(
             orgnr = korrektSyntetiskOrgnr,
@@ -533,6 +534,18 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             fnr = korrektSyntetiskFnr,
             status = SkjemaStatus.UTKAST,
             data = data,
+        )
+
+        fun arbeidsgiverOgArbeidstakerSkjema(data: SkjemaData = agOgAtBaseData) = skjemaMedDefaultVerdier(
+            fnr = etAnnetKorrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = data,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                fullmektigFnr = korrektSyntetiskFnr,
+                skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+            ),
         )
 
         return listOf(
@@ -633,6 +646,102 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
                 expectedDataAfterPost = atBaseData.copy(tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()),
                 existingSkjemaer = listOf(arbeidstakerSkjema()),
+            ),
+            // Arbeidsgiver og arbeidstaker (kombinert) steg
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidsgiverens-virksomhet-i-norge",
+                requestBody = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidsgiversData = agOgAtBaseData.arbeidsgiversData.copy(
+                        arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "utenlandsoppdraget",
+                requestBody = utenlandsoppdragetDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidsgiversData = agOgAtBaseData.arbeidsgiversData.copy(
+                        utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidstakerens-lonn",
+                requestBody = arbeidstakerensLonnDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidsgiversData = agOgAtBaseData.arbeidsgiversData.copy(
+                        arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidssted-i-utlandet",
+                requestBody = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidsgiversData = agOgAtBaseData.arbeidsgiversData.copy(
+                        arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "utsendingsperiode-og-land",
+                requestBody = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "arbeidssituasjon",
+                requestBody = arbeidssituasjonDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidstakersData = agOgAtBaseData.arbeidstakersData.copy(
+                        arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "skatteforhold-og-inntekt",
+                requestBody = skatteforholdOgInntektDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidstakersData = agOgAtBaseData.arbeidstakersData.copy(
+                        skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "familiemedlemmer",
+                requestBody = familiemedlemmerDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    arbeidstakersData = agOgAtBaseData.arbeidstakersData.copy(
+                        familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier()
+                    )
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
+            ),
+            UtsendtArbeidstakerControllerTestFixture(
+                stepKey = "tilleggsopplysninger",
+                requestBody = tilleggsopplysningerDtoMedDefaultVerdier(),
+                expectedDataAfterPost = agOgAtBaseData.copy(
+                    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier()
+                ),
+                existingSkjemaer = listOf(arbeidsgiverOgArbeidstakerSkjema()),
+                reprHarFullmakt = true,
             ),
         ).map { Arguments.of(it) }
     }

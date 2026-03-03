@@ -46,6 +46,7 @@ import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.TypeInnretn
 import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
@@ -250,6 +251,21 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsta
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
     utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
     arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
+)
+
+fun arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(
+    arbeidsgiversData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidsgiversData(
+        arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
+        utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
+        arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier(),
+    ),
+    arbeidstakersData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidstakersData(
+        arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
+        skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
+        familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
+    ),
+    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
 )
 
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
