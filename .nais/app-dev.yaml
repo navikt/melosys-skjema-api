@@ -6,7 +6,6 @@ metadata:
   labels:
     team: teammelosys
 spec:
-  image: {{image}}
   port: 8080
   ingresses:
     - https://melosys-skjema-api.intern.dev.nav.no
@@ -74,7 +73,6 @@ spec:
           namespace: teammelosys
           cluster: dev-fss
     outbound:
-      # TODO disse adressene må sannsynligvis endres før deployment til dev/prod
       external:
         - host: pdl-api.dev-fss-pub.nais.io
         - host: aareg-services.prod-fss-pub.nais.io
