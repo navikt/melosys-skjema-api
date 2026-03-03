@@ -50,7 +50,7 @@ import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.Arbeidssituasjo
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.Ansettelsesform
@@ -180,8 +180,8 @@ fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
     familiemedlemmer = emptyList()
 )
 
-fun utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier() = UtenlandsoppdragetArbeidstakersDelDto(
-    utsendelsesLand = LandKode.SE,
+fun utsendingsperiodeOgLandDtoMedDefaultVerdier() = UtsendingsperiodeOgLandDto(
+    utsendelseLand = LandKode.SE,
     utsendelsePeriode = periodeDtoMedDefaultVerdier()
 )
 
@@ -248,7 +248,7 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsta
     skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
     familiemedlemmer = familiemedlemmerDtoMedDefaultVerdier(),
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
-    utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
+    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
     arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
 )
 

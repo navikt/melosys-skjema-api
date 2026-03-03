@@ -21,219 +21,211 @@ Splitte ut "utsendingsperiode og land" til et nytt delt steg.
 - Kombinert flyt trenger IKKE `SkjemaKoblingService`
 - Ny `Skjemadel` enum-verdi: `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`
 
----
+## Konvensjoner
 
-## Allerede gjort
-
-- [x] Opprettet branch `7850_sende_inn_begge_skjemadeler`
-- [x] Opprettet `UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.kt` med nestede inner classes
-- [x] Registrert ny type i `SkjemaData.kt` Jackson `@JsonSubTypes`
-- [x] Verifisert at prosjektet kompilerer
+- Save method naming: `save{DtoClassNameMinusDto}` (f.eks. `saveUtenlandsoppdraget` ikke `saveUtenlandsoppdragInfo`)
+- `SkjemaKoblingService` trenger revisjon i separat branch — `finnMatch()` har for mange moving parts og `motpart()` vil krasje for combined type
+- Ikke i produksjon, så breaking frontend-endringer er OK
 
 ---
 
-## Steg 1: Ny `UtsendingsperiodeOgLandDto`
+## Gjennomført (steg 1–13) ✅
 
-**Fil:** `melosys-skjema-api-types/src/main/kotlin/no/nav/melosys/skjema/types/felles/UtsendingsperiodeOgLandDto.kt`
+### Steg 1: Ny `UtsendingsperiodeOgLandDto` og kombinert DTO
+- Opprettet `UtsendingsperiodeOgLandDto.kt` i `types/felles/`
+- Opprettet `UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.kt` i `types/arbeidsgiverOgArbeidstaker/`
+- Registrert i Jackson `@JsonSubTypes` i `SkjemaData.kt`
 
-Opprett ny data class:
+### Steg 2: Fjernet land/periode fra `UtenlandsoppdragetDto`
+- Fjernet `utsendelseLand` og `arbeidstakerUtsendelsePeriode` fra `UtenlandsoppdragetDto`
+- Oppdatert `UtenlandsoppdragetValidator`, testdata, `SeksjonRenderer`
 
-```kotlin
-@JsonInclude(JsonInclude.Include.NON_NULL)
-data class UtsendingsperiodeOgLandDto(
-    val utsendelseLand: LandKode,
-    @field:Valid
-    val utsendelsePeriode: PeriodeDto
-)
-```
+### Steg 3: Oppdatert kombinert DTO
+- Lagt til `utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null` på toppnivå
 
----
+### Steg 4: Ny `Skjemadel` enum-verdi
+- `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL` lagt til i `Skjemadel` enum
 
-## Steg 2: Fjern land/periode fra `UtenlandsoppdragetDto`
+### Steg 5: Oppdatert `emptyData()`
+- Ny branch i `SkjemaExtensions.emptyData()` for `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`
 
-**Fil:** `melosys-skjema-api-types/.../arbeidsgiver/utenlandsoppdraget/UtenlandsoppdragetDto.kt`
+### Steg 6: `UtsendingsperiodeOgLand` i alle tre DTOer + sletting av `UtenlandsoppdragetArbeidstakersDelDto`
+- Lagt til `utsendingsperiodeOgLand` i arbeidsgiver- og arbeidstaker-DTOene
+- Slettet `UtenlandsoppdragetArbeidstakersDelDto` helt — felter flyttet til `UtsendingsperiodeOgLandDto`
+- Oppgradert `UtsendtArbeidstakerSkjemaData` interface til å ha `tilleggsopplysninger` og `utsendingsperiodeOgLand`
+- Oppdatert `SkjemaKoblingService` — forenklet `hentPeriode()` til en one-liner via interface
+- Kaskadefikser gjennom `M2MSkjemaService`, `SeksjonRenderer`, `UtsendtArbeidstakerService`, `UtsendtArbeidstakerController`, `ApiInputValidator`
 
-Fjern disse to feltene:
-- `utsendelseLand: LandKode`
-- `arbeidstakerUtsendelsePeriode: PeriodeDto`
+### Steg 7: Oppdatert `M2MSkjemaService`
+- Begge `when`-uttrykk håndterer `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`
+- Slettet `hentArbeidstakerOgArbeidsgiverData()` Pair-logikk — erstattet med direkte `skjema.data`
 
-Kaskadefikser i:
-- `UtenlandsoppdragetValidator` - fjern validering av `arbeidstakerUtsendelsePeriode`
-- `SeksjonRenderer.byggUtenlandsoppdragetArbeidsgiver()` - fjern `felt("utsendelseLand", ...)` og `felt("arbeidstakerUtsendelsePeriode", ...)`
-- Testdata (`TestData.kt`) - fjern disse feltene fra test-instanser
-- `UtenlandsoppdragetValidatorTest` - oppdater tester
+### Steg 8: Generisk `updateSkjemaData()`
+- Slått sammen to private update-metoder til `inline fun <reified T : UtsendtArbeidstakerSkjemaData> updateSkjemaData()`
+- Med `default: () -> T` factory-parameter — constructor references som `::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto` brukes på call sites
+- Renamed alle `save*Info` → `save{DtoClassNameMinusDto}`
 
----
+### Steg 9: Refaktorert controller-endepunkter
+- Fjernet `/arbeidsgiver/` og `/arbeidstaker/` fra alle URL-er
+- Slått sammen to `tilleggsopplysninger`-endepunkter til ett delt
 
-## Steg 3: Oppdater kombinert DTO
+### Steg 10: Oppdatert `InnsendtSkjemaResponse`
+- Endret fra `arbeidstakerData`/`arbeidsgiverData` til enkelt polymorfisk `skjemaData: UtsendtArbeidstakerSkjemaData`
+- Jackson `@JsonTypeInfo` på interface håndterer serialisering automatisk
 
-**Fil:** `.../arbeidsgiverOgArbeidstaker/UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.kt`
+### Steg 11: Oppdatert `ArbeidstakerVarslingService`
+- Lagt til early return guard for `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL` (skip all varsling)
 
-Legg til `utsendingsperiodeOgLand` på toppnivå:
+### Steg 12: Oppdatert PDF-generering
+- Endret `SkjemaPdfData` fra `arbeidstakerData`/`arbeidsgiverData` til `skjemaData` + `kobletSkjemaData`
+- Oppdatert `HtmlDokumentGenerator` med polymorfisk dispatch via `when` på DTO-type
+- Lagt til `byggKombinertDel()`, `byggKombinertArbeidsgiversSeksjoner()`, `byggKombinertArbeidstakersSeksjoner()`
 
-```kotlin
-data class UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(
-    override val type: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL",
-    val arbeidsgiversData: ArbeidsgiversData = ArbeidsgiversData(),
-    val arbeidstakersData: ArbeidstakersData = ArbeidstakersData(),
-    val utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
-    val tilleggsopplysninger: TilleggsopplysningerDto? = null
-) : UtsendtArbeidstakerSkjemaData {
-    // ... inner classes uendret
-}
-```
+### Steg 13: Renamed validator
+- `UtenlandsoppdragetArbeidstakersDelValidator` → `UtsendingsperiodeOgLandValidator`
 
----
+### Commits
+- `958b0a4`: "Refaktorer til kombinert DTO med felles utsendingsperiode" — steg 1-11
+- `bfd766c`: "Oppdater PDF-generering til polymorfisk SkjemaPdfData" — steg 12
+- `20a445c`: "Flytt og rename validator til UtsendingsperiodeOgLandValidator" — steg 13
 
-## Steg 4: Ny `Skjemadel` enum-verdi
-
-**Fil:** `.../types/UtsendtArbeidstakerMetadata.kt`
-
-```kotlin
-enum class Skjemadel {
-    ARBEIDSTAKERS_DEL,
-    ARBEIDSGIVERS_DEL,
-    ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
-}
-```
-
----
-
-## Steg 5: Oppdater `SkjemaExtensions.emptyData()`
-
-**Fil:** `src/.../extensions/SkjemaExtensions.kt`
-
-Legg til ny branch i `when`:
-
-```kotlin
-private fun Skjemadel.emptyData(): UtsendtArbeidstakerSkjemaData = when (this) {
-    Skjemadel.ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
-    Skjemadel.ARBEIDSGIVERS_DEL -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
-    Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto()
-}
-```
+### Kompileringsstatus
+- **`./gradlew compileKotlin` passerer** ✅
+- **`./gradlew compileTestKotlin` feiler** ❌ (5 testfiler)
 
 ---
 
-## Steg 6: Oppdater `SkjemaKoblingService`
+## Discoveries (tekniske oppdagelser underveis)
 
-**Fil:** `src/.../service/SkjemaKoblingService.kt`
+1. **Jackson polymorfisme**: `SkjemaData` bruker `@JsonTypeInfo`/`@JsonSubTypes` for polymorfisk deserialisering basert på `type`-property — ny kombinert DTO registrert med navn `"UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL"`
 
-- `motpart()`: For `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL` finnes ingen motpart - returner `null` eller kast exception
-- `hentPeriode()`: For den kombinerte typen, les fra `utsendingsperiodeOgLand.utsendelsePeriode`
-- `finnOgKobl()`: Hopp over kobling for kombinert skjemadel (trenger ikke motpart)
+2. **Skjemadel-flyt**: Settes ved opprettelse i `OpprettSoknadMedKontekstRequest.skjemadel` og lagres i metadata — driver empty data creation, kobling-logikk og M2M data assembly
 
----
+3. **Interface-oppgradering**: `UtsendtArbeidstakerSkjemaData` interface definerer nå `tilleggsopplysninger: TilleggsopplysningerDto?` og `utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto?` — alle tre DTOer overstyr. Forenklet `SkjemaKoblingService.hentPeriode()` fra 3-branch `when` til en one-liner
 
-## Steg 7: Oppdater `M2MSkjemaService.hentArbeidstakerOgArbeidsgiverData()`
+4. **`.copy()` er ikke polymorfisk**: `saveTilleggsopplysninger` trenger fortsatt en `when`-blokk fordi `.copy()` genereres per data class
 
-**Fil:** `src/.../service/M2MSkjemaService.kt`
+5. **`SkjemaKoblingService.finnOgKobl()`**: Vil krasje for kombinert skjemadel ved motpart-søk — trenger guard, men utsettes til separat branch
 
-Legg til `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL` case i `when`-blokken.
-For kombinert DTO: Map inner classes til separate arbeidstaker/arbeidsgiver DTOer for PDF-generering.
+6. **Tilgangskontroll**: `harInnloggetBrukerTilgangTilSkjema()` — DEG_SELV → fnr-match, ARBEIDSGIVER/RADGIVER → Altinn-tilgang, ARBEIDSGIVER_MED_FULLMAKT/RADGIVER_MED_FULLMAKT/ANNEN_PERSON → fullmektigFnr-match + repr-api
 
----
+7. **`Skjema.validerTyper()`**: Sjekker kun `is UtsendtArbeidstakerSkjemaData` så ny kombinert DTO er allerede valid
 
-## Steg 8: Slå sammen update-metoder
+8. **Generisk update**: `updateSkjemaData()` bruker `inline fun <reified T>` med `default: () -> T` factory
 
-**Fil:** `src/.../service/UtsendtArbeidstakerService.kt`
+9. **`InnsendtSkjemaResponse`**: Bruker nå single polymorphic `skjemaData` felt — Jackson `@JsonTypeInfo` håndterer alt
 
-Slå sammen `updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto()` og
-`updateArbeidstakerSkjemaDataAndConvertToSkjemaDto()` til en generisk:
+10. **`SkjemaPdfData`**: Endret til `skjemaData: UtsendtArbeidstakerSkjemaData` + `kobletSkjemaData: UtsendtArbeidstakerSkjemaData?`
 
-```kotlin
-private fun <T : SkjemaData> updateSkjemaData(
-    skjemaId: UUID,
-    dataClass: KClass<T>,
-    defaultFactory: () -> T,
-    updateFunction: (T) -> T
-): UtsendtArbeidstakerSkjemaDto
-```
-
-Oppdater alle `save*`-metoder til å bruke den nye generiske metoden.
-For kombinert DTO: Alle save-metoder må håndtere tilfelle der `skjema.data` er den kombinerte typen.
+11. **Test-typo**: Data class field `expectedDataAfterost` (mangler 'P') men alle call sites brukte `expectedDataAfterPost` — allerede broken før våre endringer
 
 ---
 
-## Steg 9: Refaktorer controller-endepunkter
+## Nye controller-endepunkter (URL-referanse)
 
-**Fil:** `src/.../controller/UtsendtArbeidstakerController.kt`
-
-### Nye endepunkter (uten `/arbeidsgiver/` og `/arbeidstaker/`):
-- `POST /{skjemaId}/arbeidsgiverens-virksomhet-i-norge`
-- `POST /{skjemaId}/utenlandsoppdraget` (arbeidsgiver sin versjon)
-- `POST /{skjemaId}/arbeidstakerens-lonn`
-- `POST /{skjemaId}/arbeidssted-i-utlandet`
-- `POST /{skjemaId}/utsendingsperiode-og-land` (nytt)
-- `POST /{skjemaId}/arbeidssituasjon`
-- `POST /{skjemaId}/skatteforhold-og-inntekt`
-- `POST /{skjemaId}/familiemedlemmer`
-- `POST /{skjemaId}/tilleggsopplysninger` (slå sammen de to dupliserte)
-
-### Beholde gamle endepunkter:
-De eksisterende `/arbeidsgiver/...` og `/arbeidstaker/...` endepunktene beholdes for bakoverkompatibilitet
-med separate skjema (ARBEIDSGIVERS_DEL / ARBEIDSTAKERS_DEL).
-
----
-
-## Steg 10: Oppdater `hentInnsendtSkjema()`
-
-**Fil:** `src/.../service/UtsendtArbeidstakerService.kt`
-
-Håndter tilfelle der `skjema.data` er `UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto`.
-Map fra kombinert DTO til separate arbeidstaker/arbeidsgiver data for `InnsendtSkjemaResponse`.
+| Endepunkt | URL |
+|-----------|-----|
+| Arbeidsgiverens virksomhet | `POST /{skjemaId}/arbeidsgiverens-virksomhet-i-norge` |
+| Utenlandsoppdraget (AG) | `POST /{skjemaId}/utenlandsoppdraget` |
+| Arbeidstakerens lønn | `POST /{skjemaId}/arbeidstakerens-lonn` |
+| Arbeidssted i utlandet | `POST /{skjemaId}/arbeidssted-i-utlandet` |
+| Utsendingsperiode og land | `POST /{skjemaId}/utsendingsperiode-og-land` |
+| Arbeidssituasjon | `POST /{skjemaId}/arbeidssituasjon` |
+| Skatteforhold og inntekt | `POST /{skjemaId}/skatteforhold-og-inntekt` |
+| Familiemedlemmer | `POST /{skjemaId}/familiemedlemmer` |
+| Tilleggsopplysninger (delt) | `POST /{skjemaId}/tilleggsopplysninger` |
+| Send inn | `POST /{id}/send-inn` |
+| Kvittering | `GET /{id}/innsendt-kvittering` |
+| Arbeidsgiver view | `GET /{id}/arbeidsgiver-view` |
+| Arbeidstaker view | `GET /{id}/arbeidstaker-view` |
+| PDF | `GET /{id}/pdf` |
+| Innsendt | `GET /{id}/innsendt` |
 
 ---
 
-## Steg 11: Oppdater `ArbeidstakerVarslingService`
+## Steg 14: Fiks alle ødelagte testfiler (PÅGÅR)
 
-**Fil:** `src/.../service/ArbeidstakerVarslingService.kt`
+`./gradlew compileTestKotlin` feiler med feil i 5 filer. Her er detaljert feilbeskrivelse og nødvendige fikser per fil.
 
-- `harEksisterendeArbeidstakerUtkast()`: Håndter `ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`
-- For kombinert skjemadel: Ingen varsling til arbeidstaker (begge deler er i ett skjema)
+### Nøkkelendringer som påvirker testene
+
+| Hva som er endret | Gammel | Ny |
+|-------------------|--------|-----|
+| Arbeidstaker DTO: `utenlandsoppdraget` felt | `utenlandsoppdraget: UtenlandsoppdragetArbeidstakersDelDto?` | `utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto?` |
+| Arbeidsgiver DTO: periode i utenlandsoppdraget | `utenlandsoppdraget.arbeidstakerUtsendelsePeriode` | `utsendingsperiodeOgLand.utsendelsePeriode` |
+| Arbeidsgiver DTO: land i utenlandsoppdraget | `utenlandsoppdraget.utsendelseLand` | `utsendingsperiodeOgLand.utsendelseLand` |
+| `UtenlandsoppdragetArbeidstakersDelDto` | Eksisterte | **Slettet** |
+| `SkjemaPdfData` constructor | `arbeidstakerData: AT?, arbeidsgiverData: AG?` | `skjemaData: UtsendtArbeidstakerSkjemaData, kobletSkjemaData: UtsendtArbeidstakerSkjemaData?` |
+| Controller URL-er | `/arbeidsgiver/{id}/...` og `/arbeidstaker/{id}/...` | `/{id}/...` |
+| Tilleggsopplysninger | Separate AG/AT endepunkter | Ett delt endepunkt |
+
+### 14.1: `TestData.kt` (3 feil)
+
+- **Linje ~53**: Import av slettet `UtenlandsoppdragetArbeidstakersDelDto` → fjern import
+- **Linje ~183-186**: Funksjon `utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()` refererer slettet DTO → slett funksjonen, legg til:
+  ```kotlin
+  fun utsendingsperiodeOgLandDtoMedDefaultVerdier() = UtsendingsperiodeOgLandDto(
+      utsendelseLand = LandKode.SE,
+      utsendelsePeriode = periodeDtoMedDefaultVerdier()
+  )
+  ```
+- **Linje ~251**: `arbeidstakersSkjemaDataDtoMedDefaultVerdier()` bruker `utenlandsoppdraget = ...` → endre til `utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()`
+
+### 14.2: `UtsendtArbeidstakerControllerIntegrationTest.kt` (17 feil)
+
+- **Linje 67**: Typo `expectedDataAfterost` → rename til `expectedDataAfterPost`
+- **Linje 269, 296**: URL-er inneholder `/arbeidsgiver/` og `/arbeidstaker/` → fjern path-segmenter
+- **Linje 372-399**: `arbeidsgiverEndpointsSomKreverTilgang()` — alle URL-er trenger `/arbeidsgiver/` fjernet
+- **Linje 431-469**: `arbeidstakerEndpointsSomKreverTilgang()` — alle URL-er trenger `/arbeidstaker/` fjernet, erstatt `utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()` med `utsendingsperiodeOgLandDtoMedDefaultVerdier()`
+- **Linje 494-508**: `postEndpoints()` — oppdater URL-er, slå sammen duplikat tilleggsopplysninger
+- **Linje 552-591**: `arbeidstakerStegTestFixtures()` — erstatt `utenlandsoppdraget`-steg med `utsendingsperiode-og-land`, erstatt DTO-referanser
+- **Linje 616-695**: `endepunkterMedUgyldigData()` — oppdater URL-er, erstatt validerings-test for `UtenlandsoppdragetDto` (gammel brukte `arbeidstakerUtsendelsePeriode` som ikke finnes lenger → bruk `arbeidsgiverHarOppdragILandet=false` + blank `utenlandsoppholdetsBegrunnelse`), erstatt arbeidstaker `utenlandsoppdraget` validering med `utsendingsperiode-og-land` + `UtsendingsperiodeOgLandDto`
+- **Design**: Legg til `applyFixture()` helper, skjema factory helpers, oppdater fixture data class med nye felter
+
+### 14.3: `SkjemaKoblingServiceTest.kt` (24 feil)
+
+Alle feil er samme mønster gjentatt ~12 ganger:
+- `arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(utenlandsoppdraget = ...)` → `.copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = thePeriode))`
+- `arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utenlandsoppdraget = ...copy(arbeidstakerUtsendelsePeriode = ...))` → `.copy(utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(utsendelseLand = LandKode.SE, utsendelsePeriode = thePeriode))`
+- Legg til imports: `utsendingsperiodeOgLandDtoMedDefaultVerdier`, `LandKode`, `UtsendingsperiodeOgLandDto`
+
+### 14.4: `PdfGeneratorTest.kt` (5 feil)
+
+- **Linje ~63-78**: `lagSkjemaPdfData()` helper bruker gammel constructor `arbeidstakerData`/`arbeidsgiverData` → endre til `skjemaData`/`kobletSkjemaData`
+- **Linje ~530**: `lagKomplettArbeidstakerData()` bruker `utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier()` → endre til `utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()`
+- **Linje ~37**: Import av `utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier` → erstatt med `utsendingsperiodeOgLandDtoMedDefaultVerdier`
+- **Nøkkelvalg**: `lagSkjemaPdfData()` signatur endres til å matche ny `SkjemaPdfData` constructor
+
+### 14.5: `M2MSkjemaServiceIntegrationTest.kt` (2 feil)
+
+- **Linje ~47-51**: `arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(utenlandsoppdraget = ...)` → `.copy(utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(utsendelseLand = LandKode.SE, utsendelsePeriode = overlappendePeriode))`
+- **Linje ~53-56**: `arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utenlandsoppdraget = ...copy(arbeidstakerUtsendelsePeriode = ...))` → `.copy(utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(utsendelseLand = LandKode.SE, utsendelsePeriode = overlappendePeriode))`
+- **Linje ~24**: Import: erstatt `utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier` med `utsendingsperiodeOgLandDtoMedDefaultVerdier`, legg til `UtsendingsperiodeOgLandDto`, `LandKode`
 
 ---
 
-## Steg 12: Oppdater PDF-rendering (`SeksjonRenderer`)
+## Testinfrastruktur-referanser
 
-**Fil:** `src/.../pdf/SeksjonRenderer.kt`
+- `src/test/kotlin/no/nav/melosys/skjema/ApiTestBase.kt` — test base class med SpringBootTest, MockOAuth2Server
+- `src/test/kotlin/no/nav/melosys/skjema/MockOAuth2ServerExtensions.kt` — `getToken()` helper med `pid` claim
+- `src/test/kotlin/no/nav/melosys/skjema/WireMockInitializer.kt` — WireMock setup
+- `src/main/kotlin/no/nav/melosys/skjema/integrasjon/repr/ReprService.kt` — Spring @Service, IKKE mocked i nåværende controller integration test
 
-- Legg til ny metode `byggUtsendingsperiodeOgLand()` for det nye delte steget
-- For kombinert DTO: Bruk eksisterende arbeidsgiver/arbeidstaker seksjon-byggere, men les fra inner classes
-- Fjern gammel arbeidstaker utenlandsoppdraget-rendering (erstattes av utsendingsperiodeOgLand)
-
----
-
-## Steg 13: Oppdater `ApiInputValidator`
-
-**Fil:** `src/.../validators/ApiInputValidator.kt`
-
-- Legg til `validate(UtsendingsperiodeOgLandDto)` metode
-- Vurder om `UtenlandsoppdragetArbeidstakersDelValidator` kan fjernes (felter flyttet)
+### Regler for test-rewrite
+- Start med `DEG_SELV` representasjonstype for cross-product tester, utvid til `ARBEIDSGIVER` og `ARBEIDSGIVER_MED_FULLMAKT` senere
+- `@MockkBean` for `ReprService` skal kun legges til når det faktisk trengs (for `ARBEIDSGIVER_MED_FULLMAKT` tester)
+- Lag `applyFixture(fixture)` helper som populerer DB hvis `existingSkjemaer` er satt, setter opp Altinn mock hvis `altinnHarTilgang` er non-null, setter opp repr mock hvis `reprHarFullmakt` er non-null
+- `altinnHarTilgang` og `reprHarFullmakt` skal være nullable med default null (betyr "ikke mock")
 
 ---
 
-## Steg 14: Oppdater alle tester
-
-### Filer:
-- `TestData.kt` - fjern land/periode fra UtenlandsoppdragetDto testdata, legg til kombinert testdata
-- `UtsendtArbeidstakerControllerIntegrationTest.kt` - legg til tester for nye endepunkter
-- `SkjemaKoblingServiceTest.kt` - test at kombinert skjemadel ikke kobles
-- `ArbeidstakerVarslingServiceTest.kt` - test ny skjemadel
-- `M2MSkjemaServiceIntegrationTest.kt` - test kombinert DTO
-- `UtenlandsoppdragetValidatorTest.kt` - fjern tester for fjernede felter
-- `MetadatatypeTest.kt` - legg til ny skjemadel
-- `SkjemaDtoTypeTest.kt` - legg til kombinert type
-
----
-
-## Steg 15: Bygg og kjør alle tester
+## Steg 15: Kjør alle tester
 
 ```bash
 ./gradlew clean build
 ```
 
-Fiks eventuelle kompileringsfeil eller testfeil.
+Fiks eventuelle runtime testfeil.
 
 ---
 
@@ -244,8 +236,7 @@ ligger under `/{skjemaId}/...`, må tilgangsstyringen revideres:
 
 - Gjennomgå `hentSkjemaMedTilgangsstyring()` og vurder om den gir riktig tilgangskontroll
   for det kombinerte skjemaet (`ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL`)
-- Vurder om det trengs differensiert tilgangsstyring per seksjon (f.eks. at arbeidsgiver
-  kun kan skrive til arbeidsgiver-seksjoner, og arbeidstaker kun til arbeidstaker-seksjoner)
+- Vurder om det trengs differensiert tilgangsstyring per seksjon
 - For det kombinerte skjemaet: Bestem hvem som har skrivetilgang til hvilke seksjoner
 - Oppdater tilgangsstyring i `UtsendtArbeidstakerService` der nødvendig
 
@@ -255,33 +246,40 @@ ligger under `/{skjemaId}/...`, må tilgangsstyringen revideres:
 
 ## Relevante filer (referanse)
 
-### Allerede modifisert:
-- `melosys-skjema-api-types/.../arbeidsgiverOgArbeidstaker/UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.kt`
-- `melosys-skjema-api-types/.../types/SkjemaData.kt`
+### Opprettet:
+- `melosys-skjema-api-types/src/main/kotlin/no/nav/melosys/skjema/types/arbeidsgiverOgArbeidstaker/UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.kt`
+- `melosys-skjema-api-types/src/main/kotlin/no/nav/melosys/skjema/types/felles/UtsendingsperiodeOgLandDto.kt`
 
-### Types-modulen:
-- `melosys-skjema-api-types/.../types/felles/` (ny: `UtsendingsperiodeOgLandDto.kt`)
+### Modifisert (types-modul):
+- `melosys-skjema-api-types/.../types/SkjemaData.kt` — JsonSubTypes for kombinert DTO
+- `melosys-skjema-api-types/.../types/UtsendtArbeidstakerSkjemaData.kt` — interface med tilleggsopplysninger og utsendingsperiodeOgLand
+- `melosys-skjema-api-types/.../types/UtsendtArbeidstakerMetadata.kt` — ny Skjemadel enum, Representasjonstype enum
+- `melosys-skjema-api-types/.../arbeidsgiver/UtsendtArbeidstakerArbeidsgiversSkjemaDataDto.kt`
 - `melosys-skjema-api-types/.../arbeidsgiver/utenlandsoppdraget/UtenlandsoppdragetDto.kt`
-- `melosys-skjema-api-types/.../types/UtsendtArbeidstakerMetadata.kt`
+- `melosys-skjema-api-types/.../arbeidstaker/UtsendtArbeidstakerArbeidstakersSkjemaDataDto.kt`
+- `melosys-skjema-api-types/.../types/InnsendtSkjemaResponse.kt`
+
+### Slettet:
 - `melosys-skjema-api-types/.../arbeidstaker/utenlandsoppdraget/UtenlandsoppdragetArbeidstakersDelDto.kt`
+- `src/main/kotlin/.../validators/utenlandsoppdraget/UtenlandsoppdragetArbeidstakersDelValidator.kt`
 
-### Hovedapp:
-- `src/.../controller/UtsendtArbeidstakerController.kt`
-- `src/.../service/UtsendtArbeidstakerService.kt`
-- `src/.../extensions/SkjemaExtensions.kt`
-- `src/.../service/SkjemaKoblingService.kt`
-- `src/.../service/M2MSkjemaService.kt`
-- `src/.../service/ArbeidstakerVarslingService.kt`
-- `src/.../pdf/SeksjonRenderer.kt`
-- `src/.../validators/ApiInputValidator.kt`
-- `src/.../validators/utenlandsoppdraget/UtenlandsoppdragetValidator.kt`
+### Modifisert (hovedapp):
+- `src/main/kotlin/.../controller/UtsendtArbeidstakerController.kt`
+- `src/main/kotlin/.../service/UtsendtArbeidstakerService.kt`
+- `src/main/kotlin/.../extensions/SkjemaExtensions.kt`
+- `src/main/kotlin/.../service/SkjemaKoblingService.kt`
+- `src/main/kotlin/.../service/M2MSkjemaService.kt`
+- `src/main/kotlin/.../service/ArbeidstakerVarslingService.kt`
+- `src/main/kotlin/.../pdf/SkjemaPdfData.kt`
+- `src/main/kotlin/.../pdf/HtmlDokumentGenerator.kt`
+- `src/main/kotlin/.../pdf/SeksjonRenderer.kt`
+- `src/main/kotlin/.../validators/ApiInputValidator.kt`
+- `src/main/kotlin/.../validators/utenlandsoppdraget/UtenlandsoppdragetValidator.kt`
+- `src/main/kotlin/.../validators/utsendingsperiodeogland/UtsendingsperiodeOgLandValidator.kt` (opprettet, renamed)
 
-### Tester:
-- `src/test/.../TestData.kt`
-- `src/test/.../controller/UtsendtArbeidstakerControllerIntegrationTest.kt`
-- `src/test/.../service/SkjemaKoblingServiceTest.kt`
-- `src/test/.../service/ArbeidstakerVarslingServiceTest.kt`
-- `src/test/.../service/M2MSkjemaServiceIntegrationTest.kt`
-- `src/test/.../validators/utenlandsoppdraget/UtenlandsoppdragetValidatorTest.kt`
-- `melosys-skjema-api-types/src/test/.../MetadatatypeTest.kt`
-- `melosys-skjema-api-types/src/test/.../SkjemaDtoTypeTest.kt`
+### Testfiler (ØDELAGT, må fikses i steg 14):
+- `src/test/kotlin/no/nav/melosys/skjema/TestData.kt`
+- `src/test/kotlin/no/nav/melosys/skjema/controller/UtsendtArbeidstakerControllerIntegrationTest.kt`
+- `src/test/kotlin/no/nav/melosys/skjema/service/SkjemaKoblingServiceTest.kt`
+- `src/test/kotlin/no/nav/melosys/skjema/pdf/PdfGeneratorTest.kt`
+- `src/test/kotlin/no/nav/melosys/skjema/service/M2MSkjemaServiceIntegrationTest.kt`

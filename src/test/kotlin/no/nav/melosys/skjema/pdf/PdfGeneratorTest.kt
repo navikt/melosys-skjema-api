@@ -33,8 +33,9 @@ import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakers
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
 import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider
 import org.verapdf.pdfa.Foundries
@@ -67,13 +68,16 @@ class PdfGeneratorTest : FunSpec({
         arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
     ): SkjemaPdfData {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
+        val skjemaData: UtsendtArbeidstakerSkjemaData = arbeidstakerData ?: arbeidsgiverData
+            ?: throw IllegalArgumentException("Minst en av arbeidstakerData eller arbeidsgiverData må oppgis")
+        val kobletSkjemaData: UtsendtArbeidstakerSkjemaData? = if (arbeidstakerData != null && arbeidsgiverData != null) arbeidsgiverData else null
         return SkjemaPdfData(
             skjemaId = UUID.randomUUID(),
             referanseId = referanseId,
             innsendtDato = Instant.now(),
             innsendtSprak = språk,
-            arbeidstakerData = arbeidstakerData,
-            arbeidsgiverData = arbeidsgiverData,
+            skjemaData = skjemaData,
+            kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
         )
     }
@@ -527,7 +531,7 @@ class PdfGeneratorTest : FunSpec({
 
 private fun lagKomplettArbeidstakerData(): UtsendtArbeidstakerArbeidstakersSkjemaDataDto {
     return UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
-        utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier(),
+        utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
         arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = false,
             aktivitetIMaanedenFoerUtsendingen = "Jeg var student ved Universitetet i Oslo."

@@ -76,7 +76,7 @@ data class UtsendtArbeidstakerControllerTestFixture<T>(
 
     // Nye felter for applyFixture()
     val tokenFnr: String = korrektSyntetiskFnr,
-    val existingSkjemaer: List<Skjema> = emptyList(),
+    val existingSkjemaer: List<Skjema> = emptyList(), // Første element regnes som hovedskjema (brukes for id, orgnr, fnr i mocks)
     val altinnHarTilgang: Boolean? = null,
     val reprHarFullmakt: Boolean? = null,
 )
@@ -284,15 +284,11 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectBody<UtsendtArbeidstakerSkjemaDto>()
 
         val persistedData = skjemaRepository.getReferenceById(existingSkjema.id!!).data
         persistedData shouldBe fixture.expectedDataAfterPost
     }
-
-    fun orgnummerHarVerdiOgOrgnnummerErNull(): List<Arguments> = listOf(
-        Arguments.of("123456789"),
-        Arguments.of(null)
-    )
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("tilgangNektetFixtures")
@@ -816,11 +812,11 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val savedSkjemaer = skjemaRepository.saveAll(fixture.existingSkjemaer)
 
         fixture.altinnHarTilgang?.let { harTilgang ->
-            every { altinnService.harBrukerTilgang(any()) } returns harTilgang
+            every { altinnService.harBrukerTilgang(savedSkjemaer.first().orgnr) } returns harTilgang
         }
 
         fixture.reprHarFullmakt?.let { harFullmakt ->
-            every { reprService.harSkriverettigheterForMedlemskap(any()) } returns harFullmakt
+            every { reprService.harSkriverettigheterForMedlemskap(savedSkjemaer.first().fnr) } returns harFullmakt
         }
 
         return savedSkjemaer

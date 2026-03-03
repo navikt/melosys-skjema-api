@@ -21,9 +21,11 @@ import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgivers
 import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.felles.LandKode
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,14 +47,16 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
     )
 
     private val arbeidstakersDataMedOverlappendePeriode = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-        utenlandsoppdraget = utenlandsoppdragetArbeidstakersDelDtoMedDefaultVerdier().copy(
+        utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+            utsendelseLand = LandKode.SE,
             utsendelsePeriode = overlappendePeriode
         )
     )
 
     private val arbeidsgiversDataMedOverlappendePeriode = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-        utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier().copy(
-            arbeidstakerUtsendelsePeriode = overlappendePeriode
+        utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+            utsendelseLand = LandKode.SE,
+            utsendelsePeriode = overlappendePeriode
         )
     )
 
