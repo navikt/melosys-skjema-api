@@ -1,13 +1,12 @@
-package no.nav.melosys.skjema.validators.utenlandsoppdraget
+package no.nav.melosys.skjema.validators.utsendingsperiodeogland
 
-import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import org.springframework.stereotype.Component
 
 @Component
-class UtenlandsoppdragetArbeidstakersDelValidator() {
+class UtsendingsperiodeOgLandValidator {
 
     fun validate(dto: UtsendingsperiodeOgLandDto?): List<Violation> {
         if (dto == null) return emptyList()
@@ -19,11 +18,5 @@ class UtenlandsoppdragetArbeidstakersDelValidator() {
             .takeIf { it.isNotEmpty() }?.let { return it }
 
         return emptyList()
-    }
-
-    companion object {
-        private fun translationFieldName(fieldName: String): String {
-            return "${ErrorMessageTranslation::utenlandsoppdragetTranslation.name}.$fieldName"
-        }
     }
 }

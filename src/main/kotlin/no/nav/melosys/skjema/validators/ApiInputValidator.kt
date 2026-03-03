@@ -16,15 +16,15 @@ import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnV
 import no.nav.melosys.skjema.validators.familiemedlemmer.FamiliemedlemmerValidator
 import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgInntektValidator
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
-import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
+import no.nav.melosys.skjema.validators.utsendingsperiodeogland.UtsendingsperiodeOgLandValidator
 import org.springframework.stereotype.Component
 
 @Component
 class ApiInputValidator(
     private val arbeidsgiverensVirksomhetValidator: ArbeidsgiverensVirksomhetINorgeValidator,
     private val utenlandsoppdragetValidator: UtenlandsoppdragetValidator,
-    private val utenlandsoppdragetArbeidstakersDelValidator: UtenlandsoppdragetArbeidstakersDelValidator,
+    private val utsendingsperiodeOgLandValidator: UtsendingsperiodeOgLandValidator,
     private val arbeidstakerensLonnValidator: ArbeidstakerensLonnValidator,
     private val arbeidsstedIUtlandetValidator: ArbeidsstedIUtlandetValidator,
     private val tilleggsopplysningerValidator: TilleggsopplysningerValidator,
@@ -41,7 +41,7 @@ class ApiInputValidator(
     }
 
     fun validate(dto: UtsendingsperiodeOgLandDto) {
-        throwIfViolations(utenlandsoppdragetArbeidstakersDelValidator.validate(dto))
+        throwIfViolations(utsendingsperiodeOgLandValidator.validate(dto))
     }
 
     fun validate(dto: ArbeidstakerensLonnDto?) {
