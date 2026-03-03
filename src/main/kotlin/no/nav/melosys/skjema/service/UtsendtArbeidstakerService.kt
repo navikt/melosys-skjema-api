@@ -26,6 +26,7 @@ import no.nav.melosys.skjema.types.RadgiverMetadata
 import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.Skjemadel
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.UtkastOversiktDto
@@ -307,32 +308,56 @@ class UtsendtArbeidstakerService(
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
-            dto.copy(arbeidsgiverensVirksomhetINorge = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidsgiverensVirksomhetINorge = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveUtenlandsoppdraget(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
-            dto.copy(utenlandsoppdraget = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utenlandsoppdraget = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    utenlandsoppdraget = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveArbeidstakerensLonn(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
-            dto.copy(arbeidstakerensLonn = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidstakerensLonn = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidstakerensLonn = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveArbeidsstedIUtlandet(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) { dto ->
-            dto.copy(arbeidsstedIUtlandet = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsstedIUtlandet = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidsstedIUtlandet = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
@@ -480,32 +505,55 @@ class UtsendtArbeidstakerService(
     fun saveUtsendingsperiodeOgLandAsArbeidstaker(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
-            dto.copy(utsendingsperiodeOgLand = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveArbeidssituasjon(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
-            dto.copy(arbeidssituasjon = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(arbeidssituasjon = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    arbeidssituasjon = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveSkatteforholdOgInntekt(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
-            dto.copy(skatteforholdOgInntekt = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(skatteforholdOgInntekt = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    skatteforholdOgInntekt = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
     fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId, ::UtsendtArbeidstakerArbeidstakersSkjemaDataDto) { dto ->
-            dto.copy(familiemedlemmer = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(familiemedlemmer = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    familiemedlemmer = request
+                ))
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
     }
 
@@ -679,23 +727,23 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    private inline fun <reified T : UtsendtArbeidstakerSkjemaData> updateSkjemaData(
+    private fun updateSkjemaData(
         skjemaId: UUID,
-        default: () -> T,
-        updateFunction: (T) -> T
+        updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val existing = (skjema.data as? UtsendtArbeidstakerSkjemaData) ?: opprettTomSkjemaData(skjema)
+        skjema.data = updateFunction(existing)
+        return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
+    }
 
-        // Read existing DTO of the expected type, or create empty one
-        val existingDto = skjema.data as? T ?: default()
-
-        // Apply the update function
-        val updatedDto = updateFunction(existingDto)
-
-        // Save and convert
-        skjema.data = updatedDto
-        val savedSkjema = skjemaRepository.save(skjema)
-        return savedSkjema.toUtsendtArbeidstakerDto()
+    private fun opprettTomSkjemaData(skjema: Skjema): UtsendtArbeidstakerSkjemaData {
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        return when (metadata.skjemadel) {
+            Skjemadel.ARBEIDSGIVERS_DEL -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
+            Skjemadel.ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto()
+        }
     }
 
 
