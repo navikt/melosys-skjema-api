@@ -67,7 +67,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
             every { mockClamAvClient.scan(fil) } just Runs
             every { mockVedleggStorageClient.lastOpp(any(), any(), any()) } just Runs
@@ -88,7 +88,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema(status = SkjemaStatus.SENDT)
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
 
             shouldThrow<IllegalArgumentException> {
                 vedleggService.lastOpp(skjemaId, fil)
@@ -99,7 +99,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 10
 
             shouldThrow<IllegalArgumentException> {
@@ -111,7 +111,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
             every { mockClamAvClient.scan(fil) } throws VedleggVirusFunnetException("Virus funnet")
 
@@ -131,7 +131,7 @@ class VedleggServiceTest : FunSpec({
             every { vedlegg.filstorrelse } returns 1024
             every { vedlegg.opprettetDato } returns java.time.Instant.now()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg)
 
             val result = vedleggService.list(skjemaId)
@@ -147,7 +147,7 @@ class VedleggServiceTest : FunSpec({
             val vedlegg = mockk<Vedlegg>()
             every { vedlegg.storageReferanse } returns "skjemaer/$skjemaId/vedlegg/$vedleggId/test.pdf"
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId) } returns vedlegg
             every { mockVedleggStorageClient.slett(any()) } just Runs
             every { mockVedleggRepository.delete(vedlegg) } just Runs
@@ -161,7 +161,7 @@ class VedleggServiceTest : FunSpec({
         test("feiler når vedlegg ikke finnes") {
             val skjema = lagSkjema()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
             every { mockVedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId) } returns null
 
             shouldThrow<NoSuchElementException> {
@@ -172,7 +172,7 @@ class VedleggServiceTest : FunSpec({
         test("feiler når skjema ikke er UTKAST") {
             val skjema = lagSkjema(status = SkjemaStatus.SENDT)
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
 
             shouldThrow<IllegalArgumentException> {
                 vedleggService.slett(skjemaId, vedleggId)

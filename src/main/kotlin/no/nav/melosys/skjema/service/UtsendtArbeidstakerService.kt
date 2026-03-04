@@ -294,12 +294,12 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaArbeidsgiversDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
         return skjema.toUtsendtArbeidstakerDto()
     }
 
     fun getSkjemaArbeidstakersDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
         return skjema.toUtsendtArbeidstakerDto()
     }
 
@@ -328,6 +328,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
                     utenlandsoppdraget = request
                 ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre utenlandsoppdraget på arbeidstakers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -342,6 +343,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
                     arbeidstakerensLonn = request
                 ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidstakerens lønn på arbeidstakers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -356,6 +358,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
                     arbeidsstedIUtlandet = request
                 ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidssted i utlandet på arbeidstakers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -364,7 +367,7 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaAlleredeSendtException()
@@ -420,7 +423,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
@@ -434,7 +437,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         return skjema.metadata as UtsendtArbeidstakerMetadata
     }
@@ -448,7 +451,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
@@ -494,7 +497,7 @@ class UtsendtArbeidstakerService(
      * @throws NoSuchElementException hvis skjema ikke finnes
      * @throws AccessDeniedException hvis tilgang nektes
      */
-    fun hentSkjemaMedTilgangsstyring(skjemaId: UUID): Skjema {
+    fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema {
         val skjema = skjemaRepository.findByIdOrNull(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
@@ -524,6 +527,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
                     arbeidssituasjon = request
                 ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre arbeidssituasjon på arbeidsgivers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -538,6 +542,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
                     skatteforholdOgInntekt = request
                 ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre skatteforhold og inntekt på arbeidsgivers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -552,6 +557,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
                     familiemedlemmer = request
                 ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre familiemedlemmer på arbeidsgivers skjemadel")
                 else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
@@ -559,17 +565,15 @@ class UtsendtArbeidstakerService(
 
     fun saveTilleggsopplysninger(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving tilleggsopplysninger for skjema: $skjemaId" }
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
 
-        skjema.data = when (val data = skjema.data) {
-            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
-            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
-            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> data.copy(tilleggsopplysninger = request)
-            else -> throw IllegalStateException("Ukjent skjemadata-type: ${data?.javaClass?.simpleName}")
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+                else -> error("Uventet skjema data type: ${dto::class}")
+            }
         }
-
-        val savedSkjema = skjemaRepository.save(skjema)
-        return savedSkjema.toUtsendtArbeidstakerDto()
     }
 
     /**
@@ -731,10 +735,55 @@ class UtsendtArbeidstakerService(
         skjemaId: UUID,
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
         val existing = (skjema.data as? UtsendtArbeidstakerSkjemaData) ?: opprettTomSkjemaData(skjema)
         skjema.data = updateFunction(existing)
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
+    }
+
+    /**
+     * Henter skjema og verifiserer at innlogget bruker har skrivetilgang.
+     *
+     * Til forskjell fra [hentSkjemaMedLesetilgang] (som også gir lesetilgang basert på fnr-match)
+     * krever denne at brukeren har riktig rolle for å kunne skrive:
+     * - DEG_SELV: Kun arbeidstaker selv (fnr-match)
+     * - ARBEIDSGIVER/RADGIVER: Kun via Altinn-tilgang til organisasjonen
+     * - *_MED_FULLMAKT/ANNEN_PERSON: Kun fullmektig med aktiv fullmakt
+     */
+    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema {
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+
+        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val currentUser = subjectHandler.getUserID()
+
+        val harTilgang = when (skjemaMetadata.representasjonstype) {
+            Representasjonstype.DEG_SELV -> skjema.fnr == currentUser
+
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER -> altinnService.harBrukerTilgang(skjema.orgnr)
+
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as ArbeidsgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as RadgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                val metadata = skjemaMetadata as AnnenPersonMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+        }
+
+        if (!harTilgang) {
+            throw AccessDeniedException("Innlogget bruker har ikke skrivetilgang til skjema")
+        }
+
+        return skjema
     }
 
     private fun opprettTomSkjemaData(skjema: Skjema): UtsendtArbeidstakerSkjemaData {

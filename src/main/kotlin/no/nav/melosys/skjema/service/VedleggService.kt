@@ -31,7 +31,7 @@ class VedleggService(
 
     @Transactional
     fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
 
         require(skjema.status == SkjemaStatus.UTKAST) {
             "Kan kun laste opp vedlegg til skjemaer med status UTKAST"
@@ -71,7 +71,7 @@ class VedleggService(
     }
 
     fun list(skjemaId: UUID): List<VedleggDto> {
-        utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
         return listBySkjemaId(skjemaId)
     }
 
@@ -80,7 +80,7 @@ class VedleggService(
     }
 
     fun hent(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
-        utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
         return hentInnhold(skjemaId, vedleggId)
     }
 
@@ -98,7 +98,7 @@ class VedleggService(
 
     @Transactional
     fun slett(skjemaId: UUID, vedleggId: UUID) {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
 
         require(skjema.status == SkjemaStatus.UTKAST) {
             "Kan kun slette vedlegg fra skjemaer med status UTKAST"

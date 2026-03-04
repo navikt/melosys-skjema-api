@@ -214,7 +214,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         }
     }
 
-    context("hentSkjemaMedTilgangsstyring - tilgangskontroll") {
+    context("hentSkjemaMedLesetilgang - tilgangskontroll") {
         test("skal godkjenne tilgang for arbeidstaker selv") {
             val currentUser = "12345678910"
             val skjemaId = UUID.randomUUID()
@@ -236,7 +236,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
 
-            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
+            val result = service.hentSkjemaMedLesetilgang(skjemaId)
 
             result.fnr shouldBe currentUser
         }
@@ -267,7 +267,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
-            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
+            val result = service.hentSkjemaMedLesetilgang(skjemaId)
 
             result.fnr shouldBe arbeidstakerFnr
             verify { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) }
@@ -298,7 +298,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                service.hentSkjemaMedTilgangsstyring(skjemaId)
+                service.hentSkjemaMedLesetilgang(skjemaId)
             }
 
             exception.message shouldContain "ikke tilgang"
@@ -325,7 +325,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            val result = service.hentSkjemaMedTilgangsstyring(skjemaId)
+            val result = service.hentSkjemaMedLesetilgang(skjemaId)
 
             result.orgnr shouldBe testArbeidsgiver.orgnr
             verify { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) }
@@ -353,7 +353,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                service.hentSkjemaMedTilgangsstyring(skjemaId)
+                service.hentSkjemaMedLesetilgang(skjemaId)
             }
 
             exception.message shouldContain "ikke tilgang"
@@ -367,7 +367,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns null
 
             shouldThrow<NoSuchElementException> {
-                service.hentSkjemaMedTilgangsstyring(skjemaId)
+                service.hentSkjemaMedLesetilgang(skjemaId)
             }
         }
     }
