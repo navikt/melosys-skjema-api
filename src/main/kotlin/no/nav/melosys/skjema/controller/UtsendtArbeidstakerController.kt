@@ -92,24 +92,14 @@ class UtsendtArbeidstakerController(
         return ResponseEntity.ok(response)
     }
 
-    @GetMapping("/{id}/arbeidsgiver-view")
-    @Operation(summary = "Hent skjema med arbeidsgiver-visning")
+    @GetMapping("/{id}")
+    @Operation(summary = "Hent skjema")
     @ApiResponse(responseCode = "200", description = "Skjema hentet")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidsgiver-visning")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
-    fun getArbeidsgiverView(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
-        log.info { "Henter arbeidsgiver-view for skjema: $id" }
-        return ResponseEntity.ok(utsendtArbeidstakerService.getSkjemaArbeidsgiversDel(id))
-    }
-
-    @GetMapping("/{id}/arbeidstaker-view")
-    @Operation(summary = "Hent skjema med arbeidstaker-visning")
-    @ApiResponse(responseCode = "200", description = "Skjema hentet")
-    @ApiResponse(responseCode = "403", description = "Ingen tilgang til arbeidstaker-visning")
-    @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
-    fun getArbeidstakerView(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
-        log.info { "Henter arbeidstaker-view for skjema: $id" }
-        return ResponseEntity.ok(utsendtArbeidstakerService.getSkjemaArbeidstakersDel(id))
+    fun getSkjema(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
+        log.info { "Henter skjema: $id" }
+        return ResponseEntity.ok(utsendtArbeidstakerService.hentSkjema(id))
     }
 
     @PostMapping("/opprett-med-kontekst")
@@ -249,7 +239,7 @@ class UtsendtArbeidstakerController(
     fun registerUtsendingsperiodeOgLandArbeidstaker(@PathVariable skjemaId: UUID, @RequestBody @Valid request: UtsendingsperiodeOgLandDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering utsendingsperiode og land information for arbeidstaker" }
         apiInputValidator.validate(request)
-        val skjema = utsendtArbeidstakerService.saveUtsendingsperiodeOgLandAsArbeidstaker(skjemaId, request)
+        val skjema = utsendtArbeidstakerService.saveUtsendingsperiodeOgLand(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 

@@ -293,16 +293,8 @@ class UtsendtArbeidstakerService(
         )
     }
 
-    fun getSkjemaArbeidsgiversDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedLesetilgang(skjemaId)
-        return skjema.toUtsendtArbeidstakerDto()
-    }
-
-    fun getSkjemaArbeidstakersDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedLesetilgang(skjemaId)
-        return skjema.toUtsendtArbeidstakerDto()
-    }
-
+    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto =
+        hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
 
 
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
@@ -501,11 +493,11 @@ class UtsendtArbeidstakerService(
         val skjema = skjemaRepository.findByIdOrNull(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
-        return skjema.takeIf { harInnloggetBrukerTilgangTilSkjema(it) }
+        return skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
     }
 
-    fun saveUtsendingsperiodeOgLandAsArbeidstaker(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
 
         return updateSkjemaData(skjemaId) { dto ->
@@ -699,7 +691,7 @@ class UtsendtArbeidstakerService(
      * @param skjema Skjemaet som skal sjekkes
      * @throws IllegalArgumentException hvis bruker ikke har tilgang
      */
-    private fun harInnloggetBrukerTilgangTilSkjema(skjema: Skjema): Boolean {
+    private fun harInnloggetBrukerLesetilgangTilSkjema(skjema: Skjema): Boolean {
         if (skjema.fnr == subjectHandler.getUserID()) {
             return true
         }

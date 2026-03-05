@@ -159,7 +159,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere spesifikt skjema som arbeidstaker")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -173,7 +173,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(savedSkjema.fnr)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidstaker-view")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -192,7 +192,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view skal returnere spesifikt skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere spesifikt skjema som arbeidsgiver")
     fun `GET skjema som arbeidsgiver by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
         val savedSkjema = skjemaRepository.save(
@@ -209,7 +209,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val token = createTokenForUser(korrektSyntetiskFnr)
 
         val responseBody = webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/arbeidsgiver-view")
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -228,13 +228,13 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view skal returnere 404 for ikke-eksisterende skjema")
+    @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere 404 for ikke-eksisterende skjema")
     fun `GET skjema by id skal returnere 404 for ikke-eksisterende skjema`() {
         val token = createTokenForUser(korrektSyntetiskFnr)
         val nonExistentId = UUID.randomUUID()
 
         webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId/arbeidstaker-view")
+            .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -325,13 +325,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // ARBEIDSGIVER uten Altinn-tilgang — alle tilgangsstyrte endepunkter
         val arbeidsgiverUtenTilgang = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
             UtsendtArbeidstakerControllerTestFixture<Any>(
-                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
-                httpMethod = HttpMethod.GET,
-                existingSkjemaer = listOf(arbeidsgiverSkjema()),
-                altinnHarTilgang = false,
-            ),
-            UtsendtArbeidstakerControllerTestFixture<Any>(
-                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view",
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}",
                 httpMethod = HttpMethod.GET,
                 existingSkjemaer = listOf(arbeidsgiverSkjema()),
                 altinnHarTilgang = false,
@@ -416,7 +410,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // DEG_SELV med fnr mismatch — ett representativt endepunkt
         val degSelvFnrMismatch = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
             UtsendtArbeidstakerControllerTestFixture<Any>(
-                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidstaker-view",
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}",
                 httpMethod = HttpMethod.GET,
                 existingSkjemaer = listOf(
                     skjemaMedDefaultVerdier(
@@ -432,7 +426,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // ARBEIDSGIVER_MED_FULLMAKT — fullmakt nektet av repr-api
         val fullmaktNektet = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
             UtsendtArbeidstakerControllerTestFixture<Any>(
-                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}",
                 httpMethod = HttpMethod.GET,
                 existingSkjemaer = listOf(
                     skjemaMedDefaultVerdier(
@@ -469,7 +463,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // ARBEIDSGIVER_MED_FULLMAKT — feil fullmektig
         val feilFullmektig = listOf<UtsendtArbeidstakerControllerTestFixture<*>>(
             UtsendtArbeidstakerControllerTestFixture<Any>(
-                uri = "/api/skjema/utsendt-arbeidstaker/{id}/arbeidsgiver-view",
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}",
                 httpMethod = HttpMethod.GET,
                 existingSkjemaer = listOf(
                     skjemaMedDefaultVerdier(
