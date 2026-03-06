@@ -1,6 +1,6 @@
 package no.nav.melosys.skjema.validators.utsendingsperiodeogland
 
-import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import org.springframework.stereotype.Component

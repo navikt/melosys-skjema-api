@@ -8,13 +8,10 @@ import java.util.Optional
 import java.util.UUID
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
-import no.nav.melosys.skjema.kafka.Varseltekst
-import no.nav.melosys.skjema.korrektSyntetiskFnr
-import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier

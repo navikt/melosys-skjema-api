@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget
+package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import no.nav.melosys.skjema.types.felles.PeriodeDto

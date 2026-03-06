@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 
 /**
  * Response for en innsendt søknad med skjemadefinisjon.

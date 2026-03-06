@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
 import io.mockk.clearMocks
 import io.mockk.every
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier
@@ -35,22 +36,22 @@ import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
-import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
-import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -845,8 +846,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             requestBody = UtsendingsperiodeOgLandDto(
                 utsendelseLand = LandKode.SE,
                 utsendelsePeriode = PeriodeDto(
-                    fraDato = java.time.LocalDate.of(2024, 12, 31),
-                    tilDato = java.time.LocalDate.of(2024, 1, 1)
+                    fraDato = LocalDate.of(2024, 12, 31),
+                    tilDato = LocalDate.of(2024, 1, 1)
                 )
             ),
             expectedValidationError = mapOf("utsendelsePeriode" to "periodeTranslation.fraDatoMaaVaereFoerTilDato")

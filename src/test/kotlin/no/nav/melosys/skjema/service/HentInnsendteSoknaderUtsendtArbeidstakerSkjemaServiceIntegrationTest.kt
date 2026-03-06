@@ -19,7 +19,7 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.OrganisasjonDto
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach

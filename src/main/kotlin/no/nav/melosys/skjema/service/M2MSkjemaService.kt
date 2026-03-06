@@ -12,9 +12,9 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

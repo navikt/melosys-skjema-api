@@ -3,13 +3,13 @@ package no.nav.melosys.skjema.extensions
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.types.SkjemaDto
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.Skjemadel
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 
 /**
  * Konverterer en Skjema-entitet til SkjemaDto basert på skjematype.

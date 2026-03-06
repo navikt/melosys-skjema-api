@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.UUID
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = UtsendtArbeidstakerSkjemaDto::class, name = "UTSENDT_ARBEIDSTAKER")
 )
-sealed interface SkjemaDto {
+interface SkjemaDto {
     val id: UUID
     val status: SkjemaStatus
     val type: SkjemaType

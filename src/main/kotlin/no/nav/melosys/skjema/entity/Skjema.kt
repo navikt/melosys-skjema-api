@@ -15,8 +15,8 @@ import java.util.UUID
 import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.SkjemaMetadata
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes

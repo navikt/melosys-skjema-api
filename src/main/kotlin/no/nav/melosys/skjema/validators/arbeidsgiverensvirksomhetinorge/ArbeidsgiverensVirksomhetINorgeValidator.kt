@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.validators.arbeidsgiverensvirksomhetinorge
 
 import no.nav.melosys.skjema.translations.dto.ArbeidsgiverensVirksomhetINorgeTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 

@@ -6,7 +6,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger { }

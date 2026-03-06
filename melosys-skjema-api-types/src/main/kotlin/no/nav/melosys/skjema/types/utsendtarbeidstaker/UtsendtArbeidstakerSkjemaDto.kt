@@ -1,6 +1,8 @@
-package no.nav.melosys.skjema.types
+package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import java.util.UUID
+import no.nav.melosys.skjema.types.SkjemaDto
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 
 data class UtsendtArbeidstakerSkjemaDto(

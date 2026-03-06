@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.PaSkipTranslation
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.Farvann
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Farvann
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaSkipDto
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 

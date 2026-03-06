@@ -18,35 +18,35 @@ import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
-import no.nav.melosys.skjema.types.AnnenPersonMetadata
-import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
-import no.nav.melosys.skjema.types.ArbeidsgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.DegSelvMetadata
-import no.nav.melosys.skjema.types.RadgiverMetadata
-import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.RadgiverfirmaInfo
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.UtkastOversiktDto
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiverOgArbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -306,7 +306,7 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
                     arbeidsgiverensVirksomhetINorge = request
                 ))
-                else -> error("Uventet skjema data type: ${dto::class}")
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidsgiverens virksomhet på arbeidstakers skjemadel")
             }
         }
     }
@@ -321,7 +321,6 @@ class UtsendtArbeidstakerService(
                     utenlandsoppdraget = request
                 ))
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre utenlandsoppdraget på arbeidstakers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -336,7 +335,6 @@ class UtsendtArbeidstakerService(
                     arbeidstakerensLonn = request
                 ))
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidstakerens lønn på arbeidstakers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -351,7 +349,6 @@ class UtsendtArbeidstakerService(
                     arbeidsstedIUtlandet = request
                 ))
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidssted i utlandet på arbeidstakers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -505,7 +502,6 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -520,7 +516,6 @@ class UtsendtArbeidstakerService(
                     arbeidssituasjon = request
                 ))
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre arbeidssituasjon på arbeidsgivers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -535,7 +530,6 @@ class UtsendtArbeidstakerService(
                     skatteforholdOgInntekt = request
                 ))
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre skatteforhold og inntekt på arbeidsgivers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -550,7 +544,6 @@ class UtsendtArbeidstakerService(
                     familiemedlemmer = request
                 ))
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre familiemedlemmer på arbeidsgivers skjemadel")
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }
@@ -563,7 +556,6 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
-                else -> error("Uventet skjema data type: ${dto::class}")
             }
         }
     }

@@ -27,7 +27,7 @@ import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.OrganisasjonDto
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier

@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.validators.utenlandsoppdraget
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
-import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.junit.jupiter.api.TestInstance

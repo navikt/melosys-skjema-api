@@ -5,9 +5,9 @@ import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.types.Skjemadel
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Service

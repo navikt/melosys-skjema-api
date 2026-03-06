@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn
+package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import jakarta.validation.Valid

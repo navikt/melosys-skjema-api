@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.types
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 
 /**
  * Request for å hente innsendte søknader med paginering, søk og sortering.

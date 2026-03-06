@@ -13,12 +13,12 @@ import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.LandKode
-import no.nav.melosys.skjema.types.felles.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 
 class SkjemaKoblingServiceTest : FunSpec({

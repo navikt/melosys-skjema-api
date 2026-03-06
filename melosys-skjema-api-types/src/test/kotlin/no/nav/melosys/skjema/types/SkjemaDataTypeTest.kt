@@ -2,8 +2,8 @@ package no.nav.melosys.skjema.types
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import io.kotest.matchers.shouldBe
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import org.junit.jupiter.api.Test
 
 /**

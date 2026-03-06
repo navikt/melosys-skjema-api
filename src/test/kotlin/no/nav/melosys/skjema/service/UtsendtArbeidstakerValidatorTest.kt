@@ -13,7 +13,7 @@ import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 
 class UtsendtArbeidstakerValidatorTest : FunSpec({
 

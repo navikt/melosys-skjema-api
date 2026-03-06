@@ -2,10 +2,13 @@ package no.nav.melosys.skjema.types
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import io.kotest.matchers.shouldBe
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.junit.jupiter.api.Test
 import java.util.UUID
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 
 /**
  * Tester at type-verdiene for SkjemaDto er stabile og konsistente.

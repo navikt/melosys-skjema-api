@@ -2,18 +2,24 @@ package no.nav.melosys.skjema.types
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 
 /**
  * Base sealed class for all skjema metadata types.
  * Lagres i skjema.metadata som JSONB.
  *
  * Diskrimineres basert på `metadatatype`:
- * - [DegSelvMetadata] for UTSENDT_ARBEIDSTAKER_DEG_SELV
- * - [ArbeidsgiverMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER
- * - [ArbeidsgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT
- * - [RadgiverMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER
- * - [RadgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT
- * - [AnnenPersonMetadata] for UTSENDT_ARBEIDSTAKER_ANNEN_PERSON
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata] for UTSENDT_ARBEIDSTAKER_DEG_SELV
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata] for UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT
+ * - [no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata] for UTSENDT_ARBEIDSTAKER_ANNEN_PERSON
  */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -28,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = RadgiverMedFullmaktMetadata::class, name = "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"),
     JsonSubTypes.Type(value = AnnenPersonMetadata::class, name = "UTSENDT_ARBEIDSTAKER_ANNEN_PERSON")
 )
-sealed class SkjemaMetadata {
+interface SkjemaMetadata {
     /** Diskriminator for Jackson-serialisering. Skal ikke endres - lagres i database. */
-    abstract val metadatatype: String
+    val metadatatype: String
 }
