@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.pdf
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.Familiemedlem
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Familiemedlem
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter

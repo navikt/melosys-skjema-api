@@ -18,32 +18,35 @@ import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
 import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
-import no.nav.melosys.skjema.types.AnnenPersonMetadata
-import no.nav.melosys.skjema.types.ArbeidsgiverMetadata
-import no.nav.melosys.skjema.types.ArbeidsgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.DegSelvMetadata
-import no.nav.melosys.skjema.types.RadgiverMetadata
-import no.nav.melosys.skjema.types.RadgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.RadgiverfirmaInfo
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.UtkastOversiktDto
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -290,62 +293,70 @@ class UtsendtArbeidstakerService(
         )
     }
 
-    fun getSkjemaArbeidsgiversDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-        return skjema.toUtsendtArbeidstakerDto()
-    }
-
-    fun getSkjemaArbeidstakersDel(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-        return skjema.toUtsendtArbeidstakerDto()
-    }
+    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto =
+        hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
 
 
-
-    fun saveVirksomhetInfo(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidsgiverensVirksomhetINorge = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidsgiverensVirksomhetINorge = request
+                ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidsgiverens virksomhet på arbeidstakers skjemadel")
+            }
         }
     }
 
-    fun saveUtenlandsoppdragInfo(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveUtenlandsoppdraget(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(utenlandsoppdraget = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utenlandsoppdraget = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    utenlandsoppdraget = request
+                ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre utenlandsoppdraget på arbeidstakers skjemadel")
+            }
         }
     }
 
-    fun saveArbeidstakerLonnInfo(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidstakerensLonn(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidstakerensLonn = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidstakerensLonn = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidstakerensLonn = request
+                ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidstakerens lønn på arbeidstakers skjemadel")
+            }
         }
     }
 
-    fun saveArbeidsstedIUtlandetInfo(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidsstedIUtlandet(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
 
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidsstedIUtlandet = request)
-        }
-    }
-
-    fun saveTilleggsopplysningerInfoAsArbeidsgiver(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
-
-        return updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(tilleggsopplysninger = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsstedIUtlandet = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
+                    arbeidsstedIUtlandet = request
+                ))
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidssted i utlandet på arbeidstakers skjemadel")
+            }
         }
     }
 
     @Transactional
     fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaAlleredeSendtException()
@@ -401,7 +412,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
@@ -415,7 +426,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         return skjema.metadata as UtsendtArbeidstakerMetadata
     }
@@ -429,7 +440,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+        val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
@@ -449,8 +460,7 @@ class UtsendtArbeidstakerService(
         )
 
         // Parse skjemadata
-        val arbeidstakerData = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-        val arbeidsgiverData = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+        val skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData
 
         return InnsendtSkjemaResponse(
             skjemaId = skjema.id!!,
@@ -458,8 +468,7 @@ class UtsendtArbeidstakerService(
             innsendtDato = skjema.endretDato,
             innsendtSprak = innsending.innsendtSprak,
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
-            arbeidstakerData = arbeidstakerData,
-            arbeidsgiverData = arbeidsgiverData,
+            skjemaData = skjemaData,
             definisjon = definisjon
         )
     }
@@ -477,51 +486,77 @@ class UtsendtArbeidstakerService(
      * @throws NoSuchElementException hvis skjema ikke finnes
      * @throws AccessDeniedException hvis tilgang nektes
      */
-    fun hentSkjemaMedTilgangsstyring(skjemaId: UUID): Skjema {
+    fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema {
         val skjema = skjemaRepository.findByIdOrNull(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
-        return skjema.takeIf { harInnloggetBrukerTilgangTilSkjema(it) }
+        return skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
     }
 
-    fun saveUtenlandsoppdragetInfoAsArbeidstaker(skjemaId: UUID, request: UtenlandsoppdragetArbeidstakersDelDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving utenlandsoppdraget info for skjema: $skjemaId" }
+    fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(utenlandsoppdraget = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+            }
         }
     }
 
-    fun saveArbeidssituasjonInfo(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveArbeidssituasjon(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(arbeidssituasjon = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(arbeidssituasjon = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    arbeidssituasjon = request
+                ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre arbeidssituasjon på arbeidsgivers skjemadel")
+            }
         }
     }
 
-    fun saveSkatteforholdOgInntektInfo(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveSkatteforholdOgInntekt(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(skatteforholdOgInntekt = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(skatteforholdOgInntekt = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    skatteforholdOgInntekt = request
+                ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre skatteforhold og inntekt på arbeidsgivers skjemadel")
+            }
         }
     }
 
-    fun saveFamiliemedlemmerInfo(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(familiemedlemmer = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(familiemedlemmer = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
+                    familiemedlemmer = request
+                ))
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> error("Kan ikke lagre familiemedlemmer på arbeidsgivers skjemadel")
+            }
         }
     }
 
-    fun saveTilleggsopplysningerInfo(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
-        log.info { "Saving tilleggsopplysninger info for skjema: $skjemaId" }
+    fun saveTilleggsopplysninger(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving tilleggsopplysninger for skjema: $skjemaId" }
 
-        return updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(skjemaId) { dto ->
-            dto.copy(tilleggsopplysninger = request)
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+            }
         }
     }
 
@@ -648,7 +683,7 @@ class UtsendtArbeidstakerService(
      * @param skjema Skjemaet som skal sjekkes
      * @throws IllegalArgumentException hvis bruker ikke har tilgang
      */
-    private fun harInnloggetBrukerTilgangTilSkjema(skjema: Skjema): Boolean {
+    private fun harInnloggetBrukerLesetilgangTilSkjema(skjema: Skjema): Boolean {
         if (skjema.fnr == subjectHandler.getUserID()) {
             return true
         }
@@ -680,40 +715,68 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    private fun updateArbeidsgiverSkjemaDataAndConvertToSkjemaDto(
+    private fun updateSkjemaData(
         skjemaId: UUID,
-        updateFunction: (UtsendtArbeidstakerArbeidsgiversSkjemaDataDto) -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+        updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
-
-        // Read existing ArbeidsgiversSkjemaDataDto or create empty one
-        val existingDto = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto ?: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
-
-        // Apply the update function
-        val updatedDto = updateFunction(existingDto)
-
-        // Save and convert
-        skjema.data = updatedDto
-        val savedSkjema = skjemaRepository.save(skjema)
-        return savedSkjema.toUtsendtArbeidstakerDto()
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+        val existing = (skjema.data as? UtsendtArbeidstakerSkjemaData) ?: opprettTomSkjemaData(skjema)
+        skjema.data = updateFunction(existing)
+        return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
 
-    private fun updateArbeidstakerSkjemaDataAndConvertToSkjemaDto(
-        skjemaId: UUID,
-        updateFunction: (UtsendtArbeidstakerArbeidstakersSkjemaDataDto) -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-    ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedTilgangsstyring(skjemaId)
+    /**
+     * Henter skjema og verifiserer at innlogget bruker har skrivetilgang.
+     *
+     * Til forskjell fra [hentSkjemaMedLesetilgang] (som også gir lesetilgang basert på fnr-match)
+     * krever denne at brukeren har riktig rolle for å kunne skrive:
+     * - DEG_SELV: Kun arbeidstaker selv (fnr-match)
+     * - ARBEIDSGIVER/RADGIVER: Kun via Altinn-tilgang til organisasjonen
+     * - *_MED_FULLMAKT/ANNEN_PERSON: Kun fullmektig med aktiv fullmakt
+     */
+    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema {
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
-        // Read existing ArbeidstakersSkjemaDataDto or create empty one
-        val existingDto = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto ?: UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val currentUser = subjectHandler.getUserID()
 
-        // Apply the update function
-        val updatedDto = updateFunction(existingDto)
+        val harTilgang = when (skjemaMetadata.representasjonstype) {
+            Representasjonstype.DEG_SELV -> skjema.fnr == currentUser
 
-        // Save and convert
-        skjema.data = updatedDto
-        val savedSkjema = skjemaRepository.save(skjema)
-        return savedSkjema.toUtsendtArbeidstakerDto()
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER -> altinnService.harBrukerTilgang(skjema.orgnr)
+
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as ArbeidsgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                val metadata = skjemaMetadata as RadgiverMedFullmaktMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                val metadata = skjemaMetadata as AnnenPersonMetadata
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+            }
+        }
+
+        if (!harTilgang) {
+            throw AccessDeniedException("Innlogget bruker har ikke skrivetilgang til skjema")
+        }
+
+        return skjema
+    }
+
+    private fun opprettTomSkjemaData(skjema: Skjema): UtsendtArbeidstakerSkjemaData {
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        return when (metadata.skjemadel) {
+            Skjemadel.ARBEIDSGIVERS_DEL -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
+            Skjemadel.ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto()
+        }
     }
 
 

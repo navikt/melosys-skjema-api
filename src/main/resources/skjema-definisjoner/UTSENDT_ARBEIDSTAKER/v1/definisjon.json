@@ -2,13 +2,13 @@
   "type": "UTSENDT_ARBEIDSTAKER",
   "versjon": "1",
   "seksjoner": {
-    "utenlandsoppdragetArbeidstaker": {
+    "utsendingsperiodeOgLand": {
       "tittel": {
         "nb": "Utenlandsoppdraget",
         "en": "Foreign assignment"
       },
       "felter": {
-        "utsendelsesLand": {
+        "utsendelseLand": {
           "type": "COUNTRY_SELECT",
           "label": {
             "nb": "I hvilket land skal du utføre arbeid?",

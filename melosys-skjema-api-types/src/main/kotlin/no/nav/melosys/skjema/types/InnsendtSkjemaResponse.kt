@@ -3,13 +3,12 @@ package no.nav.melosys.skjema.types
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.UUID
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 
 /**
- * Response for en innsendt søknad med 
+ * Response for en innsendt søknad med skjemadefinisjon.
  * Brukes for å vise innsendt søknad med korrekte tekster fra innsendingstidspunkt.
  */
 @Schema(description = "Innsendt søknad med skjemadefinisjon for korrekt visning")
@@ -29,11 +28,8 @@ data class InnsendtSkjemaResponse(
     @param:Schema(description = "Versjon av skjemadefinisjon som ble brukt", example = "1")
     val skjemaDefinisjonVersjon: String,
 
-    @param:Schema(description = "Arbeidstakers del av søknaden")
-    val arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto?,
-
-    @param:Schema(description = "Arbeidsgivers del av søknaden")
-    val arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?,
+    @param:Schema(description = "Skjemadata (polymorfisk — bruk 'type'-feltet for å avgjøre variant)")
+    val skjemaData: UtsendtArbeidstakerSkjemaData,
 
     @param:Schema(description = "Skjemadefinisjon for visning (basert på lagret versjon)")
     val definisjon: SkjemaDefinisjonDto

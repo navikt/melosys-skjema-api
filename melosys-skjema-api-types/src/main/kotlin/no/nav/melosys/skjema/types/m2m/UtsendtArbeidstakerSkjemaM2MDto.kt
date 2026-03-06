@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.types.m2m
 
 import java.time.LocalDateTime
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 
 data class UtsendtArbeidstakerSkjemaM2MDto(

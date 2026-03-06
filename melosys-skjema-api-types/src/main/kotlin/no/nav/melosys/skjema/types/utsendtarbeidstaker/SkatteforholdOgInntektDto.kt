@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt
+package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
 

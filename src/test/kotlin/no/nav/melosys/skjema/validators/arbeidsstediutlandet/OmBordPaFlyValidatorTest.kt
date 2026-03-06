@@ -4,7 +4,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
 import no.nav.melosys.skjema.omBordPaFlyDtoMedDefaultVerdier
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
 import no.nav.melosys.skjema.types.felles.LandKode
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest

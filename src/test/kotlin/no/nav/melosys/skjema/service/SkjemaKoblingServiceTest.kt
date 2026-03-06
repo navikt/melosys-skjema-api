@@ -13,10 +13,12 @@ import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
-import no.nav.melosys.skjema.types.Representasjonstype
-import no.nav.melosys.skjema.types.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.LandKode
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 
 class SkjemaKoblingServiceTest : FunSpec({
@@ -180,7 +182,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val kandidatId = UUID.randomUUID()
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )
@@ -200,8 +203,9 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = overlappendePeriode
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = overlappendePeriode
                 )
             )
 
@@ -246,7 +250,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = arbeidstakerPeriode
                 )
             )
@@ -266,8 +271,9 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = arbeidsgiverPeriode
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = arbeidsgiverPeriode
                 )
             )
 
@@ -306,7 +312,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = arbeidstakerPeriode
                 )
             )
@@ -326,8 +333,9 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = arbeidsgiverPeriode
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = arbeidsgiverPeriode
                 )
             )
 
@@ -357,7 +365,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )
@@ -395,7 +404,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = arbeidstakerPeriode
                 )
             )
@@ -416,8 +426,9 @@ class SkjemaKoblingServiceTest : FunSpec({
 
             // Kandidat A (arbeidsgiver) med periode jan-mar
             val kandidatAData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = PeriodeDto(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = PeriodeDto(
                         fraDato = LocalDate.of(2024, 1, 1),
                         tilDato = LocalDate.of(2024, 3, 31)
                     )
@@ -440,8 +451,9 @@ class SkjemaKoblingServiceTest : FunSpec({
 
             // Kandidat B (arbeidsgiver) med periode jul-des
             val kandidatBData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
-                    arbeidstakerUtsendelsePeriode = PeriodeDto(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = PeriodeDto(
                         fraDato = LocalDate.of(2024, 7, 1),
                         tilDato = LocalDate.of(2024, 12, 31)
                     )
@@ -479,7 +491,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val nyId = UUID.randomUUID()
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )
@@ -527,7 +540,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val motpartId = UUID.randomUUID()
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )
@@ -593,7 +607,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val nyId = UUID.randomUUID()
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )
@@ -638,7 +653,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             val nyId = UUID.randomUUID()
 
             val gammelData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = PeriodeDto(
                         fraDato = LocalDate.of(2023, 1, 1),
                         tilDato = LocalDate.of(2023, 6, 30)
@@ -647,7 +663,8 @@ class SkjemaKoblingServiceTest : FunSpec({
             )
 
             val nyData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
-                utenlandsoppdraget = arbeidstakersSkjemaDataDtoMedDefaultVerdier().utenlandsoppdraget!!.copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
                     utsendelsePeriode = overlappendePeriode
                 )
             )

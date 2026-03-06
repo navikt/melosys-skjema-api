@@ -2,8 +2,7 @@ package no.nav.melosys.skjema.pdf
 
 import java.time.Instant
 import java.util.UUID
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -16,7 +15,7 @@ data class SkjemaPdfData(
     val referanseId: String,
     val innsendtDato: Instant,
     val innsendtSprak: Språk,
-    val arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto?,
-    val arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?,
+    val skjemaData: UtsendtArbeidstakerSkjemaData,
+    val kobletSkjemaData: UtsendtArbeidstakerSkjemaData?,
     val definisjon: SkjemaDefinisjonDto
 )

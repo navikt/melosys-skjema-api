@@ -1,21 +1,22 @@
 package no.nav.melosys.skjema.pdf
 
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedType
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.OffshoreDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.OmBordPaFlyDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaLandDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.PaSkipDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OffshoreDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaSkipDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -35,9 +36,9 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
-        data.utenlandsoppdraget?.let { dto ->
-            definisjon.seksjoner["utenlandsoppdragetArbeidstaker"]?.let { seksjon ->
-                builder.append(byggUtenlandsoppdragetArbeidstaker(dto, seksjon))
+        data.utsendingsperiodeOgLand?.let { dto ->
+            definisjon.seksjoner["utsendingsperiodeOgLand"]?.let { seksjon ->
+                builder.append(byggUtsendingsperiodeOgLand(dto, seksjon))
             }
         }
 
@@ -68,12 +69,12 @@ class SeksjonRenderer(
         return builder.toString()
     }
 
-    private fun byggUtenlandsoppdragetArbeidstaker(
-        data: UtenlandsoppdragetArbeidstakersDelDto,
+    private fun byggUtsendingsperiodeOgLand(
+        data: UtsendingsperiodeOgLandDto,
         seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
-            felt("utsendelsesLand", data.utsendelsesLand)
+            felt("utsendelseLand", data.utsendelseLand)
             felt("utsendelsePeriode", data.utsendelsePeriode)
         }
     }
@@ -127,6 +128,80 @@ class SeksjonRenderer(
             felt("harFlereOpplysningerTilSoknaden", data.harFlereOpplysningerTilSoknaden)
             felt("tilleggsopplysningerTilSoknad", data.tilleggsopplysningerTilSoknad)
         }
+    }
+
+    // ==================== KOMBINERT ====================
+
+    fun byggKombinertArbeidsgiversSeksjoner(
+        data: UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto,
+        definisjon: SkjemaDefinisjonDto
+    ): String {
+        val builder = StringBuilder()
+        val ag = data.arbeidsgiversData
+
+        data.utsendingsperiodeOgLand?.let { dto ->
+            definisjon.seksjoner["utsendingsperiodeOgLand"]?.let { seksjon ->
+                builder.append(byggUtsendingsperiodeOgLand(dto, seksjon))
+            }
+        }
+
+        ag.arbeidsgiverensVirksomhetINorge?.let { dto ->
+            definisjon.seksjoner["arbeidsgiverensVirksomhetINorge"]?.let { seksjon ->
+                builder.append(byggArbeidsgiverensVirksomhetINorge(dto, seksjon))
+            }
+        }
+
+        ag.utenlandsoppdraget?.let { dto ->
+            definisjon.seksjoner["utenlandsoppdragetArbeidsgiver"]?.let { seksjon ->
+                builder.append(byggUtenlandsoppdragetArbeidsgiver(dto, seksjon))
+            }
+        }
+
+        ag.arbeidstakerensLonn?.let { dto ->
+            definisjon.seksjoner["arbeidstakerensLonn"]?.let { seksjon ->
+                builder.append(byggArbeidstakerensLonn(dto, seksjon))
+            }
+        }
+
+        ag.arbeidsstedIUtlandet?.let { dto ->
+            builder.append(byggArbeidsstedIUtlandet(dto, definisjon))
+        }
+
+        return builder.toString()
+    }
+
+    fun byggKombinertArbeidstakersSeksjoner(
+        data: UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto,
+        definisjon: SkjemaDefinisjonDto
+    ): String {
+        val builder = StringBuilder()
+        val at = data.arbeidstakersData
+
+        at.arbeidssituasjon?.let { dto ->
+            definisjon.seksjoner["arbeidssituasjon"]?.let { seksjon ->
+                builder.append(byggArbeidssituasjon(dto, seksjon))
+            }
+        }
+
+        at.skatteforholdOgInntekt?.let { dto ->
+            definisjon.seksjoner["skatteforholdOgInntekt"]?.let { seksjon ->
+                builder.append(byggSkatteforholdOgInntekt(dto, seksjon))
+            }
+        }
+
+        at.familiemedlemmer?.let { dto ->
+            definisjon.seksjoner["familiemedlemmer"]?.let { seksjon ->
+                builder.append(byggFamiliemedlemmer(dto, seksjon))
+            }
+        }
+
+        data.tilleggsopplysninger?.let { dto ->
+            definisjon.seksjoner["tilleggsopplysninger"]?.let { seksjon ->
+                builder.append(byggTilleggsopplysninger(dto, seksjon))
+            }
+        }
+
+        return builder.toString()
     }
 
     // ==================== ARBEIDSGIVER ====================
@@ -184,8 +259,6 @@ class SeksjonRenderer(
         seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
-            felt("utsendelseLand", data.utsendelseLand)
-            felt("arbeidstakerUtsendelsePeriode", data.arbeidstakerUtsendelsePeriode)
             felt("arbeidsgiverHarOppdragILandet", data.arbeidsgiverHarOppdragILandet)
             felt("arbeidstakerBleAnsattForUtenlandsoppdraget", data.arbeidstakerBleAnsattForUtenlandsoppdraget)
             felt("arbeidstakerForblirAnsattIHelePerioden", data.arbeidstakerForblirAnsattIHelePerioden)

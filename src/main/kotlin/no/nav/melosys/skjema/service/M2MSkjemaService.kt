@@ -12,11 +12,9 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.types.SkjemaType
-import no.nav.melosys.skjema.types.Skjemadel
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -90,7 +88,10 @@ class M2MSkjemaService(
 
     private fun byggSkjemaPdfData(skjema: Skjema, innsending: Innsending): SkjemaPdfData {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
-        val (arbeidstakerData, arbeidsgiverData) = hentArbeidstakerOgArbeidsgiverData(skjema, metadata)
+
+        val kobletSkjemaData = metadata.kobletSkjemaId?.let { kobletId ->
+            skjemaRepository.findByIdOrNull(kobletId)?.data as? UtsendtArbeidstakerSkjemaData
+        }
 
         val definisjon = skjemaDefinisjonService.hent(
             type = skjema.type,
@@ -103,36 +104,9 @@ class M2MSkjemaService(
             referanseId = innsending.referanseId,
             innsendtDato = innsending.opprettetDato,
             innsendtSprak = innsending.innsendtSprak,
-            arbeidstakerData = arbeidstakerData,
-            arbeidsgiverData = arbeidsgiverData,
+            skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
+            kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
         )
-    }
-
-    private fun hentArbeidstakerOgArbeidsgiverData(
-        skjema: Skjema,
-        metadata: UtsendtArbeidstakerMetadata
-    ): Pair<UtsendtArbeidstakerArbeidstakersSkjemaDataDto?, UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?> {
-        var arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto? = null
-        var arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
-
-        // Data fra hovedskjema
-        when (metadata.skjemadel) {
-            Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = skjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-            Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = skjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-        }
-
-        // Data fra koblet skjema
-        metadata.kobletSkjemaId?.let { kobletId ->
-            skjemaRepository.findByIdOrNull(kobletId)?.let { kobletSkjema ->
-                val kobletMetadata = kobletSkjema.metadata as UtsendtArbeidstakerMetadata
-                when (kobletMetadata.skjemadel) {
-                    Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakerData = kobletSkjema.data as? UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-                    Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiverData = kobletSkjema.data as? UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-                }
-            }
-        }
-
-        return Pair(arbeidstakerData, arbeidsgiverData)
     }
 }

@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge
+package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
 

@@ -5,10 +5,9 @@ import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.types.Skjemadel
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Service
@@ -43,15 +42,14 @@ class SkjemaKoblingService(
 
     @Transactional
     fun finnOgKobl(skjema: Skjema): KoblingsResultat {
-        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val kandidater = skjemaRepository.findByFnrAndStatus(skjema.fnr, SkjemaStatus.SENDT)
             .filter { it.id != skjema.id }
 
-        val erstatter = finnMatch(skjema, kandidater, metadata, sammeDel = true)
+        val erstatter = finnMatch(skjema, kandidater, sammeDel = true)
         val arvetKobletSkjemaId = erstatter?.let { utforErstatterKobling(skjema, it) }
 
         val motpart = if (arvetKobletSkjemaId == null) {
-            finnMatch(skjema, kandidater, metadata, sammeDel = false)?.also { utforMotpartKobling(skjema, it) }
+            finnMatch(skjema, kandidater, sammeDel = false)?.also { utforMotpartKobling(skjema, it) }
         } else null
 
         val kobletSkjemaId = arvetKobletSkjemaId ?: motpart?.id
@@ -62,9 +60,9 @@ class SkjemaKoblingService(
     private fun finnMatch(
         skjema: Skjema,
         kandidater: List<Skjema>,
-        metadata: UtsendtArbeidstakerMetadata,
         sammeDel: Boolean
     ): Skjema? {
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val ønsketDel = if (sammeDel) metadata.skjemadel else metadata.skjemadel.motpart()
         val matchendeKandidater = kandidater.filter { kandidat ->
             val km = kandidat.metadata as UtsendtArbeidstakerMetadata
@@ -85,6 +83,7 @@ class SkjemaKoblingService(
     private fun Skjemadel.motpart() = when (this) {
         Skjemadel.ARBEIDSTAKERS_DEL -> Skjemadel.ARBEIDSGIVERS_DEL
         Skjemadel.ARBEIDSGIVERS_DEL -> Skjemadel.ARBEIDSTAKERS_DEL
+        Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> error("Kombinert skjemadel har ingen motpart")
     }
 
     private fun samletPeriode(skjemaer: List<Skjema>): PeriodeDto? {
@@ -97,12 +96,7 @@ class SkjemaKoblingService(
     }
 
     private fun hentPeriode(skjema: Skjema): PeriodeDto? = try {
-        when ((skjema.metadata as UtsendtArbeidstakerMetadata).skjemadel) {
-            Skjemadel.ARBEIDSTAKERS_DEL ->
-                (skjema.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).utenlandsoppdraget?.utsendelsePeriode
-            Skjemadel.ARBEIDSGIVERS_DEL ->
-                (skjema.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto).utenlandsoppdraget?.arbeidstakerUtsendelsePeriode
-        }
+        (skjema.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand?.utsendelsePeriode
     } catch (e: Exception) {
         log.warn(e) { "Kunne ikke hente periode for skjema ${skjema.id}" }
         null

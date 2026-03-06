@@ -1,6 +1,8 @@
 package no.nav.melosys.skjema.types
 
 import jakarta.validation.constraints.NotBlank
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 
 data class OpprettSoknadMedKontekstRequest(
     val representasjonstype: Representasjonstype,

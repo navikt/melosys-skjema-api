@@ -3,8 +3,10 @@ package no.nav.melosys.skjema.pdf
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import no.nav.melosys.skjema.types.arbeidsgiver.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.arbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -28,9 +30,25 @@ object HtmlDokumentGenerator {
         return buildString {
             append(byggHtmlStart())
             append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
-            append(byggArbeidsgiverDel(skjema.arbeidsgiverData, skjema.definisjon, seksjonRenderer, språk))
-            append(byggArbeidstakerDel(skjema.arbeidstakerData, skjema.definisjon, seksjonRenderer, språk))
+            appendSkjemaData(skjema.skjemaData, skjema.definisjon, seksjonRenderer, språk)
+            skjema.kobletSkjemaData?.let { appendSkjemaData(it, skjema.definisjon, seksjonRenderer, språk) }
             append(byggHtmlSlutt())
+        }
+    }
+
+    private fun StringBuilder.appendSkjemaData(
+        data: UtsendtArbeidstakerSkjemaData,
+        definisjon: SkjemaDefinisjonDto,
+        seksjonRenderer: SeksjonRenderer,
+        språk: Språk
+    ) {
+        when (data) {
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto ->
+                append(byggArbeidsgiverDel(data, definisjon, seksjonRenderer, språk))
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto ->
+                append(byggArbeidstakerDel(data, definisjon, seksjonRenderer, språk))
+            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto ->
+                append(byggKombinertDel(data, definisjon, seksjonRenderer, språk))
         }
     }
 
@@ -77,42 +95,56 @@ object HtmlDokumentGenerator {
         """.trimIndent()
     }
 
-    private fun byggArbeidstakerDel(
-        arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto?,
+    private fun byggArbeidsgiverDel(
+        data: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto,
         definisjon: SkjemaDefinisjonDto,
         seksjonRenderer: SeksjonRenderer,
         språk: Språk
     ): String {
-        if (arbeidstakerData == null) return ""
-
-        val overskrift = when (språk) {
-            Språk.NORSK_BOKMAL -> "Arbeidstakers del"
-            Språk.ENGELSK -> "Employee's section"
-        }
+        val overskrift = arbeidsgiverOverskrift(språk)
 
         return buildString {
             append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
-            append(seksjonRenderer.byggArbeidstakerSeksjoner(arbeidstakerData, definisjon))
+            append(seksjonRenderer.byggArbeidsgiverSeksjoner(data, definisjon))
         }
     }
 
-    private fun byggArbeidsgiverDel(
-        arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto?,
+    private fun byggArbeidstakerDel(
+        data: UtsendtArbeidstakerArbeidstakersSkjemaDataDto,
         definisjon: SkjemaDefinisjonDto,
         seksjonRenderer: SeksjonRenderer,
         språk: Språk
     ): String {
-        if (arbeidsgiverData == null) return ""
-
-        val overskrift = when (språk) {
-            Språk.NORSK_BOKMAL -> "Arbeidsgivers del"
-            Språk.ENGELSK -> "Employer's section"
-        }
+        val overskrift = arbeidstakerOverskrift(språk)
 
         return buildString {
             append("""<h2 class="part-heading">${escapeHtml(overskrift)}</h2>""")
-            append(seksjonRenderer.byggArbeidsgiverSeksjoner(arbeidsgiverData, definisjon))
+            append(seksjonRenderer.byggArbeidstakerSeksjoner(data, definisjon))
         }
+    }
+
+    private fun byggKombinertDel(
+        data: UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto,
+        definisjon: SkjemaDefinisjonDto,
+        seksjonRenderer: SeksjonRenderer,
+        språk: Språk
+    ): String {
+        return buildString {
+            append("""<h2 class="part-heading">${escapeHtml(arbeidsgiverOverskrift(språk))}</h2>""")
+            append(seksjonRenderer.byggKombinertArbeidsgiversSeksjoner(data, definisjon))
+            append("""<h2 class="part-heading">${escapeHtml(arbeidstakerOverskrift(språk))}</h2>""")
+            append(seksjonRenderer.byggKombinertArbeidstakersSeksjoner(data, definisjon))
+        }
+    }
+
+    private fun arbeidsgiverOverskrift(språk: Språk): String = when (språk) {
+        Språk.NORSK_BOKMAL -> "Arbeidsgivers del"
+        Språk.ENGELSK -> "Employer's section"
+    }
+
+    private fun arbeidstakerOverskrift(språk: Språk): String = when (språk) {
+        Språk.NORSK_BOKMAL -> "Arbeidstakers del"
+        Språk.ENGELSK -> "Employee's section"
     }
 
     private fun escapeHtml(text: String): String {

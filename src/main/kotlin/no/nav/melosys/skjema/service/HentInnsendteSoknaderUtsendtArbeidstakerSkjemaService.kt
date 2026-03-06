@@ -10,10 +10,10 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.InnsendtSoknadOversiktDto
 import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
-import no.nav.melosys.skjema.types.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SorteringsFelt
 import no.nav.melosys.skjema.types.Sorteringsretning
-import no.nav.melosys.skjema.types.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl

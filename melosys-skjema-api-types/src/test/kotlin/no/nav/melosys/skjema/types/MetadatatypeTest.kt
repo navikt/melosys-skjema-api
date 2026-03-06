@@ -2,6 +2,14 @@ package no.nav.melosys.skjema.types
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import org.junit.jupiter.api.Test
 
 /**

@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.validators.familiemedlemmer
 
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.FamiliemedlemmerTranslation
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 

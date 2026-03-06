@@ -1,14 +1,14 @@
 package no.nav.melosys.skjema.validators
 
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsgiversvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidsstedIutlandet.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.types.arbeidsgiver.arbeidstakerenslonn.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.types.arbeidsgiver.utenlandsoppdraget.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.arbeidstaker.arbeidssituasjon.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.arbeidstaker.familiemedlemmer.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.arbeidstaker.skatteforholdoginntekt.SkatteforholdOgInntektDto
-import no.nav.melosys.skjema.types.arbeidstaker.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.validators.arbeidsgiverensvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeValidator
 import no.nav.melosys.skjema.validators.arbeidssituasjon.ArbeidssituasjonValidator
 import no.nav.melosys.skjema.validators.arbeidsstediutlandet.ArbeidsstedIUtlandetValidator
@@ -16,15 +16,15 @@ import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnV
 import no.nav.melosys.skjema.validators.familiemedlemmer.FamiliemedlemmerValidator
 import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgInntektValidator
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
-import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetArbeidstakersDelValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
+import no.nav.melosys.skjema.validators.utsendingsperiodeogland.UtsendingsperiodeOgLandValidator
 import org.springframework.stereotype.Component
 
 @Component
 class ApiInputValidator(
     private val arbeidsgiverensVirksomhetValidator: ArbeidsgiverensVirksomhetINorgeValidator,
     private val utenlandsoppdragetValidator: UtenlandsoppdragetValidator,
-    private val utenlandsoppdragetArbeidstakersDelValidator: UtenlandsoppdragetArbeidstakersDelValidator,
+    private val utsendingsperiodeOgLandValidator: UtsendingsperiodeOgLandValidator,
     private val arbeidstakerensLonnValidator: ArbeidstakerensLonnValidator,
     private val arbeidsstedIUtlandetValidator: ArbeidsstedIUtlandetValidator,
     private val tilleggsopplysningerValidator: TilleggsopplysningerValidator,
@@ -40,8 +40,8 @@ class ApiInputValidator(
         throwIfViolations(utenlandsoppdragetValidator.validate(dto))
     }
 
-    fun validate(dto: UtenlandsoppdragetArbeidstakersDelDto) {
-        throwIfViolations(utenlandsoppdragetArbeidstakersDelValidator.validate(dto))
+    fun validate(dto: UtsendingsperiodeOgLandDto) {
+        throwIfViolations(utsendingsperiodeOgLandValidator.validate(dto))
     }
 
     fun validate(dto: ArbeidstakerensLonnDto?) {

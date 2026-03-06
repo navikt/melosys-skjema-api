@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.types
 
 import jakarta.validation.constraints.NotNull
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 
 /**
  * Request for å hente utkast basert på representasjonskontekst.
