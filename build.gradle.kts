@@ -59,7 +59,7 @@ dependencies {
     implementation("no.nav.security:token-validation-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-client-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-validation-core:${tokenSupportVersion}")
-    implementation("no.nav.tms.varsel:kotlin-builder:2.1.1")
+    implementation("no.nav.tms.varsel:kotlin-builder:2.2.0")
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
