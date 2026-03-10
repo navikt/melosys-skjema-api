@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.validators.arbeidstakerenslonn
 import no.nav.melosys.skjema.translations.dto.ArbeidstakerensLonnTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.OrganisasjonsnummerValidator
 import org.springframework.stereotype.Component
@@ -13,7 +14,10 @@ class ArbeidstakerensLonnValidator(
 ) {
 
     fun validate(dto: ArbeidstakerensLonnDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "arbeidstakerensLonn",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         if (dto.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden) {
             if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser != null) {

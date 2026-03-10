@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.validators.skatteforholdoginntekt
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
@@ -10,7 +11,10 @@ import org.springframework.stereotype.Component
 class SkatteforholdOgInntektValidator {
 
     fun validate(dto: SkatteforholdOgInntektDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "skatteforholdOgInntekt",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         if (dto.mottarPengestotteFraAnnetEosLandEllerSveits) {
             if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {

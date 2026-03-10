@@ -4,6 +4,7 @@ import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.PaLandTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
@@ -11,7 +12,10 @@ import org.springframework.stereotype.Component
 class PaLandValidator {
 
     fun validate(dto: PaLandDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "paLand",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         when (dto.fastEllerVekslendeArbeidssted) {
             FastEllerVekslendeArbeidssted.FAST -> {

@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.OmBordPaFlyTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
@@ -10,7 +11,10 @@ import org.springframework.stereotype.Component
 class OmBordPaFlyValidator {
 
     fun validate(dto: OmBordPaFlyDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "omBordPaFly",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         if (dto.erVanligHjemmebase) {
             if (dto.vanligHjemmebaseLand != null) {

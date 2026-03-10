@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.validators.arbeidssituasjon
 import no.nav.melosys.skjema.translations.dto.ArbeidssituasjonTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
@@ -10,7 +11,10 @@ import org.springframework.stereotype.Component
 class ArbeidssituasjonValidator {
 
     fun validate(dto: ArbeidssituasjonDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "arbeidssituasjon",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         if (!dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending) {
             if (dto.aktivitetIMaanedenFoerUtsendingen.isNullOrBlank()) {

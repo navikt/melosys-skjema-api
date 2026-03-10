@@ -88,7 +88,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         fellesTranslation = FellesTranslation(
             organisasjonsnummerHarUgyldigFormat = "Organisasjonsnummer har ugyldig format",
             organisasjonsnummerFinnesIkke = "Organisasjonsnummer finnes ikke i Enhetsregisteret",
-            ugyldigFodselsellerDNummer = "Ugyldig fødsels- eller D-nummer"
+            ugyldigFodselsellerDNummer = "Ugyldig fødsels- eller D-nummer",
+            feltErPaakrevd = "Feltet er påkrevd"
         )
     ),
     en = ErrorMessageTranslation(
@@ -161,7 +162,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         fellesTranslation = FellesTranslation(
             organisasjonsnummerHarUgyldigFormat = "Organization number has invalid format",
             organisasjonsnummerFinnesIkke = "Organization number does not exist in the Business Register",
-            ugyldigFodselsellerDNummer = "Invalid birth or D-number"
+            ugyldigFodselsellerDNummer = "Invalid birth or D-number",
+            feltErPaakrevd = "Field is required"
         )
     )
 )
