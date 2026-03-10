@@ -9,6 +9,10 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.validators.arbeidsgiverensvirksomhetinorge.ArbeidsgiverensVirksomhetINorgeValidator
 import no.nav.melosys.skjema.validators.arbeidssituasjon.ArbeidssituasjonValidator
 import no.nav.melosys.skjema.validators.arbeidsstediutlandet.ArbeidsstedIUtlandetValidator
@@ -21,7 +25,7 @@ import no.nav.melosys.skjema.validators.utsendingsperiodeogland.Utsendingsperiod
 import org.springframework.stereotype.Component
 
 @Component
-class ApiInputValidator(
+class UtsendtArbeidstakerSkjemaDataValidator(
     private val arbeidsgiverensVirksomhetValidator: ArbeidsgiverensVirksomhetINorgeValidator,
     private val utenlandsoppdragetValidator: UtenlandsoppdragetValidator,
     private val utsendingsperiodeOgLandValidator: UtsendingsperiodeOgLandValidator,
@@ -66,6 +70,38 @@ class ApiInputValidator(
 
     fun validate(dto: FamiliemedlemmerDto?) {
         throwIfViolations(familiemedlemmerValidator.validate(dto))
+    }
+
+    fun validateUtsendtArbeidstakerSkjemaData(skjemaData: UtsendtArbeidstakerSkjemaData) {
+        val violations = mutableListOf<Violation>()
+
+        violations += utsendingsperiodeOgLandValidator.validate(skjemaData.utsendingsperiodeOgLand)
+        violations += tilleggsopplysningerValidator.validate(skjemaData.tilleggsopplysninger)
+
+        when (skjemaData) {
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> {
+                violations += arbeidsgiverensVirksomhetValidator.validate(skjemaData.arbeidsgiverensVirksomhetINorge)
+                violations += utenlandsoppdragetValidator.validate(skjemaData.utenlandsoppdraget)
+                violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidstakerensLonn)
+                violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsstedIUtlandet)
+            }
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> {
+                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidssituasjon)
+                violations += skatteforholdOgInntektValidator.validate(skjemaData.skatteforholdOgInntekt)
+                violations += familiemedlemmerValidator.validate(skjemaData.familiemedlemmer)
+            }
+            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> {
+                violations += arbeidsgiverensVirksomhetValidator.validate(skjemaData.arbeidsgiversData.arbeidsgiverensVirksomhetINorge)
+                violations += utenlandsoppdragetValidator.validate(skjemaData.arbeidsgiversData.utenlandsoppdraget)
+                violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidsgiversData.arbeidstakerensLonn)
+                violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsgiversData.arbeidsstedIUtlandet)
+                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidstakersData.arbeidssituasjon)
+                violations += skatteforholdOgInntektValidator.validate(skjemaData.arbeidstakersData.skatteforholdOgInntekt)
+                violations += familiemedlemmerValidator.validate(skjemaData.arbeidstakersData.familiemedlemmer)
+            }
+        }
+
+        throwIfViolations(violations)
     }
 
     private fun throwIfViolations(violations: List<Violation>) {

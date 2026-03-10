@@ -16,7 +16,7 @@ private val log = KotlinLogging.logger { }
  * Håndterer all forretningslogikk-validering for ulike representasjonstyper. Validering forutsetter innlogget kontekst.
  */
 @Component
-class UtsendtArbeidstakerValidator(
+class UtsendtArbeidstakerRepresentasjonValidator(
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val pdlService: PdlService,

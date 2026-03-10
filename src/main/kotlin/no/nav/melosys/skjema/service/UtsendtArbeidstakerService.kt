@@ -47,6 +47,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -62,13 +63,14 @@ private val log = KotlinLogging.logger { }
 class UtsendtArbeidstakerService(
     private val skjemaRepository: SkjemaRepository,
     private val innsendingRepository: InnsendingRepository,
-    private val validator: UtsendtArbeidstakerValidator,
+    private val representasjonValidator: UtsendtArbeidstakerRepresentasjonValidator,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val eregService: EregService,
     private val skjemaKoblingService: SkjemaKoblingService,
     private val subjectHandler: SubjectHandler,
     private val innsendingService: InnsendingService,
+    private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
     private val skjemaDefinisjonService: SkjemaDefinisjonService
@@ -88,7 +90,7 @@ class UtsendtArbeidstakerService(
         log.info { "Oppretter Utsendt Arbeidstaker søknad for representasjonstype: ${request.representasjonstype}" }
 
         // Valider forespørsel
-        validator.validerOpprettelse(request)
+        representasjonValidator.validerOpprettelse(request)
 
         // Hent juridisk enhet fra Enhetsregisteret for kobling av separate søknader
         val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
@@ -299,6 +301,7 @@ class UtsendtArbeidstakerService(
 
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -313,6 +316,7 @@ class UtsendtArbeidstakerService(
 
     fun saveUtenlandsoppdraget(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -327,6 +331,7 @@ class UtsendtArbeidstakerService(
 
     fun saveArbeidstakerensLonn(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -341,6 +346,7 @@ class UtsendtArbeidstakerService(
 
     fun saveArbeidsstedIUtlandet(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -362,7 +368,9 @@ class UtsendtArbeidstakerService(
             throw SkjemaAlleredeSendtException()
         }
 
-        // TODO: Her må det valideres at skjemaet er komplett utfyllt med gyldige data
+        // Valider at skjemaet er komplett utfylt med gyldige data
+        val skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData
+        skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
 
         // 1. Generer referanseId og hent aktiv versjon
         val referanseId = referanseIdGenerator.generer()
@@ -496,6 +504,7 @@ class UtsendtArbeidstakerService(
 
     fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -508,6 +517,7 @@ class UtsendtArbeidstakerService(
 
     fun saveArbeidssituasjon(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -522,6 +532,7 @@ class UtsendtArbeidstakerService(
 
     fun saveSkatteforholdOgInntekt(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -536,6 +547,7 @@ class UtsendtArbeidstakerService(
 
     fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
@@ -550,6 +562,7 @@ class UtsendtArbeidstakerService(
 
     fun saveTilleggsopplysninger(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving tilleggsopplysninger for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
