@@ -1,0 +1,106 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: melosys-skjema-api
+  namespace: teammelosys
+  labels:
+    team: teammelosys
+spec:
+  port: 8080
+  ingresses:
+    - https://melosys-skjema-api.intern.nav.no
+  liveness:
+    path: /actuator/health
+    initialDelay: 20
+    timeout: 60
+  readiness:
+    path: /actuator/health
+    initialDelay: 20
+    timeout: 60
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2Gi
+    requests:
+      cpu: "200m"
+      memory: 512Mi
+  replicas:
+    min: 2
+    max: 4
+    cpuThresholdPercentage: 50
+  prometheus:
+    enabled: true
+    path: /actuator/prometheus
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: elastic
+        - id: loki
+  gcp:
+    sqlInstances:
+      - name: melosys-skjema-db
+        type: POSTGRES_17
+        tier: db-custom-1-3840
+        databases:
+          - name: melosys-skjema
+            envVarPrefix: DB
+        diskAutoresize: true
+        cascadingDelete: false
+    buckets:
+      - name: melosys-skjema-vedlegg-prod
+        retentionPeriodDays: 30
+        lifecycleCondition:
+          age: 30
+          withState: ANY
+  tokenx:
+    enabled: true
+  azure:
+    application:
+      enabled: true
+      allowAllUsers: true
+  accessPolicy:
+    inbound:
+      rules:
+        - application: melosys-skjema-web
+          namespace: teammelosys
+        - application: melosys
+          namespace: teammelosys
+          cluster: prod-fss
+    outbound:
+      external:
+        - host: pdl-api.prod-fss-pub.nais.io
+        - host: aareg-services.prod-fss-pub.nais.io
+        - host: ereg-services.prod-fss-pub.nais.io
+        - host: altinn.no
+        - host: nav-melding-api.intern.nav.no
+        - host: ag-notifikasjon-produsent-api.intern.nav.no
+      rules:
+        - application: repr-api
+          namespace: repr
+        - application: pdl-api
+          namespace: pdl
+          cluster: prod-fss
+        - application: clamav
+          namespace: nais-system
+  envFrom:
+    - secret: melosys-skjema-api
+  env:
+    - name: ARBEIDSGIVER_NOTIFIKASJON_URL
+      value: https://ag-notifikasjon-produsent-api.intern.nav.no/api/graphql
+    - name: MERKELAPP
+      value: test-fager # TODO: riktig prod-verdi
+    - name: RESSURS_ID
+      value: test-fager # TODO: riktig prod-verdi
+    - name: PDL_URL
+      value: https://pdl-api.prod-fss-pub.nais.io/graphql
+    - name: PDL_SCOPE
+      value: api://prod-gcp.pdl.pdl-api/.default
+    - name: VEDLEGG_BUCKET_NAME
+      value: melosys-skjema-vedlegg-prod
+    - name: CLAMAV_URL
+      value: http://clamav.nais-system
+  kafka:
+    pool: nav-prod
