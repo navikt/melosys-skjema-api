@@ -80,6 +80,8 @@ spec:
       rules:
         - application: repr-api
           namespace: repr
+        - application: arbeidsgiver-altinn-tilganger
+          namespace: fager
         - application: pdl-api
           namespace: pdl
           cluster: prod-fss
