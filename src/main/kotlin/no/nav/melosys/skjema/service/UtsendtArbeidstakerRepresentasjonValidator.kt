@@ -5,7 +5,7 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import org.springframework.stereotype.Component
 
@@ -30,7 +30,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * @throws IllegalArgumentException hvis validering feiler
      */
     fun validerOpprettelse(
-        request: OpprettSoknadMedKontekstRequest,
+        request: OpprettUtsendtArbeidstakerSoknadRequest,
     ) {
         log.info { "Validerer opprettelse av søknad for representasjonstype: ${request.representasjonstype}" }
 
@@ -51,7 +51,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget person er arbeidstaker
      * - Arbeidsgiver finnes
      */
-    private fun validerDegSelv(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerDegSelv(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer DEG_SELV scenario" }
 
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
@@ -65,7 +65,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Arbeidstaker valideres via PDL med etternavn
      */
-    private fun validerArbeidsgiverUtenFullmakt(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerArbeidsgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer ARBEIDSGIVER scenario (uten fullmakt)" }
 
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
@@ -85,7 +85,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Innlogget bruker har fullmakt fra arbeidstaker
      */
-    private fun validerArbeidsgiverMedFullmakt(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerArbeidsgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer ARBEIDSGIVER_MED_FULLMAKT scenario" }
 
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
@@ -106,7 +106,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Arbeidstaker valideres via PDL med etternavn
      */
-    private fun validerRadgiverUtenFullmakt(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerRadgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer RADGIVER scenario (uten fullmakt)" }
 
         validerRadgiverfirma(request)
@@ -129,7 +129,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Innlogget bruker har fullmakt fra arbeidstaker
      */
-    private fun validerRadgiverMedFullmakt(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerRadgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer RADGIVER_MED_FULLMAKT scenario" }
 
         validerRadgiverfirma(request)
@@ -150,7 +150,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget bruker må ha fullmakt fra arbeidstaker
      * - Arbeidsgiver finnes
      */
-    private fun validerAnnenPerson(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerAnnenPerson(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer ANNEN_PERSON scenario" }
 
         validerFullmaktFraArbeidstaker(request)
@@ -160,7 +160,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         }
     }
 
-    private fun validerRadgiverfirma(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerRadgiverfirma(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         if (request.radgiverfirma == null) {
             throw IllegalArgumentException("Rådgiverfirma må oppgis for ${request.representasjonstype}")
         }
@@ -170,7 +170,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         }
     }
 
-    private fun validerFullmaktFraArbeidstaker(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerFullmaktFraArbeidstaker(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer fullmakt fra arbeidstaker via repr-api" }
         if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
             throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
@@ -178,7 +178,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         // repr-api validerer også at person finnes i PDL
     }
 
-    private fun validerArbeidstakerViaPdl(request: OpprettSoknadMedKontekstRequest) {
+    private fun validerArbeidstakerViaPdl(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer arbeidstaker via PDL" }
 
         if (request.arbeidstaker.etternavn == null) {

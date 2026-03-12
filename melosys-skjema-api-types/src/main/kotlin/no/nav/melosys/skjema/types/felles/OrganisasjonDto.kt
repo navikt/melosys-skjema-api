@@ -1,4 +1,4 @@
-package no.nav.melosys.skjema.types
+package no.nav.melosys.skjema.types.felles
 
 data class OrganisasjonDto(
     val orgnr: String,

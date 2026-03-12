@@ -11,6 +11,7 @@ import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
+import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -19,8 +20,8 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadResponse
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
@@ -88,7 +89,7 @@ class UtsendtArbeidstakerService(
      * @return Response med skjema-ID og status
      * @throws IllegalArgumentException hvis validering feiler
      */
-    fun opprettMedKontekst(request: OpprettSoknadMedKontekstRequest): OpprettSoknadMedKontekstResponse {
+    fun opprettUtsendtArbeidstakerSoknad(request: OpprettUtsendtArbeidstakerSoknadRequest): OpprettUtsendtArbeidstakerSoknadResponse {
         val innloggetBrukerFnr = subjectHandler.getUserID()
         log.info { "Oppretter Utsendt Arbeidstaker søknad for representasjonstype: ${request.representasjonstype}" }
 
@@ -146,7 +147,7 @@ class UtsendtArbeidstakerService(
         val savedSkjema = skjemaRepository.save(skjema)
         log.info { "Opprettet Utsendt Arbeidstaker søknad med id: ${savedSkjema.id}, representasjonstype: ${request.representasjonstype}" }
 
-        return OpprettSoknadMedKontekstResponse(
+        return OpprettUtsendtArbeidstakerSoknadResponse(
             id = savedSkjema.id ?: throw IllegalStateException("Skjema ID var null etter lagring"),
             status = savedSkjema.status
         )
@@ -601,23 +602,25 @@ class UtsendtArbeidstakerService(
      * @param juridiskEnhetOrgnr Orgnr til juridisk enhet (fra EREG) - brukes for kobling av separate søknader
      */
     private fun byggMetadata(
-        request: OpprettSoknadMedKontekstRequest,
+        request: OpprettUtsendtArbeidstakerSoknadRequest,
         innloggetBrukerFnr: String,
         juridiskEnhetOrgnr: String
     ): UtsendtArbeidstakerMetadata {
+        val skjemadel = request.representasjonstype.tilSkjemadel()
+
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> DegSelvMetadata(
-                skjemadel = request.skjemadel,
+                skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
-                skjemadel = request.skjemadel,
+                skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
-                skjemadel = request.skjemadel,
+                skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 fullmektigFnr = innloggetBrukerFnr
@@ -626,7 +629,7 @@ class UtsendtArbeidstakerService(
                 val radgiverfirmaInfo = request.radgiverfirma
                     ?: throw IllegalArgumentException("radgiverfirma er påkrevd for RADGIVER")
                 RadgiverMetadata(
-                    skjemadel = request.skjemadel,
+                    skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
@@ -636,7 +639,7 @@ class UtsendtArbeidstakerService(
                 val radgiverfirmaInfo = request.radgiverfirma
                     ?: throw IllegalArgumentException("radgiverfirma er påkrevd for RADGIVER_MED_FULLMAKT")
                 RadgiverMedFullmaktMetadata(
-                    skjemadel = request.skjemadel,
+                    skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     fullmektigFnr = innloggetBrukerFnr,
@@ -644,7 +647,7 @@ class UtsendtArbeidstakerService(
                 )
             }
             Representasjonstype.ANNEN_PERSON -> AnnenPersonMetadata(
-                skjemadel = request.skjemadel,
+                skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 fullmektigFnr = innloggetBrukerFnr
