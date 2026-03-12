@@ -8,6 +8,9 @@ import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -215,7 +218,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sikre at representasjonstype i metadata er DEG_SELV
-                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
                     skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
                 }
             }
@@ -231,7 +234,7 @@ class UtsendtArbeidstakerService(
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
                     // Sjekk at representasjonstype er ARBEIDSGIVER eller ARBEIDSGIVER_MED_FULLMAKT
-                    val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
 
                     skjemaMetadata.representasjonstype == request.representasjonstype && tilgangOrgnr.contains(skjema.orgnr)
                 }
@@ -275,7 +278,7 @@ class UtsendtArbeidstakerService(
                 // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
                 skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
                     .filter { skjema ->
-                        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+                        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
                         // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
                         skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON && personerMedFullmaktFnr.contains(skjema.fnr)
                     }
@@ -369,7 +372,7 @@ class UtsendtArbeidstakerService(
         }
 
         // Valider at skjemaet er komplett utfylt med gyldige data
-        val skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData
+        val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
 
         // 1. Generer referanseId og hent aktiv versjon
@@ -436,7 +439,7 @@ class UtsendtArbeidstakerService(
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
         val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
-        return skjema.metadata as UtsendtArbeidstakerMetadata
+        return skjema.utsendtArbeidstakerMetadataOrThrow()
     }
 
     /**
@@ -468,7 +471,7 @@ class UtsendtArbeidstakerService(
         )
 
         // Parse skjemadata
-        val skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData
+        val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
 
         return InnsendtSkjemaResponse(
             skjemaId = skjema.id!!,
@@ -669,7 +672,7 @@ class UtsendtArbeidstakerService(
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
 
         return UtkastOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
@@ -701,7 +704,7 @@ class UtsendtArbeidstakerService(
             return true
         }
 
-        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
 
         return when(skjemaMetadata.representasjonstype){
             Representasjonstype.DEG_SELV -> false
@@ -733,7 +736,7 @@ class UtsendtArbeidstakerService(
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
-        val existing = (skjema.data as? UtsendtArbeidstakerSkjemaData) ?: opprettTomSkjemaData(skjema)
+        val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
         skjema.data = updateFunction(existing)
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
@@ -751,7 +754,7 @@ class UtsendtArbeidstakerService(
         val skjema = skjemaRepository.findByIdOrNull(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
-        val skjemaMetadata = skjema.metadata as UtsendtArbeidstakerMetadata
+        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
         val currentUser = subjectHandler.getUserID()
 
         val harTilgang = when (skjemaMetadata.representasjonstype) {
@@ -781,15 +784,6 @@ class UtsendtArbeidstakerService(
         }
 
         return skjema
-    }
-
-    private fun opprettTomSkjemaData(skjema: Skjema): UtsendtArbeidstakerSkjemaData {
-        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
-        return when (metadata.skjemadel) {
-            Skjemadel.ARBEIDSGIVERS_DEL -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
-            Skjemadel.ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
-            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto()
-        }
     }
 
 

@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.config.RateLimitConfig
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
@@ -107,6 +108,15 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.UNPROCESSABLE_ENTITY)
             .body(mapOf("message" to (e.message ?: "Virus funnet i fil"), "error" to "VIRUS_FOUND"))
+    }
+
+    @ExceptionHandler(SkjemaTypeMismatchException::class)
+    fun handleSkjemaTypeMismatch(e: SkjemaTypeMismatchException): ResponseEntity<ErrorResponse> {
+        log.warn { "Skjematype samsvarer ikke: ${e.message}" }
+
+        return ResponseEntity
+            .badRequest()
+            .body(ErrorResponse(message = e.message ?: "Skjematype samsvarer ikke"))
     }
 
     @ExceptionHandler(IllegalArgumentException::class)

@@ -18,7 +18,9 @@ import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgIn
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
 import no.nav.melosys.skjema.validators.utsendingsperiodeogland.UtsendingsperiodeOgLandValidator
+import io.kotest.assertions.throwables.shouldThrow
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -139,4 +141,15 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             emptyList<() -> Unit>()
         ),
     )
+
+    @Test
+    fun `skal kaste ValidationException når validering feiler`() {
+        every { utsendingsperiodeOgLandValidator.validate(any()) } returns listOf(
+            Violation(field = "utsendingsperiodeOgLand", translationKey = FELT_ER_PAAKREVD)
+        )
+
+        shouldThrow<ValidationException> {
+            validator.validateUtsendtArbeidstakerSkjemaData(UtsendtArbeidstakerArbeidstakersSkjemaDataDto())
+        }
+    }
 }
