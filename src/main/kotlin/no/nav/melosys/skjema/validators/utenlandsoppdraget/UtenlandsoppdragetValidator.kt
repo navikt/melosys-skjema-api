@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.validators.utenlandsoppdraget
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import org.springframework.stereotype.Component
@@ -11,7 +12,10 @@ import org.springframework.stereotype.Component
 class UtenlandsoppdragetValidator() {
 
     fun validate(dto: UtenlandsoppdragetDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "utenlandsoppdraget",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         if (!dto.arbeidsgiverHarOppdragILandet) {
             if (dto.utenlandsoppholdetsBegrunnelse.isNullOrBlank()) {

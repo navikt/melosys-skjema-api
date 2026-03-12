@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.validators.utsendingsperiodeogland
 
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import org.springframework.stereotype.Component
@@ -9,7 +10,10 @@ import org.springframework.stereotype.Component
 class UtsendingsperiodeOgLandValidator {
 
     fun validate(dto: UtsendingsperiodeOgLandDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "utsendingsperiodeOgLand",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         PeriodeValidator.validate(
             dto.utsendelsePeriode,

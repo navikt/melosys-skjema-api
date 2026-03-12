@@ -22,7 +22,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     val mockPdlService = mockk<PdlService>()
     val mockEregService = mockk<EregService>()
 
-    val validator = UtsendtArbeidstakerValidator(
+    val validator = UtsendtArbeidstakerRepresentasjonValidator(
         mockAltinnService,
         mockReprService,
         mockPdlService,

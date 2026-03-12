@@ -31,6 +31,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 
@@ -38,13 +39,14 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
     val mockSkjemaRepository = mockk<SkjemaRepository>()
     val mockInnsendingRepository = mockk<InnsendingRepository>()
-    val mockValidator = mockk<UtsendtArbeidstakerValidator>(relaxed = true)
+    val mockValidator = mockk<UtsendtArbeidstakerRepresentasjonValidator>(relaxed = true)
     val mockAltinnService = mockk<AltinnService>()
     val mockReprService = mockk<ReprService>()
     val mockEregService = mockk<EregService>()
     val mockSkjemaKoblingService = mockk<SkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val innsendingService = mockk<InnsendingService>()
+    val mockSkjemaDataValidator = mockk<UtsendtArbeidstakerSkjemaDataValidator>(relaxed = true)
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
@@ -59,6 +61,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockSkjemaKoblingService,
         mockSubjectHandler,
         innsendingService,
+        mockSkjemaDataValidator,
         eventPublisher,
         referanseIdGenerator,
         mockSkjemaDefinisjonService

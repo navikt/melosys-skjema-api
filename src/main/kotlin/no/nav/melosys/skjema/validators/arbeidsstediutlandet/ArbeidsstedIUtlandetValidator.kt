@@ -4,6 +4,7 @@ import no.nav.melosys.skjema.translations.dto.ArbeidsstedIUtlandetTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.stereotype.Component
 
@@ -15,7 +16,10 @@ class ArbeidsstedIUtlandetValidator(
 ) {
 
     fun validate(dto: ArbeidsstedIUtlandetDto?): List<Violation> {
-        if (dto == null) return emptyList()
+        if (dto == null) return listOf(Violation(
+            field = "arbeidsstedIUtlandet",
+            translationKey = FELT_ER_PAAKREVD
+        ))
 
         return when(dto.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> {

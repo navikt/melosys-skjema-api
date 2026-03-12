@@ -1,5 +1,7 @@
 package no.nav.melosys.skjema.validators
 
+const val FELT_ER_PAAKREVD = "fellesTranslation.feltErPaakrevd"
+
 data class ValidationResult(
     val violations: List<Violation> = emptyList()
 ) {

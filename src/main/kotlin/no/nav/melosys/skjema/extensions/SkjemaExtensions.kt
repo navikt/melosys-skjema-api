@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.extensions
 
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.types.SkjemaDto
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
@@ -22,7 +23,7 @@ fun Skjema.toDto(): SkjemaDto = when (this.type) {
  * Konverterer en Skjema-entitet til UtsendtArbeidstakerSkjemaDto.
  */
 fun Skjema.toUtsendtArbeidstakerDto(): UtsendtArbeidstakerSkjemaDto {
-    val metadata = this.metadata as UtsendtArbeidstakerMetadata
+    val metadata = this.utsendtArbeidstakerMetadataOrThrow()
     return UtsendtArbeidstakerSkjemaDto(
         id = this.id ?: error("Skjema ID is null"),
         status = this.status,
@@ -30,7 +31,7 @@ fun Skjema.toUtsendtArbeidstakerDto(): UtsendtArbeidstakerSkjemaDto {
         fnr = this.fnr,
         orgnr = this.orgnr,
         metadata = metadata,
-        data = this.data as? UtsendtArbeidstakerSkjemaData ?: metadata.skjemadel.emptyData()
+        data = this.utsendtArbeidstakerSkjemaDataOrEmpty()
     )
 }
 
@@ -39,3 +40,15 @@ private fun Skjemadel.emptyData(): UtsendtArbeidstakerSkjemaData = when (this) {
     Skjemadel.ARBEIDSGIVERS_DEL -> UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
     Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto()
 }
+
+fun Skjema.utsendtArbeidstakerMetadataOrThrow(): UtsendtArbeidstakerMetadata =
+    this.metadata as? UtsendtArbeidstakerMetadata
+        ?: throw SkjemaTypeMismatchException("Forventet ${UtsendtArbeidstakerMetadata::class.simpleName} for skjema $id, men var ${metadata::class.simpleName}")
+
+fun Skjema.utsendtArbeidstakerSkjemaDataOrThrow(): UtsendtArbeidstakerSkjemaData =
+    this.data as? UtsendtArbeidstakerSkjemaData
+        ?: throw SkjemaTypeMismatchException("Forventet ${UtsendtArbeidstakerSkjemaData::class.simpleName} for skjema $id, men var ${data?.let { it::class.simpleName }}")
+
+fun Skjema.utsendtArbeidstakerSkjemaDataOrEmpty(): UtsendtArbeidstakerSkjemaData =
+    this.data as? UtsendtArbeidstakerSkjemaData
+        ?: this.utsendtArbeidstakerMetadataOrThrow().skjemadel.emptyData()

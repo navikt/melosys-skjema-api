@@ -914,6 +914,43 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/send-inn skal returnere 400 når skjemadata er ufullstendig")
+    fun `POST send-inn skal returnere 400 når skjemadata er ufullstendig`() {
+        val skjemaMedUfullstendigData = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                type = SkjemaType.UTSENDT_ARBEIDSTAKER,
+                data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV
+                )
+            )
+        )
+
+        val token = createTokenForUser(skjemaMedUfullstendigData.fnr)
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjemaMedUfullstendigData.id!!}/send-inn")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody(ErrorResponse::class.java)
+            .returnResult().responseBody.run {
+                this.shouldNotBeNull()
+                this.errors.shouldNotBeNull()
+                this.errors shouldBe mapOf(
+                    "utsendingsperiodeOgLand" to "fellesTranslation.feltErPaakrevd",
+                    "tilleggsopplysninger" to "fellesTranslation.feltErPaakrevd",
+                    "arbeidssituasjon" to "fellesTranslation.feltErPaakrevd",
+                    "skatteforholdOgInntekt" to "fellesTranslation.feltErPaakrevd",
+                    "familiemedlemmer" to "fellesTranslation.feltErPaakrevd",
+                )
+            }
+    }
+
+    @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id}/innsendt-kvittering skal hente kvittering")
     fun `GET innsendt-kvittering skal returnere kvittering`() {
         val skjema = skjemaRepository.save(
