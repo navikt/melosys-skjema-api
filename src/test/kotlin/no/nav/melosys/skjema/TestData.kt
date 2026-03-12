@@ -17,8 +17,8 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.Navn
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjonsledd
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Virksomhet
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.types.PersonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
+import no.nav.melosys.skjema.types.felles.PersonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
@@ -27,7 +27,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
@@ -355,15 +355,13 @@ fun simpleOrganisasjonDtoMedDefaultVerdier(
     navn = navn
 )
 
-fun opprettSoknadMedKontekstRequestMedDefaultVerdier(
+fun opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
-    skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     radgiverfirma: SimpleOrganisasjonDto? = null,
     arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
     arbeidstaker: PersonDto = personDtoMedDefaultVerdier()
-) = OpprettSoknadMedKontekstRequest(
+) = OpprettUtsendtArbeidstakerSoknadRequest(
     representasjonstype = representasjonstype,
-    skjemadel = skjemadel,
     radgiverfirma = radgiverfirma,
     arbeidsgiver = arbeidsgiver,
     arbeidstaker = arbeidstaker

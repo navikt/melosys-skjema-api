@@ -14,9 +14,9 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.korrektSyntetiskFnr
-import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
+import no.nav.melosys.skjema.opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -26,7 +26,7 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.HentUtkastRequest
-import no.nav.melosys.skjema.types.OrganisasjonDto
+import no.nav.melosys.skjema.types.felles.OrganisasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -82,10 +82,10 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         every { mockSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
     }
 
-    context("opprettMedKontekst") {
+    context("opprettUtsendtArbeidstakerSoknad") {
         test("skal opprette skjema for DEG_SELV") {
             val currentUser = "12345678910"
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -103,7 +103,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.save(any()) } returns savedSkjema
 
-            val response = service.opprettMedKontekst(request)
+            val response = service.opprettUtsendtArbeidstakerSoknad(request)
 
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
@@ -114,7 +114,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
         test("skal opprette skjema for ARBEIDSGIVER med fullmakt") {
             val currentUser = "99999999999"
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -132,7 +132,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.save(any()) } returns savedSkjema
 
-            val response = service.opprettMedKontekst(request)
+            val response = service.opprettUtsendtArbeidstakerSoknad(request)
 
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
@@ -143,7 +143,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
         test("skal opprette skjema for RADGIVER") {
             val currentUser = "99999999999"
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -162,7 +162,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.save(any()) } returns savedSkjema
 
-            val response = service.opprettMedKontekst(request)
+            val response = service.opprettUtsendtArbeidstakerSoknad(request)
 
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
@@ -172,7 +172,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
         test("skal opprette skjema for ANNEN_PERSON") {
             val currentUser = "99999999999"
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -190,7 +190,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockSkjemaRepository.save(any()) } returns savedSkjema
 
-            val response = service.opprettMedKontekst(request)
+            val response = service.opprettUtsendtArbeidstakerSoknad(request)
 
             response.id shouldNotBe null
             response.status shouldBe SkjemaStatus.UTKAST
@@ -200,7 +200,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
         test("skal feile når validering feiler") {
             val currentUser = "99999999999"
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -210,7 +210,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockValidator.validerOpprettelse(request) } throws IllegalArgumentException("Validering feilet")
 
             val exception = shouldThrow<IllegalArgumentException> {
-                service.opprettMedKontekst(request)
+                service.opprettUtsendtArbeidstakerSoknad(request)
             }
 
             exception.message shouldContain "Validering feilet"

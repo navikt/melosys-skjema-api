@@ -13,8 +13,8 @@ import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstRequest
-import no.nav.melosys.skjema.types.OpprettSoknadMedKontekstResponse
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadResponse
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
@@ -104,9 +104,9 @@ class UtsendtArbeidstakerController(
     @Operation(summary = "Opprett søknad med forhåndsvalgt kontekst")
     @ApiResponse(responseCode = "201", description = "Søknad opprettet")
     @ApiResponse(responseCode = "400", description = "Ugyldig forespørsel eller validering feilet")
-    fun opprettSoknadMedKontekst(@RequestBody @Valid request: OpprettSoknadMedKontekstRequest): ResponseEntity<OpprettSoknadMedKontekstResponse> {
+    fun opprettUtsendtArbeidstakerSoknad(@RequestBody @Valid request: OpprettUtsendtArbeidstakerSoknadRequest): ResponseEntity<OpprettUtsendtArbeidstakerSoknadResponse> {
         log.info { "Oppretter søknad med kontekst. Type: ${request.representasjonstype}" }
-        val response = utsendtArbeidstakerService.opprettMedKontekst(request)
+        val response = utsendtArbeidstakerService.opprettUtsendtArbeidstakerSoknad(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 

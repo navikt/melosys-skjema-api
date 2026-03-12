@@ -13,8 +13,8 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.Test

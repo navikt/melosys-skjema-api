@@ -10,7 +10,7 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
-import no.nav.melosys.skjema.opprettSoknadMedKontekstRequestMedDefaultVerdier
+import no.nav.melosys.skjema.opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
@@ -36,7 +36,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("DEG_SELV validering") {
         test("skal godkjenne gyldig DEG_SELV request") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -50,7 +50,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når arbeidsgiver ikke finnes i EREG") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -68,7 +68,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("ARBEIDSGIVER validering (uten fullmakt)") {
         test("skal godkjenne gyldig ARBEIDSGIVER request med PDL-validering") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstakerMedEtternavn
@@ -87,7 +87,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når bruker ikke har Altinn-tilgang") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -103,7 +103,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når arbeidstaker ikke finnes i PDL") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstakerMedEtternavn
@@ -125,7 +125,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("ARBEIDSGIVER_MED_FULLMAKT validering") {
         test("skal godkjenne gyldig ARBEIDSGIVER_MED_FULLMAKT request") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -142,7 +142,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når fullmakt mangler") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -162,7 +162,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("RADGIVER validering (uten fullmakt)") {
         test("skal godkjenne gyldig RADGIVER request med PDL-validering") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -184,7 +184,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når rådgiverfirma mangler") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = null,
                 arbeidsgiver = testArbeidsgiver,
@@ -199,7 +199,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når rådgiverfirma ikke finnes i EREG") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -219,7 +219,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("RADGIVER_MED_FULLMAKT validering") {
         test("skal godkjenne gyldig RADGIVER_MED_FULLMAKT request") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -238,7 +238,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når fullmakt mangler") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
                 radgiverfirma = testRadgiverfirma,
                 arbeidsgiver = testArbeidsgiver,
@@ -260,7 +260,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
     context("ANNEN_PERSON validering") {
         test("skal godkjenne gyldig ANNEN_PERSON request") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker
@@ -275,7 +275,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
         }
 
         test("skal feile når bruker ikke har fullmakt") {
-            val request = opprettSoknadMedKontekstRequestMedDefaultVerdier(
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ANNEN_PERSON,
                 arbeidsgiver = testArbeidsgiver,
                 arbeidstaker = testArbeidstaker

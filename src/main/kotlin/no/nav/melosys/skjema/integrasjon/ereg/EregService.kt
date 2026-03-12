@@ -6,8 +6,8 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
 import no.nav.melosys.skjema.integrasjon.ereg.dto.finnJuridiskEnhetOrganisasjonsnummer
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
-import no.nav.melosys.skjema.types.OrganisasjonMedJuridiskEnhetDto
-import no.nav.melosys.skjema.types.SimpleOrganisasjonDto
+import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
