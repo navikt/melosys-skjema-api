@@ -1,0 +1,160 @@
+package no.nav.melosys.skjema.repository
+
+import no.nav.melosys.skjema.entity.Skjema
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
+import java.util.*
+
+/**
+ * Repository for innsendte søknader-queries spesifikke for Utsendt Arbeidstaker.
+ *
+ * Alle queries filtrerer på representasjonstype i JSONB metadata-feltet
+ * for å sikre at kun skjemaer med riktig representasjonskontekst returneres.
+ */
+@Repository
+interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
+
+    // DEG_SELV (arbeidstaker)
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE fnr = :fnr
+        AND type = :type
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+    """, nativeQuery = true
+    )
+    fun findByFnrAndTypeAndStatusInAndRepresentasjonstype(
+        @Param("fnr") fnr: String,
+        @Param("type") type: String,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE fnr = :fnr
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """, nativeQuery = true
+    )
+    fun findByFnrAndStatusInAndRepresentasjonstypeWithSearch(
+        @Param("fnr") fnr: String,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    // ARBEIDSGIVER
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+    """, nativeQuery = true
+    )
+    fun findByOrgnrInAndStatusInAndRepresentasjonstype(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """, nativeQuery = true
+    )
+    fun findByOrgnrInAndStatusInAndRepresentasjonstypeWithSearch(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    // RADGIVER
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+    """, nativeQuery = true
+    )
+    fun findInnsendteForRadgiver(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE orgnr IN :orgnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+        AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """, nativeQuery = true
+    )
+    fun findInnsendteForRadgiverWithSearch(
+        @Param("orgnrs") orgnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    // ANNEN_PERSON (fullmektig)
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE fnr IN :fnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+    """, nativeQuery = true
+    )
+    fun findByFnrInAndStatusInAndRepresentasjonstype(
+        @Param("fnrs") fnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        pageable: Pageable
+    ): Page<Skjema>
+
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE fnr IN :fnrs
+        AND status IN :statuses
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """, nativeQuery = true
+    )
+    fun findByFnrInAndStatusInAndRepresentasjonstypeWithSearch(
+        @Param("fnrs") fnrs: List<String>,
+        @Param("statuses") statuses: List<String>,
+        @Param("representasjonstype") representasjonstype: String,
+        @Param("searchTerm") searchTerm: String,
+        pageable: Pageable
+    ): Page<Skjema>
+}

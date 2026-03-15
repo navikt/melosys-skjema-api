@@ -154,48 +154,6 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Henter alle skjemaer hvor innlogget bruker har en eller annen form for tilgang.
-     *
-     * Inkluderer skjemaer hvor bruker er:
-     * - Arbeidstaker selv
-     * - Fullmektig for arbeidstaker (med aktiv fullmakt)
-     * - Arbeidsgiver/rådgiver (via Altinn-tilgang)
-     */
-    fun listAlleSkjemaerForBruker(): List<UtsendtArbeidstakerSkjemaDto> {
-        val innloggetBrukerFnr = subjectHandler.getUserID()
-        log.debug { "Lister alle skjemaer for bruker" }
-
-        // 1. Skjemaer hvor bruker er arbeidstaker
-        val somArbeidstaker = skjemaRepository.findByFnr(innloggetBrukerFnr)
-
-        // 2. Skjemaer hvor bruker er fullmektig (må verifisere aktiv fullmakt)
-        val somFullmektig = skjemaRepository.findByFullmektigFnr(innloggetBrukerFnr)
-            .filter { skjema ->
-                try {
-                    reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved sjekk av fullmakt for skjema ${skjema.id}" }
-                    false
-                }
-            }
-
-        // 3. Skjemaer hvor bruker har Altinn-tilgang til arbeidsgiver
-        val tilganger = altinnService.hentBrukersTilganger()
-        val somArbeidsgiver = tilganger.flatMap { org ->
-            skjemaRepository.findByOrgnr(org.orgnr)
-        }
-
-        // Kombiner og fjern duplikater
-        val alleSkjemaer = (somArbeidstaker + somFullmektig + somArbeidsgiver)
-            .distinctBy { it.id }
-            .map { it.toUtsendtArbeidstakerDto() }
-
-        log.debug { "Fant ${alleSkjemaer.size} skjemaer for bruker (arbeidstaker: ${somArbeidstaker.size}, fullmektig: ${somFullmektig.size}, arbeidsgiver: ${somArbeidsgiver.size})" }
-
-        return alleSkjemaer
-    }
-
-    /**
      * Henter utkast basert på representasjonskontekst.
      *
      * Filtrerer søknader med status UTKAST basert på:

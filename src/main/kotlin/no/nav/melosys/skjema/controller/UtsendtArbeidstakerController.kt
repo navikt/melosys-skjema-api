@@ -51,14 +51,6 @@ class UtsendtArbeidstakerController(
     private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
 ) {
 
-    @GetMapping
-    @Operation(summary = "List skjemaer for current user")
-    @ApiResponse(responseCode = "200", description = "List of skjemaer")
-    fun listSkjemaer(): ResponseEntity<List<UtsendtArbeidstakerSkjemaDto>> {
-        log.info { "Henter alle skjemaer for bruker" }
-        return ResponseEntity.ok(utsendtArbeidstakerService.listAlleSkjemaerForBruker())
-    }
-
     @GetMapping("/utkast")
     @Operation(summary = "Hent utkast basert på representasjonskontekst")
     @ApiResponse(responseCode = "200", description = "Liste over utkast hentet")
