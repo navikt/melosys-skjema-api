@@ -48,13 +48,6 @@ class UtsendtArbeidstakerService(
     private val skjemaDefinisjonService: SkjemaDefinisjonService
 ) {
 
-    companion object {
-        private val FULLMAKT_TYPER = setOf(
-            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
-            Representasjonstype.RADGIVER_MED_FULLMAKT
-        )
-    }
-
     /**
      * Oppretter en ny Utsendt Arbeidstaker søknad med forhåndsvalgt kontekst.
      *
@@ -125,113 +118,6 @@ class UtsendtArbeidstakerService(
         return OpprettUtsendtArbeidstakerSoknadResponse(
             id = savedSkjema.id ?: throw IllegalStateException("Skjema ID var null etter lagring"),
             status = savedSkjema.status
-        )
-    }
-
-    /**
-     * Henter utkast basert på representasjonskontekst.
-     *
-     * Filtrerer søknader med status UTKAST basert på:
-     * - DEG_SELV: fnr = innlogget bruker
-     * - ARBEIDSGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - RADGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - ANNEN_PERSON: opprettetAv = innlogget bruker OG fnr i fullmaktsliste
-     *
-     * @param request Kun representasjonstype - filtreringen gjøres basert på brukerens tilganger
-     * @return Liste med utkast
-     */
-    fun hentUtkast(request: HentUtkastRequest): UtkastListeResponse {
-        val innloggetBrukerFnr = subjectHandler.getUserID()
-        log.debug { "Henter utkast for representasjonstype: ${request.representasjonstype}" }
-
-        val utkastSkjemaer = when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> {
-                // Arbeidstaker fyller ut for seg selv
-                skjemaRepository.findByFnrAndTypeAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaType.UTSENDT_ARBEIDSTAKER,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sikre at representasjonstype i metadata er DEG_SELV
-                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-                    skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
-                }
-            }
-
-            Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
-                val tilganger = altinnService.hentBrukersTilganger()
-                val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
-                val arbeidsgiverTyper = setOf(Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT)
-                val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
-
-                skjemaRepository.findByOpprettetAvAndTypeAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaType.UTSENDT_ARBEIDSTAKER,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-                    skjemaMetadata.representasjonstype in arbeidsgiverTyper
-                        && tilgangOrgnr.contains(skjema.orgnr)
-                        && (skjemaMetadata.representasjonstype !in FULLMAKT_TYPER || personerMedAktivFullmakt.contains(skjema.fnr))
-                }
-            }
-
-            Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT -> {
-                val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
-                    ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
-                val radgiverTyper = setOf(Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT)
-                val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
-
-                skjemaRepository.findByOpprettetAvAndTypeAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaType.UTSENDT_ARBEIDSTAKER,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    val skjemaMetadata = skjema.metadata as? UtsendtArbeidstakerMetadata
-                        ?: return@filter false
-
-                    skjemaMetadata.representasjonstype in radgiverTyper
-                        && when (skjemaMetadata) {
-                            is RadgiverMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
-                            is RadgiverMedFullmaktMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
-                            else -> false
-                        }
-                        && (skjemaMetadata.representasjonstype !in FULLMAKT_TYPER || personerMedAktivFullmakt.contains(skjema.fnr))
-                }
-            }
-
-            Representasjonstype.ANNEN_PERSON -> {
-                // Fullmektig på vegne av alle personer bruker har fullmakt for
-                // Hent alle personer innlogget bruker har fullmakt for
-                val fullmakter = try {
-                    reprService.hentKanRepresentere()
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved henting av fullmakter for bruker" }
-                    emptyList()
-                }
-
-                val personerMedFullmaktFnr = fullmakter.map { it.fullmaktsgiver }.toSet()
-
-                // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
-                skjemaRepository.findByOpprettetAvAndTypeAndStatus(innloggetBrukerFnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.UTKAST)
-                    .filter { skjema ->
-                        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-                        // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
-                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON && personerMedFullmaktFnr.contains(skjema.fnr)
-                    }
-            }
-        }
-
-        // Konverter til DTO
-        val utkastDtos = utkastSkjemaer.map { skjema ->
-            konverterTilUtkastDto(skjema)
-        }
-
-        log.debug { "Fant ${utkastDtos.size} utkast for representasjonstype ${request.representasjonstype}" }
-
-        return UtkastListeResponse(
-            utkast = utkastDtos,
-            antall = utkastDtos.size
         )
     }
 
@@ -611,21 +497,6 @@ class UtsendtArbeidstakerService(
     }
 
 
-    private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
-        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-
-        return UtkastOversiktDto(
-            id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
-            arbeidsgiverNavn = skjemaMetadata.arbeidsgiverNavn,
-            arbeidsgiverOrgnr = skjema.orgnr,
-            arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
-            opprettetDato = skjema.opprettetDato,
-            sistEndretDato = skjema.endretDato,
-            status = skjema.status
-        )
-    }
-
     /**
      * Sjekker tilgang og om fullmakt er aktiv for innsendte skjemaer.
      *
@@ -786,18 +657,4 @@ class UtsendtArbeidstakerService(
 
 
 
-    /**
-     * Maskerer fødselsnummer for visning.
-     * Viser kun de første 6 sifrene (fødselsdato) og skjuler resten.
-     *
-     * @param fnr Fødselsnummer (11 siffer)
-     * @return Maskert fnr (f.eks. "010190*****")
-     */
-    private fun maskerFnr(fnr: String): String {
-        return if (fnr.length == 11) {
-            fnr.substring(0, 6) + "*****"
-        } else {
-            "***********"
-        }
-    }
 }
