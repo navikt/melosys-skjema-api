@@ -129,63 +129,53 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         pageable: PageRequest
     ): Page<Skjema> {
         val searchTerm = request.sok?.takeIf { it.isNotBlank() }
-        val representasjonstype = request.representasjonstype.name
 
         return when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm, representasjonstype)
+            Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm)
             Representasjonstype.ARBEIDSGIVER,
-            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm, representasjonstype)
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm, request.representasjonstype)
 
             Representasjonstype.RADGIVER,
-            Representasjonstype.RADGIVER_MED_FULLMAKT -> hentForRadgiver(request.radgiverfirmaOrgnr, pageable, searchTerm, representasjonstype)
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> hentForRadgiver(request.radgiverfirmaOrgnr, pageable, searchTerm, request.representasjonstype)
 
-            Representasjonstype.ANNEN_PERSON -> hentForAnnenPerson(pageable, searchTerm, representasjonstype)
+            Representasjonstype.ANNEN_PERSON -> hentForAnnenPerson(pageable, searchTerm)
         }
     }
 
-    /**
-     * Henter søknader for DEG_SELV - arbeidstaker selv.
-     */
-    private fun hentForDegSelv(innloggetBrukerFnr: String, pageable: PageRequest, searchTerm: String?, representasjonstype: String): Page<Skjema> {
+    private fun hentForDegSelv(innloggetBrukerFnr: String, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         return if (searchTerm.isNullOrBlank()) {
             utsendtArbeidstakerSkjemaRepository.findByFnrAndTypeAndStatusInAndRepresentasjonstype(
                 innloggetBrukerFnr,
                 SkjemaType.UTSENDT_ARBEIDSTAKER.name,
                 INNSENDT_STATUS_STRINGS,
-                representasjonstype,
+                Representasjonstype.DEG_SELV.name,
                 pageable
             )
         } else {
             utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusInAndRepresentasjonstypeWithSearch(
                 innloggetBrukerFnr,
                 INNSENDT_STATUS_STRINGS,
-                representasjonstype,
+                Representasjonstype.DEG_SELV.name,
                 searchTerm,
                 pageable
             )
         }
     }
 
-    /**
-     * Henter søknader for ARBEIDSGIVER - alle søknader for arbeidsgivere bruker har tilgang til.
-     */
-    private fun hentForArbeidsgiver(pageable: PageRequest, searchTerm: String?, representasjonstype: String): Page<Skjema> {
+    private fun hentForArbeidsgiver(pageable: PageRequest, searchTerm: String?, representasjonstype: Representasjonstype): Page<Skjema> {
         val tilganger = altinnService.hentBrukersTilganger()
         val orgnrs = tilganger.map { it.orgnr }
 
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstype(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstype(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstypeWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstypeWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, searchTerm, pageable)
         }
     }
 
-    /**
-     * Henter søknader for RADGIVER - alle søknader for det spesifikke rådgiverfirmaet.
-     */
-    private fun hentForRadgiver(radgiverfirmaOrgnr: String?, pageable: PageRequest, searchTerm: String?, representasjonstype: String): Page<Skjema> {
+    private fun hentForRadgiver(radgiverfirmaOrgnr: String?, pageable: PageRequest, searchTerm: String?, representasjonstype: Representasjonstype): Page<Skjema> {
         requireNotNull(radgiverfirmaOrgnr) { "radgiverfirmaOrgnr er påkrevd for RADGIVER" }
 
         val tilganger = altinnService.hentBrukersTilganger()
@@ -194,16 +184,13 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype, radgiverfirmaOrgnr, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, radgiverfirmaOrgnr, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype, radgiverfirmaOrgnr, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, radgiverfirmaOrgnr, searchTerm, pageable)
         }
     }
 
-    /**
-     * Henter søknader for ANNEN_PERSON - alle søknader for personer bruker har fullmakt for.
-     */
-    private fun hentForAnnenPerson(pageable: PageRequest, searchTerm: String?, representasjonstype: String): Page<Skjema> {
+    private fun hentForAnnenPerson(pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         val fullmakter = try {
             reprService.hentKanRepresentere()
         } catch (e: Exception) {
@@ -216,9 +203,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (fnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstype(fnrs, INNSENDT_STATUS_STRINGS, representasjonstype, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstype(fnrs, INNSENDT_STATUS_STRINGS, Representasjonstype.ANNEN_PERSON.name, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstypeWithSearch(fnrs, INNSENDT_STATUS_STRINGS, representasjonstype, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstypeWithSearch(fnrs, INNSENDT_STATUS_STRINGS, Representasjonstype.ANNEN_PERSON.name, searchTerm, pageable)
         }
     }
 
