@@ -42,8 +42,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 ) {
 
     companion object {
-        private val INNSENDT_STATUSES = listOf(SkjemaStatus.SENDT)
-        private val INNSENDT_STATUS_STRINGS = INNSENDT_STATUSES.map { it.name }
+        private val INNSENDT_STATUS = SkjemaStatus.SENDT.name
     }
 
     /**
@@ -144,17 +143,17 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
     private fun hentForDegSelv(innloggetBrukerFnr: String, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         return if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByFnrAndTypeAndStatusInAndRepresentasjonstype(
+            utsendtArbeidstakerSkjemaRepository.findByFnrAndTypeAndStatusAndRepresentasjonstype(
                 innloggetBrukerFnr,
                 SkjemaType.UTSENDT_ARBEIDSTAKER.name,
-                INNSENDT_STATUS_STRINGS,
+                INNSENDT_STATUS,
                 Representasjonstype.DEG_SELV.name,
                 pageable
             )
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusInAndRepresentasjonstypeWithSearch(
+            utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusAndRepresentasjonstypeWithSearch(
                 innloggetBrukerFnr,
-                INNSENDT_STATUS_STRINGS,
+                INNSENDT_STATUS,
                 Representasjonstype.DEG_SELV.name,
                 searchTerm,
                 pageable
@@ -169,9 +168,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstype(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstype(orgnrs, INNSENDT_STATUS, representasjonstype.name, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusInAndRepresentasjonstypeWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstypeWithSearch(orgnrs, INNSENDT_STATUS, representasjonstype.name, searchTerm, pageable)
         }
     }
 
@@ -184,9 +183,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, radgiverfirmaOrgnr, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS, representasjonstype.name, radgiverfirmaOrgnr, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS_STRINGS, representasjonstype.name, radgiverfirmaOrgnr, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS, representasjonstype.name, radgiverfirmaOrgnr, searchTerm, pageable)
         }
     }
 
@@ -203,9 +202,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (fnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstype(fnrs, INNSENDT_STATUS_STRINGS, Representasjonstype.ANNEN_PERSON.name, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusAndRepresentasjonstype(fnrs, INNSENDT_STATUS, Representasjonstype.ANNEN_PERSON.name, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusInAndRepresentasjonstypeWithSearch(fnrs, INNSENDT_STATUS_STRINGS, Representasjonstype.ANNEN_PERSON.name, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusAndRepresentasjonstypeWithSearch(fnrs, INNSENDT_STATUS, Representasjonstype.ANNEN_PERSON.name, searchTerm, pageable)
         }
     }
 
