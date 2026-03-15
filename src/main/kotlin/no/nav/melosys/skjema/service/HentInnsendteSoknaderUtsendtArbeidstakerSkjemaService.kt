@@ -76,8 +76,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         // Hent paginert resultat fra database
         val page = hentSkjemaerFraDatabase(request, innloggetBrukerFnr, pageable)
 
-        // Konverter til DTOs //TODO: Burde kanskje hente en dataklasse fra databasen, istf å drive med mapping
-        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it) }
+        val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
+
+        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt) }
 
         log.debug { "Fant ${page.totalElements} innsendte søknader, returnerer side ${request.side} med ${soknader.size} resultater" }
 
@@ -212,7 +213,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
-    private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
+    private fun konverterTilInnsendtSoknadDto(skjema: Skjema, personerMedAktivFullmakt: Set<String>): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
@@ -224,10 +225,29 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
-            innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
+            innsendtDato = skjema.endretDato,
             status = skjema.status,
-            harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
+            fullmaktAktiv = erFullmaktAktiv(metadata, skjema.fnr, personerMedAktivFullmakt)
         )
+    }
+
+    private fun erFullmaktAktiv(
+        metadata: UtsendtArbeidstakerMetadata,
+        arbeidstakerFnr: String,
+        personerMedAktivFullmakt: Set<String>
+    ): Boolean? {
+        return when (metadata.representasjonstype) {
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+            Representasjonstype.RADGIVER_MED_FULLMAKT,
+            Representasjonstype.ANNEN_PERSON -> {
+                val aktiv = personerMedAktivFullmakt.contains(arbeidstakerFnr)
+                if (!aktiv) {
+                    log.warn { "Fullmakt tapt for skjema med arbeidstaker-fnr ${arbeidstakerFnr.take(6)}*****, representasjonstype: ${metadata.representasjonstype}" }
+                }
+                aktiv
+            }
+            else -> null
+        }
     }
 
     /**

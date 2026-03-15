@@ -41,7 +41,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val mockInnsendingRepository = mockk<InnsendingRepository>()
     val mockValidator = mockk<UtsendtArbeidstakerRepresentasjonValidator>(relaxed = true)
     val mockAltinnService = mockk<AltinnService>()
-    val mockReprService = mockk<ReprService>()
+    val mockReprService = mockk<ReprService>() {
+        every { hentFullmaktsgiverFnr() } returns emptySet()
+    }
     val mockEregService = mockk<EregService>()
     val mockSkjemaKoblingService = mockk<SkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
@@ -409,7 +411,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
@@ -473,7 +475,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
@@ -521,7 +523,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.RADGIVER,
@@ -615,7 +617,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockReprService.hentKanRepresentere() } returns fullmakter
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkast1, utkast2, utkast3)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
@@ -634,7 +636,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val currentUser = "12345678910"
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns emptyList()
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
@@ -665,7 +667,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkast)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkast)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
@@ -708,7 +710,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByFnrAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastDegSelv, utkastArbeidsgiver)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkastDegSelv, utkastArbeidsgiver)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.DEG_SELV
@@ -758,7 +760,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockAltinnService.hentBrukersTilganger() } returns altinnTilganger
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastArbeidsgiver, utkastDegSelv)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkastArbeidsgiver, utkastDegSelv)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER
@@ -806,7 +808,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastRadgiver, utkastArbeidsgiver)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkastRadgiver, utkastArbeidsgiver)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.RADGIVER,
@@ -865,7 +867,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockReprService.hentKanRepresentere() } returns fullmakter
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns listOf(utkastAnnenPerson, utkastDegSelv)
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns listOf(utkastAnnenPerson, utkastDegSelv)
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
@@ -883,7 +885,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             every { mockSubjectHandler.getUserID() } returns currentUser
             every { mockReprService.hentKanRepresentere() } throws RuntimeException("Feil fra repr-api")
-            every { mockSkjemaRepository.findByOpprettetAvAndStatus(currentUser, SkjemaStatus.UTKAST) } returns emptyList()
+            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns emptyList()
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON

@@ -60,6 +60,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     @BeforeEach
     fun setUp() {
         clearMocks(altinnService, reprService, subjectHandler)
+        every { reprService.hentFullmaktsgiverFnr() } returns emptySet()
         skjemaRepository.deleteAll()
     }
 
@@ -776,32 +777,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader shouldHaveSize 1
         response.soknader[0].arbeidsgiverOrgnr shouldBe "444555666"
         response.totaltAntall shouldBe 1
-    }
-
-    @Test
-    @DisplayName("Edge case: Skal returnere harPdf = false")
-    fun `skal returnere harPdf false`() {
-        val userFnr = korrektSyntetiskFnr
-        every { subjectHandler.getUserID() } returns userFnr
-
-        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
-        skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = userFnr,
-                status = SkjemaStatus.SENDT,
-                metadata = metadata
-            )
-        )
-
-        val request = HentInnsendteSoknaderRequest(
-            side = 1,
-            antall = 10,
-            representasjonstype = Representasjonstype.DEG_SELV
-        )
-
-        val response = service.hentInnsendteSoknader(request)
-
-        response.soknader[0].harPdf shouldBe false // TODO: Skal endres når PDF implementeres
     }
 
     // Error handling tests
