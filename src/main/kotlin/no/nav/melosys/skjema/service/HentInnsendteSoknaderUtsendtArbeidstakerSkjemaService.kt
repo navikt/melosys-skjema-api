@@ -76,7 +76,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         // Hent paginert resultat fra database
         val page = hentSkjemaerFraDatabase(request, innloggetBrukerFnr, pageable)
 
-        val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
+        val personerMedAktivFullmakt = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> emptySet()
+            else -> reprService.hentFullmaktsgiverFnr()
+        }
 
         val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt) }
 

@@ -62,19 +62,6 @@ class ReprService(
      * @param fnr Fødselsnummer til fullmaktsgiver (personen som gir fullmakten)
      * @return true hvis innlogget bruker har fullmakt med leserettigheter for MED fra gitt fnr, false ellers
      */
-    /**
-     * Henter fødselsnummer til alle personer innlogget bruker har aktiv fullmakt for.
-     * Returnerer tomt sett ved feil (konservativt — behandler som ingen aktive fullmakter).
-     */
-    fun hentFullmaktsgiverFnr(): Set<String> {
-        return try {
-            hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
-        } catch (e: Exception) {
-            log.warn(e) { "Feil ved henting av fullmakter" }
-            emptySet()
-        }
-    }
-
     fun harLeserettigheterForMedlemskap(fnr: String): Boolean {
         log.info { "Validerer leserettigheter for medlemskap" }
         return harRettigheter(fnr, RettighetsType.LESE)
@@ -100,6 +87,19 @@ class ReprService(
         } catch (e: Exception) {
             log.error(e) { "Feil ved validering av ${rettighetsType.name.lowercase()}rettigheter" }
             false
+        }
+    }
+
+    /**
+     * Henter fødselsnummer til alle personer innlogget bruker har aktiv fullmakt for.
+     * Returnerer tomt sett ved feil (konservativt — behandler som ingen aktive fullmakter).
+     */
+    fun hentFullmaktsgiverFnr(): Set<String> {
+        return try {
+            hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
+        } catch (e: Exception) {
+            log.warn(e) { "Feil ved henting av fullmakter" }
+            emptySet()
         }
     }
 

@@ -6,14 +6,19 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
-import no.nav.melosys.skjema.extensions.*
+import no.nav.melosys.skjema.extensions.tilSkjemadel
+import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
-import no.nav.melosys.skjema.types.*
+import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
+import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
@@ -23,7 +28,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.util.UUID
 
 private val log = KotlinLogging.logger { }
 
@@ -283,7 +288,7 @@ class UtsendtArbeidstakerService(
 
         val fullmaktAktiv = harAktivFullmaktForInnsendtSkjema(skjema)
 
-        if (!fullmaktAktiv) {
+        if (fullmaktAktiv == false) {
             log.warn { "Fullmakt tapt for innsendt skjema ${skjema.id}, arbeidstaker-data strippet" }
         }
 
@@ -305,7 +310,7 @@ class UtsendtArbeidstakerService(
             innsendtDato = skjema.endretDato,
             innsendtSprak = innsending.innsendtSprak,
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
-            skjemaData = if (fullmaktAktiv) skjemaData else stripArbeidstakersData(skjemaData),
+            skjemaData = if (fullmaktAktiv == false) stripArbeidstakersData(skjemaData) else skjemaData,
             definisjon = definisjon,
             fullmaktAktiv = fullmaktAktiv
         )
@@ -504,11 +509,11 @@ class UtsendtArbeidstakerService(
      * For _MED_FULLMAKT-typer der fullmakt er tapt men bruker har Altinn-tilgang: returnerer false.
      * For ANNEN_PERSON uten fullmakt: kaster AccessDeniedException (ingen fallback).
      */
-    private fun harAktivFullmaktForInnsendtSkjema(skjema: Skjema): Boolean {
+    private fun harAktivFullmaktForInnsendtSkjema(skjema: Skjema): Boolean? {
         val currentUser = subjectHandler.getUserID()
 
         if (skjema.fnr == currentUser) {
-            return true
+            return null
         }
 
         val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
@@ -519,7 +524,7 @@ class UtsendtArbeidstakerService(
 
             Representasjonstype.ARBEIDSGIVER,
             Representasjonstype.RADGIVER -> {
-                if (altinnService.harBrukerTilgang(skjema.orgnr)) true
+                if (altinnService.harBrukerTilgang(skjema.orgnr)) null
                 else throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
             }
 

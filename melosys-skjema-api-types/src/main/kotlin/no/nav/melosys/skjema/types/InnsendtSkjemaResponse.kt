@@ -34,6 +34,6 @@ data class InnsendtSkjemaResponse(
     @param:Schema(description = "Skjemadefinisjon for visning (basert på lagret versjon)")
     val definisjon: SkjemaDefinisjonDto,
 
-    @param:Schema(description = "Indikerer om fullmakt er aktiv. Arbeidstaker-data er strippet når false.")
-    val fullmaktAktiv: Boolean = true
+    @param:Schema(description = "Indikerer om fullmakt er aktiv. null=ikke relevant, true=aktiv, false=tapt (arbeidstaker-data strippet).")
+    val fullmaktAktiv: Boolean? = null
 )

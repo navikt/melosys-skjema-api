@@ -72,7 +72,7 @@ class HentUtkastUtsendtArbeidstakerService(
     private fun hentForArbeidsgiver(innloggetBrukerFnr: String): List<Skjema> {
         val tilgangOrgnr = altinnService.hentBrukersTilganger().map { it.orgnr }.toSet()
         val arbeidsgiverTyper = setOf(Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT)
-        val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
+        val personerMedAktivFullmakt by lazy { reprService.hentFullmaktsgiverFnr() }
 
         return skjemaRepository.findByOpprettetAvAndTypeAndStatus(
             innloggetBrukerFnr,
@@ -89,7 +89,7 @@ class HentUtkastUtsendtArbeidstakerService(
     private fun hentForRadgiver(innloggetBrukerFnr: String, radgiverfirmaOrgnr: String?): List<Skjema> {
         requireNotNull(radgiverfirmaOrgnr) { "radgiverfirmaOrgnr er påkrevd for RADGIVER" }
         val radgiverTyper = setOf(Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT)
-        val personerMedAktivFullmakt = reprService.hentFullmaktsgiverFnr()
+        val personerMedAktivFullmakt by lazy { reprService.hentFullmaktsgiverFnr() }
 
         return skjemaRepository.findByOpprettetAvAndTypeAndStatus(
             innloggetBrukerFnr,
