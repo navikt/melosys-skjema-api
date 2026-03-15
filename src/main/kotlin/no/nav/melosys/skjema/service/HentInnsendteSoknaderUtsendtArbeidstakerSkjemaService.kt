@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -230,11 +231,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
             innsendtDato = skjema.endretDato,
             status = skjema.status,
-            fullmaktAktiv = erFullmaktAktiv(metadata, skjema.fnr, personerMedAktivFullmakt)
+            fullmaktAktiv = erFullmaktAktiv(skjema.id, metadata, skjema.fnr, personerMedAktivFullmakt)
         )
     }
 
     private fun erFullmaktAktiv(
+        skjemaId: UUID?,
         metadata: UtsendtArbeidstakerMetadata,
         arbeidstakerFnr: String,
         personerMedAktivFullmakt: Set<String>
@@ -245,7 +247,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             Representasjonstype.ANNEN_PERSON -> {
                 val aktiv = personerMedAktivFullmakt.contains(arbeidstakerFnr)
                 if (!aktiv) {
-                    log.warn { "Fullmakt tapt for skjema med arbeidstaker-fnr ${arbeidstakerFnr.take(6)}*****, representasjonstype: ${metadata.representasjonstype}" }
+                    log.warn { "Fullmakt tapt for skjema $skjemaId, representasjonstype: ${metadata.representasjonstype}" }
                 }
                 aktiv
             }

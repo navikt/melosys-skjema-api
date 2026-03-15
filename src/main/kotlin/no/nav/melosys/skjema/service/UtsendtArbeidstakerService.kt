@@ -556,7 +556,9 @@ class UtsendtArbeidstakerService(
         return when (skjemaData) {
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto ->
                 skjemaData.copy(arbeidstakersData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidstakersData())
-            else -> skjemaData
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto ->
+                UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> skjemaData
         }
     }
 
