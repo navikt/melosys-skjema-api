@@ -465,6 +465,102 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
+    @DisplayName("ARBEIDSGIVER: Skal inkludere ARBEIDSGIVER_MED_FULLMAKT utkast ved forespørsel med ARBEIDSGIVER")
+    fun `skal inkludere ARBEIDSGIVER_MED_FULLMAKT utkast ved ARBEIDSGIVER forespørsel`() {
+        val userFnr = korrektSyntetiskFnr
+        val orgnr = "111222333"
+        val token = createTokenForUser(userFnr)
+
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+
+        // Opprett utkast med ARBEIDSGIVER
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett utkast med ARBEIDSGIVER_MED_FULLMAKT - skal OGSÅ returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT),
+                opprettetAv = userFnr
+            )
+        )
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/utkast?representasjonstype=ARBEIDSGIVER")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtkastListeResponse>()
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        response.antall shouldBe 2
+        response.utkast shouldHaveSize 2
+    }
+
+    @Test
+    @DisplayName("RADGIVER: Skal inkludere RADGIVER_MED_FULLMAKT utkast ved forespørsel med RADGIVER")
+    fun `skal inkludere RADGIVER_MED_FULLMAKT utkast ved RADGIVER forespørsel`() {
+        val userFnr = korrektSyntetiskFnr
+        val radgiverfirmaOrgnr = "987654321"
+        val token = createTokenForUser(userFnr)
+
+        // Opprett utkast med RADGIVER
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER,
+                    radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett utkast med RADGIVER_MED_FULLMAKT - skal OGSÅ returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                    radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/utkast?representasjonstype=RADGIVER&radgiverfirmaOrgnr=$radgiverfirmaOrgnr")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtkastListeResponse>()
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        response.antall shouldBe 2
+        response.utkast shouldHaveSize 2
+    }
+
+    @Test
     @DisplayName("Skal kun returnere utkast med riktig representasjonstype for RADGIVER")
     fun `skal kun returnere utkast med riktig representasjonstype for RADGIVER`() {
         val userFnr = korrektSyntetiskFnr

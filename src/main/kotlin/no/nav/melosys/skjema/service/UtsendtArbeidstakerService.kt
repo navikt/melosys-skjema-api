@@ -186,16 +186,14 @@ class UtsendtArbeidstakerService(
                 // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
                 val tilganger = altinnService.hentBrukersTilganger()
                 val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
+                val arbeidsgiverTyper = setOf(Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT)
 
-                // Hent alle utkast opprettet av bruker og filtrer på tilganger
                 skjemaRepository.findByOpprettetAvAndStatus(
                     innloggetBrukerFnr,
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
-                    // Sjekk at representasjonstype er ARBEIDSGIVER eller ARBEIDSGIVER_MED_FULLMAKT
                     val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-
-                    skjemaMetadata.representasjonstype == request.representasjonstype && tilgangOrgnr.contains(skjema.orgnr)
+                    skjemaMetadata.representasjonstype in arbeidsgiverTyper && tilgangOrgnr.contains(skjema.orgnr)
                 }
             }
 
@@ -204,16 +202,14 @@ class UtsendtArbeidstakerService(
                 val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
                     ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
 
-                // Hent utkast opprettet av innlogget bruker som tilhører rådgiverfirmaet
                 skjemaRepository.findByOpprettetAvAndStatus(
                     innloggetBrukerFnr,
                     SkjemaStatus.UTKAST
                 ).filter { skjema ->
-                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
                     val skjemaMetadata = skjema.metadata as? UtsendtArbeidstakerMetadata
                         ?: return@filter false
 
-                    skjemaMetadata.representasjonstype == request.representasjonstype &&
+                    skjemaMetadata.representasjonstype in setOf(Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT) &&
                         when (skjemaMetadata) {
                             is RadgiverMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
                             is RadgiverMedFullmaktMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
