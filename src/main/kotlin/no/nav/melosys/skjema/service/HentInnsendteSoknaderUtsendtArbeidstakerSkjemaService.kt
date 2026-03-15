@@ -43,6 +43,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
     companion object {
         private val INNSENDT_STATUS = SkjemaStatus.SENDT.name
+        private val ARBEIDSGIVER_TYPER = listOf(Representasjonstype.ARBEIDSGIVER.name, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT.name)
+        private val RADGIVER_TYPER = listOf(Representasjonstype.RADGIVER.name, Representasjonstype.RADGIVER_MED_FULLMAKT.name)
     }
 
     /**
@@ -132,10 +134,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm)
             Representasjonstype.ARBEIDSGIVER,
-            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm, request.representasjonstype)
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm)
 
             Representasjonstype.RADGIVER,
-            Representasjonstype.RADGIVER_MED_FULLMAKT -> hentForRadgiver(request.radgiverfirmaOrgnr, pageable, searchTerm, request.representasjonstype)
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> hentForRadgiver(request.radgiverfirmaOrgnr, pageable, searchTerm)
 
             Representasjonstype.ANNEN_PERSON -> hentForAnnenPerson(pageable, searchTerm)
         }
@@ -161,20 +163,20 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         }
     }
 
-    private fun hentForArbeidsgiver(pageable: PageRequest, searchTerm: String?, representasjonstype: Representasjonstype): Page<Skjema> {
+    private fun hentForArbeidsgiver(pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         val tilganger = altinnService.hentBrukersTilganger()
         val orgnrs = tilganger.map { it.orgnr }
 
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstype(orgnrs, INNSENDT_STATUS, representasjonstype.name, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstyper(orgnrs, INNSENDT_STATUS, ARBEIDSGIVER_TYPER, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstypeWithSearch(orgnrs, INNSENDT_STATUS, representasjonstype.name, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstyperWithSearch(orgnrs, INNSENDT_STATUS, ARBEIDSGIVER_TYPER, searchTerm, pageable)
         }
     }
 
-    private fun hentForRadgiver(radgiverfirmaOrgnr: String?, pageable: PageRequest, searchTerm: String?, representasjonstype: Representasjonstype): Page<Skjema> {
+    private fun hentForRadgiver(radgiverfirmaOrgnr: String?, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         requireNotNull(radgiverfirmaOrgnr) { "radgiverfirmaOrgnr er påkrevd for RADGIVER" }
 
         val tilganger = altinnService.hentBrukersTilganger()
@@ -183,9 +185,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS, representasjonstype.name, radgiverfirmaOrgnr, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS, RADGIVER_TYPER, radgiverfirmaOrgnr, pageable)
         } else {
-            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS, representasjonstype.name, radgiverfirmaOrgnr, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS, RADGIVER_TYPER, radgiverfirmaOrgnr, searchTerm, pageable)
         }
     }
 

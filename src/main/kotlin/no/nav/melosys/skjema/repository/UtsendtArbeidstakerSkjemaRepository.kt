@@ -53,19 +53,19 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         pageable: Pageable
     ): Page<Skjema>
 
-    // ARBEIDSGIVER
+    // ARBEIDSGIVER (inkl. MED_FULLMAKT)
     @Query(
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
     """, nativeQuery = true
     )
-    fun findByOrgnrInAndStatusAndRepresentasjonstype(
+    fun findByOrgnrInAndStatusAndRepresentasjonstyper(
         @Param("orgnrs") orgnrs: List<String>,
         @Param("status") status: String,
-        @Param("representasjonstype") representasjonstype: String,
+        @Param("representasjonstyper") representasjonstyper: List<String>,
         pageable: Pageable
     ): Page<Skjema>
 
@@ -74,33 +74,33 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """, nativeQuery = true
     )
-    fun findByOrgnrInAndStatusAndRepresentasjonstypeWithSearch(
+    fun findByOrgnrInAndStatusAndRepresentasjonstyperWithSearch(
         @Param("orgnrs") orgnrs: List<String>,
         @Param("status") status: String,
-        @Param("representasjonstype") representasjonstype: String,
+        @Param("representasjonstyper") representasjonstyper: List<String>,
         @Param("searchTerm") searchTerm: String,
         pageable: Pageable
     ): Page<Skjema>
 
-    // RADGIVER
+    // RADGIVER (inkl. MED_FULLMAKT)
     @Query(
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
     """, nativeQuery = true
     )
     fun findInnsendteForRadgiver(
         @Param("orgnrs") orgnrs: List<String>,
         @Param("status") status: String,
-        @Param("representasjonstype") representasjonstype: String,
+        @Param("representasjonstyper") representasjonstyper: List<String>,
         @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
         pageable: Pageable
     ): Page<Skjema>
@@ -110,7 +110,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
         AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
@@ -119,7 +119,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
     fun findInnsendteForRadgiverWithSearch(
         @Param("orgnrs") orgnrs: List<String>,
         @Param("status") status: String,
-        @Param("representasjonstype") representasjonstype: String,
+        @Param("representasjonstyper") representasjonstyper: List<String>,
         @Param("radgiverfirmaOrgnr") radgiverfirmaOrgnr: String,
         @Param("searchTerm") searchTerm: String,
         pageable: Pageable

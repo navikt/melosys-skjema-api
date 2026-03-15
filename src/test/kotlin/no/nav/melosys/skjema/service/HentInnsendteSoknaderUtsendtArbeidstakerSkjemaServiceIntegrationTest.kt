@@ -408,6 +408,50 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader shouldHaveSize 1
     }
 
+    @Test
+    @DisplayName("ARBEIDSGIVER: Skal inkludere ARBEIDSGIVER_MED_FULLMAKT søknader ved ARBEIDSGIVER-forespørsel")
+    fun `skal inkludere ARBEIDSGIVER_MED_FULLMAKT søknader ved ARBEIDSGIVER forespørsel`() {
+        val userFnr = korrektSyntetiskFnr
+        val orgnr = "111222333"
+        every { subjectHandler.getUserID() } returns userFnr
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+
+        // Opprett ARBEIDSGIVER søknad
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett ARBEIDSGIVER_MED_FULLMAKT søknad - skal OGSÅ returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT),
+                opprettetAv = userFnr
+            )
+        )
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.ARBEIDSGIVER
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.totaltAntall shouldBe 2
+        response.soknader shouldHaveSize 2
+    }
+
     // ========================================
     // RADGIVER
     // ========================================
