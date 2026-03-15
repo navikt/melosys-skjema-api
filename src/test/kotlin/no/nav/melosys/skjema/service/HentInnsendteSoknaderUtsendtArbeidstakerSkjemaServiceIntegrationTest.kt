@@ -201,6 +201,44 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader.shouldBeEmpty()
     }
 
+    @Test
+    @DisplayName("DEG_SELV: Skal ikke returnere søknader med annen representasjonstype for samme fnr")
+    fun `skal ikke returnere søknader med annen representasjonstype for DEG_SELV`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        // Opprett DEG_SELV søknad - skal returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett ARBEIDSGIVER søknad med samme fnr - skal IKKE returneres ved DEG_SELV-forespørsel
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.DEG_SELV
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.totaltAntall shouldBe 1
+        response.soknader shouldHaveSize 1
+    }
+
     // ========================================
     // ARBEIDSGIVER
     // ========================================
@@ -321,6 +359,53 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
         response.totaltAntall shouldBe 2
         response.soknader shouldHaveSize 2
+    }
+
+    @Test
+    @DisplayName("ARBEIDSGIVER: Skal ikke returnere søknader med annen representasjonstype for samme orgnr")
+    fun `skal ikke returnere søknader med annen representasjonstype for ARBEIDSGIVER`() {
+        val userFnr = korrektSyntetiskFnr
+        val orgnr = "111222333"
+        every { subjectHandler.getUserID() } returns userFnr
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+
+        // Opprett ARBEIDSGIVER søknad - skal returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett RADGIVER søknad med samme orgnr - skal IKKE returneres ved ARBEIDSGIVER-forespørsel
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER,
+                    radgiverfirma = radgiverfirmaInfoMedDefaultVerdier()
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.ARBEIDSGIVER
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.totaltAntall shouldBe 1
+        response.soknader shouldHaveSize 1
     }
 
     // ========================================
