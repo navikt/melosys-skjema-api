@@ -9,11 +9,13 @@ import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.util.*
 
+private const val TYPE_UTSENDT_ARBEIDSTAKER = "UTSENDT_ARBEIDSTAKER"
+
 /**
  * Repository for innsendte søknader-queries spesifikke for Utsendt Arbeidstaker.
  *
- * Alle queries filtrerer på representasjonstype i JSONB metadata-feltet
- * for å sikre at kun skjemaer med riktig representasjonskontekst returneres.
+ * Alle queries filtrerer på type = UTSENDT_ARBEIDSTAKER og representasjonstype i JSONB metadata-feltet
+ * for å sikre at kun skjemaer med riktig skjematype og representasjonskontekst returneres.
  */
 @Repository
 interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
@@ -23,14 +25,13 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE fnr = :fnr
-        AND type = :type
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
     """, nativeQuery = true
     )
-    fun findByFnrAndTypeAndStatusAndRepresentasjonstype(
+    fun findByFnrAndStatusAndRepresentasjonstype(
         @Param("fnr") fnr: String,
-        @Param("type") type: String,
         @Param("status") status: String,
         @Param("representasjonstype") representasjonstype: String,
         pageable: Pageable
@@ -40,6 +41,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE fnr = :fnr
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
         AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
@@ -58,6 +60,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
     """, nativeQuery = true
@@ -73,6 +76,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
@@ -92,6 +96,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
@@ -109,6 +114,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE orgnr IN :orgnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
@@ -130,6 +136,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE fnr IN :fnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
     """, nativeQuery = true
@@ -145,6 +152,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         """
         SELECT * FROM skjema
         WHERE fnr IN :fnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
         AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
         AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))

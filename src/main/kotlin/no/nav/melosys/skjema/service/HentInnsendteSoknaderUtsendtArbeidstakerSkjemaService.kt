@@ -10,7 +10,6 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.InnsendtSoknadOversiktDto
 import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
-import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SorteringsFelt
 import no.nav.melosys.skjema.types.Sorteringsretning
@@ -145,9 +144,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
     private fun hentForDegSelv(innloggetBrukerFnr: String, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         return if (searchTerm.isNullOrBlank()) {
-            utsendtArbeidstakerSkjemaRepository.findByFnrAndTypeAndStatusAndRepresentasjonstype(
+            utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusAndRepresentasjonstype(
                 innloggetBrukerFnr,
-                SkjemaType.UTSENDT_ARBEIDSTAKER.name,
                 INNSENDT_STATUS,
                 Representasjonstype.DEG_SELV.name,
                 pageable
