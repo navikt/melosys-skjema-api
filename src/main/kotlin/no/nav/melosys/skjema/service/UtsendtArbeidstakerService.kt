@@ -44,7 +44,7 @@ class UtsendtArbeidstakerService(
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val eregService: EregService,
-    private val skjemaKoblingService: SkjemaKoblingService,
+    private val skjemaKoblingService: UtsendtArbeidstakerSkjemaKoblingService,
     private val subjectHandler: SubjectHandler,
     private val innsendingService: InnsendingService,
     private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,

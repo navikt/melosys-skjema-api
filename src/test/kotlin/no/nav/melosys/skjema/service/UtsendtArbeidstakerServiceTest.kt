@@ -42,7 +42,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         every { hentFullmaktsgiverFnr() } returns emptySet()
     }
     val mockEregService = mockk<EregService>()
-    val mockSkjemaKoblingService = mockk<SkjemaKoblingService>()
+    val mockUtsendtArbeidstakerSkjemaKoblingService = mockk<UtsendtArbeidstakerSkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val innsendingService = mockk<InnsendingService>()
     val mockSkjemaDataValidator = mockk<UtsendtArbeidstakerSkjemaDataValidator>(relaxed = true)
@@ -57,7 +57,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockAltinnService,
         mockReprService,
         mockEregService,
-        mockSkjemaKoblingService,
+        mockUtsendtArbeidstakerSkjemaKoblingService,
         mockSubjectHandler,
         innsendingService,
         mockSkjemaDataValidator,
@@ -78,7 +78,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS")
         )
         // Default: Ingen kobling
-        every { mockSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
+        every { mockUtsendtArbeidstakerSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
     }
 
     context("opprettUtsendtArbeidstakerSoknad") {

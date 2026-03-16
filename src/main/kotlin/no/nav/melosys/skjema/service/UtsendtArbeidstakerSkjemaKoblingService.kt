@@ -37,7 +37,7 @@ data class KoblingsResultat(
  * 6. For erstatter: samme skjemadel
  */
 @Service
-class SkjemaKoblingService(
+class UtsendtArbeidstakerSkjemaKoblingService(
     private val skjemaRepository: SkjemaRepository
 ) {
 
