@@ -21,11 +21,11 @@ import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 
-class SkjemaKoblingServiceTest : FunSpec({
+class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
 
     val mockSkjemaRepository = mockk<SkjemaRepository>(relaxed = true)
 
-    val service = SkjemaKoblingService(
+    val service = UtsendtArbeidstakerSkjemaKoblingService(
         mockSkjemaRepository
     )
 
