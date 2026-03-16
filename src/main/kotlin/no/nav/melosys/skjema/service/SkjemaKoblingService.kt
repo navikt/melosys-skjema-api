@@ -43,13 +43,17 @@ class SkjemaKoblingService(
 
     @Transactional
     fun finnOgKobl(skjema: Skjema): KoblingsResultat {
+        val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val kandidater = skjemaRepository.findByFnrAndTypeAndStatus(skjema.fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.SENDT)
             .filter { it.id != skjema.id }
 
+        // Erstatter-kobling: finner tidligere versjon av samme skjemadel
         val erstatter = finnMatch(skjema, kandidater, sammeDel = true)
         val arvetKobletSkjemaId = erstatter?.let { utforErstatterKobling(skjema, it) }
 
-        val motpart = if (arvetKobletSkjemaId == null) {
+        // Motpart-kobling: kobler arbeidsgiver-del og arbeidstaker-del.
+        // Kombinert skjemadel (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har ingen motpart.
+        val motpart = if (arvetKobletSkjemaId == null && metadata.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) {
             finnMatch(skjema, kandidater, sammeDel = false)?.also { utforMotpartKobling(skjema, it) }
         } else null
 
