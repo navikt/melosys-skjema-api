@@ -27,7 +27,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE fnr = :fnr
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND metadata->>'representasjonstype' = :representasjonstype
     """, nativeQuery = true
     )
     fun findByFnrAndStatusAndRepresentasjonstype(
@@ -43,7 +43,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE fnr = :fnr
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND metadata->>'representasjonstype' = :representasjonstype
         AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """, nativeQuery = true
     )
@@ -62,7 +62,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE orgnr IN :orgnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
+        AND metadata->>'representasjonstype' IN :representasjonstyper
     """, nativeQuery = true
     )
     fun findByOrgnrInAndStatusAndRepresentasjonstyper(
@@ -78,7 +78,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE orgnr IN :orgnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
+        AND metadata->>'representasjonstype' IN :representasjonstyper
         AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """, nativeQuery = true
@@ -98,7 +98,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE orgnr IN :orgnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
+        AND metadata->>'representasjonstype' IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
     """, nativeQuery = true
     )
@@ -116,7 +116,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE orgnr IN :orgnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') IN :representasjonstyper
+        AND metadata->>'representasjonstype' IN :representasjonstyper
         AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
         AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
@@ -138,7 +138,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE fnr IN :fnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND metadata->>'representasjonstype' = :representasjonstype
     """, nativeQuery = true
     )
     fun findByFnrInAndStatusAndRepresentasjonstype(
@@ -154,7 +154,7 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         WHERE fnr IN :fnrs
         AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
         AND status = :status
-        AND jsonb_extract_path_text(metadata, 'representasjonstype') = :representasjonstype
+        AND metadata->>'representasjonstype' = :representasjonstype
         AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """, nativeQuery = true
     )
