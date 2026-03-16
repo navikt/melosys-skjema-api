@@ -132,34 +132,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/skjema/utsendt-arbeidstaker skal returnere liste over brukerens skjemaer")
-    fun `GET skjema skal returnere liste over brukerens skjemaer`() {
-        val brukersFnr = korrektSyntetiskFnr
-        val enAnnenBrukersFnr = etAnnetKorrektSyntetiskFnr
-        val skjema1 = skjemaMedDefaultVerdier(fnr = brukersFnr, status = SkjemaStatus.UTKAST)
-        val skjema2 = skjemaMedDefaultVerdier(fnr = enAnnenBrukersFnr, status = SkjemaStatus.SENDT)
-        val skjema3 = skjemaMedDefaultVerdier(fnr = brukersFnr, status = SkjemaStatus.UTKAST)
-
-        skjemaRepository.saveAll(listOf(skjema1, skjema2, skjema3))
-
-        val token = createTokenForUser(brukersFnr)
-        webTestClient.get()
-            .uri("/api/skjema/utsendt-arbeidstaker")
-            .header("Authorization", "Bearer $token")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isOk
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
-            .expectBody<List<UtsendtArbeidstakerSkjemaDto>>()
-            .consumeWith { response ->
-                val responseBody = response.responseBody
-                responseBody.shouldNotBeNull()
-                responseBody.shouldHaveSize(2)
-            }
-    }
-
-
-    @Test
     @DisplayName("GET /api/skjema/utsendt-arbeidstaker/{id} skal returnere spesifikt skjema som arbeidstaker")
     fun `GET skjema som arbeidstaker by id skal returnere spesifikt skjema`() {
         val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()

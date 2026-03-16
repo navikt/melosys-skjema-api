@@ -53,7 +53,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = metadata
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns emptyList()
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns emptyList()
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -93,7 +93,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = kandidatMetadata
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -131,7 +131,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = kandidatMetadata
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -170,7 +170,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 metadata = kandidatMetadata
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -223,7 +223,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidsgiverData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
             val resultat = service.finnOgKobl(skjema)
@@ -291,7 +291,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidsgiverData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -353,7 +353,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidsgiverData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidat)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
             val resultat = service.finnOgKobl(skjema)
@@ -385,7 +385,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidstakerData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(skjema)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(skjema)
 
             val resultat = service.finnOgKobl(skjema)
 
@@ -474,7 +474,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = kandidatBData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(kandidatA, kandidatB)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidatA, kandidatB)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
             val resultat = service.finnOgKobl(skjema)
@@ -525,7 +525,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidstakerData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
             val resultat = service.finnOgKobl(nyttSkjema)
@@ -592,7 +592,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema, motpartSkjema)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(gammelSkjema, motpartSkjema)
             every { mockSkjemaRepository.findById(motpartId) } returns Optional.of(motpartSkjema)
             every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
@@ -641,7 +641,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = arbeidstakerData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
 
             val resultat = service.finnOgKobl(nyttSkjema)
 
@@ -697,7 +697,7 @@ class SkjemaKoblingServiceTest : FunSpec({
                 data = nyData
             )
 
-            every { mockSkjemaRepository.findByFnrAndStatus(arbeidstakerFnr, SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(gammelSkjema)
 
             val resultat = service.finnOgKobl(nyttSkjema)
 

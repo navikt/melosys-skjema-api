@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Service
@@ -42,7 +43,7 @@ class SkjemaKoblingService(
 
     @Transactional
     fun finnOgKobl(skjema: Skjema): KoblingsResultat {
-        val kandidater = skjemaRepository.findByFnrAndStatus(skjema.fnr, SkjemaStatus.SENDT)
+        val kandidater = skjemaRepository.findByFnrAndTypeAndStatus(skjema.fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.SENDT)
             .filter { it.id != skjema.id }
 
         val erstatter = finnMatch(skjema, kandidater, sammeDel = true)

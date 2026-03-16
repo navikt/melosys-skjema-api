@@ -90,6 +90,19 @@ class ReprService(
         }
     }
 
+    /**
+     * Henter fødselsnummer til alle personer innlogget bruker har aktiv fullmakt for.
+     * Returnerer tomt sett ved feil (konservativt — behandler som ingen aktive fullmakter).
+     */
+    fun hentFullmaktsgiverFnr(): Set<String> {
+        return try {
+            hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
+        } catch (e: Exception) {
+            log.warn(e) { "Feil ved henting av fullmakter" }
+            emptySet()
+        }
+    }
+
     private enum class RettighetsType {
         LESE,
         SKRIVE

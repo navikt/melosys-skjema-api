@@ -13,6 +13,7 @@ import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
+import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -51,9 +52,14 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @MockkBean
     private lateinit var altinnService: AltinnService
 
+    @MockkBean
+    private lateinit var reprService: ReprService
+
     @BeforeEach
     fun setUp() {
-        clearMocks(altinnService)
+        clearMocks(altinnService, reprService)
+        every { reprService.hentKanRepresentere() } returns emptyList()
+        every { reprService.hentFullmaktsgiverFnr() } returns emptySet()
         skjemaRepository.deleteAll()
     }
 
@@ -462,6 +468,156 @@ class HentUtkastUtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         response.antall shouldBe 1
         response.utkast shouldHaveSize 1
         response.utkast[0].id shouldBe skjemaArbeidsgiver.id
+    }
+
+    @Test
+    @DisplayName("ARBEIDSGIVER: Skal inkludere ARBEIDSGIVER_MED_FULLMAKT utkast ved forespørsel med ARBEIDSGIVER")
+    fun `skal inkludere ARBEIDSGIVER_MED_FULLMAKT utkast ved ARBEIDSGIVER forespørsel`() {
+        val userFnr = korrektSyntetiskFnr
+        val orgnr = "111222333"
+        val token = createTokenForUser(userFnr)
+
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+        // Mock aktiv fullmakt for arbeidstakeren
+        every { reprService.hentFullmaktsgiverFnr() } returns setOf(etAnnetKorrektSyntetiskFnr)
+
+        // Opprett utkast med ARBEIDSGIVER
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett utkast med ARBEIDSGIVER_MED_FULLMAKT - skal OGSÅ returneres (fullmakt aktiv)
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT),
+                opprettetAv = userFnr
+            )
+        )
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/utkast?representasjonstype=ARBEIDSGIVER")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtkastListeResponse>()
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        response.antall shouldBe 2
+        response.utkast shouldHaveSize 2
+    }
+
+    @Test
+    @DisplayName("ARBEIDSGIVER: Skal skjule ARBEIDSGIVER_MED_FULLMAKT utkast når fullmakt er tapt")
+    fun `skal skjule ARBEIDSGIVER_MED_FULLMAKT utkast når fullmakt er tapt`() {
+        val userFnr = korrektSyntetiskFnr
+        val orgnr = "111222333"
+        val token = createTokenForUser(userFnr)
+
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+        // Ingen aktiv fullmakt
+        every { reprService.hentKanRepresentere() } returns emptyList()
+
+        // Opprett utkast med ARBEIDSGIVER - skal returneres
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett utkast med ARBEIDSGIVER_MED_FULLMAKT - skal IKKE returneres (fullmakt tapt)
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT),
+                opprettetAv = userFnr
+            )
+        )
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/utkast?representasjonstype=ARBEIDSGIVER")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtkastListeResponse>()
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        response.antall shouldBe 1
+        response.utkast shouldHaveSize 1
+    }
+
+    @Test
+    @DisplayName("RADGIVER: Skal inkludere RADGIVER_MED_FULLMAKT utkast ved forespørsel med RADGIVER")
+    fun `skal inkludere RADGIVER_MED_FULLMAKT utkast ved RADGIVER forespørsel`() {
+        val userFnr = korrektSyntetiskFnr
+        val radgiverfirmaOrgnr = "987654321"
+        val token = createTokenForUser(userFnr)
+
+        // Mock aktiv fullmakt for arbeidstakeren
+        every { reprService.hentFullmaktsgiverFnr() } returns setOf(etAnnetKorrektSyntetiskFnr)
+
+        // Opprett utkast med RADGIVER
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER,
+                    radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        // Opprett utkast med RADGIVER_MED_FULLMAKT - skal OGSÅ returneres (fullmakt aktiv)
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                    radgiverfirma = radgiverfirmaInfoMedDefaultVerdier(orgnr = radgiverfirmaOrgnr)
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/utkast?representasjonstype=RADGIVER&radgiverfirmaOrgnr=$radgiverfirmaOrgnr")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtkastListeResponse>()
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        response.antall shouldBe 2
+        response.utkast shouldHaveSize 2
     }
 
     @Test

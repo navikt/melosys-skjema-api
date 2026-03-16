@@ -1,61 +1,34 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.util.UUID
 import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
-import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
-import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
-import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
-import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.extensions.tilSkjemadel
+import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
-import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadResponse
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
-import no.nav.melosys.skjema.types.UtkastListeResponse
-import no.nav.melosys.skjema.types.UtkastOversiktDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 private val log = KotlinLogging.logger { }
 
@@ -150,152 +123,6 @@ class UtsendtArbeidstakerService(
         return OpprettUtsendtArbeidstakerSoknadResponse(
             id = savedSkjema.id ?: throw IllegalStateException("Skjema ID var null etter lagring"),
             status = savedSkjema.status
-        )
-    }
-
-    /**
-     * Henter alle skjemaer hvor innlogget bruker har en eller annen form for tilgang.
-     *
-     * Inkluderer skjemaer hvor bruker er:
-     * - Arbeidstaker selv
-     * - Fullmektig for arbeidstaker (med aktiv fullmakt)
-     * - Arbeidsgiver/rådgiver (via Altinn-tilgang)
-     */
-    fun listAlleSkjemaerForBruker(): List<UtsendtArbeidstakerSkjemaDto> {
-        val innloggetBrukerFnr = subjectHandler.getUserID()
-        log.debug { "Lister alle skjemaer for bruker" }
-
-        // 1. Skjemaer hvor bruker er arbeidstaker
-        val somArbeidstaker = skjemaRepository.findByFnr(innloggetBrukerFnr)
-
-        // 2. Skjemaer hvor bruker er fullmektig (må verifisere aktiv fullmakt)
-        val somFullmektig = skjemaRepository.findByFullmektigFnr(innloggetBrukerFnr)
-            .filter { skjema ->
-                try {
-                    reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved sjekk av fullmakt for skjema ${skjema.id}" }
-                    false
-                }
-            }
-
-        // 3. Skjemaer hvor bruker har Altinn-tilgang til arbeidsgiver
-        val tilganger = altinnService.hentBrukersTilganger()
-        val somArbeidsgiver = tilganger.flatMap { org ->
-            skjemaRepository.findByOrgnr(org.orgnr)
-        }
-
-        // Kombiner og fjern duplikater
-        val alleSkjemaer = (somArbeidstaker + somFullmektig + somArbeidsgiver)
-            .distinctBy { it.id }
-            .map { it.toUtsendtArbeidstakerDto() }
-
-        log.debug { "Fant ${alleSkjemaer.size} skjemaer for bruker (arbeidstaker: ${somArbeidstaker.size}, fullmektig: ${somFullmektig.size}, arbeidsgiver: ${somArbeidsgiver.size})" }
-
-        return alleSkjemaer
-    }
-
-    /**
-     * Henter utkast basert på representasjonskontekst.
-     *
-     * Filtrerer søknader med status UTKAST basert på:
-     * - DEG_SELV: fnr = innlogget bruker
-     * - ARBEIDSGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - RADGIVER: opprettetAv = innlogget bruker OG orgnr i Altinn-tilganger
-     * - ANNEN_PERSON: opprettetAv = innlogget bruker OG fnr i fullmaktsliste
-     *
-     * @param request Kun representasjonstype - filtreringen gjøres basert på brukerens tilganger
-     * @return Liste med utkast
-     */
-    fun hentUtkast(request: HentUtkastRequest): UtkastListeResponse {
-        val innloggetBrukerFnr = subjectHandler.getUserID()
-        log.debug { "Henter utkast for representasjonstype: ${request.representasjonstype}" }
-
-        val utkastSkjemaer = when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> {
-                // Arbeidstaker fyller ut for seg selv
-                skjemaRepository.findByFnrAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sikre at representasjonstype i metadata er DEG_SELV
-                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-                    skjemaMetadata.representasjonstype == Representasjonstype.DEG_SELV
-                }
-            }
-
-            Representasjonstype.ARBEIDSGIVER, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
-                // Arbeidsgiver - søknader for alle arbeidsgivere bruker har tilgang til
-                val tilganger = altinnService.hentBrukersTilganger()
-                val tilgangOrgnr = tilganger.map { it.orgnr }.toSet()
-
-                // Hent alle utkast opprettet av bruker og filtrer på tilganger
-                skjemaRepository.findByOpprettetAvAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sjekk at representasjonstype er ARBEIDSGIVER eller ARBEIDSGIVER_MED_FULLMAKT
-                    val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-
-                    skjemaMetadata.representasjonstype == request.representasjonstype && tilgangOrgnr.contains(skjema.orgnr)
-                }
-            }
-
-            Representasjonstype.RADGIVER, Representasjonstype.RADGIVER_MED_FULLMAKT -> {
-                // Rådgiver - kun utkast for det spesifikke rådgiverfirmaet
-                val radgiverfirmaOrgnr = request.radgiverfirmaOrgnr
-                    ?: throw IllegalArgumentException("radgiverfirmaOrgnr er påkrevd for RADGIVER")
-
-                // Hent utkast opprettet av innlogget bruker som tilhører rådgiverfirmaet
-                skjemaRepository.findByOpprettetAvAndStatus(
-                    innloggetBrukerFnr,
-                    SkjemaStatus.UTKAST
-                ).filter { skjema ->
-                    // Sjekk at skjemaet har metadata med riktig rådgiverfirma og representasjonstype
-                    val skjemaMetadata = skjema.metadata as? UtsendtArbeidstakerMetadata
-                        ?: return@filter false
-
-                    skjemaMetadata.representasjonstype == request.representasjonstype &&
-                        when (skjemaMetadata) {
-                            is RadgiverMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
-                            is RadgiverMedFullmaktMetadata -> skjemaMetadata.radgiverfirma.orgnr == radgiverfirmaOrgnr
-                            else -> false
-                        }
-                }
-            }
-
-            Representasjonstype.ANNEN_PERSON -> {
-                // Fullmektig på vegne av alle personer bruker har fullmakt for
-                // Hent alle personer innlogget bruker har fullmakt for
-                val fullmakter = try {
-                    reprService.hentKanRepresentere()
-                } catch (e: Exception) {
-                    log.warn(e) { "Feil ved henting av fullmakter for bruker" }
-                    emptyList()
-                }
-
-                val personerMedFullmaktFnr = fullmakter.map { it.fullmaktsgiver }.toSet()
-
-                // Hent alle utkast opprettet av innlogget bruker og filtrer på fullmakt
-                skjemaRepository.findByOpprettetAvAndStatus(innloggetBrukerFnr, SkjemaStatus.UTKAST)
-                    .filter { skjema ->
-                        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-                        // Sjekk at representasjonstype er ANNEN_PERSON og at arbeidstaker er i fullmaktslisten
-                        skjemaMetadata.representasjonstype == Representasjonstype.ANNEN_PERSON && personerMedFullmaktFnr.contains(skjema.fnr)
-                    }
-            }
-        }
-
-        // Konverter til DTO
-        val utkastDtos = utkastSkjemaer.map { skjema ->
-            konverterTilUtkastDto(skjema)
-        }
-
-        log.debug { "Fant ${utkastDtos.size} utkast for representasjonstype ${request.representasjonstype}" }
-
-        return UtkastListeResponse(
-            utkast = utkastDtos,
-            antall = utkastDtos.size
         )
     }
 
@@ -452,26 +279,29 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = hentSkjemaMedLesetilgang(skjemaId)
+        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
         }
 
+        val fullmaktAktiv = harAktivFullmaktForInnsendtSkjema(skjema)
+
+        if (fullmaktAktiv == false) {
+            log.warn { "Fullmakt tapt for innsendt skjema ${skjema.id}, arbeidstaker-data strippet" }
+        }
+
         val innsending = innsendingRepository.findBySkjemaId(skjemaId)
             ?: throw NoSuchElementException("Innsending for skjema $skjemaId finnes ikke")
 
-        // Bruk ønsket språk, eller fall tilbake til innsendtSpråk fra innsending
         val visSprak = sprak ?: innsending.innsendtSprak
-
-        // Hent definisjon for riktig versjon
         val definisjon = skjemaDefinisjonService.hent(
             type = skjema.type,
             versjon = innsending.skjemaDefinisjonVersjon,
             språk = visSprak
         )
 
-        // Parse skjemadata
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
 
         return InnsendtSkjemaResponse(
@@ -480,8 +310,9 @@ class UtsendtArbeidstakerService(
             innsendtDato = skjema.endretDato,
             innsendtSprak = innsending.innsendtSprak,
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
-            skjemaData = skjemaData,
-            definisjon = definisjon
+            skjemaData = if (fullmaktAktiv == false) stripArbeidstakersData(skjemaData) else skjemaData,
+            definisjon = definisjon,
+            fullmaktAktiv = fullmaktAktiv
         )
     }
 
@@ -670,23 +501,65 @@ class UtsendtArbeidstakerService(
         }
     }
 
+
     /**
-     * Konverterer Skjema til UtkastOversiktDto.
-     * Maskerer fnr og henter nødvendige metadata-verdier.
+     * Sjekker tilgang og om fullmakt er aktiv for innsendte skjemaer.
+     *
+     * Kaster AccessDeniedException hvis bruker ikke har tilgang i det hele tatt.
+     * For _MED_FULLMAKT-typer der fullmakt er tapt men bruker har Altinn-tilgang: returnerer false.
+     * For ANNEN_PERSON uten fullmakt: kaster AccessDeniedException (ingen fallback).
      */
-    private fun konverterTilUtkastDto(skjema: Skjema): UtkastOversiktDto {
+    private fun harAktivFullmaktForInnsendtSkjema(skjema: Skjema): Boolean? {
+        val currentUser = subjectHandler.getUserID()
+
+        if (skjema.fnr == currentUser) {
+            return null
+        }
+
         val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
 
-        return UtkastOversiktDto(
-            id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
-            arbeidsgiverNavn = skjemaMetadata.arbeidsgiverNavn,
-            arbeidsgiverOrgnr = skjema.orgnr,
-            arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
-            arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
-            opprettetDato = skjema.opprettetDato,
-            sistEndretDato = skjema.endretDato,
-            status = skjema.status
-        )
+        return when (skjemaMetadata.representasjonstype) {
+            Representasjonstype.DEG_SELV ->
+                throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
+
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER -> {
+                if (altinnService.harBrukerTilgang(skjema.orgnr)) null
+                else throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
+            }
+
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                if (reprService.harLeserettigheterForMedlemskap(skjema.fnr)) {
+                    true
+                } else if (altinnService.harBrukerTilgang(skjema.orgnr)) {
+                    false
+                } else {
+                    throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
+                }
+            }
+
+            Representasjonstype.ANNEN_PERSON -> {
+                val metadata = skjemaMetadata as AnnenPersonMetadata
+                if (metadata.fullmektigFnr == currentUser &&
+                    reprService.harLeserettigheterForMedlemskap(skjema.fnr)
+                ) {
+                    true
+                } else {
+                    throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
+                }
+            }
+        }
+    }
+
+    private fun stripArbeidstakersData(skjemaData: UtsendtArbeidstakerSkjemaData): UtsendtArbeidstakerSkjemaData {
+        return when (skjemaData) {
+            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto ->
+                skjemaData.copy(arbeidstakersData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidstakersData())
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto ->
+                UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> skjemaData
+        }
     }
 
     /**
@@ -791,18 +664,4 @@ class UtsendtArbeidstakerService(
 
 
 
-    /**
-     * Maskerer fødselsnummer for visning.
-     * Viser kun de første 6 sifrene (fødselsdato) og skjuler resten.
-     *
-     * @param fnr Fødselsnummer (11 siffer)
-     * @return Maskert fnr (f.eks. "010190*****")
-     */
-    private fun maskerFnr(fnr: String): String {
-        return if (fnr.length == 11) {
-            fnr.substring(0, 6) + "*****"
-        } else {
-            "***********"
-        }
-    }
 }

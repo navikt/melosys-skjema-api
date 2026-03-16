@@ -2,10 +2,11 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
-import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.repository.UtsendtArbeidstakerSkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.InnsendtSoknadOversiktDto
@@ -33,7 +34,7 @@ private val log = KotlinLogging.logger { }
  */
 @Service
 class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
-    private val skjemaRepository: SkjemaRepository,
+    private val utsendtArbeidstakerSkjemaRepository: UtsendtArbeidstakerSkjemaRepository,
     private val innsendingRepository: InnsendingRepository,
     private val altinnService: AltinnService,
     private val reprService: ReprService,
@@ -41,7 +42,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 ) {
 
     companion object {
-        private val INNSENDT_STATUSES = listOf(SkjemaStatus.SENDT)
+        private val INNSENDT_STATUS = SkjemaStatus.SENDT.name
+        private val ARBEIDSGIVER_TYPER = listOf(Representasjonstype.ARBEIDSGIVER.name, Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT.name)
+        private val RADGIVER_TYPER = listOf(Representasjonstype.RADGIVER.name, Representasjonstype.RADGIVER_MED_FULLMAKT.name)
     }
 
     /**
@@ -74,8 +77,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         // Hent paginert resultat fra database
         val page = hentSkjemaerFraDatabase(request, innloggetBrukerFnr, pageable)
 
-        // Konverter til DTOs //TODO: Burde kanskje hente en dataklasse fra databasen, istf å drive med mapping
-        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it) }
+        val personerMedAktivFullmakt = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> emptySet()
+            else -> reprService.hentFullmaktsgiverFnr()
+        }
+
+        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt) }
 
         log.debug { "Fant ${page.totalElements} innsendte søknader, returnerer side ${request.side} med ${soknader.size} resultater" }
 
@@ -88,17 +95,17 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Bygger Spring Data Sort basert på sorteringsfelt og retning.
+     * Bygger Spring Data Sort med native kolonnenavn for bruk i native SQL queries.
      *
-     * Støtter kun INNSENDT_DATO (endretDato) og STATUS på database-nivå.
+     * Støtter kun INNSENDT_DATO (endret_dato) og STATUS på database-nivå.
      * ARBEIDSGIVER og ARBEIDSTAKER ignoreres (krever JSONB-spørringer).
      *
-     * Default: endretDato descending (nyeste først).
+     * Default: endret_dato descending (nyeste først).
      */
     private fun byggSortering(sorteringsFelt: SorteringsFelt?, retning: Sorteringsretning?): Sort {
         // Default: nyeste først
         if (sorteringsFelt == null || retning == null) {
-            return Sort.by(Sort.Direction.DESC, "endretDato")
+            return Sort.by(Sort.Direction.DESC, "endret_dato")
         }
 
         val direction = when (retning) {
@@ -107,18 +114,19 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         }
 
         return when (sorteringsFelt) {
-            SorteringsFelt.INNSENDT_DATO -> Sort.by(direction, "endretDato")
+            SorteringsFelt.INNSENDT_DATO -> Sort.by(direction, "endret_dato")
             SorteringsFelt.STATUS -> Sort.by(direction, "status")
             SorteringsFelt.ARBEIDSGIVER, SorteringsFelt.ARBEIDSTAKER -> {
-                // JSONB-felter støttes ikke ennå, fall tilbake til default
                 log.warn { "Sortering på $sorteringsFelt er ikke støttet ennå (JSONB-felt). Bruker default sortering." }
-                Sort.by(Sort.Direction.DESC, "endretDato")
+                Sort.by(Sort.Direction.DESC, "endret_dato")
             }
         }
     }
 
     /**
      * Henter skjemaer fra database basert på representasjonstype med paginering og søk.
+     *
+     * Alle queries er native SQL (pga. JSONB-filtrering på representasjonstype).
      */
     private fun hentSkjemaerFraDatabase(
         request: HentInnsendteSoknaderRequest,
@@ -131,47 +139,33 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             Representasjonstype.DEG_SELV -> hentForDegSelv(innloggetBrukerFnr, pageable, searchTerm)
             Representasjonstype.ARBEIDSGIVER,
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> hentForArbeidsgiver(pageable, searchTerm)
+
             Representasjonstype.RADGIVER,
-            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
-                // RADGIVER bruker native SQL, så vi må konvertere JPA field names til kolonne-navn
-                val nativePageable = konverterTilNativePageable(pageable)
-                hentForRadgiver(request.radgiverfirmaOrgnr, nativePageable, searchTerm)
-            }
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> hentForRadgiver(request.radgiverfirmaOrgnr, pageable, searchTerm)
+
             Representasjonstype.ANNEN_PERSON -> hentForAnnenPerson(pageable, searchTerm)
         }
     }
 
-    /**
-     * Konverterer PageRequest med JPA field names til database: InnsendingRepository-kolonnenavn for native queries.
-     */
-    private fun konverterTilNativePageable(pageable: PageRequest): PageRequest {
-        val nativeSort = Sort.by(
-            pageable.sort.map { order ->
-                val nativeProperty = when (order.property) {
-                    "endretDato" -> "endret_dato"
-                    "opprettetDato" -> "opprettet_dato"
-                    else -> order.property
-                }
-                Sort.Order(order.direction, nativeProperty)
-            }.toList()
-        )
-        return PageRequest.of(pageable.pageNumber, pageable.pageSize, nativeSort)
-    }
-
-    /**
-     * Henter søknader for DEG_SELV - arbeidstaker selv.
-     */
     private fun hentForDegSelv(innloggetBrukerFnr: String, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         return if (searchTerm.isNullOrBlank()) {
-            skjemaRepository.findByFnrAndStatusIn(innloggetBrukerFnr, INNSENDT_STATUSES, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusAndRepresentasjonstype(
+                innloggetBrukerFnr,
+                INNSENDT_STATUS,
+                Representasjonstype.DEG_SELV.name,
+                pageable
+            )
         } else {
-            skjemaRepository.findByFnrAndStatusInWithSearch(innloggetBrukerFnr, INNSENDT_STATUSES, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrAndStatusAndRepresentasjonstypeWithSearch(
+                innloggetBrukerFnr,
+                INNSENDT_STATUS,
+                Representasjonstype.DEG_SELV.name,
+                searchTerm,
+                pageable
+            )
         }
     }
 
-    /**
-     * Henter søknader for ARBEIDSGIVER - alle søknader for arbeidsgivere bruker har tilgang til.
-     */
     private fun hentForArbeidsgiver(pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         val tilganger = altinnService.hentBrukersTilganger()
         val orgnrs = tilganger.map { it.orgnr }
@@ -179,15 +173,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            skjemaRepository.findByOrgnrInAndStatusIn(orgnrs, INNSENDT_STATUSES, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstyper(orgnrs, INNSENDT_STATUS, ARBEIDSGIVER_TYPER, pageable)
         } else {
-            skjemaRepository.findByOrgnrInAndStatusInWithSearch(orgnrs, INNSENDT_STATUSES, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByOrgnrInAndStatusAndRepresentasjonstyperWithSearch(orgnrs, INNSENDT_STATUS, ARBEIDSGIVER_TYPER, searchTerm, pageable)
         }
     }
 
-    /**
-     * Henter søknader for RADGIVER - alle søknader for det spesifikke rådgiverfirmaet.
-     */
     private fun hentForRadgiver(radgiverfirmaOrgnr: String?, pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         requireNotNull(radgiverfirmaOrgnr) { "radgiverfirmaOrgnr er påkrevd for RADGIVER" }
 
@@ -196,19 +187,13 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
 
         return if (orgnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
+        } else if (searchTerm.isNullOrBlank()) {
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiver(orgnrs, INNSENDT_STATUS, RADGIVER_TYPER, radgiverfirmaOrgnr, pageable)
         } else {
-            val statusStrings = INNSENDT_STATUSES.map { it.name }
-            if (searchTerm.isNullOrBlank()) {
-                skjemaRepository.findInnsendteForRadgiver(orgnrs, statusStrings, radgiverfirmaOrgnr, pageable)
-            } else {
-                skjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, statusStrings, radgiverfirmaOrgnr, searchTerm, pageable)
-            }
+            utsendtArbeidstakerSkjemaRepository.findInnsendteForRadgiverWithSearch(orgnrs, INNSENDT_STATUS, RADGIVER_TYPER, radgiverfirmaOrgnr, searchTerm, pageable)
         }
     }
 
-    /**
-     * Henter søknader for ANNEN_PERSON - alle søknader for personer bruker har fullmakt for.
-     */
     private fun hentForAnnenPerson(pageable: PageRequest, searchTerm: String?): Page<Skjema> {
         val fullmakter = try {
             reprService.hentKanRepresentere()
@@ -222,9 +207,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return if (fnrs.isEmpty()) {
             PageImpl(emptyList(), pageable, 0)
         } else if (searchTerm.isNullOrBlank()) {
-            skjemaRepository.findByFnrInAndStatusIn(fnrs, INNSENDT_STATUSES, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusAndRepresentasjonstype(fnrs, INNSENDT_STATUS, Representasjonstype.ANNEN_PERSON.name, pageable)
         } else {
-            skjemaRepository.findByFnrInAndStatusInWithSearch(fnrs, INNSENDT_STATUSES, searchTerm, pageable)
+            utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatusAndRepresentasjonstypeWithSearch(fnrs, INNSENDT_STATUS, Representasjonstype.ANNEN_PERSON.name, searchTerm, pageable)
         }
     }
 
@@ -232,7 +217,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
-    private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
+    private fun konverterTilInnsendtSoknadDto(skjema: Skjema, personerMedAktivFullmakt: Set<String>): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
@@ -244,10 +229,30 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
-            innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
+            innsendtDato = skjema.endretDato,
             status = skjema.status,
-            harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
+            fullmaktAktiv = erFullmaktAktiv(skjema.id, metadata, skjema.fnr, personerMedAktivFullmakt)
         )
+    }
+
+    private fun erFullmaktAktiv(
+        skjemaId: UUID?,
+        metadata: UtsendtArbeidstakerMetadata,
+        arbeidstakerFnr: String,
+        personerMedAktivFullmakt: Set<String>
+    ): Boolean? {
+        return when (metadata.representasjonstype) {
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+            Representasjonstype.RADGIVER_MED_FULLMAKT,
+            Representasjonstype.ANNEN_PERSON -> {
+                val aktiv = personerMedAktivFullmakt.contains(arbeidstakerFnr)
+                if (!aktiv) {
+                    log.warn { "Fullmakt tapt for skjema $skjemaId, representasjonstype: ${metadata.representasjonstype}" }
+                }
+                aktiv
+            }
+            else -> null
+        }
     }
 
     /**
@@ -300,6 +305,7 @@ fun hentFodselsdatoFraFnr(fnr: String): LocalDate {
             require(toSifferAar <= 39) { "Ugyldig kombinasjon: individnummer $individnummer med år $toSifferAar" }
             20
         }
+
         else -> if (toSifferAar <= 39) 20 else 19
     }
 

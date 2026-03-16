@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
+import no.nav.melosys.skjema.service.HentUtkastUtsendtArbeidstakerService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.HentUtkastRequest
@@ -49,15 +50,8 @@ private val log = KotlinLogging.logger { }
 class UtsendtArbeidstakerController(
     private val utsendtArbeidstakerService: UtsendtArbeidstakerService,
     private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
+    private val hentUtkastService: HentUtkastUtsendtArbeidstakerService,
 ) {
-
-    @GetMapping
-    @Operation(summary = "List skjemaer for current user")
-    @ApiResponse(responseCode = "200", description = "List of skjemaer")
-    fun listSkjemaer(): ResponseEntity<List<UtsendtArbeidstakerSkjemaDto>> {
-        log.info { "Henter alle skjemaer for bruker" }
-        return ResponseEntity.ok(utsendtArbeidstakerService.listAlleSkjemaerForBruker())
-    }
 
     @GetMapping("/utkast")
     @Operation(summary = "Hent utkast basert på representasjonskontekst")
@@ -74,7 +68,7 @@ class UtsendtArbeidstakerController(
             radgiverfirmaOrgnr = radgiverfirmaOrgnr
         )
 
-        val response = utsendtArbeidstakerService.hentUtkast(request)
+        val response = hentUtkastService.hentUtkast(request)
         return ResponseEntity.ok(response)
     }
 
