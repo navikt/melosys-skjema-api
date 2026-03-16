@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.kafka.Varseltekst
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
@@ -85,7 +86,7 @@ class ArbeidstakerVarslingService(
     }
 
     private fun harEksisterendeArbeidstakerUtkast(fnr: String, juridiskEnhetOrgnr: String): Boolean =
-        skjemaRepository.findByFnrAndStatus(fnr, SkjemaStatus.UTKAST).any { utkast ->
+        skjemaRepository.findByFnrAndTypeAndStatus(fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.UTKAST).any { utkast ->
             val m = utkast.metadata as? UtsendtArbeidstakerMetadata
             m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
         }

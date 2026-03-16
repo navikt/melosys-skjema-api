@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -76,8 +77,12 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         // Hent paginert resultat fra database
         val page = hentSkjemaerFraDatabase(request, innloggetBrukerFnr, pageable)
 
-        // Konverter til DTOs //TODO: Burde kanskje hente en dataklasse fra databasen, istf å drive med mapping
-        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it) }
+        val personerMedAktivFullmakt = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> emptySet()
+            else -> reprService.hentFullmaktsgiverFnr()
+        }
+
+        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt) }
 
         log.debug { "Fant ${page.totalElements} innsendte søknader, returnerer side ${request.side} med ${soknader.size} resultater" }
 
@@ -212,7 +217,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
-    private fun konverterTilInnsendtSoknadDto(skjema: Skjema): InnsendtSoknadOversiktDto {
+    private fun konverterTilInnsendtSoknadDto(skjema: Skjema, personerMedAktivFullmakt: Set<String>): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
@@ -224,10 +229,30 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
-            innsendtDato = skjema.endretDato, // Siste endring er når søknaden ble sendt
+            innsendtDato = skjema.endretDato,
             status = skjema.status,
-            harPdf = false // TODO: Implementer når PDF-funksjonalitet er på plass
+            fullmaktAktiv = erFullmaktAktiv(skjema.id, metadata, skjema.fnr, personerMedAktivFullmakt)
         )
+    }
+
+    private fun erFullmaktAktiv(
+        skjemaId: UUID?,
+        metadata: UtsendtArbeidstakerMetadata,
+        arbeidstakerFnr: String,
+        personerMedAktivFullmakt: Set<String>
+    ): Boolean? {
+        return when (metadata.representasjonstype) {
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+            Representasjonstype.RADGIVER_MED_FULLMAKT,
+            Representasjonstype.ANNEN_PERSON -> {
+                val aktiv = personerMedAktivFullmakt.contains(arbeidstakerFnr)
+                if (!aktiv) {
+                    log.warn { "Fullmakt tapt for skjema $skjemaId, representasjonstype: ${metadata.representasjonstype}" }
+                }
+                aktiv
+            }
+            else -> null
+        }
     }
 
     /**

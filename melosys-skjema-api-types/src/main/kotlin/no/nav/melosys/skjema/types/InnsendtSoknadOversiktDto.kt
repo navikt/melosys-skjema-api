@@ -19,7 +19,7 @@ data class InnsendtSoknadOversiktDto(
     val arbeidstakerFodselsdato: LocalDate,
     val innsendtDato: Instant,
     val status: SkjemaStatus,
-    val harPdf: Boolean = false // For fremtidig PDF-funksjonalitet
+    val fullmaktAktiv: Boolean? = null // null=ikke relevant, true=aktiv, false=tapt
 )
 
 /**

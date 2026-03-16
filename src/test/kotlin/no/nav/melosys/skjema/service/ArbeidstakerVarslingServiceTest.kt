@@ -36,7 +36,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -72,7 +72,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns listOf(eksisterendeUtkast)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns listOf(eksisterendeUtkast)
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -90,7 +90,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
@@ -182,7 +182,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
         every { brukervarselProducer.sendBrukervarsel(any()) } throws RuntimeException("Kafka nede")
 
         shouldThrow<RuntimeException> {
@@ -203,7 +203,7 @@ class ArbeidstakerVarslingServiceTest {
             )
         )
         every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
-        every { skjemaRepository.findByFnrAndStatus(any(), any()) } returns emptyList()
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
 
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
