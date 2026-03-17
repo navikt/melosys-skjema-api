@@ -15,6 +15,7 @@ import no.nav.melosys.skjema.translations.dto.PeriodeTranslation
 import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.translations.dto.TilleggsopplysningerTranslation
 import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetArbeidstakerTranslation
+import no.nav.melosys.skjema.translations.dto.UtsendingsperiodeOgLandTranslation
 import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetTranslation
 
 val TRANSLATIONS = ErrorMessageTranslations(
@@ -68,6 +69,9 @@ val TRANSLATIONS = ErrorMessageTranslations(
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "Du må oppgi tilleggsopplysninger",
             tilleggsopplysningerSkalIkkeOppgis = "Tilleggsopplysninger skal ikke oppgis"
+        ),
+        utsendingsperiodeOgLandTranslation = UtsendingsperiodeOgLandTranslation(
+            norgeErIkkeGyldigSomUtsendelsesland = "Norge kan ikke velges som utsendelsesland"
         ),
         utenlandsoppdragetTranslation = UtenlandsoppdragetTranslation(
             duMaOppgiBegrunnelse = "Du må oppgi begrunnelse for utenlandsoppholdet",
@@ -142,6 +146,9 @@ val TRANSLATIONS = ErrorMessageTranslations(
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "You must provide additional information",
             tilleggsopplysningerSkalIkkeOppgis = "Additional information should not be provided"
+        ),
+        utsendingsperiodeOgLandTranslation = UtsendingsperiodeOgLandTranslation(
+            norgeErIkkeGyldigSomUtsendelsesland = "Norway cannot be selected as posting country"
         ),
         utenlandsoppdragetTranslation = UtenlandsoppdragetTranslation(
             duMaOppgiBegrunnelse = "You must provide justification for the stay abroad",

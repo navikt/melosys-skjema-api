@@ -40,6 +40,7 @@ enum class LandKode(
     LV("Latvia", "Latvia"),
     MT("Malta", "Malta"),
     NL("Nederland", "Netherlands"),
+    NO("Norge", "Norway"),
     PL("Polen", "Poland"),
     PT("Portugal", "Portugal"),
     RO("Romania", "Romania"),
