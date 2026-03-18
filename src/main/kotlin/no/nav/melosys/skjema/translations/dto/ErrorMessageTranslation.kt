@@ -11,6 +11,7 @@ data class ErrorMessageTranslation(
     val periodeTranslation: PeriodeTranslation,
     val skatteforholdOgInntektTranslation: SkatteforholdOgInntektTranslation,
     val tilleggsopplysningerTranslation: TilleggsopplysningerTranslation,
+    val utsendingsperiodeOgLandTranslation: UtsendingsperiodeOgLandTranslation,
     val utenlandsoppdragetTranslation: UtenlandsoppdragetTranslation,
     val utenlandsoppdragetArbeidstakerTranslation: UtenlandsoppdragetArbeidstakerTranslation,
     val familiemedlemmerTranslation: FamiliemedlemmerTranslation,
