@@ -49,6 +49,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
+    val mockVedleggRepository = mockk<no.nav.melosys.skjema.repository.VedleggRepository>()
+    val mockVedleggStorageClient = mockk<no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient>()
 
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
@@ -63,7 +65,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockSkjemaDataValidator,
         eventPublisher,
         referanseIdGenerator,
-        mockSkjemaDefinisjonService
+        mockSkjemaDefinisjonService,
+        mockVedleggRepository,
+        mockVedleggStorageClient
     )
 
     val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")

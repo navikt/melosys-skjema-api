@@ -13,8 +13,10 @@ import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
+import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
@@ -50,7 +52,9 @@ class UtsendtArbeidstakerService(
     private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
-    private val skjemaDefinisjonService: SkjemaDefinisjonService
+    private val skjemaDefinisjonService: SkjemaDefinisjonService,
+    private val vedleggRepository: VedleggRepository,
+    private val vedleggStorageClient: VedleggStorageClient
 ) {
 
     /**
@@ -128,6 +132,35 @@ class UtsendtArbeidstakerService(
 
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto =
         hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
+
+    /**
+     * Sletter et skjema med status UTKAST.
+     *
+     * Validerer skrivetilgang og at skjemaet er i utkast-status.
+     * Sletter tilhørende vedlegg fra cloud storage før skjemaet slettes fra databasen.
+     * Vedlegg- og innsending-rader i databasen slettes automatisk via ON DELETE CASCADE.
+     *
+     * @param skjemaId ID til skjemaet som skal slettes
+     * @throws NoSuchElementException hvis skjema ikke finnes
+     * @throws AccessDeniedException hvis bruker ikke har skrivetilgang
+     * @throws SkjemaAlleredeSendtException hvis skjema allerede er sendt inn
+     */
+    @Transactional
+    fun slettUtkast(skjemaId: UUID) {
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaAlleredeSendtException()
+        }
+
+        vedleggRepository.findBySkjemaId(skjemaId).forEach { vedlegg ->
+            vedleggStorageClient.slett(vedlegg.storageReferanse)
+            log.info { "Vedlegg slettet fra storage: ${vedlegg.id} for skjema $skjemaId" }
+        }
+        skjemaRepository.delete(skjema)
+
+        log.info { "Utkast slettet: $skjemaId" }
+    }
 
 
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {

@@ -61,6 +61,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -375,6 +376,12 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             UtsendtArbeidstakerControllerTestFixture<Any>(
                 uri = "/api/skjema/utsendt-arbeidstaker/{id}/send-inn",
                 httpMethod = HttpMethod.POST,
+                existingSkjemaer = listOf(arbeidsgiverSkjema()),
+                altinnHarTilgang = false,
+            ),
+            UtsendtArbeidstakerControllerTestFixture<Any>(
+                uri = "/api/skjema/utsendt-arbeidstaker/{id}",
+                httpMethod = HttpMethod.DELETE,
                 existingSkjemaer = listOf(arbeidsgiverSkjema()),
                 altinnHarTilgang = false,
             ),
@@ -954,6 +961,52 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         kvittering.skjemaId shouldBe skjema.id
         kvittering.referanseId shouldBe "ABC123"
         kvittering.status shouldBe SkjemaStatus.SENDT
+    }
+
+    @Test
+    @DisplayName("DELETE /api/skjema/utsendt-arbeidstaker/{id} skal slette utkast og returnere 204")
+    fun `DELETE skal slette utkast og returnere 204`() {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+
+        val token = createTokenForUser(korrektSyntetiskFnr)
+
+        webTestClient.delete()
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isNoContent
+
+        skjemaRepository.findById(savedSkjema.id!!).isEmpty shouldBe true
+    }
+
+    @Test
+    @DisplayName("DELETE /api/skjema/utsendt-arbeidstaker/{id} skal returnere 409 og ikke slette innsendt skjema")
+    fun `DELETE skal returnere 409 for innsendt skjema og ikke slette`() {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT
+            )
+        )
+
+        val token = createTokenForUser(korrektSyntetiskFnr)
+
+        webTestClient.delete()
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+
+        val skjemaEtterForsøk = skjemaRepository.findByIdOrNull(savedSkjema.id!!)
+        skjemaEtterForsøk.shouldNotBeNull()
+        skjemaEtterForsøk.status shouldBe SkjemaStatus.SENDT
     }
 
     private fun applyFixture(fixture: UtsendtArbeidstakerControllerTestFixture<*>): List<Skjema> {
