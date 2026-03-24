@@ -982,7 +982,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isNoContent
 
-        skjemaRepository.findById(savedSkjema.id!!).isEmpty shouldBe true
+        val slettetSkjema = skjemaRepository.findByIdOrNull(savedSkjema.id!!)
+        slettetSkjema.shouldNotBeNull()
+        slettetSkjema.status shouldBe SkjemaStatus.SLETTET
     }
 
     @Test

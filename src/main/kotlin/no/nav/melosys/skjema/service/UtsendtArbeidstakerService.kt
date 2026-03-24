@@ -13,10 +13,8 @@ import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
-import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
@@ -27,7 +25,6 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -52,9 +49,7 @@ class UtsendtArbeidstakerService(
     private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
-    private val skjemaDefinisjonService: SkjemaDefinisjonService,
-    private val vedleggRepository: VedleggRepository,
-    private val vedleggStorageClient: VedleggStorageClient
+    private val skjemaDefinisjonService: SkjemaDefinisjonService
 ) {
 
     /**
@@ -134,11 +129,10 @@ class UtsendtArbeidstakerService(
         hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
 
     /**
-     * Sletter et skjema med status UTKAST.
+     * Soft-sletter et skjema med status UTKAST.
      *
      * Validerer skrivetilgang og at skjemaet er i utkast-status.
-     * Sletter tilhørende vedlegg fra cloud storage før skjemaet slettes fra databasen.
-     * Vedlegg- og innsending-rader i databasen slettes automatisk via ON DELETE CASCADE.
+     * Setter status til SLETTET — skjemaet og tilhørende vedlegg beholdes i databasen.
      *
      * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
@@ -153,11 +147,9 @@ class UtsendtArbeidstakerService(
             throw SkjemaAlleredeSendtException()
         }
 
-        vedleggRepository.findBySkjemaId(skjemaId).forEach { vedlegg ->
-            vedleggStorageClient.slett(vedlegg.storageReferanse)
-            log.info { "Vedlegg slettet fra storage: ${vedlegg.id} for skjema $skjemaId" }
-        }
-        skjemaRepository.delete(skjema)
+        skjema.status = SkjemaStatus.SLETTET
+        skjema.endretAv = subjectHandler.getUserID()
+        skjemaRepository.save(skjema)
 
         log.info { "Utkast slettet: $skjemaId" }
     }
@@ -312,7 +304,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         if (skjema.status != SkjemaStatus.SENDT) {
@@ -363,7 +355,7 @@ class UtsendtArbeidstakerService(
      * @throws AccessDeniedException hvis tilgang nektes
      */
     fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         return skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
@@ -660,7 +652,7 @@ class UtsendtArbeidstakerService(
      * - *_MED_FULLMAKT/ANNEN_PERSON: Kun fullmektig med aktiv fullmakt
      */
     private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
