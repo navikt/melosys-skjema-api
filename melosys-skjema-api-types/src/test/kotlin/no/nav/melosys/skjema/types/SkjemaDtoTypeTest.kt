@@ -5,6 +5,7 @@ import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.UUID
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
@@ -35,6 +36,8 @@ class SkjemaDtoTypeTest {
             status = SkjemaStatus.UTKAST,
             fnr = "",
             orgnr = "",
+            opprettetDato = LocalDateTime.now(),
+            endretDato = LocalDateTime.now(),
             metadata = DegSelvMetadata(
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 arbeidsgiverNavn = "",
