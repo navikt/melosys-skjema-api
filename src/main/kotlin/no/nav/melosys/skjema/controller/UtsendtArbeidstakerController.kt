@@ -33,12 +33,14 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDt
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 private val log = KotlinLogging.logger { }
@@ -92,6 +94,18 @@ class UtsendtArbeidstakerController(
     fun getSkjema(@PathVariable id: UUID): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Henter skjema: $id" }
         return ResponseEntity.ok(utsendtArbeidstakerService.hentSkjema(id))
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Slett utkast")
+    @ApiResponse(responseCode = "204", description = "Skjema slettet")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
+    @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    @ApiResponse(responseCode = "409", description = "Skjema er allerede sendt inn")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun slettUtkast(@PathVariable id: UUID) {
+        log.info { "Sletter utkast: $id" }
+        utsendtArbeidstakerService.slettUtkast(id)
     }
 
     @PostMapping("/opprett-med-kontekst")

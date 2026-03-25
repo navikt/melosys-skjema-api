@@ -5,7 +5,7 @@ import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
@@ -25,7 +25,6 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -129,6 +128,32 @@ class UtsendtArbeidstakerService(
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto =
         hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
 
+    /**
+     * Soft-sletter et skjema med status UTKAST.
+     *
+     * Validerer skrivetilgang og at skjemaet er i utkast-status.
+     * Setter status til SLETTET — skjemaet og tilhørende vedlegg beholdes i databasen.
+     *
+     * @param skjemaId ID til skjemaet som skal slettes
+     * @throws NoSuchElementException hvis skjema ikke finnes
+     * @throws AccessDeniedException hvis bruker ikke har skrivetilgang
+     * @throws SkjemaErIkkeRedigerbartException hvis skjema allerede er sendt inn
+     */
+    @Transactional
+    fun slettUtkast(skjemaId: UUID) {
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
+
+        skjema.status = SkjemaStatus.SLETTET
+        skjema.endretAv = subjectHandler.getUserID()
+        skjemaRepository.save(skjema)
+
+        log.info { "Utkast slettet: $skjemaId" }
+    }
+
 
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
@@ -196,7 +221,7 @@ class UtsendtArbeidstakerService(
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaAlleredeSendtException()
+            throw SkjemaErIkkeRedigerbartException()
         }
 
         // Valider at skjemaet er komplett utfylt med gyldige data
@@ -279,7 +304,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         if (skjema.status != SkjemaStatus.SENDT) {
@@ -330,7 +355,7 @@ class UtsendtArbeidstakerService(
      * @throws AccessDeniedException hvis tilgang nektes
      */
     fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         return skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
@@ -627,7 +652,7 @@ class UtsendtArbeidstakerService(
      * - *_MED_FULLMAKT/ANNEN_PERSON: Kun fullmektig med aktiv fullmakt
      */
     private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
 
         val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()

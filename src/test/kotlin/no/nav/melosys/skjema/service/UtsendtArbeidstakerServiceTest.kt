@@ -11,7 +11,7 @@ import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
@@ -30,7 +30,6 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.repository.findByIdOrNull
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
 
@@ -49,7 +48,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
-
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
         mockInnsendingRepository,
@@ -236,7 +234,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
 
@@ -266,7 +264,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
@@ -296,7 +294,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
@@ -324,7 +322,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
@@ -351,7 +349,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
@@ -366,7 +364,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findByIdOrNull(skjemaId) } returns null
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns null
 
             shouldThrow<NoSuchElementException> {
                 service.hentSkjemaMedLesetilgang(skjemaId)
@@ -375,7 +373,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     }
 
     context("sendInnSkjema") {
-        test("skal kaste SkjemaAlleredeSendtException når skjema allerede er sendt") {
+        test("skal kaste SkjemaErIkkeRedigerbartException når skjema allerede er sendt") {
             val alleredeSendtSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 status = SkjemaStatus.SENDT,
@@ -383,9 +381,9 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr
-            every { mockSkjemaRepository.findByIdOrNull(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
+            every { mockSkjemaRepository.findAktivById(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
 
-            shouldThrow<SkjemaAlleredeSendtException> {
+            shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!)
             }
         }

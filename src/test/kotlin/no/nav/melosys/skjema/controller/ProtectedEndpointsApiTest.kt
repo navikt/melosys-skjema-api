@@ -50,6 +50,7 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/familiemedlemmer"),
+        Arguments.of(HttpMethod.DELETE, "/api/skjema/utsendt-arbeidstaker/123"),
 
         // PrefillController
         Arguments.of(HttpMethod.POST, "/api/preutfyll/person"),
