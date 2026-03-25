@@ -1,7 +1,5 @@
 package no.nav.melosys.skjema.extensions
 
-import java.time.LocalDateTime
-import java.time.ZoneId
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.types.SkjemaDto
@@ -13,8 +11,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-
-private val OSLO_ZONE = ZoneId.of("Europe/Oslo")
 
 /**
  * Konverterer en Skjema-entitet til SkjemaDto basert på skjematype.
@@ -34,8 +30,8 @@ fun Skjema.toUtsendtArbeidstakerDto(): UtsendtArbeidstakerSkjemaDto {
         type = this.type,
         fnr = this.fnr,
         orgnr = this.orgnr,
-        opprettetDato = LocalDateTime.ofInstant(this.opprettetDato, OSLO_ZONE),
-        endretDato = LocalDateTime.ofInstant(this.endretDato, OSLO_ZONE),
+        opprettetDato = this.opprettetDato.toOsloLocalDateTime(),
+        endretDato = this.endretDato.toOsloLocalDateTime(),
         metadata = metadata,
         data = this.utsendtArbeidstakerSkjemaDataOrEmpty()
     )
