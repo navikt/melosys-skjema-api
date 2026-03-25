@@ -38,7 +38,7 @@ class M2MSkjemaService(
 
         val skjemaDto = skjema.toUtsendtArbeidstakerDto()
 
-        val vedleggListe = vedleggService.listBySkjemaId(skjema.id)
+        val vedleggListe = vedleggService.listBySkjemaId(skjema.id!!)
 
         return UtsendtArbeidstakerSkjemaM2MDto(
             skjema = skjemaDto,

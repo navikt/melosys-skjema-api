@@ -260,7 +260,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<UtsendtArbeidstakerSkjemaDto>()
 
-        val persistedData = skjemaRepository.getReferenceById(existingSkjema.id!!).data
+        val persistedData = skjemaRepository.findByIdOrNull(existingSkjema.id!!)!!.data
         persistedData shouldBe fixture.expectedDataAfterPost
     }
 

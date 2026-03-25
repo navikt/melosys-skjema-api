@@ -269,7 +269,7 @@ class UtsendtArbeidstakerService(
 
         // 7. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
-            skjemaId = savedSkjema.id,
+            skjemaId = savedSkjema.id!!,
             referanseId = referanseId,
             status = savedSkjema.status
         )

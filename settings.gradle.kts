@@ -1,9 +1,13 @@
-rootProject.name = "melosys-skjema-api"
-
-include("melosys-skjema-api-types")
-
 // Configure plugin repositories to avoid Maven Central 403 issues
 pluginManagement {
+    val kotlinVersion: String by settings
+
+    plugins {
+        kotlin("jvm") version kotlinVersion
+        kotlin("plugin.spring") version kotlinVersion
+        kotlin("plugin.jpa") version kotlinVersion
+    }
+
     repositories {
         gradlePluginPortal()
         maven {
@@ -19,3 +23,7 @@ pluginManagement {
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
+
+rootProject.name = "melosys-skjema-api"
+
+include("melosys-skjema-api-types")
