@@ -102,13 +102,13 @@ class InnsendingServiceTest : ApiTestBase() {
 
             innsendingService.prosesserInnsending(skjema.id!!)
 
-            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id)!!
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
             oppdatert.status shouldBe InnsendingStatus.FERDIG
             oppdatert.antallForsok shouldBe 1
             oppdatert.sisteForsoekTidspunkt shouldNotBe null
 
             verify {
-                skjemaMottattProducer.blokkerendeSendSkjemaMottatt(SkjemaMottattMelding(skjema.id))
+                skjemaMottattProducer.blokkerendeSendSkjemaMottatt(SkjemaMottattMelding(skjema.id!!))
             }
         }
 
@@ -128,10 +128,10 @@ class InnsendingServiceTest : ApiTestBase() {
             } throws SendSkjemaMottattMeldingFeilet("", Exception())
 
             innsendingService.prosesserInnsending(skjema.id!!)
-            innsendingRepository.findBySkjemaId(skjema.id)!!.antallForsok shouldBe 1
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.antallForsok shouldBe 1
 
-            innsendingService.prosesserInnsending(skjema.id)
-            innsendingRepository.findBySkjemaId(skjema.id)!!.antallForsok shouldBe 2
+            innsendingService.prosesserInnsending(skjema.id!!)
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.antallForsok shouldBe 2
         }
 
         @Test
@@ -152,7 +152,7 @@ class InnsendingServiceTest : ApiTestBase() {
 
             innsendingService.prosesserInnsending(skjema.id!!)
 
-            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id)!!
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
             oppdatert.feilmelding?.length shouldBe 2000
         }
 
