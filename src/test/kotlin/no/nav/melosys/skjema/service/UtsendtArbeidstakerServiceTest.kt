@@ -11,7 +11,7 @@ import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
@@ -373,7 +373,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     }
 
     context("sendInnSkjema") {
-        test("skal kaste SkjemaAlleredeSendtException når skjema allerede er sendt") {
+        test("skal kaste SkjemaErIkkeRedigerbartException når skjema allerede er sendt") {
             val alleredeSendtSkjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 status = SkjemaStatus.SENDT,
@@ -383,7 +383,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr
             every { mockSkjemaRepository.findAktivById(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
 
-            shouldThrow<SkjemaAlleredeSendtException> {
+            shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!)
             }
         }

@@ -5,7 +5,7 @@ import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
@@ -137,14 +137,14 @@ class UtsendtArbeidstakerService(
      * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
      * @throws AccessDeniedException hvis bruker ikke har skrivetilgang
-     * @throws SkjemaAlleredeSendtException hvis skjema allerede er sendt inn
+     * @throws SkjemaErIkkeRedigerbartException hvis skjema allerede er sendt inn
      */
     @Transactional
     fun slettUtkast(skjemaId: UUID) {
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaAlleredeSendtException()
+            throw SkjemaErIkkeRedigerbartException()
         }
 
         skjema.status = SkjemaStatus.SLETTET
@@ -221,7 +221,7 @@ class UtsendtArbeidstakerService(
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaAlleredeSendtException()
+            throw SkjemaErIkkeRedigerbartException()
         }
 
         // Valider at skjemaet er komplett utfylt med gyldige data

@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.RateLimitConfig
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.exception.AccessDeniedException
-import no.nav.melosys.skjema.exception.SkjemaAlleredeSendtException
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
@@ -74,9 +74,9 @@ class GlobalExceptionHandler(
             .body(mapOf("message" to e.message!!))
     }
 
-    @ExceptionHandler(SkjemaAlleredeSendtException::class)
-    fun handleSkjemaAlleredeSendt(e: SkjemaAlleredeSendtException): ResponseEntity<ErrorResponse> {
-        log.warn { "Organisasjon eksisterer ikke: ${e.message}" }
+    @ExceptionHandler(SkjemaErIkkeRedigerbartException::class)
+    fun handleSkjemaErIkkeRedigerbart(e: SkjemaErIkkeRedigerbartException): ResponseEntity<ErrorResponse> {
+        log.warn { "Skjema er ikke redigerbart: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
