@@ -16,7 +16,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetada
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
@@ -31,7 +30,7 @@ class M2MSkjemaService(
 
     fun hentUtsendtArbeidstakerSkjemaData(id: UUID): UtsendtArbeidstakerSkjemaM2MDto {
         log.info { "Henter skjemadata for id: $id" }
-        val skjema = skjemaRepository.findByIdOrNull(id)
+        val skjema = skjemaRepository.findByIdAndStatusSendt(id)
             ?: throw NoSuchElementException("Skjema med id $id ikke funnet")
 
         val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
@@ -55,7 +54,7 @@ class M2MSkjemaService(
     private fun hentKobletSkjema(skjemaDto: UtsendtArbeidstakerSkjemaDto): UtsendtArbeidstakerSkjemaDto? {
         val kobletSkjemaId = skjemaDto.metadata.kobletSkjemaId ?: return null
 
-        return skjemaRepository.findByIdOrNull(kobletSkjemaId)?.toUtsendtArbeidstakerDto() ?: run {
+        return skjemaRepository.findByIdAndStatusSendt(kobletSkjemaId)?.toUtsendtArbeidstakerDto() ?: run {
             log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema ${skjemaDto.id}" }
             null
         }
@@ -63,12 +62,14 @@ class M2MSkjemaService(
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         log.info { "M2M: Henter vedlegg $vedleggId for skjema $skjemaId" }
+        skjemaRepository.findByIdAndStatusSendt(skjemaId)
+            ?: throw NoSuchElementException("Skjema med id $skjemaId ikke funnet")
         return vedleggService.hentInnhold(skjemaId, vedleggId)
     }
 
     fun hentPdfForSkjema(skjemaId: UUID): ByteArray {
         log.info { "Genererer PDF for skjema med id: $skjemaId" }
-        val skjema = skjemaRepository.findByIdOrNull(skjemaId)
+        val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId ikke funnet")
 
         val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
@@ -90,7 +91,7 @@ class M2MSkjemaService(
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
         val kobletSkjemaData = metadata.kobletSkjemaId?.let { kobletId ->
-            skjemaRepository.findByIdOrNull(kobletId)?.data as? UtsendtArbeidstakerSkjemaData
+            skjemaRepository.findByIdAndStatusSendt(kobletId)?.data as? UtsendtArbeidstakerSkjemaData
         }
 
         val definisjon = skjemaDefinisjonService.hent(

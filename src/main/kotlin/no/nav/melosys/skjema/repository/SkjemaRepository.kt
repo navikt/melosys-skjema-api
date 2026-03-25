@@ -16,4 +16,7 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
 
     @Query("SELECT s FROM Skjema s WHERE s.id = :id AND s.status != 'SLETTET'")
     fun findAktivById(id: UUID): Skjema?
+
+    @Query("SELECT s FROM Skjema s WHERE s.id = :id AND s.status = 'SENDT'")
+    fun findByIdAndStatusSendt(id: UUID): Skjema?
 }

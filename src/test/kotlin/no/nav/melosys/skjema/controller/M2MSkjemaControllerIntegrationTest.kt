@@ -140,6 +140,41 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .exchange()
                 .expectStatus().isNotFound
         }
+
+        @Test
+        fun `skal returnere 404 når skjema er slettet`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SLETTET)
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${skjema.id}/data")
+                .header("Authorization", "Bearer $token")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 404 når skjema har status UTKAST`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${skjema.id}/data")
+                .header("Authorization", "Bearer $token")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isNotFound
+        }
     }
 
     @Nested
@@ -212,6 +247,24 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         fun `skal returnere 404 når skjema ikke er innsendt`() {
             val skjema = skjemaRepository.save(
                 skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.get()
+                .uri("/m2m/api/skjema/${skjema.id}/pdf")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 404 når skjema er slettet`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SLETTET)
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema)
             )
 
             val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
