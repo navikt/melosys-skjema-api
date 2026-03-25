@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.types
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import java.time.LocalDateTime
 import java.util.UUID
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
@@ -16,6 +17,8 @@ interface SkjemaDto {
     val type: SkjemaType
     val fnr: String
     val orgnr: String
+    val opprettetDato: LocalDateTime
+    val endretDato: LocalDateTime
     val metadata: SkjemaMetadata
     val data: SkjemaData
 }
