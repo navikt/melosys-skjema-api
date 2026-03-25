@@ -19,7 +19,6 @@ import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
-import org.springframework.data.repository.findByIdOrNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -56,15 +55,13 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere skjema når gyldig M2M-token med tillatt klient`() {
             val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
-            val savedSkjema = skjemaRepository
+            val skjema = skjemaRepository
                 .save(
                     skjemaMedDefaultVerdier(
                         status = SkjemaStatus.SENDT,
                         data = skjemaData
                     )
                 )
-
-            val skjema = skjemaRepository.findByIdOrNull(savedSkjema.id!!)!!
 
             val opprettetDato = Instant.parse("2025-01-15T10:30:00Z")
             val innsending = innsendingRepository.save(
