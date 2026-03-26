@@ -11,9 +11,11 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
+import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
@@ -46,6 +48,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     private lateinit var skjemaRepository: SkjemaRepository
 
     @Autowired
+    private lateinit var innsendingRepository: InnsendingRepository
+
+    @Autowired
     private lateinit var jsonMapper: JsonMapper
 
     @MockkBean
@@ -61,6 +66,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     fun setUp() {
         clearMocks(altinnService, reprService, subjectHandler)
         every { reprService.hentFullmaktsgiverFnr() } returns emptySet()
+        innsendingRepository.deleteAll()
         skjemaRepository.deleteAll()
     }
 
@@ -776,6 +782,95 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
         response.soknader shouldHaveSize 1
         response.soknader[0].arbeidsgiverOrgnr shouldBe "444555666"
+        response.totaltAntall shouldBe 1
+    }
+
+    @Test
+    @DisplayName("Søk: Skal filtrere på referanse-ID for DEG_SELV")
+    fun `skal filtrere på referanse-ID med søk`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+
+        // Opprett søknader med forskjellige orgnr
+        val skjema1 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                orgnr = "111222333",
+                status = SkjemaStatus.SENDT,
+                metadata = metadata
+            )
+        )
+        val skjema2 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                orgnr = "444555666",
+                status = SkjemaStatus.SENDT,
+                metadata = metadata
+            )
+        )
+
+        // Opprett innsendinger med kjente referanse-IDer
+        innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema1, referanseId = "ABC123"))
+        innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema2, referanseId = "XYZ789"))
+
+        // Søk på referanse-ID som matcher kun 1 søknad
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            sok = "XYZ789",
+            representasjonstype = Representasjonstype.DEG_SELV
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].arbeidsgiverOrgnr shouldBe "444555666"
+        response.soknader[0].referanseId shouldBe "XYZ789"
+        response.totaltAntall shouldBe 1
+    }
+
+    @Test
+    @DisplayName("Søk: Skal filtrere på delvis referanse-ID for DEG_SELV")
+    fun `skal filtrere på delvis referanse-ID med søk`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+
+        val skjema1 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                orgnr = "111222333",
+                status = SkjemaStatus.SENDT,
+                metadata = metadata
+            )
+        )
+        val skjema2 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                orgnr = "444555666",
+                status = SkjemaStatus.SENDT,
+                metadata = metadata
+            )
+        )
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema1, referanseId = "ABC123"))
+        innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema2, referanseId = "XYZ789"))
+
+        // Søk på delvis referanse-ID
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            sok = "xyz", // Case-insensitive delvis match
+            representasjonstype = Representasjonstype.DEG_SELV
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].referanseId shouldBe "XYZ789"
         response.totaltAntall shouldBe 1
     }
 
