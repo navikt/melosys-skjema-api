@@ -38,14 +38,27 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
     ): Page<Skjema>
 
     @Query(
-        """
-        SELECT * FROM skjema
-        WHERE fnr = :fnr
-        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
-        AND status = :status
-        AND metadata->>'representasjonstype' = :representasjonstype
-        AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
-    """, nativeQuery = true
+        value = """
+        SELECT s.* FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.fnr = :fnr
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' = :representasjonstype
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        countQuery = """
+        SELECT count(*) FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.fnr = :fnr
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' = :representasjonstype
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        nativeQuery = true
     )
     fun findByFnrAndStatusAndRepresentasjonstypeWithSearch(
         @Param("fnr") fnr: String,
@@ -73,15 +86,29 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
     ): Page<Skjema>
 
     @Query(
-        """
-        SELECT * FROM skjema
-        WHERE orgnr IN :orgnrs
-        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
-        AND status = :status
-        AND metadata->>'representasjonstype' IN :representasjonstyper
-        AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-             OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
-    """, nativeQuery = true
+        value = """
+        SELECT s.* FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.orgnr IN :orgnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' IN :representasjonstyper
+        AND (LOWER(s.fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        countQuery = """
+        SELECT count(*) FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.orgnr IN :orgnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' IN :representasjonstyper
+        AND (LOWER(s.fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        nativeQuery = true
     )
     fun findByOrgnrInAndStatusAndRepresentasjonstyperWithSearch(
         @Param("orgnrs") orgnrs: List<String>,
@@ -111,16 +138,31 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
     ): Page<Skjema>
 
     @Query(
-        """
-        SELECT * FROM skjema
-        WHERE orgnr IN :orgnrs
-        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
-        AND status = :status
-        AND metadata->>'representasjonstype' IN :representasjonstyper
-        AND jsonb_extract_path_text(metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
-        AND (LOWER(fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-             OR LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
-    """, nativeQuery = true
+        value = """
+        SELECT s.* FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.orgnr IN :orgnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' IN :representasjonstyper
+        AND jsonb_extract_path_text(s.metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+        AND (LOWER(s.fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        countQuery = """
+        SELECT count(*) FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.orgnr IN :orgnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' IN :representasjonstyper
+        AND jsonb_extract_path_text(s.metadata, 'radgiverfirma', 'orgnr') = :radgiverfirmaOrgnr
+        AND (LOWER(s.fnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        nativeQuery = true
     )
     fun findInnsendteForRadgiverWithSearch(
         @Param("orgnrs") orgnrs: List<String>,
@@ -149,14 +191,27 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
     ): Page<Skjema>
 
     @Query(
-        """
-        SELECT * FROM skjema
-        WHERE fnr IN :fnrs
-        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
-        AND status = :status
-        AND metadata->>'representasjonstype' = :representasjonstype
-        AND (LOWER(orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
-    """, nativeQuery = true
+        value = """
+        SELECT s.* FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.fnr IN :fnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' = :representasjonstype
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        countQuery = """
+        SELECT count(*) FROM skjema s
+        LEFT JOIN innsending i ON i.skjema_id = s.id
+        WHERE s.fnr IN :fnrs
+        AND s.type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND s.status = :status
+        AND s.metadata->>'representasjonstype' = :representasjonstype
+        AND (LOWER(s.orgnr) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+             OR LOWER(i.referanse_id) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+    """,
+        nativeQuery = true
     )
     fun findByFnrInAndStatusAndRepresentasjonstypeWithSearch(
         @Param("fnrs") fnrs: List<String>,

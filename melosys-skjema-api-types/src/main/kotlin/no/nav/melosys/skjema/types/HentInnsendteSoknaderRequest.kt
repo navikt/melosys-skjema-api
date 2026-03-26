@@ -23,7 +23,7 @@ data class HentInnsendteSoknaderRequest(
     @field:Max(100)
     val antall: Int = 10,
 
-    /** Fritekst-søk (søker i arbeidsgiver navn/orgnr, arbeidstaker navn) */
+    /** Fritekst-søk (søker i arbeidsgiver orgnr, arbeidstaker fnr, referanse-ID) */
     val sok: String? = null,
 
     /** Felt å sortere på */
