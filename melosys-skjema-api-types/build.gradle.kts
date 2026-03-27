@@ -5,7 +5,6 @@ plugins {
 
 group = "no.nav.melosys"
 
-val javaVersion = (project.findProperty("javaVersion") as String?)?.toInt() ?: 21
 val jacksonVersion = "2.21"
 val jakartaValidationVersion = "3.1.1"
 val swaggerVersion = "2.2.45"
@@ -21,7 +20,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(javaVersion)
+        languageVersion = JavaLanguageVersion.of(21)
     }
     withSourcesJar()
 }
