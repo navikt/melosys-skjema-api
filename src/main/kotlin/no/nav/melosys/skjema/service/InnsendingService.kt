@@ -9,8 +9,10 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
 import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 import no.nav.melosys.skjema.repository.InnsendingRepository
+import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -26,6 +28,7 @@ private val log = KotlinLogging.logger {}
 @Service
 class InnsendingService(
     private val innsendingRepository: InnsendingRepository,
+    private val skjemaRepository: SkjemaRepository,
     private val skjemaMottattProducer: SkjemaMottattProducer,
     private val arbeidstakerVarslingService: ArbeidstakerVarslingService
 ) {
@@ -66,7 +69,10 @@ class InnsendingService(
             startProsessering(skjemaId)
 
             skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
-                SkjemaMottattMelding(skjemaId = skjemaId)
+                SkjemaMottattMelding(
+                    skjemaId = skjemaId,
+                    relaterteSkjemaIder = samleRelaterteSkjemaIder(skjemaId)
+                )
             )
 
             oppdaterStatus(skjemaId, InnsendingStatus.FERDIG)
@@ -137,5 +143,25 @@ class InnsendingService(
 
     fun hentRetryKandidater(sisteForsoekTidspunktGrense: Instant, maxAttempts: Int): List<Innsending> {
         return innsendingRepository.findRetryKandidater(sisteForsoekTidspunktGrense, maxAttempts)
+    }
+
+    private fun samleRelaterteSkjemaIder(skjemaId: UUID): List<UUID> {
+        val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId) ?: return emptyList()
+        val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return emptyList()
+
+        val ider = mutableSetOf<UUID>()
+        metadata.kobletSkjemaId?.let { ider.add(it) }
+        metadata.erstatterSkjemaId?.let { ider.add(it) }
+
+        // Traverser erstatter-kjeden for å inkludere alle tidligere versjoner
+        var currentMetadata = metadata
+        while (currentMetadata.erstatterSkjemaId != null) {
+            val forrige = skjemaRepository.findByIdAndStatusSendt(currentMetadata.erstatterSkjemaId!!) ?: break
+            ider.add(forrige.id!!)
+            currentMetadata = forrige.metadata as? UtsendtArbeidstakerMetadata ?: break
+            if (ider.size >= 50) break
+        }
+
+        return ider.toList()
     }
 }

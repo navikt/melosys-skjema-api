@@ -7,5 +7,6 @@ import java.util.UUID
  * Sendes til topic: teammelosys.skjema.innsendt.v1-q2
  */
 data class SkjemaMottattMelding(
-    val skjemaId: UUID
+    val skjemaId: UUID,
+    val relaterteSkjemaIder: List<UUID> = emptyList()
 )
