@@ -158,7 +158,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    fun `inkluderer erstatterSkjemaId i metadata når skjema erstatter et annet`() {
+    fun `inkluderer erstatterSkjemaId i metadata når erstattet skjema ikke finnes i DB`() {
         val gammelSkjemaId = java.util.UUID.randomUUID()
 
         val arbeidstakersSkjema = skjemaRepository.save(skjemaMedDefaultVerdier(
@@ -184,5 +184,107 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.kobletSkjema.shouldBeNull()
         result.tidligereInnsendteSkjema shouldBe emptyList()
         result.skjema.metadata.erstatterSkjemaId shouldBe gammelSkjemaId
+    }
+
+    @Test
+    fun `tidligereInnsendteSkjema returnerer erstatter-kjede`() {
+        // v1 → v2 → v3 (v3 erstatter v2, v2 erstatter v1)
+        val v1 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+            )
+        ))
+
+        val v2 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                erstatterSkjemaId = v1.id
+            )
+        ))
+
+        val v3 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                erstatterSkjemaId = v2.id
+            )
+        ))
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = v3,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "TEST06"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(v3.id!!)
+
+        result.tidligereInnsendteSkjema.size shouldBe 2
+        result.tidligereInnsendteSkjema[0].id shouldBe v2.id
+        result.tidligereInnsendteSkjema[1].id shouldBe v1.id
+    }
+
+    @Test
+    fun `tidligereInnsendteSkjema stopper ved ikke-SENDT skjema`() {
+        // v1 har status UTKAST, v2 erstatter v1, v3 erstatter v2
+        val v1 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.UTKAST,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+            )
+        ))
+
+        val v2 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                erstatterSkjemaId = v1.id
+            )
+        ))
+
+        val v3 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = SkjemaStatus.SENDT,
+            data = arbeidstakersDataMedOverlappendePeriode,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                erstatterSkjemaId = v2.id
+            )
+        ))
+
+        innsendingRepository.save(innsendingMedDefaultVerdier(
+            skjema = v3,
+            status = InnsendingStatus.FERDIG,
+            referanseId = "TEST07"
+        ))
+
+        val result = m2mSkjemaService.hentUtsendtArbeidstakerSkjemaData(v3.id!!)
+
+        // Kun v2 inkluderes - v1 har feil status og stoppes
+        result.tidligereInnsendteSkjema.size shouldBe 1
+        result.tidligereInnsendteSkjema[0].id shouldBe v2.id
     }
 }

@@ -43,12 +43,25 @@ class M2MSkjemaService(
         return UtsendtArbeidstakerSkjemaM2MDto(
             skjema = skjemaDto,
             kobletSkjema = hentKobletSkjema(skjemaDto),
-            tidligereInnsendteSkjema = emptyList(),
+            tidligereInnsendteSkjema = hentTidligereInnsendteSkjema(skjema),
             referanseId = innsending.referanseId,
             innsendtTidspunkt = innsending.opprettetDato.toOsloLocalDateTime(),
             innsenderFnr = innsending.innsenderFnr,
             vedlegg = vedleggListe
         )
+    }
+
+    private fun hentTidligereInnsendteSkjema(skjema: Skjema): List<UtsendtArbeidstakerSkjemaDto> {
+        val tidligere = mutableListOf<UtsendtArbeidstakerSkjemaDto>()
+        var metadata = skjema.metadata as UtsendtArbeidstakerMetadata
+
+        while (metadata.erstatterSkjemaId != null) {
+            val forrige = skjemaRepository.findByIdAndStatusSendt(metadata.erstatterSkjemaId!!) ?: break
+            tidligere.add(forrige.toUtsendtArbeidstakerDto())
+            metadata = forrige.metadata as UtsendtArbeidstakerMetadata
+            if (tidligere.size >= 50) break
+        }
+        return tidligere
     }
 
     private fun hentKobletSkjema(skjemaDto: UtsendtArbeidstakerSkjemaDto): UtsendtArbeidstakerSkjemaDto? {
@@ -58,6 +71,15 @@ class M2MSkjemaService(
             log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema ${skjemaDto.id}" }
             null
         }
+    }
+
+    fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
+
+        innsending.saksnummer = saksnummer
+        innsendingRepository.save(innsending)
+        log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
