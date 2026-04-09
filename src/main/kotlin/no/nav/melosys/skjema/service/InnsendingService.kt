@@ -10,9 +10,13 @@ import no.nav.melosys.skjema.kafka.SkjemaMottattProducer
 import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.extensions.overlapper
+import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -148,20 +152,24 @@ class InnsendingService(
     private fun samleRelaterteSkjemaIder(skjemaId: UUID): List<UUID> {
         val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId) ?: return emptyList()
         val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return emptyList()
+        val skjemaPeriode = hentPeriode(skjema) ?: return emptyList()
 
-        val ider = mutableSetOf<UUID>()
+        // Finn alle SENDT-søknader med samme FNR + juridisk enhet + overlappende periode
+        val relaterte = skjemaRepository
+            .findByFnrAndTypeAndStatus(skjema.fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.SENDT)
+            .filter { it.id != skjemaId }
+            .filter { (it.metadata as? UtsendtArbeidstakerMetadata)?.juridiskEnhetOrgnr == metadata.juridiskEnhetOrgnr }
+            .filter { kandidat -> hentPeriode(kandidat)?.let { skjemaPeriode.overlapper(it) } == true }
+
+        val ider = relaterte.mapNotNull { it.id }.toMutableSet()
+
+        // Inkluder også eksplisitt koblet motpart-skjema (kan ha annen juridisk enhet ved koblingsfeil)
         metadata.kobletSkjemaId?.let { ider.add(it) }
-        metadata.erstatterSkjemaId?.let { ider.add(it) }
 
-        // Traverser erstatter-kjeden for å inkludere alle tidligere versjoner
-        var currentMetadata = metadata
-        while (currentMetadata.erstatterSkjemaId != null) {
-            val forrige = skjemaRepository.findByIdAndStatusSendt(currentMetadata.erstatterSkjemaId!!) ?: break
-            ider.add(forrige.id!!)
-            currentMetadata = forrige.metadata as? UtsendtArbeidstakerMetadata ?: break
-            if (ider.size >= 50) break
-        }
-
+        log.info { "Fant ${ider.size} relaterte skjemaer for skjema $skjemaId" }
         return ider.toList()
     }
+
+    private fun hentPeriode(skjema: Skjema) =
+        (skjema.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand?.utsendelsePeriode
 }
