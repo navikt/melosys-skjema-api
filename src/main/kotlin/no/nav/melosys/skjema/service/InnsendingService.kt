@@ -11,12 +11,12 @@ import no.nav.melosys.skjema.kafka.exception.SendSkjemaMottattMeldingFeilet
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.extensions.overlapper
+import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -152,7 +152,7 @@ class InnsendingService(
     private fun samleRelaterteSkjemaIder(skjemaId: UUID): List<UUID> {
         val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId) ?: return emptyList()
         val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return emptyList()
-        val skjemaPeriode = hentPeriode(skjema)
+        val skjemaPeriode = skjema.utsendelsePeriode()
         if (skjemaPeriode == null) {
             log.warn { "Skjema $skjemaId mangler utsendelsesperiode — kan ikke finne relaterte søknader" }
             return emptyList()
@@ -163,7 +163,7 @@ class InnsendingService(
             .findByFnrAndTypeAndStatus(skjema.fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.SENDT)
             .filter { it.id != skjemaId }
             .filter { (it.metadata as? UtsendtArbeidstakerMetadata)?.juridiskEnhetOrgnr == metadata.juridiskEnhetOrgnr }
-            .filter { kandidat -> hentPeriode(kandidat)?.let { skjemaPeriode.overlapper(it) } == true }
+            .filter { kandidat -> kandidat.utsendelsePeriode()?.let { skjemaPeriode.overlapper(it) } == true }
 
         val ider = relaterte.mapNotNull { it.id }.toMutableSet()
 
@@ -174,6 +174,4 @@ class InnsendingService(
         return ider.toList()
     }
 
-    private fun hentPeriode(skjema: Skjema) =
-        (skjema.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand?.utsendelsePeriode
 }
