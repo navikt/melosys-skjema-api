@@ -152,7 +152,11 @@ class InnsendingService(
     private fun samleRelaterteSkjemaIder(skjemaId: UUID): List<UUID> {
         val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId) ?: return emptyList()
         val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return emptyList()
-        val skjemaPeriode = hentPeriode(skjema) ?: return emptyList()
+        val skjemaPeriode = hentPeriode(skjema)
+        if (skjemaPeriode == null) {
+            log.warn { "Skjema $skjemaId mangler utsendelsesperiode — kan ikke finne relaterte søknader" }
+            return emptyList()
+        }
 
         // Finn alle SENDT-søknader med samme FNR + juridisk enhet + overlappende periode
         val relaterte = skjemaRepository

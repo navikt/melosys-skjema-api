@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
+import no.nav.melosys.skjema.sikkerhet.M2MWriteSkjemadata
+import jakarta.validation.Valid
 import no.nav.melosys.skjema.types.m2m.RegistrerSaksnummerRequest
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.http.ContentDisposition
@@ -55,13 +57,13 @@ class M2MSkjemaController(
     }
 
     @PostMapping("/{id}/saksnummer")
-    @M2MReadSkjemadata
+    @M2MWriteSkjemadata
     @Operation(summary = "Registrer saksnummer fra melosys-api på innsendt skjema (M2M)")
     @ApiResponse(responseCode = "204", description = "Saksnummer registrert")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
     fun registrerSaksnummer(
         @PathVariable id: UUID,
-        @RequestBody request: RegistrerSaksnummerRequest
+        @Valid @RequestBody request: RegistrerSaksnummerRequest
     ): ResponseEntity<Void> {
         log.info { "M2M: Registrerer saksnummer ${request.saksnummer} for skjema $id" }
         m2mSkjemaService.registrerSaksnummer(id, request.saksnummer)
