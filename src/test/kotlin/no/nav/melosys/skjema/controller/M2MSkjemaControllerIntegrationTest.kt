@@ -7,6 +7,7 @@ import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.getToken
@@ -274,6 +275,131 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isNotFound
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /m2m/api/skjema/{id}/saksnummer")
+    inner class RegistrerSaksnummer {
+
+        @Test
+        fun `skal registrere saksnummer og returnere 204`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, status = InnsendingStatus.FERDIG)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "SAK123"}""")
+                .exchange()
+                .expectStatus().isNoContent
+
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            oppdatert.saksnummer shouldBe "SAK123"
+        }
+
+        @Test
+        fun `skal returnere 400 naar saksnummer er tomt`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, status = InnsendingStatus.FERDIG)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": ""}""")
+                .exchange()
+                .expectStatus().isBadRequest
+        }
+
+        @Test
+        fun `skal returnere 400 naar saksnummer er blank med mellomrom`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, status = InnsendingStatus.FERDIG)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "   "}""")
+                .exchange()
+                .expectStatus().isBadRequest
+        }
+
+        @Test
+        fun `skal returnere 400 naar saksnummer er for langt`() {
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
+            )
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, status = InnsendingStatus.FERDIG)
+            )
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "${"x".repeat(100)}"}""")
+                .exchange()
+                .expectStatus().isBadRequest
+        }
+
+        @Test
+        fun `skal returnere 404 naar skjema ikke finnes`() {
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            val ukjentId = UUID.randomUUID()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/$ukjentId/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "SAK123"}""")
+                .exchange()
+                .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            val token = mockOAuth2Server.m2mTokenWithoutAccess()
+
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "SAK123"}""")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `skal returnere 401 naar token mangler`() {
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksnummer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "SAK123"}""")
+                .exchange()
+                .expectStatus().isUnauthorized
         }
     }
 }
