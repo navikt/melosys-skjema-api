@@ -59,10 +59,10 @@ no.nav.security.jwt:
   issuer:
     tokenx:
       discovery-url: ${TOKEN_X_WELL_KNOWN_URL}
-      accepted_audience: ${TOKEN_X_CLIENT_ID}
+      accepted-audience: ${TOKEN_X_CLIENT_ID}
     azure:
       discovery-url: ${AZURE_APP_WELL_KNOWN_URL}
-      accepted_audience: ${AZURE_APP_CLIENT_ID}
+      accepted-audience: ${AZURE_APP_CLIENT_ID}
   client:
     registration:
       arbeidsgiver-altinn-tilganger:

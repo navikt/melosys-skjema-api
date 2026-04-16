@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.types.SkjemaDto
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
@@ -54,3 +55,6 @@ fun Skjema.utsendtArbeidstakerSkjemaDataOrThrow(): UtsendtArbeidstakerSkjemaData
 fun Skjema.utsendtArbeidstakerSkjemaDataOrEmpty(): UtsendtArbeidstakerSkjemaData =
     this.data as? UtsendtArbeidstakerSkjemaData
         ?: this.utsendtArbeidstakerMetadataOrThrow().skjemadel.emptyData()
+
+fun Skjema.utsendelsePeriode(): PeriodeDto? =
+    (this.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand?.utsendelsePeriode

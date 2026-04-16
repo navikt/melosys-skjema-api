@@ -77,5 +77,9 @@ class Innsending(
     var correlationId: String? = MDCOperations.getCorrelationId(),
 
     @Column(name = "brukervarsel_sendt", nullable = false)
-    var brukervarselSendt: Boolean = false
+    var brukervarselSendt: Boolean = false,
+
+    /** Saksnummer i melosys-api, satt via M2M-kall etter sak er opprettet */
+    @Column(name = "saksnummer")
+    var saksnummer: String? = null
 )
