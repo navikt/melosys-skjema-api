@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.controller
 
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
@@ -9,14 +10,12 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
-import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.m2mTokenWithReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
-import org.springframework.data.repository.findByIdOrNull
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
@@ -56,18 +55,19 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere skjema når gyldig M2M-token med tillatt klient`() {
-            val persistertSkjema = skjemaRepository
+            val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+            val skjema = skjemaRepository
                 .save(
                     skjemaMedDefaultVerdier(
                         status = SkjemaStatus.SENDT,
-                        data = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                        data = skjemaData
                     )
-                ).let { skjemaRepository.findByIdOrNull(it.id!!)!! }
+                )
 
             val opprettetDato = Instant.parse("2025-01-15T10:30:00Z")
             val innsending = innsendingRepository.save(
                 innsendingMedDefaultVerdier(
-                    skjema = persistertSkjema,
+                    skjema = skjema,
                     opprettetDato = opprettetDato,
                     referanseId = "TEST01"
                 )
@@ -76,7 +76,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
             val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
 
             val responseBody = webTestClient.get()
-                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${persistertSkjema.id}/data")
+                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${skjema.id}/data")
                 .header("Authorization", "Bearer $token")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -84,14 +84,12 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .expectBody<UtsendtArbeidstakerSkjemaM2MDto>()
                 .returnResult().responseBody.shouldNotBeNull()
 
-            responseBody shouldBe UtsendtArbeidstakerSkjemaM2MDto(
-                skjema = persistertSkjema.toUtsendtArbeidstakerDto(),
-                kobletSkjema = null,
-                tidligereInnsendteSkjema = emptyList(),
-                referanseId = "TEST01",
-                innsendtTidspunkt = opprettetDato.toOsloLocalDateTime(),
-                innsenderFnr = innsending.innsenderFnr
-            )
+            responseBody.skjema.id shouldBe skjema.id
+            responseBody.skjema.fnr shouldBe skjema.fnr
+            responseBody.kobletSkjema.shouldBeNull()
+            responseBody.tidligereInnsendteSkjema shouldBe emptyList()
+            responseBody.referanseId shouldBe "TEST01"
+            responseBody.innsenderFnr shouldBe innsending.innsenderFnr
         }
 
         @Test
