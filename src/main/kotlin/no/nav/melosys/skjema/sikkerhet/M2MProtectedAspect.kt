@@ -26,6 +26,11 @@ class M2MProtectedAspect(
         validateClientAccess(m2mConfigProperties.readSkjemadata.clients)
     }
 
+    @Before("@annotation(no.nav.melosys.skjema.sikkerhet.M2MWriteSkjemadata)")
+    fun validateWriteSkjemadataAccess() {
+        validateClientAccess(m2mConfigProperties.readSkjemadata.clients)
+    }
+
     private fun validateClientAccess(allowedClients: List<String>) {
         val context = tokenValidationContextHolder.getTokenValidationContext()
         val token = context.getJwtToken(AZURE)

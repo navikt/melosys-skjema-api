@@ -4,10 +4,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.overlapper
+import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
@@ -78,7 +78,7 @@ class UtsendtArbeidstakerSkjemaKoblingService(
         if (matchendeKandidater.isEmpty()) return null
 
         val samletPeriode = samletPeriode(matchendeKandidater) ?: return null
-        val skjemaPeriode = hentPeriode(skjema) ?: return null
+        val skjemaPeriode = skjema.utsendelsePeriode() ?: return null
 
         if (!skjemaPeriode.overlapper(samletPeriode)) return null
 
@@ -92,19 +92,12 @@ class UtsendtArbeidstakerSkjemaKoblingService(
     }
 
     private fun samletPeriode(skjemaer: List<Skjema>): PeriodeDto? {
-        val perioder = skjemaer.mapNotNull { hentPeriode(it) }
+        val perioder = skjemaer.mapNotNull { it.utsendelsePeriode() }
         if (perioder.isEmpty()) return null
         return PeriodeDto(
             fraDato = perioder.minOf { it.fraDato },
             tilDato = perioder.maxOf { it.tilDato }
         )
-    }
-
-    private fun hentPeriode(skjema: Skjema): PeriodeDto? = try {
-        (skjema.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand?.utsendelsePeriode
-    } catch (e: Exception) {
-        log.warn(e) { "Kunne ikke hente periode for skjema ${skjema.id}" }
-        null
     }
 
     private fun utforErstatterKobling(nyttSkjema: Skjema, gammelSkjema: Skjema): UUID? {

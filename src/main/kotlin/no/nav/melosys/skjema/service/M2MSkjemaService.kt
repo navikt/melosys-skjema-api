@@ -17,6 +17,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjema
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 private val log = KotlinLogging.logger { }
 
@@ -43,12 +44,30 @@ class M2MSkjemaService(
         return UtsendtArbeidstakerSkjemaM2MDto(
             skjema = skjemaDto,
             kobletSkjema = hentKobletSkjema(skjemaDto),
-            tidligereInnsendteSkjema = emptyList(),
+            tidligereInnsendteSkjema = hentTidligereInnsendteSkjema(skjema),
             referanseId = innsending.referanseId,
             innsendtTidspunkt = innsending.opprettetDato.toOsloLocalDateTime(),
             innsenderFnr = innsending.innsenderFnr,
             vedlegg = vedleggListe
         )
+    }
+
+    private fun hentTidligereInnsendteSkjema(skjema: Skjema): List<UtsendtArbeidstakerSkjemaDto> {
+        val tidligere = mutableListOf<UtsendtArbeidstakerSkjemaDto>()
+        var metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return emptyList()
+        val besøkt = mutableSetOf(skjema.id!!)
+
+        while (metadata.erstatterSkjemaId != null) {
+            if (!besøkt.add(metadata.erstatterSkjemaId!!)) {
+                log.warn { "Sirkulær erstatter-referanse oppdaget ved skjema ${metadata.erstatterSkjemaId}" }
+                break
+            }
+            val forrige = skjemaRepository.findByIdAndStatusSendt(metadata.erstatterSkjemaId!!) ?: break
+            tidligere.add(forrige.toUtsendtArbeidstakerDto())
+            metadata = forrige.metadata as? UtsendtArbeidstakerMetadata ?: break
+            if (tidligere.size >= 50) break
+        }
+        return tidligere
     }
 
     private fun hentKobletSkjema(skjemaDto: UtsendtArbeidstakerSkjemaDto): UtsendtArbeidstakerSkjemaDto? {
@@ -58,6 +77,16 @@ class M2MSkjemaService(
             log.warn { "Koblet skjema $kobletSkjemaId ikke funnet for skjema ${skjemaDto.id}" }
             null
         }
+    }
+
+    @Transactional
+    fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
+
+        innsending.saksnummer = saksnummer
+        innsendingRepository.save(innsending)
+        log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
