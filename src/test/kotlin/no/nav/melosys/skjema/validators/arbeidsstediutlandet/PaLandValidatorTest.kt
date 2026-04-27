@@ -35,13 +35,11 @@ class PaLandValidatorTest {
     fun validCombinations(): Stream<Arguments> = listOf(
         paLandDtoMedDefaultVerdier().copy(
             fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
-            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
-            beskrivelseVekslende = null
+            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier()
         ),
         paLandDtoMedDefaultVerdier().copy(
             fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE,
-            fastArbeidssted = null,
-            beskrivelseVekslende = "Vekslende arbeidssteder"
+            fastArbeidssted = null
         )
     ).map { Arguments.of(it) }.stream()
 
@@ -49,33 +47,11 @@ class PaLandValidatorTest {
     fun invalidCombinations(): Stream<Arguments> = listOf(
         paLandDtoMedDefaultVerdier().copy(
             fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
-            fastArbeidssted = null,
-            beskrivelseVekslende = null
-        ),
-        paLandDtoMedDefaultVerdier().copy(
-            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
-            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
-            beskrivelseVekslende = "Beskrivelse"
+            fastArbeidssted = null
         ),
         paLandDtoMedDefaultVerdier().copy(
             fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE,
-            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
-            beskrivelseVekslende = "Beskrivelse"
-        ),
-        paLandDtoMedDefaultVerdier().copy(
-            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE,
-            fastArbeidssted = null,
-            beskrivelseVekslende = null
-        ),
-        paLandDtoMedDefaultVerdier().copy(
-            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE,
-            fastArbeidssted = null,
-            beskrivelseVekslende = ""
-        ),
-        paLandDtoMedDefaultVerdier().copy(
-            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE,
-            fastArbeidssted = null,
-            beskrivelseVekslende = "   "
+            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier()
         )
     ).map { Arguments.of(it) }.stream()
 
