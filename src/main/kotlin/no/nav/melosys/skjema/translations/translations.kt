@@ -44,9 +44,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "Du må oppgi fast arbeidssted",
-            beskrivelseVekslendeSkalIkkeOppgis = "Beskrivelse av vekslende arbeidssted skal ikke oppgis",
-            fastArbeidsstedSkalIkkeOppgis = "Fast arbeidssted skal ikke oppgis",
-            maaOppgiBeskrivelseVekslende = "Du må oppgi beskrivelse av vekslende arbeidssted"
+            fastArbeidsstedSkalIkkeOppgis = "Fast arbeidssted skal ikke oppgis"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "Du må oppgi flaggland for skip i internasjonalt farvann",
@@ -121,9 +119,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "You must specify fixed workplace",
-            beskrivelseVekslendeSkalIkkeOppgis = "Description of alternating workplace should not be specified",
-            fastArbeidsstedSkalIkkeOppgis = "Fixed workplace should not be specified",
-            maaOppgiBeskrivelseVekslende = "You must specify description of alternating workplace"
+            fastArbeidsstedSkalIkkeOppgis = "Fixed workplace should not be specified"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "You must specify flag country for ship in international waters",

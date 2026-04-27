@@ -25,12 +25,6 @@ class PaLandValidator {
                         translationKey = translationFieldName(PaLandTranslation::maaOppgiFastArbeidssted.name)
                     ))
                 }
-                if (dto.beskrivelseVekslende != null) {
-                    return listOf(Violation(
-                        field = PaLandDto::beskrivelseVekslende.name,
-                        translationKey = translationFieldName(PaLandTranslation::beskrivelseVekslendeSkalIkkeOppgis.name)
-                    ))
-                }
             }
 
             FastEllerVekslendeArbeidssted.VEKSLENDE -> {
@@ -38,12 +32,6 @@ class PaLandValidator {
                     return listOf(Violation(
                         field = PaLandDto::fastArbeidssted.name,
                         translationKey = translationFieldName(PaLandTranslation::fastArbeidsstedSkalIkkeOppgis.name)
-                    ))
-                }
-                if (dto.beskrivelseVekslende.isNullOrBlank()) {
-                    return listOf(Violation(
-                        field = PaLandDto::beskrivelseVekslende.name,
-                        translationKey = translationFieldName(PaLandTranslation::maaOppgiBeskrivelseVekslende.name)
                     ))
                 }
             }

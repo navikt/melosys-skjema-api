@@ -690,14 +690,6 @@
           },
           "pakrevd": false
         },
-        "beskrivelseVekslende": {
-          "type": "TEXTAREA",
-          "label": {
-            "nb": "Beskriv hvor arbeidstakeren skal jobbe",
-            "en": "Describe where the employee will work"
-          },
-          "pakrevd": false
-        },
         "erHjemmekontor": {
           "type": "BOOLEAN",
           "label": {
@@ -707,6 +699,14 @@
           "jaLabel": {
             "nb": "Ja",
             "en": "Yes"
+          },
+          "beskrivelseVekslende": {
+            "type": "TEXTAREA",
+            "label": {
+              "nb": "Beskriv hvor arbeidstakeren skal jobbe",
+              "en": "Describe where the employee will work"
+            },
+            "pakrevd": false
           },
           "neiLabel": {
             "nb": "Nei",
