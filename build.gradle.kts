@@ -36,7 +36,7 @@ val springMockkVersion = "5.0.1"
 val springdocVersion = "3.0.3"
 val shedlockVersion = "7.7.0"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.26.1-alpha"
+val opentelemetryLogbackVersion = "2.27.0-alpha"
 
 repositories {
     mavenCentral()
