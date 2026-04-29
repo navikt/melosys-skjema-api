@@ -142,8 +142,7 @@ class ArbeidsstedIUtlandetValidatorTest {
             arbeidsstedType = ArbeidsstedType.PA_LAND,
             paLand = paLandDtoMedDefaultVerdier().copy(
                 fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
-                fastArbeidssted = null,
-                beskrivelseVekslende = null
+                fastArbeidssted = null
             ),
             offshore = null,
             paSkip = null,

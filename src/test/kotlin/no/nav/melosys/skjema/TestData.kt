@@ -134,7 +134,6 @@ fun paLandDtoMedDefaultVerdier() = PaLandDto(
     navnPaVirksomhet = "Test Inc",
     fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
     fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier(),
-    beskrivelseVekslende = null,
     erHjemmekontor = false
 )
 

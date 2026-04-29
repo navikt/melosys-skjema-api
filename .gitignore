@@ -50,3 +50,10 @@ logs/
 .env
 .env.local
 /.kotlin/sessions/
+
+# nav-pilot collection files
+.github/.nav-pilot-state.json
+.github/agents/
+.github/instructions/
+.github/prompts/
+.github/skills/

@@ -343,7 +343,6 @@ class SeksjonRenderer(
                 felt("postkode", adresse.postkode)
                 felt("bySted", adresse.bySted)
             }
-            felt("beskrivelseVekslende", data.beskrivelseVekslende)
             felt("erHjemmekontor", data.erHjemmekontor)
         }
     }
