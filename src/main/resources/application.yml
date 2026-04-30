@@ -151,6 +151,7 @@ varsling:
 
 vedlegg:
   bucket-name: ${VEDLEGG_BUCKET_NAME}
+  mock-storage-url: ${VEDLEGG_MOCK_STORAGE_URL}
 
 clamav:
   url: ${CLAMAV_URL}
