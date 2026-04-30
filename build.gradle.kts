@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm")
     kotlin("plugin.spring")
@@ -26,7 +26,7 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "6.0.5"
+val tokenSupportVersion = "6.0.6"
 val mockOAuth2ServerVersion = "3.0.1"
 val kotlinLoggingVersion = "8.0.01"
 val kotestVersion = "6.1.11"
@@ -78,7 +78,7 @@ dependencies {
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.37")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.66.0")
+    implementation("com.google.cloud:google-cloud-storage:2.67.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
