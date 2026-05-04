@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.AlternativDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxAlternativDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.FeltDefinisjonDto
@@ -31,7 +33,8 @@ import no.nav.melosys.skjema.types.skjemadefinisjon.TextareaFeltDefinisjon
     JsonSubTypes.Type(value = FlersprakligPeriodeFeltDto::class, name = "PERIOD"),
     JsonSubTypes.Type(value = FlersprakligSelectFeltDto::class, name = "SELECT"),
     JsonSubTypes.Type(value = FlersprakligCountrySelectFeltDto::class, name = "COUNTRY_SELECT"),
-    JsonSubTypes.Type(value = FlersprakligListeFeltDto::class, name = "LIST")
+    JsonSubTypes.Type(value = FlersprakligListeFeltDto::class, name = "LIST"),
+    JsonSubTypes.Type(value = FlersprakligCheckboxGruppeFeltDto::class, name = "CHECKBOX_GROUP")
 )
 sealed class FlersprakligFeltModel {
     abstract val label: FlersprakligTekst
@@ -171,3 +174,30 @@ data class FlersprakligListeFeltDto(
         elementDefinisjon = elementDefinisjon.mapValues { it.value.tilFeltDto(språk) }
     )
 }
+
+data class FlersprakligCheckboxAlternativDto(
+    val key: String,
+    val label: FlersprakligTekst,
+    val beskrivelse: FlersprakligTekst? = null
+) {
+    fun tilCheckboxAlternativDto(språk: Språk) = CheckboxAlternativDefinisjonDto(
+        key = key,
+        label = label.hent(språk),
+        beskrivelse = beskrivelse?.hent(språk)
+    )
+}
+
+data class FlersprakligCheckboxGruppeFeltDto(
+    override val label: FlersprakligTekst,
+    override val hjelpetekst: FlersprakligTekst? = null,
+    override val pakrevd: Boolean = false,
+    val alternativer: List<FlersprakligCheckboxAlternativDto>
+) : FlersprakligFeltModel() {
+    override fun tilFeltDto(språk: Språk) = CheckboxGruppeFeltDefinisjon(
+        label = label.hent(språk),
+        hjelpetekst = hjelpetekst?.hent(språk),
+        pakrevd = pakrevd,
+        alternativer = alternativer.map { it.tilCheckboxAlternativDto(språk) }
+    )
+}
+

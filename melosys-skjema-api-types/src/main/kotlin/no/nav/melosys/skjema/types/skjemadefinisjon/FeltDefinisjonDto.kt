@@ -23,7 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = PeriodeFeltDefinisjon::class, name = "PERIOD"),
     JsonSubTypes.Type(value = SelectFeltDefinisjon::class, name = "SELECT"),
     JsonSubTypes.Type(value = CountrySelectFeltDefinisjon::class, name = "COUNTRY_SELECT"),
-    JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST")
+    JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST"),
+    JsonSubTypes.Type(value = CheckboxGruppeFeltDefinisjon::class, name = "CHECKBOX_GROUP")
 )
 sealed class FeltDefinisjonDto {
     abstract val label: String
@@ -128,3 +129,17 @@ data class ListeFeltDefinisjon(
     val tomListeMelding: String? = null,
     val elementDefinisjon: Map<String, FeltDefinisjonDto>
 ) : FeltDefinisjonDto()
+
+/**
+ * Checkbox-gruppe med predefinerte alternativer der hvert alternativ er avhuket eller ikke.
+ * Se [CheckboxAlternativDefinisjonDto.valgt] for tilstanden per checkbox.
+ *
+ * @property alternativer Liste over checkbox-alternativer
+ */
+data class CheckboxGruppeFeltDefinisjon(
+    override val label: String,
+    override val hjelpetekst: String? = null,
+    override val pakrevd: Boolean = false,
+    val alternativer: List<CheckboxAlternativDefinisjonDto>
+) : FeltDefinisjonDto()
+
