@@ -197,7 +197,11 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
     mottarPengestotteFraAnnetEosLandEllerSveits = false,
     landSomUtbetalerPengestotte = null,
     pengestotteSomMottasFraAndreLandBelop = null,
-    pengestotteSomMottasFraAndreLandBeskrivelse = null
+    pengestotteSomMottasFraAndreLandBeskrivelse = null,
+    arbeidsinntektFraNorskEllerUtenlandskVirksomhet = null,
+    hvilkenInntektHarDu = null,
+    inntekterFraNorskVirksomhet = null,
+    inntekterFraEgenVirksomhet = null
 )
 
 fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(

@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.FeltDefinisjonDto
@@ -39,6 +40,7 @@ class FeltRenderer(
             is SelectFeltDefinisjon -> renderSelect(felt, verdi)
             is CountrySelectFeltDefinisjon -> renderCountry(felt, verdi)
             is ListeFeltDefinisjon -> renderListe(felt, verdi)
+            is CheckboxGruppeFeltDefinisjon -> renderCheckboxGruppe(felt, verdi)
         }
     }
 
@@ -104,6 +106,16 @@ class FeltRenderer(
             else -> verdi.toString()
         }
         return renderEnkeltFelt(felt.label, landnavn)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
+        val valgtMap = verdi as? Map<String, Boolean> ?: return ""
+        val valgteLabels = felt.alternativer
+            .filter { valgtMap[it.key] == true }
+            .map { it.label }
+        if (valgteLabels.isEmpty()) return ""
+        return renderEnkeltFelt(felt.label, valgteLabels.joinToString(", "))
     }
 
     @Suppress("UNCHECKED_CAST")

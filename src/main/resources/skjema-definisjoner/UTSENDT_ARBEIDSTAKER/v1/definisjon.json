@@ -228,6 +228,78 @@
             "en": "What kind of financial support do you receive"
           },
           "pakrevd": false
+        },
+        "arbeidsinntektFraNorskEllerUtenlandskVirksomhet": {
+          "type": "CHECKBOX_GROUP",
+          "label": {
+            "nb": "Får du arbeidsinntekten din fra en norsk eller utenlandsk virksomhet?",
+            "en": "Is your work income from a Norwegian or foreign company?"
+          },
+          "pakrevd": false,
+          "alternativer": [
+            {
+              "key": "norskVirksomhet",
+              "label": {
+                "nb": "Norsk virksomhet",
+                "en": "Norwegian company"
+              }
+            },
+            {
+              "key": "utenlandskVirksomhet",
+              "label": {
+                "nb": "Utenlandsk virksomhet",
+                "en": "Foreign company"
+              }
+            }
+          ]
+        },
+        "hvilkenInntektHarDu": {
+          "type": "CHECKBOX_GROUP",
+          "label": {
+            "nb": "Hvilken inntekt har du?",
+            "en": "What kind of income do you have?"
+          },
+          "pakrevd": false,
+          "alternativer": [
+            {
+              "key": "loenn",
+              "label": {
+                "nb": "Lønn",
+                "en": "Salary"
+              }
+            },
+            {
+              "key": "inntekFraEgenVirksomhet",
+              "label": {
+                "nb": "Inntekt fra egen virksomhet",
+                "en": "Income from your own business"
+              }
+            }
+          ]
+        },
+        "inntekterFraNorskVirksomhet": {
+          "type": "TEXTAREA",
+          "label": {
+            "nb": "Inntekt",
+            "en": "Income"
+          },
+          "hjelpetekst": {
+            "nb": "Du skal føre opp samlet månedlig inntekt, inkludert eventuelle utenlandstillegg og verdi av naturalytelser dekt av virksomheten. Hvis inntekten din varierer fra måned til måned, oppgi gjennomsnittlig inntekt i brutto per måned.",
+            "en": "You should report your total monthly income, including any foreign allowances and the value of benefits in kind covered by the company. If your income varies from month to month, please state the average gross income per month."
+          },
+          "pakrevd": false
+        },
+        "inntekterFraEgenVirksomhet": {
+          "type": "TEXTAREA",
+          "label": {
+            "nb": "Inntekter fra egen virksomhet",
+            "en": "Income from your own business"
+          },
+          "hjelpetekst": {
+            "nb": "Hvis inntekten din varierer, oppgi gjennomsnitlig inntekt i brutto per måned.",
+            "en": "If your income varies from month to month, please state the average gross income per month."
+          },
+          "pakrevd": false
         }
       }
     },
