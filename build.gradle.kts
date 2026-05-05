@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm")
     kotlin("plugin.spring")
@@ -26,7 +26,7 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "6.0.5"
+val tokenSupportVersion = "6.0.6"
 val mockOAuth2ServerVersion = "3.0.1"
 val kotlinLoggingVersion = "8.0.01"
 val kotestVersion = "6.1.11"
@@ -36,7 +36,7 @@ val springMockkVersion = "5.0.1"
 val springdocVersion = "3.0.3"
 val shedlockVersion = "7.7.0"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.26.1-alpha"
+val opentelemetryLogbackVersion = "2.27.0-alpha"
 
 repositories {
     mavenCentral()
@@ -78,7 +78,7 @@ dependencies {
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.37")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.66.0")
+    implementation("com.google.cloud:google-cloud-storage:2.67.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
@@ -86,7 +86,7 @@ dependencies {
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlockVersion}")
 
     // PDF/A-2u validation i tester - veraPDF Greenfield parser med Jakarta (Spring Boot 4)
-    testImplementation("org.verapdf:validation-model-jakarta:1.28.2")
+    testImplementation("org.verapdf:validation-model-jakarta:1.30.1")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")

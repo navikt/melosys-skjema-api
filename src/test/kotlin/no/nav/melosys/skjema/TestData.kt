@@ -70,8 +70,8 @@ import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
 // Med unntak av tilfeller hvor defaultverdiene har ugyldige formater og kombinasjoner mtp validatorene (no/nav/melosys/skjema/controller/validators).
 
 
-val korrektSyntetiskFnr = "02837999890"
-val etAnnetKorrektSyntetiskFnr = "20925297314"
+val korrektSyntetiskFnr = "01816023404" // HANS HANSEN (mock)
+val etAnnetKorrektSyntetiskFnr = "10908012327" // SIRI SANSEN (mock)
 
 val korrektSyntetiskOrgnr = "312587963"
 

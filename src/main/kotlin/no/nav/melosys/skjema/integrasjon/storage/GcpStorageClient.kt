@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
 private val log = KotlinLogging.logger { }
 
 @Service
-@Profile("!local-q1")
+@Profile("!local-q1 & !local")
 class GcpStorageClient(
     @param:Value("\${vedlegg.bucket-name}") private val bucketName: String
 ) : VedleggStorageClient {
