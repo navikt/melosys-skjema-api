@@ -43,10 +43,10 @@ class SkatteforholdOgInntektValidator {
             }
         }
 
-        if (dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet?.none { it.value } == true) {
+        if (dto.inntektFraNorskEllerUtenlandskVirksomhet?.none { it.value } == true) {
             violations.add(Violation(
-                field = SkatteforholdOgInntektDto::arbeidsinntektFraNorskEllerUtenlandskVirksomhet.name,
-                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnArbeidsinntektKilde.name)
+                field = SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name,
+                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnInntektKilde.name)
             ))
         }
 
@@ -57,19 +57,19 @@ class SkatteforholdOgInntektValidator {
             ))
         }
 
-        if (dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet == null || dto.hvilkeTyperInntektHarDu == null) {
+        if (dto.inntektFraNorskEllerUtenlandskVirksomhet == null || dto.hvilkeTyperInntektHarDu == null) {
             return violations
         }
 
         if (violations.isNotEmpty()) return violations
 
-        val arbeidsinntektKilder = dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet!!
+        val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet!!
         val inntektTyper = dto.hvilkeTyperInntektHarDu!!
 
         val harLoenn = inntektTyper[InntektType.LOENN.name] == true
         val harEgenVirksomhet = inntektTyper[InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET.name] == true
-        val harNorskVirksomhet = arbeidsinntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET.name] == true
-        val harUtenlandskVirksomhet = arbeidsinntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET.name] == true
+        val harNorskVirksomhet = inntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET.name] == true
+        val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET.name] == true
 
         if (harLoenn) {
             val ugyldigLonnKombinasjon =
@@ -84,31 +84,31 @@ class SkatteforholdOgInntektValidator {
                 ))
             } else {
                 belopViolation(
-                    dto.inntekterFraUtenlandskVirksomhet,
-                    SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
-                    SkatteforholdOgInntektTranslation::maaOppgiInntekterFraUtenlandskVirksomhet.name
+                    dto.inntekt,
+                    SkatteforholdOgInntektDto::inntekt.name,
+                    SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
                 )?.let { violations.add(it) }
             }
         } else {
-            if (!dto.inntekterFraUtenlandskVirksomhet.isNullOrBlank()) {
+            if (!dto.inntekt.isNullOrBlank()) {
                 violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntekterFraUtenlandskVirksomhetSkalIkkeOppgis.name)
+                    field = SkatteforholdOgInntektDto::inntekt.name,
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
                 ))
             }
         }
 
         if (harEgenVirksomhet) {
             belopViolation(
-                dto.inntekterFraEgenVirksomhet,
-                SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
-                SkatteforholdOgInntektTranslation::maaOppgiInntekterFraEgenVirksomhet.name
+                dto.inntektFraEgenVirksomhet,
+                SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
+                SkatteforholdOgInntektTranslation::maaOppgiInntektFraEgenVirksomhet.name
             )?.let { violations.add(it) }
         } else {
-            if (!dto.inntekterFraEgenVirksomhet.isNullOrBlank()) {
+            if (!dto.inntektFraEgenVirksomhet.isNullOrBlank()) {
                 violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntekterFraEgenVirksomhetSkalIkkeOppgis.name)
+                    field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
                 ))
             }
         }

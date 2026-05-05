@@ -107,10 +107,10 @@ class SeksjonRenderer(
             felt("landSomUtbetalerPengestotte", data.landSomUtbetalerPengestotte)
             felt("pengestotteSomMottasFraAndreLandBelop", data.pengestotteSomMottasFraAndreLandBelop)
             felt("pengestotteSomMottasFraAndreLandBeskrivelse", data.pengestotteSomMottasFraAndreLandBeskrivelse)
-            felt("arbeidsinntektFraNorskEllerUtenlandskVirksomhet", data.arbeidsinntektFraNorskEllerUtenlandskVirksomhet)
+            felt("inntektFraNorskEllerUtenlandskVirksomhet", data.inntektFraNorskEllerUtenlandskVirksomhet)
             felt("hvilkeTyperInntektHarDu", data.hvilkeTyperInntektHarDu)
-            felt("inntekterFraUtenlandskVirksomhet", data.inntekterFraUtenlandskVirksomhet)
-            felt("inntekterFraEgenVirksomhet", data.inntekterFraEgenVirksomhet)
+            felt("inntekt", data.inntekt)
+            felt("inntektFraEgenVirksomhet", data.inntektFraEgenVirksomhet)
         }
     }
 

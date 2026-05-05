@@ -19,8 +19,8 @@ data class SkatteforholdOgInntektDto(
     val landSomUtbetalerPengestotte: String?,
     val pengestotteSomMottasFraAndreLandBelop: String?,
     val pengestotteSomMottasFraAndreLandBeskrivelse: String?,
-    val arbeidsinntektFraNorskEllerUtenlandskVirksomhet: Map<String, Boolean>? = null,
+    val inntektFraNorskEllerUtenlandskVirksomhet: Map<String, Boolean>? = null,
     val hvilkeTyperInntektHarDu: Map<String, Boolean>? = null,
-    val inntekterFraUtenlandskVirksomhet: String? = null,
-    val inntekterFraEgenVirksomhet: String? = null
+    val inntekt: String? = null,
+    val inntektFraEgenVirksomhet: String? = null
 )

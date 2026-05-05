@@ -57,22 +57,22 @@ class SkatteforholdOgInntektValidatorTest {
         ),
         // Lønn + utenlandsk virksomhet + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = "50000,00",
+            inntekt = "50000,00",
         ),
         // Lønn + kun norsk virksomhet + skatteplikt=NEI + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             erSkattepliktigTilNorgeIHeleutsendingsperioden = false,
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = "40000,00",
+            inntekt = "40000,00",
         ),
         // Inntekt fra egen virksomhet + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to false, "INNTEKT_FRA_EGEN_VIRKSOMHET" to true),
-            inntekterFraEgenVirksomhet = "30000,00"
+            inntektFraEgenVirksomhet = "30000,00"
         ),
     ).map { Arguments.of(it) }.stream()
 
@@ -130,12 +130,12 @@ class SkatteforholdOgInntektValidatorTest {
         // --- Checkbox-grupper ---
         // Ingen arbeidsinntektkilde valgt
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = null
         ),
         // Ingen inntekttype valgt
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to false, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false)
         ),
 
@@ -143,55 +143,55 @@ class SkatteforholdOgInntektValidatorTest {
         // Skatteplikt=JA + lønn + kun norsk virksomhet → ugyldig kombinasjon
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             erSkattepliktigTilNorgeIHeleutsendingsperioden = true,
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
         ),
         // Lønn + kun norsk virksomhet + skatteplikt=NEI, men beløp mangler
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             erSkattepliktigTilNorgeIHeleutsendingsperioden = false,
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = null,
+            inntekt = null,
         ),
-        // Lønn + utenlandsk virksomhet, men inntekterFraUtenlandskVirksomhet mangler
+        // Lønn + utenlandsk virksomhet, men inntekt mangler
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = null,
+            inntekt = null,
         ),
-        // Lønn + utenlandsk virksomhet, men inntekterFraUtenlandskVirksomhet har ugyldig format
+        // Lønn + utenlandsk virksomhet, men inntekt har ugyldig format
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to true),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to true),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = "50000.00",
+            inntekt = "50000.00",
         ),
-        // Lønn ikke valgt, men inntekterFraUtenlandskVirksomhet er likevel satt
+        // Lønn ikke valgt, men inntekt er likevel satt
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to false, "INNTEKT_FRA_EGEN_VIRKSOMHET" to true),
-            inntekterFraUtenlandskVirksomhet = "500,00",
-            inntekterFraEgenVirksomhet = "300,00",
+            inntekt = "500,00",
+            inntektFraEgenVirksomhet = "300,00",
         ),
 
         // --- Inntekt fra egen virksomhet ---
-        // Egen virksomhet valgt, men inntekterFraEgenVirksomhet mangler
+        // Egen virksomhet valgt, men inntektFraEgenVirksomhet mangler
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to false, "INNTEKT_FRA_EGEN_VIRKSOMHET" to true),
-            inntekterFraEgenVirksomhet = null,
+            inntektFraEgenVirksomhet = null,
         ),
-        // Egen virksomhet valgt men inntekterFraEgenVirksomhet har ugyldig format
+        // Egen virksomhet valgt men inntektFraEgenVirksomhet har ugyldig format
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to true, "UTENLANDSK_VIRKSOMHET" to false),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to false, "INNTEKT_FRA_EGEN_VIRKSOMHET" to true),
-            inntekterFraEgenVirksomhet = "not-a-number"
+            inntektFraEgenVirksomhet = "not-a-number"
         ),
-        // Egen virksomhet ikke valgt, men inntekterFraEgenVirksomhet er likevel satt
+        // Egen virksomhet ikke valgt, men inntektFraEgenVirksomhet er likevel satt
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
-            arbeidsinntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf("NORSK_VIRKSOMHET" to false, "UTENLANDSK_VIRKSOMHET" to true),
             hvilkeTyperInntektHarDu = mapOf("LOENN" to true, "INNTEKT_FRA_EGEN_VIRKSOMHET" to false),
-            inntekterFraUtenlandskVirksomhet = "500,00",
-            inntekterFraEgenVirksomhet = "300,00",
+            inntekt = "500,00",
+            inntektFraEgenVirksomhet = "300,00",
         ),
     ).map { Arguments.of(it) }.stream()
 }
