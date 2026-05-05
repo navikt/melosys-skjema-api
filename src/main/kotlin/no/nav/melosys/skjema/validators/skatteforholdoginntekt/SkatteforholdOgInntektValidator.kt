@@ -24,46 +24,36 @@ class SkatteforholdOgInntektValidator {
             if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {
                 violations.add(Violation(
                     field = SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name)
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name)
                 ))
                 return violations
             }
-            if (dto.pengestotteSomMottasFraAndreLandBelop.isNullOrBlank()) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiBelopPengestotte.name)
-                ))
-                return violations
-            }
-            if (!erGyldigBelop(dto.pengestotteSomMottasFraAndreLandBelop!!)) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::ugyldigBelopFormat.name)
-                ))
-                return violations
-            }
+            belopViolation(
+                dto.pengestotteSomMottasFraAndreLandBelop,
+                SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name,
+                SkatteforholdOgInntektTranslation::maaOppgiBelopPengestotte.name
+            )?.let { violations.add(it); return violations }
+
             if (dto.pengestotteSomMottasFraAndreLandBeskrivelse.isNullOrBlank()) {
                 violations.add(Violation(
                     field = SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name)
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name)
                 ))
                 return violations
             }
         }
 
-        val harArbeidsinntektKilde = dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet?.any { it.value } ?: true
-        if (dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet != null && !harArbeidsinntektKilde) {
+        if (dto.arbeidsinntektFraNorskEllerUtenlandskVirksomhet?.none { it.value } == true) {
             violations.add(Violation(
                 field = SkatteforholdOgInntektDto::arbeidsinntektFraNorskEllerUtenlandskVirksomhet.name,
-                translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnArbeidsinntektKilde.name)
+                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnArbeidsinntektKilde.name)
             ))
         }
 
-        val harInntektType = dto.hvilkeTyperInntektHarDu?.any { it.value } ?: true
-        if (dto.hvilkeTyperInntektHarDu != null && !harInntektType) {
+        if (dto.hvilkeTyperInntektHarDu?.none { it.value } == true) {
             violations.add(Violation(
                 field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnInntektType.name)
+                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnInntektType.name)
             ))
         }
 
@@ -88,57 +78,37 @@ class SkatteforholdOgInntektValidator {
                     !harUtenlandskVirksomhet
 
             if (ugyldigLonnKombinasjon) {
-                violations.add(
-                    Violation(
-                        field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                        translationKey = translationFieldName(
-                            SkatteforholdOgInntektTranslation::kannIkkeHaLonnNarKunNorskVirksomhet.name
-                        )
-                    )
-                )
-            } else if (dto.inntekterFraUtenlandskVirksomhet.isNullOrBlank()) {
-                violations.add(
-                    Violation(
-                        field = SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
-                        translationKey = translationFieldName(
-                            SkatteforholdOgInntektTranslation::maaOppgiInntekterFraUtenlandskVirksomhet.name
-                        )
-                    )
-                )
-            } else if (!erGyldigBelop(dto.inntekterFraUtenlandskVirksomhet!!)) {
-                violations.add(
-                    Violation(
-                        field = SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
-                        translationKey = translationFieldName(SkatteforholdOgInntektTranslation::ugyldigBelopFormat.name)
-                    )
-                )
+                violations.add(Violation(
+                    field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::kannIkkeHaLonnNarKunNorskVirksomhet.name)
+                ))
+            } else if (harUtenlandskVirksomhet) {
+                belopViolation(
+                    dto.inntekterFraUtenlandskVirksomhet,
+                    SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
+                    SkatteforholdOgInntektTranslation::maaOppgiInntekterFraUtenlandskVirksomhet.name
+                )?.let { violations.add(it) }
             }
         } else {
             if (!dto.inntekterFraUtenlandskVirksomhet.isNullOrBlank()) {
                 violations.add(Violation(
                     field = SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntekterFraUtenlandskVirksomhetSkalIkkeOppgis.name)
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntekterFraUtenlandskVirksomhetSkalIkkeOppgis.name)
                 ))
             }
         }
 
         if (harEgenVirksomhet) {
-            if (dto.inntekterFraEgenVirksomhet.isNullOrBlank()) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiInntekterFraEgenVirksomhet.name)
-                ))
-            } else if (!erGyldigBelop(dto.inntekterFraEgenVirksomhet!!)) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::ugyldigBelopFormat.name)
-                ))
-            }
+            belopViolation(
+                dto.inntekterFraEgenVirksomhet,
+                SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
+                SkatteforholdOgInntektTranslation::maaOppgiInntekterFraEgenVirksomhet.name
+            )?.let { violations.add(it) }
         } else {
             if (!dto.inntekterFraEgenVirksomhet.isNullOrBlank()) {
                 violations.add(Violation(
                     field = SkatteforholdOgInntektDto::inntekterFraEgenVirksomhet.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntekterFraEgenVirksomhetSkalIkkeOppgis.name)
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntekterFraEgenVirksomhetSkalIkkeOppgis.name)
                 ))
             }
         }
@@ -146,14 +116,24 @@ class SkatteforholdOgInntektValidator {
         return violations
     }
 
+    /**
+     * Returnerer en Violation hvis [verdi] mangler eller har ugyldig beløpsformat,
+     * ellers null.
+     */
+    private fun belopViolation(verdi: String?, fieldName: String, paakrevdKey: String): Violation? = when {
+        verdi.isNullOrBlank() -> Violation(field = fieldName, translationKey = translationKey(paakrevdKey))
+        !erGyldigBelop(verdi) -> Violation(field = fieldName, translationKey = translationKey(SkatteforholdOgInntektTranslation::ugyldigBelopFormat.name))
+        else -> null
+    }
+
     companion object {
-        /** Gyldig beløp: positive kroner med øre (2 desimal plasser), eksempel: 1000,00 */
+        /** Gyldig beløp: positive kroner med øre (2 desimaler), eksempel: 1000,00 */
         private val BELOP_REGEX = Regex("""^\d+,\d{2}$""")
 
-        fun erGyldigBelop(belop: String): Boolean = BELOP_REGEX.matches(belop.trim())
+        fun erGyldigBelop(belop: String?): Boolean =
+            belop != null && BELOP_REGEX.matches(belop.trim())
 
-        private fun translationFieldName(fieldName: String): String {
-            return "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"
-        }
+        private fun translationKey(fieldName: String) =
+            "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"
     }
 }
