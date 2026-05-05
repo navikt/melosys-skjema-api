@@ -238,14 +238,14 @@
           "pakrevd": false,
           "alternativer": [
             {
-              "key": "norskVirksomhet",
+              "value": "NORSK_VIRKSOMHET",
               "label": {
                 "nb": "Norsk virksomhet",
                 "en": "Norwegian company"
               }
             },
             {
-              "key": "utenlandskVirksomhet",
+              "value": "UTENLANDSK_VIRKSOMHET",
               "label": {
                 "nb": "Utenlandsk virksomhet",
                 "en": "Foreign company"
@@ -253,7 +253,7 @@
             }
           ]
         },
-        "hvilkenInntektHarDu": {
+        "hvilkeTyperInntektHarDu": {
           "type": "CHECKBOX_GROUP",
           "label": {
             "nb": "Hvilken inntekt har du?",
@@ -262,14 +262,14 @@
           "pakrevd": false,
           "alternativer": [
             {
-              "key": "loenn",
+              "value": "LOENN",
               "label": {
                 "nb": "Lønn",
                 "en": "Salary"
               }
             },
             {
-              "key": "inntekFraEgenVirksomhet",
+              "value": "INNTEKT_FRA_EGEN_VIRKSOMHET",
               "label": {
                 "nb": "Inntekt fra egen virksomhet",
                 "en": "Income from your own business"
@@ -277,7 +277,7 @@
             }
           ]
         },
-        "inntekterFraNorskVirksomhet": {
+        "inntekterFraUtenlandskVirksomhet": {
           "type": "TEXTAREA",
           "label": {
             "nb": "Inntekt",

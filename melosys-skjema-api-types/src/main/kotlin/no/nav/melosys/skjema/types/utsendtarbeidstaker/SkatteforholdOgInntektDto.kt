@@ -2,6 +2,16 @@ package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
 
+enum class ArbeidsinntektKilde {
+    NORSK_VIRKSOMHET,
+    UTENLANDSK_VIRKSOMHET,
+}
+
+enum class InntektType {
+    LOENN,
+    INNTEKT_FRA_EGEN_VIRKSOMHET,
+}
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class SkatteforholdOgInntektDto(
     val erSkattepliktigTilNorgeIHeleutsendingsperioden: Boolean,
@@ -10,7 +20,7 @@ data class SkatteforholdOgInntektDto(
     val pengestotteSomMottasFraAndreLandBelop: String?,
     val pengestotteSomMottasFraAndreLandBeskrivelse: String?,
     val arbeidsinntektFraNorskEllerUtenlandskVirksomhet: Map<String, Boolean>? = null,
-    val hvilkenInntektHarDu: Map<String, Boolean>? = null,
-    val inntekterFraNorskVirksomhet: String? = null,
+    val hvilkeTyperInntektHarDu: Map<String, Boolean>? = null,
+    val inntekterFraUtenlandskVirksomhet: String? = null,
     val inntekterFraEgenVirksomhet: String? = null
 )

@@ -176,12 +176,12 @@ data class FlersprakligListeFeltDto(
 }
 
 data class FlersprakligCheckboxAlternativDto(
-    val key: String,
+    val value: String,
     val label: FlersprakligTekst,
     val beskrivelse: FlersprakligTekst? = null
 ) {
     fun tilCheckboxAlternativDto(språk: Språk) = CheckboxAlternativDefinisjonDto(
-        key = key,
+        value = value,
         label = label.hent(språk),
         beskrivelse = beskrivelse?.hent(språk)
     )
@@ -200,4 +200,3 @@ data class FlersprakligCheckboxGruppeFeltDto(
         alternativer = alternativer.map { it.tilCheckboxAlternativDto(språk) }
     )
 }
-

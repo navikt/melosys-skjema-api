@@ -199,8 +199,8 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
     pengestotteSomMottasFraAndreLandBelop = null,
     pengestotteSomMottasFraAndreLandBeskrivelse = null,
     arbeidsinntektFraNorskEllerUtenlandskVirksomhet = null,
-    hvilkenInntektHarDu = null,
-    inntekterFraNorskVirksomhet = null,
+    hvilkeTyperInntektHarDu = null,
+    inntekterFraUtenlandskVirksomhet = null,
     inntekterFraEgenVirksomhet = null
 )
 
