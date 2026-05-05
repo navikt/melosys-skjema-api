@@ -82,7 +82,7 @@ class SkatteforholdOgInntektValidator {
                     field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
                     translationKey = translationKey(SkatteforholdOgInntektTranslation::kannIkkeHaLonnNarKunNorskVirksomhet.name)
                 ))
-            } else if (harUtenlandskVirksomhet) {
+            } else {
                 belopViolation(
                     dto.inntekterFraUtenlandskVirksomhet,
                     SkatteforholdOgInntektDto::inntekterFraUtenlandskVirksomhet.name,
