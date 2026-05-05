@@ -112,7 +112,7 @@ class FeltRenderer(
     private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
         val valgtMap = verdi as? Map<String, Boolean> ?: return ""
         val valgteLabels = felt.alternativer
-            .filter { valgtMap[it.value] == true }
+            .filter { valgtMap[it.verdi] == true }
             .map { it.label }
         if (valgteLabels.isEmpty()) return ""
         return renderEnkeltFelt(felt.label, valgteLabels.joinToString(", "))

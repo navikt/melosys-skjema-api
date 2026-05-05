@@ -238,14 +238,14 @@
           "pakrevd": false,
           "alternativer": [
             {
-              "value": "NORSK_VIRKSOMHET",
+              "verdi": "NORSK_VIRKSOMHET",
               "label": {
                 "nb": "Norsk virksomhet",
                 "en": "Norwegian company"
               }
             },
             {
-              "value": "UTENLANDSK_VIRKSOMHET",
+              "verdi": "UTENLANDSK_VIRKSOMHET",
               "label": {
                 "nb": "Utenlandsk virksomhet",
                 "en": "Foreign company"
@@ -262,14 +262,14 @@
           "pakrevd": false,
           "alternativer": [
             {
-              "value": "LOENN",
+              "verdi": "LOENN",
               "label": {
                 "nb": "Lønn",
                 "en": "Salary"
               }
             },
             {
-              "value": "INNTEKT_FRA_EGEN_VIRKSOMHET",
+              "verdi": "INNTEKT_FRA_EGEN_VIRKSOMHET",
               "label": {
                 "nb": "Inntekt fra egen virksomhet",
                 "en": "Income from your own business"
