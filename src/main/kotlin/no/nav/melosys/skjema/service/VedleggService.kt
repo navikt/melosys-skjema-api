@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Vedlegg
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.extensions.toVedleggDto
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
@@ -33,8 +34,8 @@ class VedleggService(
     fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
         val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
 
-        require(skjema.status == SkjemaStatus.UTKAST) {
-            "Kan kun laste opp vedlegg til skjemaer med status UTKAST"
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
         }
 
         val antallEksisterende = vedleggRepository.countBySkjemaId(skjemaId)
@@ -100,8 +101,8 @@ class VedleggService(
     fun slett(skjemaId: UUID, vedleggId: UUID) {
         val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
 
-        require(skjema.status == SkjemaStatus.UTKAST) {
-            "Kan kun slette vedlegg fra skjemaer med status UTKAST"
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
         }
 
         val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
