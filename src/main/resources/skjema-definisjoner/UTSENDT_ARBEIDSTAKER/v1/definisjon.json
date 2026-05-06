@@ -280,8 +280,8 @@
         "inntekt": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Inntekt",
-            "en": "Income"
+            "nb": "Lønnsinntekt",
+            "en": "Salary"
           },
           "hjelpetekst": {
             "nb": "Du skal føre opp samlet månedlig inntekt, inkludert eventuelle utenlandstillegg og verdi av naturalytelser dekt av virksomheten. Hvis inntekten din varierer fra måned til måned, oppgi gjennomsnittlig inntekt i brutto per måned.",
@@ -294,10 +294,6 @@
           "label": {
             "nb": "Inntekter fra egen virksomhet",
             "en": "Income from your own business"
-          },
-          "hjelpetekst": {
-            "nb": "Hvis inntekten din varierer, oppgi gjennomsnitlig inntekt i brutto per måned.",
-            "en": "If your income varies from month to month, please state the average gross income per month."
           },
           "pakrevd": false
         }
