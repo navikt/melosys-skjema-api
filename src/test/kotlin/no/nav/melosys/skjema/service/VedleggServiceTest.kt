@@ -11,6 +11,7 @@ import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.Vedlegg
+import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
@@ -90,9 +91,9 @@ class VedleggServiceTest : FunSpec({
 
             every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.lastOpp(skjemaId, fil)
-            }.message shouldBe "Kan kun laste opp vedlegg til skjemaer med status UTKAST"
+            }
         }
 
         test("feiler når maks antall vedlegg er nådd") {
@@ -174,7 +175,7 @@ class VedleggServiceTest : FunSpec({
 
             every { mockUtsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId) } returns skjema
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.slett(skjemaId, vedleggId)
             }
         }

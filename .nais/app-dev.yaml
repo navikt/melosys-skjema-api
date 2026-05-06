@@ -53,9 +53,8 @@ spec:
         cascadingDelete: false
     buckets:
       - name: melosys-skjema-vedlegg-dev
-        retentionPeriodDays: 30
         lifecycleCondition:
-          age: 30
+          age: 365
           withState: ANY
   tokenx:
     enabled: true
