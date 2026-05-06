@@ -66,10 +66,10 @@ class SkatteforholdOgInntektValidator {
         val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet!!
         val inntektTyper = dto.hvilkeTyperInntektHarDu!!
 
-        val harLoenn = inntektTyper[InntektType.LOENN.name] == true
-        val harEgenVirksomhet = inntektTyper[InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET.name] == true
-        val harNorskVirksomhet = inntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET.name] == true
-        val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET.name] == true
+        val harLoenn = inntektTyper[InntektType.LOENN] == true
+        val harEgenVirksomhet = inntektTyper[InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET] == true
+        val harNorskVirksomhet = inntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET] == true
+        val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET] == true
 
         if (harLoenn) {
             val ugyldigLonnKombinasjon =
