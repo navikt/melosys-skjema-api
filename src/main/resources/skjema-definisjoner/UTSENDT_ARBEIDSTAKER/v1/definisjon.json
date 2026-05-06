@@ -212,8 +212,8 @@
         "pengestotteSomMottasFraAndreLandBelop": {
           "type": "TEXT",
           "label": {
-            "nb": "Hvor mye penger mottar du brutto per måned",
-            "en": "How much money do you receive gross per month"
+            "nb": "Hvor mye penger mottar du brutto per måned?",
+            "en": "How much money do you receive gross per month?"
           },
           "hjelpetekst": {
             "nb": "Oppgi beløpet i norske kroner",
@@ -224,8 +224,8 @@
         "pengestotteSomMottasFraAndreLandBeskrivelse": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Hva slags pengestøtte mottar du",
-            "en": "What kind of financial support do you receive"
+            "nb": "Hva slags pengestøtte mottar du?",
+            "en": "What kind of financial support do you receive?"
           },
           "pakrevd": false
         },
