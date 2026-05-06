@@ -5,6 +5,8 @@ metadata:
   namespace: teammelosys
   labels:
     team: teammelosys
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   port: 8080
   ingresses:
