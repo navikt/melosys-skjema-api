@@ -80,7 +80,7 @@ class SkatteforholdOgInntektValidator {
             if (ugyldigLonnKombinasjon) {
                 violations.add(Violation(
                     field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::kannIkkeHaLonnNarKunNorskVirksomhet.name)
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::kanIkkeHaLonnNarKunNorskVirksomhet.name)
                 ))
             } else {
                 belopViolation(

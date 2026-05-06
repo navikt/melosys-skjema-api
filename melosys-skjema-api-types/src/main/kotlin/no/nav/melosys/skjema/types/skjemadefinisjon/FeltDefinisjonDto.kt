@@ -131,8 +131,7 @@ data class ListeFeltDefinisjon(
 ) : FeltDefinisjonDto()
 
 /**
- * Checkbox-gruppe med predefinerte alternativer der hvert alternativ er avhuket eller ikke.
- * Se [CheckboxAlternativDefinisjonDto.valgt] for tilstanden per checkbox.
+ * Checkbox-gruppe med predefinerte alternativer.
  *
  * @property alternativer Liste over checkbox-alternativer
  */
@@ -140,6 +139,6 @@ data class CheckboxGruppeFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = false,
-    val alternativer: List<CheckboxAlternativDefinisjonDto>
+    val alternativer: List<AlternativDefinisjonDto>
 ) : FeltDefinisjonDto()
 

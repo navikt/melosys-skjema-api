@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.AlternativDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
-import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxAlternativDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
@@ -175,28 +174,16 @@ data class FlersprakligListeFeltDto(
     )
 }
 
-data class FlersprakligCheckboxAlternativDto(
-    val verdi: String,
-    val label: FlersprakligTekst,
-    val beskrivelse: FlersprakligTekst? = null
-) {
-    fun tilCheckboxAlternativDto(språk: Språk) = CheckboxAlternativDefinisjonDto(
-        verdi = verdi,
-        label = label.hent(språk),
-        beskrivelse = beskrivelse?.hent(språk)
-    )
-}
-
 data class FlersprakligCheckboxGruppeFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = false,
-    val alternativer: List<FlersprakligCheckboxAlternativDto>
+    val alternativer: List<FlersprakligAlternativDto>
 ) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = CheckboxGruppeFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
         pakrevd = pakrevd,
-        alternativer = alternativer.map { it.tilCheckboxAlternativDto(språk) }
+        alternativer = alternativer.map { it.tilAlternativDto(språk) }
     )
 }
