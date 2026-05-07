@@ -76,6 +76,13 @@ class SkatteforholdOgInntektValidatorTest {
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to false, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to true),
             inntektFraEgenVirksomhet = "30000,00"
         ),
+        // Skatteplikt=JA + lønn + kun norsk virksomhet, uten beløp → gyldig
+        skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+            erSkattepliktigTilNorgeIHeleutsendingsperioden = true,
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
+            hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
+            inntekt = null,
+        ),
     ).map { Arguments.of(it) }.stream()
 
     fun invalidCombinations(): Stream<Arguments> = listOf(
@@ -142,11 +149,12 @@ class SkatteforholdOgInntektValidatorTest {
         ),
 
         // --- Lønnsinntekt ---
-        // Skatteplikt=JA + lønn + kun norsk virksomhet → ugyldig kombinasjon
+        // Skatteplikt=JA + lønn + kun norsk virksomhet, men inntekt er oppgitt → ugyldig
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             erSkattepliktigTilNorgeIHeleutsendingsperioden = true,
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
+            inntekt = "50000,00",
         ),
         // Lønn + kun norsk virksomhet + skatteplikt=NEI, men beløp mangler
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(

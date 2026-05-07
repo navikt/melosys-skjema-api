@@ -105,26 +105,40 @@ class SkatteforholdOgInntektValidator {
         val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET] == true
 
         return buildList {
-            if (harLoenn) {
-                val ugyldigLonnKombinasjon =
+            val inntektIkkeTillatt =
+                harLoenn &&
+                    !harEgenVirksomhet &&
                     dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
-                        harNorskVirksomhet &&
-                        !harUtenlandskVirksomhet
+                    harNorskVirksomhet &&
+                    !harUtenlandskVirksomhet
 
-                if (ugyldigLonnKombinasjon) {
+            if (inntektIkkeTillatt) {
+                // Ingen beløpfelt skal være utfylt i denne kombinasjonen
+                if (!dto.inntekt.isNullOrBlank()) {
                     add(
                         Violation(
-                            field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                            translationKey = translationKey(SkatteforholdOgInntektTranslation::kanIkkeHaLonnNarKunNorskVirksomhet.name)
+                            field = SkatteforholdOgInntektDto::inntekt.name,
+                            translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
                         )
                     )
-                } else {
-                    belopViolation(
-                        dto.inntekt,
-                        SkatteforholdOgInntektDto::inntekt.name,
-                        SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
-                    )?.let(::add)
                 }
+                if (!dto.inntektFraEgenVirksomhet.isNullOrBlank()) {
+                    add(
+                        Violation(
+                            field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
+                            translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
+                        )
+                    )
+                }
+                return@buildList
+            }
+
+            if (harLoenn) {
+                belopViolation(
+                    dto.inntekt,
+                    SkatteforholdOgInntektDto::inntekt.name,
+                    SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
+                )?.let(::add)
             } else if (!dto.inntekt.isNullOrBlank()) {
                 add(
                     Violation(
