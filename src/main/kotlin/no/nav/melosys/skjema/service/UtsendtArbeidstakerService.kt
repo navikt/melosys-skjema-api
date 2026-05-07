@@ -65,14 +65,13 @@ class UtsendtArbeidstakerService(
         val innloggetBrukerFnr = subjectHandler.getUserID()
         log.info { "Oppretter Utsendt Arbeidstaker søknad for representasjonstype: ${request.representasjonstype}" }
 
-        // Valider forespørsel
-        representasjonValidator.validerOpprettelse(request)
+        val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
         // Hent juridisk enhet fra Enhetsregisteret for kobling av separate søknader
         val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
 
         // Bygg metadata med korrekt fullmektig-logikk og juridisk enhet
-        val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr)
+        val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr, arbeidstakerNavn)
 
         // Opprett skjema med riktig fnr og orgnr basert på representasjonstype
         val skjema = when (request.representasjonstype) {
@@ -460,7 +459,8 @@ class UtsendtArbeidstakerService(
     private fun byggMetadata(
         request: OpprettUtsendtArbeidstakerSoknadRequest,
         innloggetBrukerFnr: String,
-        juridiskEnhetOrgnr: String
+        juridiskEnhetOrgnr: String,
+        arbeidstakerNavn: String
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
 
@@ -468,18 +468,21 @@ class UtsendtArbeidstakerService(
             Representasjonstype.DEG_SELV -> DegSelvMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                fullmektigFnr = innloggetBrukerFnr
+                fullmektigFnr = innloggetBrukerFnr,
+                arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.RADGIVER -> {
                 val radgiverfirmaInfo = request.radgiverfirma
@@ -488,6 +491,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
             }
@@ -499,6 +503,7 @@ class UtsendtArbeidstakerService(
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     fullmektigFnr = innloggetBrukerFnr,
+                    arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
             }
@@ -506,7 +511,8 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                fullmektigFnr = innloggetBrukerFnr
+                fullmektigFnr = innloggetBrukerFnr,
+                arbeidstakerNavn = arbeidstakerNavn
             )
         }
     }

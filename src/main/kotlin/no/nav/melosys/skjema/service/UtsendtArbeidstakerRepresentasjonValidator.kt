@@ -24,26 +24,45 @@ class UtsendtArbeidstakerRepresentasjonValidator(
 ) {
 
     /**
-     * Validerer at en opprettelsesforespørsel er gyldig basert på representasjonstype.
+     * Validerer at en opprettelsesforespørsel er gyldig basert på representasjonstype,
+     * og returnerer arbeidstakerens fulle navn fra PDL.
+     *
+     * Navnet caches i metadata slik at listings-endpoints slipper PDL-oppslag.
      *
      * @param request Forespørsel om å opprette søknad
-     * @throws IllegalArgumentException hvis validering feiler
+     * @param innloggetBrukerFnr Fnr til innlogget bruker (brukes for DEG_SELV der bruker er arbeidstaker)
+     * @return Fullt navn på arbeidstaker fra PDL
+     * @throws IllegalArgumentException hvis validering eller PDL-oppslag feiler
      */
     fun validerOpprettelse(
         request: OpprettUtsendtArbeidstakerSoknadRequest,
-    ) {
+        innloggetBrukerFnr: String,
+    ): String {
         log.info { "Validerer opprettelse av søknad for representasjonstype: ${request.representasjonstype}" }
 
-        when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> validerDegSelv(request)
+        val arbeidstakerNavn = when (request.representasjonstype) {
+            Representasjonstype.DEG_SELV -> {
+                validerDegSelv(request)
+                pdlService.hentNavn(innloggetBrukerFnr)
+            }
             Representasjonstype.ARBEIDSGIVER -> validerArbeidsgiverUtenFullmakt(request)
-            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> validerArbeidsgiverMedFullmakt(request)
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
+                validerArbeidsgiverMedFullmakt(request)
+                pdlService.hentNavn(request.arbeidstaker.fnr)
+            }
             Representasjonstype.RADGIVER -> validerRadgiverUtenFullmakt(request)
-            Representasjonstype.RADGIVER_MED_FULLMAKT -> validerRadgiverMedFullmakt(request)
-            Representasjonstype.ANNEN_PERSON -> validerAnnenPerson(request)
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
+                validerRadgiverMedFullmakt(request)
+                pdlService.hentNavn(request.arbeidstaker.fnr)
+            }
+            Representasjonstype.ANNEN_PERSON -> {
+                validerAnnenPerson(request)
+                pdlService.hentNavn(request.arbeidstaker.fnr)
+            }
         }
 
         log.info { "Validering OK for representasjonstype: ${request.representasjonstype}" }
+        return arbeidstakerNavn
     }
 
     /**
@@ -64,8 +83,10 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
      * - Arbeidsgiver finnes
      * - Arbeidstaker valideres via PDL med etternavn
+     *
+     * @return Fullt navn på arbeidstaker fra PDL
      */
-    private fun validerArbeidsgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerArbeidsgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer ARBEIDSGIVER scenario (uten fullmakt)" }
 
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
@@ -76,7 +97,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
 
-        validerArbeidstakerViaPdl(request)
+        return validerArbeidstakerViaPdl(request)
     }
 
     /**
@@ -105,8 +126,10 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget bruker har Altinn-tilgang til arbeidsgiver
      * - Arbeidsgiver finnes
      * - Arbeidstaker valideres via PDL med etternavn
+     *
+     * @return Fullt navn på arbeidstaker fra PDL
      */
-    private fun validerRadgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerRadgiverUtenFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer RADGIVER scenario (uten fullmakt)" }
 
         validerRadgiverfirma(request)
@@ -119,7 +142,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
 
-        validerArbeidstakerViaPdl(request)
+        return validerArbeidstakerViaPdl(request)
     }
 
     /**
@@ -178,18 +201,18 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         // repr-api validerer også at person finnes i PDL
     }
 
-    private fun validerArbeidstakerViaPdl(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerArbeidstakerViaPdl(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer arbeidstaker via PDL" }
 
         if (request.arbeidstaker.etternavn == null) {
             throw IllegalArgumentException("Etternavn må oppgis for arbeidstaker uten fullmakt")
         }
 
-        try {
+        return try {
             pdlService.verifiserOgHentPerson(
                 request.arbeidstaker.fnr,
                 request.arbeidstaker.etternavn!!
-            )
+            ).first
         } catch (e: Exception) {
             log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
             throw IllegalArgumentException(

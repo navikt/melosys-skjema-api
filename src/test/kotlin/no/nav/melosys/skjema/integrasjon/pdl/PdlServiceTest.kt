@@ -186,4 +186,39 @@ class PdlServiceTest {
 
         assertThat(exception.message).isEqualTo("Person har ingen fødselsdato registrert i PDL")
     }
+
+    @Test
+    fun `hentNavn returnerer fullt navn fra PDL`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(PdlNavn(fornavn = "Kurt", mellomnavn = null, etternavn = "Sand")),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Kurt Sand")
+    }
+
+    @Test
+    fun `hentNavn propagerer feil fra PDL-oppslag`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        every { pdlConsumer.hentPerson(fodselsnummer) } throws RuntimeException("PDL nede")
+
+        assertThrows<RuntimeException> { pdlService.hentNavn(fodselsnummer) }
+    }
+
+    @Test
+    fun `hentNavn kaster IllegalArgumentException når person mangler navn i PDL`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = emptyList(),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        val exception = assertThrows<IllegalArgumentException> {
+            pdlService.hentNavn(fodselsnummer)
+        }
+        assertThat(exception.message).isEqualTo("Person har ingen navn registrert i PDL")
+    }
 }

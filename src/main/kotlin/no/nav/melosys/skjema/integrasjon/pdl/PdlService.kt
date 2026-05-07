@@ -56,4 +56,14 @@ class PdlService(
 
         return Pair(navn, fodselsdato)
     }
+
+    /**
+     * Henter fullt navn fra PDL.
+     * Kaster hvis PDL-oppslag feiler eller person mangler navn — kallere må håndtere det.
+     */
+    fun hentNavn(fodselsnummer: String): String {
+        val person = pdlConsumer.hentPerson(fodselsnummer)
+        return person.navn.firstOrNull()?.fulltNavn()
+            ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
+    }
 }

@@ -937,4 +937,45 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             e.message shouldBe "radgiverfirmaOrgnr er påkrevd for RADGIVER"
         }
     }
+
+    // ========================================
+    // arbeidstakerNavn — lagret i metadata ved opprettelse
+    // ========================================
+
+    @Test
+    @DisplayName("ARBEIDSGIVER: arbeidstakerNavn skal leses fra metadata")
+    fun `arbeidstakerNavn skal leses fra metadata`() {
+        val userFnr = korrektSyntetiskFnr
+        val arbeidstakerFnr = etAnnetKorrektSyntetiskFnr
+        val orgnr = "111222333"
+        every { subjectHandler.getUserID() } returns userFnr
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(orgnr, "Bedrift A AS", "AS")
+        )
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = arbeidstakerFnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    arbeidsgiverNavn = "Bedrift A AS",
+                    arbeidstakerNavn = "Kurt Sand"
+                ),
+                opprettetAv = userFnr
+            )
+        )
+
+        val request = HentInnsendteSoknaderRequest(
+            side = 1,
+            antall = 10,
+            representasjonstype = Representasjonstype.ARBEIDSGIVER
+        )
+
+        val response = service.hentInnsendteSoknader(request)
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].arbeidstakerNavn shouldBe "Kurt Sand"
+    }
 }

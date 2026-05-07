@@ -217,7 +217,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
-    private fun konverterTilInnsendtSoknadDto(skjema: Skjema, personerMedAktivFullmakt: Set<String>): InnsendtSoknadOversiktDto {
+    private fun konverterTilInnsendtSoknadDto(
+        skjema: Skjema,
+        personerMedAktivFullmakt: Set<String>
+    ): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
 
@@ -226,7 +229,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             referanseId = innsending?.referanseId,
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
-            arbeidstakerNavn = null, // TODO: Hent fra data-feltet hvis tilgjengelig
+            arbeidstakerNavn = metadata.arbeidstakerNavn,
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             arbeidstakerFodselsdato = hentFodselsdatoFraFnr(skjema.fnr),
             innsendtDato = skjema.endretDato,

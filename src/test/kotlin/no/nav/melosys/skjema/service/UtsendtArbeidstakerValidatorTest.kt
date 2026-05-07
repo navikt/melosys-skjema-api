@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
@@ -35,7 +36,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     context("DEG_SELV validering") {
-        test("skal godkjenne gyldig DEG_SELV request") {
+        test("skal godkjenne gyldig DEG_SELV request og returnere navn fra PDL") {
             val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.DEG_SELV,
                 arbeidsgiver = testArbeidsgiver,
@@ -43,9 +44,11 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             )
 
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockPdlService.hentNavn(testArbeidstaker.fnr) } returns "Ola Nordmann"
 
-            validator.validerOpprettelse(request)
+            val navn = validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
+            navn shouldBe "Ola Nordmann"
             verify { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) }
         }
 
@@ -59,7 +62,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns false
 
             val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "finnes ikke"
@@ -81,7 +84,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
                 java.time.LocalDate.of(1990, 1, 1)
             )
 
-            validator.validerOpprettelse(request)
+            validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
             verify { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) }
         }
@@ -96,7 +99,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "ikke Altinn-tilgang"
@@ -116,7 +119,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             } throws IllegalArgumentException("Person ikke funnet")
 
             val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "finnes ikke eller etternavn matcher ikke"
@@ -124,7 +127,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
     }
 
     context("ARBEIDSGIVER_MED_FULLMAKT validering") {
-        test("skal godkjenne gyldig ARBEIDSGIVER_MED_FULLMAKT request") {
+        test("skal godkjenne gyldig ARBEIDSGIVER_MED_FULLMAKT request og returnere navn fra PDL") {
             val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 arbeidsgiver = testArbeidsgiver,
@@ -134,11 +137,30 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
+            every { mockPdlService.hentNavn(testArbeidstaker.fnr) } returns "Ola Nordmann"
 
-            validator.validerOpprettelse(request)
+            val navn = validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
+            navn shouldBe "Ola Nordmann"
             verify { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) }
             verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
+        }
+
+        test("skal propagere PDL-feil i fullmakt-flow") {
+            val request = opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                arbeidsgiver = testArbeidsgiver,
+                arbeidstaker = testArbeidstaker
+            )
+
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+            every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
+            every { mockPdlService.hentNavn(testArbeidstaker.fnr) } throws IllegalArgumentException("Person ikke funnet")
+
+            shouldThrow<IllegalArgumentException> {
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
+            }
         }
 
         test("skal feile når fullmakt mangler") {
@@ -153,7 +175,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "ikke fullmakt"
@@ -177,7 +199,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
                 java.time.LocalDate.of(1990, 1, 1)
             )
 
-            validator.validerOpprettelse(request)
+            validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
             verify { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) }
             verify { mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!) }
@@ -192,7 +214,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             )
 
             val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "Rådgiverfirma må oppgis"
@@ -209,7 +231,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) } returns false
 
             val exception = shouldThrow<IllegalArgumentException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "Rådgiverfirma"
@@ -230,8 +252,9 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
+            every { mockPdlService.hentNavn(testArbeidstaker.fnr) } returns "Ola Nordmann"
 
-            validator.validerOpprettelse(request)
+            validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
             verify { mockEregService.organisasjonsnummerEksisterer(testRadgiverfirma.orgnr) }
             verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
@@ -251,7 +274,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "ikke fullmakt"
@@ -268,8 +291,9 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
 
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns true
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
+            every { mockPdlService.hentNavn(testArbeidstaker.fnr) } returns "Ola Nordmann"
 
-            validator.validerOpprettelse(request)
+            validator.validerOpprettelse(request, testArbeidstaker.fnr)
 
             verify { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) }
         }
@@ -284,7 +308,7 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockReprService.harSkriverettigheterForMedlemskap(testArbeidstaker.fnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
-                validator.validerOpprettelse(request)
+                validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
 
             exception.message shouldContain "ikke fullmakt"
