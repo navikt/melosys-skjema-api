@@ -10,6 +10,35 @@ nav_order: 5
 Å laste opp pakker til Github Package Registry er et enklere alternativ
 for å publisere Maven-artifakter enn å bruke Maven Central.
 
+# Lokal publisering for utvikling (`scripts/publish-types-local.sh`)
+
+For å teste endringer i `melosys-skjema-api-types` mot konsumenter (typisk
+[melosys-api](https://github.com/navikt/melosys-api)) uten å måtte merge til
+`main` og vente på at `publish-types.yml` kjører, finnes scriptet
+`scripts/publish-types-local.sh`. Det kan kjøres direkte eller via
+gradle-wrapperen `publishTypesLocal`:
+
+```bash
+./gradlew publishTypesLocal       # idiomatisk via Gradle
+./scripts/publish-types-local.sh  # direkte (raskere, ingen gradle-daemon i tillegg)
+```
+
+Det publiserer artifaktet til lokal Maven-cache (`~/.m2/repository`) med en
+versjon på formen `<dato>-<sha12>[.dirty]-LOCAL`. `-LOCAL`-suffikset gjør
+versjonen lett å gjenkjenne, og `.dirty` settes automatisk hvis working tree
+har ucommittede endringer.
+
+Output: progresjon og gradle-output går til stderr, mens versjonsstrengen
+skrives som siste linje på stdout. Det gjør det lett for en konsument å
+capture versjonen i et wrapper-script:
+
+```bash
+VERSION=$(./scripts/publish-types-local.sh)
+```
+
+I melosys-api finnes en slik wrapper (`make local-skjema-types`) som kaller
+dette scriptet og oppdaterer `pom.xml` automatisk.
+
 Den enkleste måten å publisere artifakter dit, er å sette opp en CI-pipeline
 via Github Actions.
 

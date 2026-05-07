@@ -119,3 +119,12 @@ tasks.withType<Test> {
         showStackTraces = true
     }
 }
+
+tasks.register<Exec>("publishTypesLocal") {
+    group = "publishing"
+    description = "Bygger og publiserer melosys-skjema-api-types til ~/.m2/repository for lokal utvikling mot konsumenter (f.eks. melosys-api). Wrapper rundt scripts/publish-types-local.sh."
+    workingDir = rootDir
+    commandLine("./scripts/publish-types-local.sh")
+    standardOutput = System.out
+    errorOutput = System.err
+}
