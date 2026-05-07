@@ -13,107 +13,142 @@ import org.springframework.stereotype.Component
 class SkatteforholdOgInntektValidator {
 
     fun validate(dto: SkatteforholdOgInntektDto?): List<Violation> {
-        if (dto == null) return listOf(Violation(
-            field = "skatteforholdOgInntekt",
-            translationKey = FELT_ER_PAAKREVD
-        ))
+        if (dto == null) return listOf(
+            Violation(field = "skatteforholdOgInntekt", translationKey = FELT_ER_PAAKREVD)
+        )
 
-        val violations = mutableListOf<Violation>()
+        val pengestotteViolations = validatePengestotte(dto)
+        if (pengestotteViolations.isNotEmpty()) return pengestotteViolations
 
-        if (dto.mottarPengestotteFraAnnetEosLandEllerSveits) {
-            if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {
-                violations.add(Violation(
+        val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet
+        val inntektTyper = dto.hvilkeTyperInntektHarDu
+
+        val valgViolations = validateInntektValg(inntektKilder, inntektTyper)
+        if (inntektKilder == null || inntektTyper == null || valgViolations.isNotEmpty()) {
+            return valgViolations
+        }
+
+        return validateInntektBelop(dto, inntektKilder, inntektTyper)
+    }
+
+    /**
+     * Validerer pengestøtte-feltene sekvensielt.
+     * Returnerer ved første feil, slik at bruker får én feilmelding om gangen.
+     */
+    private fun validatePengestotte(dto: SkatteforholdOgInntektDto): List<Violation> {
+        if (!dto.mottarPengestotteFraAnnetEosLandEllerSveits) return emptyList()
+
+        if (dto.landSomUtbetalerPengestotte.isNullOrBlank()) {
+            return listOf(
+                Violation(
                     field = SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name,
                     translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name)
-                ))
-                return violations
-            }
-            belopViolation(
-                dto.pengestotteSomMottasFraAndreLandBelop,
-                SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name,
-                SkatteforholdOgInntektTranslation::maaOppgiBelopPengestotte.name
-            )?.let { violations.add(it); return violations }
+                )
+            )
+        }
 
-            if (dto.pengestotteSomMottasFraAndreLandBeskrivelse.isNullOrBlank()) {
-                violations.add(Violation(
+        belopViolation(
+            dto.pengestotteSomMottasFraAndreLandBelop,
+            SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBelop.name,
+            SkatteforholdOgInntektTranslation::maaOppgiBelopPengestotte.name
+        )?.let { return listOf(it) }
+
+        if (dto.pengestotteSomMottasFraAndreLandBeskrivelse.isNullOrBlank()) {
+            return listOf(
+                Violation(
                     field = SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name,
                     translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name)
-                ))
-                return violations
-            }
+                )
+            )
         }
 
-        if (dto.inntektFraNorskEllerUtenlandskVirksomhet?.none { it.value } == true) {
-            violations.add(Violation(
-                field = SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name,
-                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnInntektKilde.name)
-            ))
+        return emptyList()
+    }
+
+    /**
+     * Validerer at minst én inntektkilde og minst én inntekttype er valgt.
+     */
+    private fun validateInntektValg(
+        inntektKilder: Map<ArbeidsinntektKilde, Boolean>?,
+        inntektTyper: Map<InntektType, Boolean>?
+    ): List<Violation> = buildList {
+        if (inntektKilder?.none { it.value } == true) {
+            add(
+                Violation(
+                    field = SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name,
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektKilde.name)
+                )
+            )
         }
-
-        if (dto.hvilkeTyperInntektHarDu?.none { it.value } == true) {
-            violations.add(Violation(
-                field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinsteEnInntektType.name)
-            ))
+        if (inntektTyper?.none { it.value } == true) {
+            add(
+                Violation(
+                    field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
+                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektType.name)
+                )
+            )
         }
+    }
 
-        if (dto.inntektFraNorskEllerUtenlandskVirksomhet == null || dto.hvilkeTyperInntektHarDu == null) {
-            return violations
-        }
-
-        if (violations.isNotEmpty()) return violations
-
-        val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet!!
-        val inntektTyper = dto.hvilkeTyperInntektHarDu!!
-
+    /**
+     * Validerer inntektsbeløp basert på valgte inntektkilder og -typer.
+     * Forutsetter at [inntektKilder] og [inntektTyper] ikke er null.
+     */
+    private fun validateInntektBelop(
+        dto: SkatteforholdOgInntektDto,
+        inntektKilder: Map<ArbeidsinntektKilde, Boolean>,
+        inntektTyper: Map<InntektType, Boolean>
+    ): List<Violation> {
         val harLoenn = inntektTyper[InntektType.LOENN] == true
         val harEgenVirksomhet = inntektTyper[InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET] == true
         val harNorskVirksomhet = inntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET] == true
         val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET] == true
 
-        if (harLoenn) {
-            val ugyldigLonnKombinasjon =
-                dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
-                    harNorskVirksomhet &&
-                    !harUtenlandskVirksomhet
+        return buildList {
+            if (harLoenn) {
+                val ugyldigLonnKombinasjon =
+                    dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
+                        harNorskVirksomhet &&
+                        !harUtenlandskVirksomhet
 
-            if (ugyldigLonnKombinasjon) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::kanIkkeHaLonnNarKunNorskVirksomhet.name)
-                ))
-            } else {
+                if (ugyldigLonnKombinasjon) {
+                    add(
+                        Violation(
+                            field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
+                            translationKey = translationKey(SkatteforholdOgInntektTranslation::kanIkkeHaLonnNarKunNorskVirksomhet.name)
+                        )
+                    )
+                } else {
+                    belopViolation(
+                        dto.inntekt,
+                        SkatteforholdOgInntektDto::inntekt.name,
+                        SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
+                    )?.let(::add)
+                }
+            } else if (!dto.inntekt.isNullOrBlank()) {
+                add(
+                    Violation(
+                        field = SkatteforholdOgInntektDto::inntekt.name,
+                        translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
+                    )
+                )
+            }
+
+            if (harEgenVirksomhet) {
                 belopViolation(
-                    dto.inntekt,
-                    SkatteforholdOgInntektDto::inntekt.name,
-                    SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
-                )?.let { violations.add(it) }
-            }
-        } else {
-            if (!dto.inntekt.isNullOrBlank()) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntekt.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
-                ))
-            }
-        }
-
-        if (harEgenVirksomhet) {
-            belopViolation(
-                dto.inntektFraEgenVirksomhet,
-                SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
-                SkatteforholdOgInntektTranslation::maaOppgiInntektFraEgenVirksomhet.name
-            )?.let { violations.add(it) }
-        } else {
-            if (!dto.inntektFraEgenVirksomhet.isNullOrBlank()) {
-                violations.add(Violation(
-                    field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
-                ))
+                    dto.inntektFraEgenVirksomhet,
+                    SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
+                    SkatteforholdOgInntektTranslation::maaOppgiInntektFraEgenVirksomhet.name
+                )?.let(::add)
+            } else if (!dto.inntektFraEgenVirksomhet.isNullOrBlank()) {
+                add(
+                    Violation(
+                        field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
+                        translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
+                    )
+                )
             }
         }
-
-        return violations
     }
 
     /**

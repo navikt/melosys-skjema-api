@@ -110,7 +110,7 @@ class FeltRenderer(
 
     @Suppress("UNCHECKED_CAST")
     private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
-        val valgtMap = verdi as? Map<*, Boolean> ?: return ""
+        val valgtMap = (verdi as? Map<*, *>)?.mapValues { it.value as? Boolean ?: false } ?: return ""
         val stringKeyMap = valgtMap.mapKeys { (key, _) -> key.toString() }
         val valgteLabels = felt.alternativer
             .filter { stringKeyMap[it.verdi] == true }
