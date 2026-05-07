@@ -67,13 +67,10 @@ class UtsendtArbeidstakerService(
 
         val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
-        // Hent juridisk enhet fra Enhetsregisteret for kobling av separate søknader
         val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
 
-        // Bygg metadata med korrekt fullmektig-logikk og juridisk enhet
         val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr, arbeidstakerNavn)
 
-        // Opprett skjema med riktig fnr og orgnr basert på representasjonstype
         val skjema = when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> {
                 // Arbeidstaker fyller ut for seg selv

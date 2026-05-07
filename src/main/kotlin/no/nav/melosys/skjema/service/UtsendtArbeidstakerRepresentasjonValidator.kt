@@ -41,24 +41,12 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         log.info { "Validerer opprettelse av søknad for representasjonstype: ${request.representasjonstype}" }
 
         val arbeidstakerNavn = when (request.representasjonstype) {
-            Representasjonstype.DEG_SELV -> {
-                validerDegSelv(request)
-                pdlService.hentNavn(innloggetBrukerFnr)
-            }
+            Representasjonstype.DEG_SELV -> validerDegSelv(request, innloggetBrukerFnr)
             Representasjonstype.ARBEIDSGIVER -> validerArbeidsgiverUtenFullmakt(request)
-            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
-                validerArbeidsgiverMedFullmakt(request)
-                pdlService.hentNavn(request.arbeidstaker.fnr)
-            }
+            Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> validerArbeidsgiverMedFullmakt(request)
             Representasjonstype.RADGIVER -> validerRadgiverUtenFullmakt(request)
-            Representasjonstype.RADGIVER_MED_FULLMAKT -> {
-                validerRadgiverMedFullmakt(request)
-                pdlService.hentNavn(request.arbeidstaker.fnr)
-            }
-            Representasjonstype.ANNEN_PERSON -> {
-                validerAnnenPerson(request)
-                pdlService.hentNavn(request.arbeidstaker.fnr)
-            }
+            Representasjonstype.RADGIVER_MED_FULLMAKT -> validerRadgiverMedFullmakt(request)
+            Representasjonstype.ANNEN_PERSON -> validerAnnenPerson(request)
         }
 
         log.info { "Validering OK for representasjonstype: ${request.representasjonstype}" }
@@ -70,12 +58,14 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget person er arbeidstaker
      * - Arbeidsgiver finnes
      */
-    private fun validerDegSelv(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerDegSelv(request: OpprettUtsendtArbeidstakerSoknadRequest, innloggetBrukerFnr: String): String {
         log.debug { "Validerer DEG_SELV scenario" }
 
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
+
+        return pdlService.hentNavn(innloggetBrukerFnr)
     }
 
     /**
@@ -106,7 +96,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Innlogget bruker har fullmakt fra arbeidstaker
      */
-    private fun validerArbeidsgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerArbeidsgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer ARBEIDSGIVER_MED_FULLMAKT scenario" }
 
         if (!altinnService.harBrukerTilgang(request.arbeidsgiver.orgnr)) {
@@ -118,6 +108,8 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         }
 
         validerFullmaktFraArbeidstaker(request)
+
+        return pdlService.hentNavn(request.arbeidstaker.fnr)
     }
 
     /**
@@ -152,7 +144,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Arbeidsgiver finnes
      * - Innlogget bruker har fullmakt fra arbeidstaker
      */
-    private fun validerRadgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerRadgiverMedFullmakt(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer RADGIVER_MED_FULLMAKT scenario" }
 
         validerRadgiverfirma(request)
@@ -166,6 +158,8 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         }
 
         validerFullmaktFraArbeidstaker(request)
+
+        return pdlService.hentNavn(request.arbeidstaker.fnr)
     }
 
     /**
@@ -173,7 +167,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
      * - Innlogget bruker må ha fullmakt fra arbeidstaker
      * - Arbeidsgiver finnes
      */
-    private fun validerAnnenPerson(request: OpprettUtsendtArbeidstakerSoknadRequest) {
+    private fun validerAnnenPerson(request: OpprettUtsendtArbeidstakerSoknadRequest): String {
         log.debug { "Validerer ANNEN_PERSON scenario" }
 
         validerFullmaktFraArbeidstaker(request)
@@ -181,6 +175,8 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         if (!eregService.organisasjonsnummerEksisterer(request.arbeidsgiver.orgnr)) {
             throw IllegalArgumentException("Arbeidsgiver med organisasjonsnummer ${request.arbeidsgiver.orgnr} finnes ikke")
         }
+
+        return pdlService.hentNavn(request.arbeidstaker.fnr)
     }
 
     private fun validerRadgiverfirma(request: OpprettUtsendtArbeidstakerSoknadRequest) {
@@ -209,10 +205,11 @@ class UtsendtArbeidstakerRepresentasjonValidator(
         }
 
         return try {
-            pdlService.verifiserOgHentPerson(
+            val (navn, _) = pdlService.verifiserOgHentPerson(
                 request.arbeidstaker.fnr,
                 request.arbeidstaker.etternavn!!
-            ).first
+            )
+            navn
         } catch (e: Exception) {
             log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
             throw IllegalArgumentException(

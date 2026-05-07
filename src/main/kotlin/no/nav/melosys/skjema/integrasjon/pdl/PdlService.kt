@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
 import org.springframework.beans.factory.annotation.Value
@@ -46,8 +47,7 @@ class PdlService(
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        val navn = person.navn.firstOrNull()?.fulltNavn()
-            ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
+        val navn = person.hentFulltNavn()
 
         val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato
             ?: throw IllegalArgumentException("Person har ingen fødselsdato registrert i PDL")
@@ -59,11 +59,12 @@ class PdlService(
 
     /**
      * Henter fullt navn fra PDL.
-     * Kaster hvis PDL-oppslag feiler eller person mangler navn — kallere må håndtere det.
+     * @throws IllegalArgumentException hvis person mangler navn registrert i PDL.
      */
-    fun hentNavn(fodselsnummer: String): String {
-        val person = pdlConsumer.hentPerson(fodselsnummer)
-        return person.navn.firstOrNull()?.fulltNavn()
+    fun hentNavn(fodselsnummer: String): String =
+        pdlConsumer.hentPerson(fodselsnummer).hentFulltNavn()
+
+    private fun PdlPerson.hentFulltNavn(): String =
+        navn.firstOrNull()?.fulltNavn()
             ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
-    }
 }

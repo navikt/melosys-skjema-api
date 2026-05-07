@@ -23,7 +23,7 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     abstract val skjemadel: Skjemadel
     /** Navn på arbeidsgiver-organisasjonen */
     abstract val arbeidsgiverNavn: String
-    /** Fullt navn på arbeidstaker, cachet fra PDL ved opprettelse. */
+    /** Fullt navn på arbeidstaker. */
     abstract val arbeidstakerNavn: String
     /**
      * Juridisk enhet orgnr fra Enhetsregisteret.
