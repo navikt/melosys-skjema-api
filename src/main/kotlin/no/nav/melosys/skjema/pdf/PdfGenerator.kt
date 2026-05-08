@@ -98,7 +98,13 @@ private fun registrerFonter(builder: PdfRendererBuilder) {
         "sans-serif", 700, BaseRendererBuilder.FontStyle.NORMAL, true
     )
 
-    log.debug { "Registrerte Liberation Sans fonter fra classpath" }
+    // Registrer DejaVu Sans for symboler (☑ U+2611 o.l.)
+    builder.useFont(
+        { hentRessurs("/pdf/fonts/DejaVuSans.ttf") ?: throw IllegalStateException("Fant ikke DejaVuSans.ttf på classpath") },
+        "DejaVu Sans", 400, BaseRendererBuilder.FontStyle.NORMAL, true
+    )
+
+    log.debug { "Registrerte Liberation Sans og DejaVu Sans fonter fra classpath" }
 }
 
 /**

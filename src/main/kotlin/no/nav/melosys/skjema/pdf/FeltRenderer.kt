@@ -116,7 +116,19 @@ class FeltRenderer(
             .filter { stringKeyMap[it.verdi] == true }
             .map { it.label }
         if (valgteLabels.isEmpty()) return ""
-        return renderEnkeltFelt(felt.label, valgteLabels.joinToString(", "))
+
+        val listeHtml = valgteLabels.joinToString("\n") { label ->
+            """<div class="checkbox-item"><span class="checkbox-icon">&#x2611;</span> ${escapeHtml(label)}</div>"""
+        }
+
+        return """
+            <div class="form-summary-answer">
+                <p class="form-summary-label">${escapeHtml(felt.label)}</p>
+                <div class="form-summary-value checkbox-gruppe">
+                    $listeHtml
+                </div>
+            </div>
+        """.trimIndent()
     }
 
     @Suppress("UNCHECKED_CAST")
