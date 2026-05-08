@@ -4,7 +4,7 @@ data class SkatteforholdOgInntektTranslation(
     val maaOppgiLandSomUtbetalerPengestotte: String,
     val maaOppgiBelopPengestotte: String,
     val maaOppgiBeskrivelsePengestotte: String,
-    val ugyldigBelopFormat: String,
+    val duMaOppgiEtGyldigBelopSomErStorreEnn0: String,
     val maaVelgeMinstEnInntektKilde: String,
     val maaVelgeMinstEnInntektType: String,
     val maaOppgiInntekt: String,

@@ -166,21 +166,19 @@ class SkatteforholdOgInntektValidator {
     }
 
     /**
-     * Returnerer en Violation hvis [verdi] mangler eller har ugyldig beløpsformat,
+     * Returnerer en [Violation] hvis [verdi] mangler eller ikke er et gyldig positivt heltall,
      * ellers null.
      */
     private fun belopViolation(verdi: String?, fieldName: String, paakrevdKey: String): Violation? = when {
         verdi.isNullOrBlank() -> Violation(field = fieldName, translationKey = translationKey(paakrevdKey))
-        !erGyldigBelop(verdi) -> Violation(field = fieldName, translationKey = translationKey(SkatteforholdOgInntektTranslation::ugyldigBelopFormat.name))
+        !erGyldigBelop(verdi) -> Violation(field = fieldName, translationKey = translationKey(SkatteforholdOgInntektTranslation::duMaOppgiEtGyldigBelopSomErStorreEnn0.name))
         else -> null
     }
 
     companion object {
-        /** Gyldig beløp: positive kroner med øre (2 desimaler), eksempel: 1000,00 */
-        private val BELOP_REGEX = Regex("""^\d+,\d{2}$""")
-
+        /** Gyldig beløp: heltall større enn 0, eksempel: "1000", "500" */
         fun erGyldigBelop(belop: String?): Boolean =
-            belop != null && BELOP_REGEX.matches(belop.trim())
+            belop?.trim()?.toLongOrNull()?.let { it > 0 } == true
 
         private fun translationKey(fieldName: String) =
             "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"

@@ -34,13 +34,13 @@ class SkatteforholdOgInntektValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["3456,78", "100,00", "0,50"])
+    @ValueSource(strings = ["1", "100", "3456", "1234567"])
     fun `erGyldigBelop should accept valid formats`(belop: String) {
         SkatteforholdOgInntektValidator.erGyldigBelop(belop) shouldBe true
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["3456.78", "-100", "100,", "100,5", "100,123", ",78", "1 000", "100", ""])
+    @ValueSource(strings = ["0", "-100", "3456.78", "100,00", "1 000", "", "abc", "12.5"])
     fun `erGyldigBelop should reject invalid formats`(belop: String) {
         SkatteforholdOgInntektValidator.erGyldigBelop(belop) shouldBe false
     }
@@ -54,27 +54,27 @@ class SkatteforholdOgInntektValidatorTest {
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "SE",
-            pengestotteSomMottasFraAndreLandBelop = "5000,50",
+            pengestotteSomMottasFraAndreLandBelop = "5000",
             pengestotteSomMottasFraAndreLandBeskrivelse = "Studentstøtte fra Sverige"
         ),
         // Lønn + utenlandsk virksomhet + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to false, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to true),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
-            inntekt = "50000,00",
+            inntekt = "50000",
         ),
         // Lønn + kun norsk virksomhet + skatteplikt=NEI + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             erSkattepliktigTilNorgeIHeleutsendingsperioden = false,
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
-            inntekt = "40000,00",
+            inntekt = "40000",
         ),
         // Inntekt fra egen virksomhet + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to false, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to true),
-            inntektFraEgenVirksomhet = "30000,00"
+            inntektFraEgenVirksomhet = "30000"
         ),
         // Skatteplikt=JA + lønn + kun norsk virksomhet, uten beløp → gyldig
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
@@ -90,14 +90,14 @@ class SkatteforholdOgInntektValidatorTest {
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = null,
-            pengestotteSomMottasFraAndreLandBelop = "5000,00",
+            pengestotteSomMottasFraAndreLandBelop = "5000",
             pengestotteSomMottasFraAndreLandBeskrivelse = "Beskrivelse"
         ),
         // Mottar pengestøtte, men landSomUtbetalerPengestotte er blank
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "   ",
-            pengestotteSomMottasFraAndreLandBelop = "5000,00",
+            pengestotteSomMottasFraAndreLandBelop = "5000",
             pengestotteSomMottasFraAndreLandBeskrivelse = "Beskrivelse"
         ),
         // Mottar pengestøtte, men pengestotteSomMottasFraAndreLandBelop er null
@@ -118,21 +118,21 @@ class SkatteforholdOgInntektValidatorTest {
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "SE",
-            pengestotteSomMottasFraAndreLandBelop = "5000.50",
+            pengestotteSomMottasFraAndreLandBelop = "0",
             pengestotteSomMottasFraAndreLandBeskrivelse = "Beskrivelse"
         ),
         // Mottar pengestøtte, men pengestotteSomMottasFraAndreLandBeskrivelse er null
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "SE",
-            pengestotteSomMottasFraAndreLandBelop = "5000,00",
+            pengestotteSomMottasFraAndreLandBelop = "5000",
             pengestotteSomMottasFraAndreLandBeskrivelse = null
         ),
         // Mottar pengestøtte, men pengestotteSomMottasFraAndreLandBeskrivelse er blank
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "SE",
-            pengestotteSomMottasFraAndreLandBelop = "5000,00",
+            pengestotteSomMottasFraAndreLandBelop = "5000",
             pengestotteSomMottasFraAndreLandBeskrivelse = "   "
         ),
 
@@ -154,7 +154,7 @@ class SkatteforholdOgInntektValidatorTest {
             erSkattepliktigTilNorgeIHeleutsendingsperioden = true,
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
-            inntekt = "50000,00",
+            inntekt = "50000",
         ),
         // Lønn + kun norsk virksomhet + skatteplikt=NEI, men beløp mangler
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
@@ -179,8 +179,8 @@ class SkatteforholdOgInntektValidatorTest {
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to false, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to true),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to false, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to true),
-            inntekt = "500,00",
-            inntektFraEgenVirksomhet = "300,00",
+            inntekt = "500",
+            inntektFraEgenVirksomhet = "300",
         ),
 
         // --- Inntekt fra egen virksomhet ---
@@ -200,8 +200,8 @@ class SkatteforholdOgInntektValidatorTest {
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to false, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to true),
             hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
-            inntekt = "500,00",
-            inntektFraEgenVirksomhet = "300,00",
+            inntekt = "500",
+            inntektFraEgenVirksomhet = "300",
         ),
     ).map { Arguments.of(it) }.stream()
 }
