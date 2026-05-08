@@ -278,7 +278,7 @@
           ]
         },
         "inntekt": {
-          "type": "TEXTAREA",
+          "type": "TEXT",
           "label": {
             "nb": "Lønnsinntekt",
             "en": "Salary"
@@ -290,7 +290,7 @@
           "pakrevd": false
         },
         "inntektFraEgenVirksomhet": {
-          "type": "TEXTAREA",
+          "type": "TEXT",
           "label": {
             "nb": "Inntekter fra egen virksomhet",
             "en": "Income from your own business"
