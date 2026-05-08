@@ -105,12 +105,12 @@ class SeksjonRenderer(
             felt("erSkattepliktigTilNorgeIHeleutsendingsperioden", data.erSkattepliktigTilNorgeIHeleutsendingsperioden)
             felt("mottarPengestotteFraAnnetEosLandEllerSveits", data.mottarPengestotteFraAnnetEosLandEllerSveits)
             felt("landSomUtbetalerPengestotte", data.landSomUtbetalerPengestotte)
-            felt("pengestotteSomMottasFraAndreLandBelop", data.pengestotteSomMottasFraAndreLandBelop)
+            felt("pengestotteSomMottasFraAndreLandBelop", data.pengestotteSomMottasFraAndreLandBelop?.formaterSomKroner())
             felt("pengestotteSomMottasFraAndreLandBeskrivelse", data.pengestotteSomMottasFraAndreLandBeskrivelse)
             felt("inntektFraNorskEllerUtenlandskVirksomhet", data.inntektFraNorskEllerUtenlandskVirksomhet)
             felt("hvilkeTyperInntektHarDu", data.hvilkeTyperInntektHarDu)
-            felt("inntekt", data.inntekt)
-            felt("inntektFraEgenVirksomhet", data.inntektFraEgenVirksomhet)
+            felt("inntekt", data.inntekt?.formaterSomKroner())
+            felt("inntektFraEgenVirksomhet", data.inntektFraEgenVirksomhet?.formaterSomKroner())
         }
     }
 
@@ -454,3 +454,14 @@ class SeksjonRenderer(
         }
     }
 }
+
+/**
+ * Formaterer en heltallsstreng som kronebeløp med tusenskilletegn og " kr"-suffiks.
+ * Eksempel: "1234567" → "1 234 567 kr"
+ */
+private fun String.formaterSomKroner(): String {
+    val tall = toLongOrNull() ?: return this
+    val formatert = tall.toString().reversed().chunked(3).joinToString(" ").reversed()
+    return "$formatert kr"
+}
+
