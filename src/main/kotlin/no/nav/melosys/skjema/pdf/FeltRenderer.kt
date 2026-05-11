@@ -55,14 +55,8 @@ class FeltRenderer(
         """.trimIndent()
     }
 
-    private fun renderBoolean(felt: BooleanFeltDefinisjon, verdi: Any): String {
-        val boolVerdi = when (verdi) {
-            is Boolean -> verdi
-            else -> return ""
-        }
-        val visningsverdi = if (boolVerdi) felt.jaLabel else felt.neiLabel
-        return renderEnkeltFelt(felt.label, visningsverdi)
-    }
+    private fun renderBoolean(felt: BooleanFeltDefinisjon, verdi: Any): String =
+        formaterVerdi(felt, verdi)?.let { renderEnkeltFelt(felt.label, it) } ?: ""
 
     private fun renderText(felt: TextFeltDefinisjon, verdi: Any): String {
         val tekst = verdi.toString()
@@ -93,22 +87,11 @@ class FeltRenderer(
                 renderEnkeltFelt(felt.tilDatoLabel, tilDato)
     }
 
-    private fun renderSelect(felt: SelectFeltDefinisjon, verdi: Any): String {
-        val verdiStr = when (verdi) {
-            is Enum<*> -> verdi.name
-            else -> verdi.toString()
-        }
-        val visningsverdi = felt.alternativer.find { it.verdi == verdiStr }?.label ?: verdiStr
-        return renderEnkeltFelt(felt.label, visningsverdi)
-    }
+    private fun renderSelect(felt: SelectFeltDefinisjon, verdi: Any): String =
+        formaterVerdi(felt, verdi)?.let { renderEnkeltFelt(felt.label, it) } ?: ""
 
-    private fun renderCountry(felt: CountrySelectFeltDefinisjon, verdi: Any): String {
-        val landnavn = when (verdi) {
-            is LandKode -> verdi.hentNavn(språk)
-            else -> verdi.toString()
-        }
-        return renderEnkeltFelt(felt.label, landnavn)
-    }
+    private fun renderCountry(felt: CountrySelectFeltDefinisjon, verdi: Any): String =
+        formaterVerdi(felt, verdi)?.let { renderEnkeltFelt(felt.label, it) } ?: ""
 
     @Suppress("UNCHECKED_CAST")
     private fun renderListe(felt: ListeFeltDefinisjon, verdi: Any): String {
@@ -220,20 +203,22 @@ class FeltRenderer(
 
     private fun renderListeFelt(feltDef: FeltDefinisjonDto, verdi: Any?): String {
         if (verdi == null) return ""
-        val visningsverdi = when (feltDef) {
-            is BooleanFeltDefinisjon -> if (verdi as Boolean) feltDef.jaLabel else feltDef.neiLabel
-            is SelectFeltDefinisjon -> {
-                val verdiStr = if (verdi is Enum<*>) verdi.name else verdi.toString()
-                feltDef.alternativer.find { it.verdi == verdiStr }?.label ?: verdiStr
-            }
-            is CountrySelectFeltDefinisjon -> when (verdi) {
-                is LandKode -> verdi.hentNavn(språk)
-                is String -> LandKode.hentLandnavn(verdi, språk)
-                else -> verdi.toString()
-            }
+        val visningsverdi = formaterVerdi(feltDef, verdi) ?: return ""
+        return renderListeElement(feltDef.label, visningsverdi)
+    }
+
+    private fun formaterVerdi(feltDef: FeltDefinisjonDto, verdi: Any): String? = when (feltDef) {
+        is BooleanFeltDefinisjon -> (verdi as? Boolean)?.let { if (it) feltDef.jaLabel else feltDef.neiLabel }
+        is SelectFeltDefinisjon -> {
+            val verdiStr = if (verdi is Enum<*>) verdi.name else verdi.toString()
+            feltDef.alternativer.find { it.verdi == verdiStr }?.label ?: verdiStr
+        }
+        is CountrySelectFeltDefinisjon -> when (verdi) {
+            is LandKode -> verdi.hentNavn(språk)
+            is String -> LandKode.hentLandnavn(verdi, språk)
             else -> verdi.toString()
         }
-        return renderListeElement(feltDef.label, visningsverdi)
+        else -> verdi.toString()
     }
 
     private fun renderGeneriskListe(felt: ListeFeltDefinisjon, liste: List<*>): String {
