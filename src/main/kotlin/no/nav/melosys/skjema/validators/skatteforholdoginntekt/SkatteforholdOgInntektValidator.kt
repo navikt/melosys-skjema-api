@@ -42,7 +42,7 @@ class SkatteforholdOgInntektValidator {
             return listOf(
                 Violation(
                     field = SkatteforholdOgInntektDto::landSomUtbetalerPengestotte.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name)
+                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiLandSomUtbetalerPengestotte.name)
                 )
             )
         }
@@ -57,7 +57,7 @@ class SkatteforholdOgInntektValidator {
             return listOf(
                 Violation(
                     field = SkatteforholdOgInntektDto::pengestotteSomMottasFraAndreLandBeskrivelse.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name)
+                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaOppgiBeskrivelsePengestotte.name)
                 )
             )
         }
@@ -67,6 +67,7 @@ class SkatteforholdOgInntektValidator {
 
     /**
      * Validerer at minst én inntektkilde og minst én inntekttype er valgt.
+     * null betyr at bruker ikke har nådd denne seksjonen ennå — ikke en feil.
      */
     private fun validateInntektValg(
         inntektKilder: Map<ArbeidsinntektKilde, Boolean>?,
@@ -76,7 +77,7 @@ class SkatteforholdOgInntektValidator {
             add(
                 Violation(
                     field = SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektKilde.name)
+                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektKilde.name)
                 )
             )
         }
@@ -84,7 +85,7 @@ class SkatteforholdOgInntektValidator {
             add(
                 Violation(
                     field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
-                    translationKey = translationKey(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektType.name)
+                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::maaVelgeMinstEnInntektType.name)
                 )
             )
         }
@@ -118,7 +119,7 @@ class SkatteforholdOgInntektValidator {
                     add(
                         Violation(
                             field = SkatteforholdOgInntektDto::inntekt.name,
-                            translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
+                            translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
                         )
                     )
                 }
@@ -126,7 +127,7 @@ class SkatteforholdOgInntektValidator {
                     add(
                         Violation(
                             field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
-                            translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
+                            translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
                         )
                     )
                 }
@@ -143,7 +144,7 @@ class SkatteforholdOgInntektValidator {
                 add(
                     Violation(
                         field = SkatteforholdOgInntektDto::inntekt.name,
-                        translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
+                        translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
                     )
                 )
             }
@@ -158,7 +159,7 @@ class SkatteforholdOgInntektValidator {
                 add(
                     Violation(
                         field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
-                        translationKey = translationKey(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
+                        translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
                     )
                 )
             }
@@ -170,17 +171,17 @@ class SkatteforholdOgInntektValidator {
      * ellers null.
      */
     private fun belopViolation(verdi: String?, fieldName: String, paakrevdKey: String): Violation? = when {
-        verdi.isNullOrBlank() -> Violation(field = fieldName, translationKey = translationKey(paakrevdKey))
-        !erGyldigBelop(verdi) -> Violation(field = fieldName, translationKey = translationKey(SkatteforholdOgInntektTranslation::duMaOppgiEtGyldigBelopSomErStorreEnn0.name))
+        verdi.isNullOrBlank() -> Violation(field = fieldName, translationKey = translationFieldName(paakrevdKey))
+        !erGyldigBelop(verdi) -> Violation(field = fieldName, translationKey = translationFieldName(SkatteforholdOgInntektTranslation::duMaOppgiEtGyldigBelopSomErStorreEnn0.name))
         else -> null
     }
 
     companion object {
         /** Gyldig beløp: heltall større enn 0, eksempel: "1000", "500" */
-        fun erGyldigBelop(belop: String?): Boolean =
+        internal fun erGyldigBelop(belop: String?): Boolean =
             belop?.trim()?.toLongOrNull()?.let { it > 0 } == true
 
-        private fun translationKey(fieldName: String) =
+        private fun translationFieldName(fieldName: String) =
             "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"
     }
 }
