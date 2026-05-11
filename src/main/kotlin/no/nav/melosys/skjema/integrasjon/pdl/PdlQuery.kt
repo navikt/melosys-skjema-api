@@ -1,26 +1,41 @@
 package no.nav.melosys.skjema.integrasjon.pdl
 
 object PdlQuery {
-    /**
-     * GraphQL query for å hente person med navn og fødselsdato
-     */
+
+    private const val NAVN_FELT = """
+        fornavn
+        mellomnavn
+        etternavn
+        metadata {
+            historisk
+            endringer {
+                type
+                registrert
+            }
+        }
+    """
+
+    private const val FOEDSELSDATO_FELT = """
+        foedselsdato
+        metadata {
+            historisk
+            endringer {
+                type
+                registrert
+            }
+        }
+    """
+
     const val HENT_PERSON_NAVN_FODSELSDATO = """
         query(${'$'}ident: ID!) {
             hentPerson(ident: ${'$'}ident) {
-                navn {
-                    fornavn
-                    mellomnavn
-                    etternavn
-                }
-                foedselsdato {
-                    foedselsdato
-                }
+                navn { $NAVN_FELT }
+                foedselsdato { $FOEDSELSDATO_FELT }
             }
         }
     """
 
     /**
-     * GraphQL query for å hente flere personer samtidig (bulk)
      * Brukes for å hente personer med fullmakt
      */
     const val HENT_PERSON_BOLK = """
@@ -28,14 +43,8 @@ object PdlQuery {
             hentPersonBolk(identer: ${'$'}identer) {
                 ident
                 person {
-                    navn {
-                        fornavn
-                        mellomnavn
-                        etternavn
-                    }
-                    foedselsdato {
-                        foedselsdato
-                    }
+                    navn { $NAVN_FELT }
+                    foedselsdato { $FOEDSELSDATO_FELT }
                 }
                 code
             }

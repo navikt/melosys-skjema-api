@@ -41,7 +41,8 @@ class SkjemaDtoTypeTest {
             metadata = DegSelvMetadata(
                 skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
                 arbeidsgiverNavn = "",
-                juridiskEnhetOrgnr = ""
+                juridiskEnhetOrgnr = "",
+                arbeidstakerNavn = ""
             ),
             data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto()
         ).type.name shouldBe "UTSENDT_ARBEIDSTAKER"

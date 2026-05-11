@@ -30,26 +30,30 @@ class MetadatatypeTest {
         mappings[DegSelvMetadata::class.java] shouldBe DegSelvMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
-            juridiskEnhetOrgnr = ""
+            juridiskEnhetOrgnr = "",
+            arbeidstakerNavn = ""
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_DEG_SELV"
 
         mappings[ArbeidsgiverMetadata::class.java] shouldBe ArbeidsgiverMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
-            juridiskEnhetOrgnr = ""
+            juridiskEnhetOrgnr = "",
+            arbeidstakerNavn = ""
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER"
 
         mappings[ArbeidsgiverMedFullmaktMetadata::class.java] shouldBe ArbeidsgiverMedFullmaktMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
-            fullmektigFnr = ""
+            fullmektigFnr = "",
+            arbeidstakerNavn = ""
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT"
 
         mappings[RadgiverMetadata::class.java] shouldBe RadgiverMetadata(
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
+            arbeidstakerNavn = "",
             radgiverfirma = RadgiverfirmaInfo(orgnr = "", navn = "")
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_RADGIVER"
 
@@ -58,6 +62,7 @@ class MetadatatypeTest {
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
             fullmektigFnr = "",
+            arbeidstakerNavn = "",
             radgiverfirma = RadgiverfirmaInfo(orgnr = "", navn = "")
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_RADGIVER_MED_FULLMAKT"
 
@@ -65,7 +70,8 @@ class MetadatatypeTest {
             skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
             arbeidsgiverNavn = "",
             juridiskEnhetOrgnr = "",
-            fullmektigFnr = ""
+            fullmektigFnr = "",
+            arbeidstakerNavn = ""
         ).metadatatype shouldBe "UTSENDT_ARBEIDSTAKER_ANNEN_PERSON"
     }
 }
