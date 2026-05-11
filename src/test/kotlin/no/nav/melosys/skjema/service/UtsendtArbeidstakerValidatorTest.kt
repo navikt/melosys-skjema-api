@@ -10,6 +10,7 @@ import io.mockk.verify
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
+import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier
 import no.nav.melosys.skjema.personDtoMedDefaultVerdier
@@ -116,13 +117,11 @@ class UtsendtArbeidstakerValidatorTest : FunSpec({
             every { mockEregService.organisasjonsnummerEksisterer(testArbeidsgiver.orgnr) } returns true
             every {
                 mockPdlService.verifiserOgHentPerson(testArbeidstakerMedEtternavn.fnr, testArbeidstakerMedEtternavn.etternavn!!)
-            } throws IllegalArgumentException("Person ikke funnet")
+            } throws PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
 
-            val exception = shouldThrow<IllegalArgumentException> {
+            shouldThrow<PersonVerifiseringException> {
                 validator.validerOpprettelse(request, testArbeidstaker.fnr)
             }
-
-            exception.message shouldContain "finnes ikke eller etternavn matcher ikke"
         }
     }
 

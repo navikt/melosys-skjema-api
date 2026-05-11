@@ -192,7 +192,7 @@ class UtsendtArbeidstakerRepresentasjonValidator(
     private fun validerFullmaktFraArbeidstaker(request: OpprettUtsendtArbeidstakerSoknadRequest) {
         log.debug { "Validerer fullmakt fra arbeidstaker via repr-api" }
         if (!reprService.harSkriverettigheterForMedlemskap(request.arbeidstaker.fnr)) {
-            throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker ${request.arbeidstaker.fnr}")
+            throw AccessDeniedException("Innlogget bruker har ikke fullmakt fra arbeidstaker")
         }
         // repr-api validerer også at person finnes i PDL
     }
@@ -204,18 +204,10 @@ class UtsendtArbeidstakerRepresentasjonValidator(
             throw IllegalArgumentException("Etternavn må oppgis for arbeidstaker uten fullmakt")
         }
 
-        return try {
-            val (navn, _) = pdlService.verifiserOgHentPerson(
-                request.arbeidstaker.fnr,
-                request.arbeidstaker.etternavn!!
-            )
-            navn
-        } catch (e: Exception) {
-            log.warn(e) { "Arbeidstaker kunne ikke verifiseres i PDL" }
-            throw IllegalArgumentException(
-                "Arbeidstaker med fødselsnummer ${request.arbeidstaker.fnr} finnes ikke eller etternavn matcher ikke",
-                e
-            )
-        }
+        val (navn, _) = pdlService.verifiserOgHentPerson(
+            request.arbeidstaker.fnr,
+            request.arbeidstaker.etternavn!!
+        )
+        return navn
     }
 }
