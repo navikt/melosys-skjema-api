@@ -6,6 +6,8 @@ import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.pdf.AktørInfo
 import no.nav.melosys.skjema.pdf.SkjemaPdfData
 import no.nav.melosys.skjema.pdf.genererPdf
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -26,7 +28,8 @@ class M2MSkjemaService(
     private val skjemaRepository: SkjemaRepository,
     private val innsendingRepository: InnsendingRepository,
     private val vedleggService: VedleggService,
-    private val skjemaDefinisjonService: SkjemaDefinisjonService
+    private val skjemaDefinisjonService: SkjemaDefinisjonService,
+    private val pdlConsumer: PdlConsumer
 ) {
 
     fun hentUtsendtArbeidstakerSkjemaData(id: UUID): UtsendtArbeidstakerSkjemaM2MDto {
@@ -129,11 +132,22 @@ class M2MSkjemaService(
             språk = innsending.innsendtSprak
         )
 
+        val arbeidstakerNavn = pdlConsumer.hentPerson(skjema.fnr)
+            .navn.first().fulltNavn()
+
+        val aktørInfo = AktørInfo(
+            arbeidsgiverNavn = metadata.arbeidsgiverNavn,
+            orgnr = skjema.orgnr,
+            arbeidstakerNavn = arbeidstakerNavn,
+            arbeidstakerFnr = skjema.fnr
+        )
+
         return SkjemaPdfData(
             skjemaId = skjema.id!!,
             referanseId = innsending.referanseId,
             innsendtDato = innsending.opprettetDato,
             innsendtSprak = innsending.innsendtSprak,
+            aktørInfo = aktørInfo,
             skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
             kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
