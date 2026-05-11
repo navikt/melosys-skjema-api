@@ -722,7 +722,12 @@ class PdfGeneratorTest : FunSpec({
                 referanseId = "FULLMK",
                 innsendtDato = Instant.now(),
                 innsendtSprak = Språk.NORSK_BOKMAL,
-                aktørInfo = AktørInfo("Bedrift AS", "123456789", "Ola Nordmann", "12345678901"),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Bedrift AS",
+                    orgnr = "123456789",
+                    arbeidstakerNavn = "Ola Nordmann",
+                    arbeidstakerFnr = "12345678901"
+                ),
                 skjemaData = data,
                 kobletSkjemaData = null,
                 definisjon = definisjon
