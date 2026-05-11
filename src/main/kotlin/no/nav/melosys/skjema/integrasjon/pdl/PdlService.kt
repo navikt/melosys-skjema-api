@@ -41,20 +41,15 @@ class PdlService(
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        val personEtternavn = person.navn.firstOrNull()?.etternavn
-        if (!personEtternavn.equals(etternavn, ignoreCase = true)) {
+        // PDL kan ha flere parallelle navn (ulik master). Aksepterer match mot enhver aktuell verdi.
+        val matcherEtternavn = person.aktuelleNavn()
+            .any { it.etternavn.equals(etternavn, ignoreCase = true) }
+        if (!matcherEtternavn) {
             log.warn { "Etternavn matcher ikke ved verifisering" }
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        val navn = person.hentFulltNavn()
-
-        val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato
-            ?: throw IllegalArgumentException("Person har ingen fødselsdato registrert i PDL")
-
-        val fodselsdato = LocalDate.parse(fodselsdatoString)
-
-        return Pair(navn, fodselsdato)
+        return Pair(person.hentFulltNavn(), person.hentFoedselsdato())
     }
 
     /**
@@ -64,7 +59,21 @@ class PdlService(
     fun hentNavn(fodselsnummer: String): String =
         pdlConsumer.hentPerson(fodselsnummer).hentFulltNavn()
 
+    // PDL kan returnere flere parallelle og historiske verdier per opplysning.
+    // Vi filtrerer bort historiske og velger sist registrerte aktuelle verdi.
+
+    private fun PdlPerson.aktuelleNavn() = navn.filter { it.metadata.erIkkeHistorisk() }
+
     private fun PdlPerson.hentFulltNavn(): String =
-        navn.firstOrNull()?.fulltNavn()
+        aktuelleNavn().maxByOrNull { it.metadata.datoSistRegistrert() }
+            ?.fulltNavn()
             ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
+
+    private fun PdlPerson.hentFoedselsdato(): LocalDate {
+        val dato = foedselsdato.filter { it.metadata.erIkkeHistorisk() }
+            .maxByOrNull { it.metadata.datoSistRegistrert() }
+            ?.foedselsdato
+            ?: throw IllegalArgumentException("Person har ingen fødselsdato registrert i PDL")
+        return LocalDate.parse(dato)
+    }
 }

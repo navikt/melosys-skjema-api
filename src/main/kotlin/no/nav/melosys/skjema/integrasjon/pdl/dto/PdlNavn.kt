@@ -3,7 +3,8 @@ package no.nav.melosys.skjema.integrasjon.pdl.dto
 data class PdlNavn(
     val fornavn: String,
     val mellomnavn: String?,
-    val etternavn: String
+    val etternavn: String,
+    val metadata: PdlMetadata = PdlMetadata()
 ) {
     fun fulltNavn(): String {
         return if (mellomnavn != null) {
