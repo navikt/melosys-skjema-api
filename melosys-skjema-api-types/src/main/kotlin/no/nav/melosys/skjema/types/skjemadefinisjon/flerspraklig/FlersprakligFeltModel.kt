@@ -159,7 +159,8 @@ data class FlersprakligListeFeltDto(
     val leggTilLabel: FlersprakligTekst,
     val fjernLabel: FlersprakligTekst,
     val tomListeMelding: FlersprakligTekst? = null,
-    val elementDefinisjon: Map<String, FlersprakligFeltModel>
+    val elementDefinisjon: Map<String, FlersprakligFeltModel>,
+    val itemTypeLabels: Map<String, FlersprakligTekst>? = null
 ) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = ListeFeltDefinisjon(
         label = label.hent(språk),
@@ -168,6 +169,7 @@ data class FlersprakligListeFeltDto(
         leggTilLabel = leggTilLabel.hent(språk),
         fjernLabel = fjernLabel.hent(språk),
         tomListeMelding = tomListeMelding?.hent(språk),
-        elementDefinisjon = elementDefinisjon.mapValues { it.value.tilFeltDto(språk) }
+        elementDefinisjon = elementDefinisjon.mapValues { it.value.tilFeltDto(språk) },
+        itemTypeLabels = itemTypeLabels?.mapValues { it.value.hent(språk) }
     )
 }

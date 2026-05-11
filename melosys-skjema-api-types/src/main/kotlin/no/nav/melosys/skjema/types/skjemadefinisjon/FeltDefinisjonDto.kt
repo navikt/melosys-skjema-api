@@ -126,5 +126,6 @@ data class ListeFeltDefinisjon(
     val leggTilLabel: String,
     val fjernLabel: String,
     val tomListeMelding: String? = null,
-    val elementDefinisjon: Map<String, FeltDefinisjonDto>
+    val elementDefinisjon: Map<String, FeltDefinisjonDto>,
+    val itemTypeLabels: Map<String, String>? = null
 ) : FeltDefinisjonDto()

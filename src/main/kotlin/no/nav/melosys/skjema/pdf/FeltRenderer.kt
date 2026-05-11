@@ -166,6 +166,7 @@ class FeltRenderer(
         }
 
         val ed = felt.elementDefinisjon
+        val itemTypeLabels = felt.itemTypeLabels.orEmpty()
         val builder = StringBuilder()
         builder.append("""<div class="list-container">""")
         builder.append("""<div class="list-label">${escapeHtml(felt.label)}</div>""")
@@ -174,14 +175,14 @@ class FeltRenderer(
 
         norske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
-            builder.append("""<div class="list-item-title">${index++}. virksomhet (norsk)</div>""")
+            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue("norsk"))}</div>""")
             builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
             builder.append("</div>")
         }
 
         utenlandske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
-            builder.append("""<div class="list-item-title">${index++}. virksomhet (utenlandsk)</div>""")
+            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue("utenlandsk"))}</div>""")
             builder.append(renderListeFelt(ed.getValue("navn"), virksomhet.navn))
             builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
             builder.append(renderListeFelt(ed.getValue("vegnavnOgHusnummer"), virksomhet.vegnavnOgHusnummer))

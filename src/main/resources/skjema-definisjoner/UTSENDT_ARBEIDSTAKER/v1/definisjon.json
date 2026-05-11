@@ -107,6 +107,16 @@
             "en": "Remove"
           },
           "pakrevd": false,
+          "itemTypeLabels": {
+            "norsk": {
+              "nb": "Norsk virksomhet",
+              "en": "Norwegian company"
+            },
+            "utenlandsk": {
+              "nb": "Utenlandsk virksomhet",
+              "en": "Foreign company"
+            }
+          },
           "elementDefinisjon": {
             "organisasjonsnummer": {
               "type": "TEXT",
@@ -1013,6 +1023,16 @@
             "en": "Remove"
           },
           "pakrevd": false,
+          "itemTypeLabels": {
+            "norsk": {
+              "nb": "Norsk virksomhet",
+              "en": "Norwegian company"
+            },
+            "utenlandsk": {
+              "nb": "Utenlandsk virksomhet",
+              "en": "Foreign company"
+            }
+          },
           "elementDefinisjon": {
             "organisasjonsnummer": {
               "type": "TEXT",
