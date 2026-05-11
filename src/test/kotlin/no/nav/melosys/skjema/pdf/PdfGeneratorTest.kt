@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
@@ -35,6 +36,9 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider
@@ -651,6 +655,83 @@ class PdfGeneratorTest : FunSpec({
 
             // Sjekk at arbeidstaker-overskrift IKKE er med (nøyaktig match)
             html shouldNotContain """<h2 class="part-heading">Arbeidstakers del</h2>"""
+        }
+    }
+
+    context("Utenlandsk virksomhet") {
+        test("viser alle adressefelter for utenlandsk lønnsutbetaler i arbeidsgivers del") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidstakerensLonn = ArbeidstakerensLonnDto(
+                    arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                    virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "UTLAGV",
+                arbeidsgiverData = arbeidsgiverData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Foreign Company Ltd"
+            html shouldContain "ABC123"
+            html shouldContain "Main Street 123"
+            html shouldContain "Building A"
+            html shouldContain "12345"
+            html shouldContain "Stockholm County"
+            html shouldContain "Sverige"
+            html shouldContain "Tilhører samme konsern som norsk arbeidsgiver?"
+        }
+
+        test("viser alle felter inkludert ansettelsesform når arbeidstaker jobber for flere virksomheter") {
+            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
+                arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                    skalJobbeForFlereVirksomheter = true,
+                    virksomheterArbeidstakerJobberForIutsendelsesPeriode =
+                        norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier()
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "UTLAT1",
+                arbeidstakerData = arbeidstakerData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Foreign Company Ltd"
+            html shouldContain "Main Street 123"
+            html shouldContain "Building A"
+            html shouldContain "Hva jobber du som i denne virksomheten?"
+            html shouldContain "Arbeidstaker eller frilanser"
+        }
+    }
+
+    context("Kombinert skjema (fullmakt)") {
+        test("viser tilleggsopplysninger fra toppnivå i kombinert PDF") {
+            val data = arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier().copy(
+                tilleggsopplysninger = TilleggsopplysningerDto(
+                    harFlereOpplysningerTilSoknaden = true,
+                    tilleggsopplysningerTilSoknad = "Tillegg via fullmektig"
+                )
+            )
+            val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, Språk.NORSK_BOKMAL)
+            val skjema = SkjemaPdfData(
+                skjemaId = UUID.randomUUID(),
+                referanseId = "FULLMK",
+                innsendtDato = Instant.now(),
+                innsendtSprak = Språk.NORSK_BOKMAL,
+                aktørInfo = AktørInfo("Bedrift AS", "123456789", "Ola Nordmann", "12345678901"),
+                skjemaData = data,
+                kobletSkjemaData = null,
+                definisjon = definisjon
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Tilleggsopplysninger"
+            html shouldContain "Tillegg via fullmektig"
         }
     }
 })

@@ -5,8 +5,12 @@ import java.time.format.DateTimeFormatter
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Familiemedlem
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
+import no.nav.melosys.skjema.types.felles.NorskVirksomhet
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetBase
+import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
@@ -121,7 +125,10 @@ class FeltRenderer(
                 }
             }
 
-            is NorskeOgUtenlandskeVirksomheter -> renderVirksomheter(felt, verdi)
+            is NorskeOgUtenlandskeVirksomheter ->
+                renderVirksomheter(felt, verdi.norskeVirksomheter, verdi.utenlandskeVirksomheter)
+            is NorskeOgUtenlandskeVirksomheterMedAnsettelsesform ->
+                renderVirksomheter(felt, verdi.norskeVirksomheter, verdi.utenlandskeVirksomheter)
             else -> ""
         }
     }
@@ -163,14 +170,19 @@ class FeltRenderer(
         return builder.toString()
     }
 
-    private fun renderVirksomheter(felt: ListeFeltDefinisjon, virksomheter: NorskeOgUtenlandskeVirksomheter): String {
-        val norske = virksomheter.norskeVirksomheter ?: emptyList()
-        val utenlandske = virksomheter.utenlandskeVirksomheter ?: emptyList()
+    private fun renderVirksomheter(
+        felt: ListeFeltDefinisjon,
+        norskeVirksomheter: List<NorskVirksomhet>?,
+        utenlandskeVirksomheter: List<UtenlandskVirksomhetBase>?
+    ): String {
+        val norske = norskeVirksomheter ?: emptyList()
+        val utenlandske = utenlandskeVirksomheter ?: emptyList()
 
         if (norske.isEmpty() && utenlandske.isEmpty()) {
             return felt.tomListeMelding?.let { renderEnkeltFelt(felt.label, it) } ?: ""
         }
 
+        val ed = felt.elementDefinisjon
         val builder = StringBuilder()
         builder.append("""<div class="list-container">""")
         builder.append("""<div class="list-label">${escapeHtml(felt.label)}</div>""")
@@ -180,23 +192,48 @@ class FeltRenderer(
         norske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
             builder.append("""<div class="list-item-title">${index++}. virksomhet (norsk)</div>""")
-            builder.append(renderListeElement("Organisasjonsnummer", virksomhet.organisasjonsnummer))
+            builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
             builder.append("</div>")
         }
 
         utenlandske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
             builder.append("""<div class="list-item-title">${index++}. virksomhet (utenlandsk)</div>""")
-            builder.append(renderListeElement("Navn", virksomhet.navn))
-            virksomhet.organisasjonsnummer?.let { builder.append(renderListeElement("Organisasjonsnummer", it)) }
-            // land er en String landkode, konverter til landnavn
-            val landnavn = LandKode.hentLandnavn(virksomhet.land, språk)
-            builder.append(renderListeElement("Land", landnavn))
+            builder.append(renderListeFelt(ed.getValue("navn"), virksomhet.navn))
+            builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
+            builder.append(renderListeFelt(ed.getValue("vegnavnOgHusnummer"), virksomhet.vegnavnOgHusnummer))
+            builder.append(renderListeFelt(ed.getValue("bygning"), virksomhet.bygning))
+            builder.append(renderListeFelt(ed.getValue("postkode"), virksomhet.postkode))
+            builder.append(renderListeFelt(ed.getValue("byStedsnavn"), virksomhet.byStedsnavn))
+            builder.append(renderListeFelt(ed.getValue("region"), virksomhet.region))
+            builder.append(renderListeFelt(ed.getValue("land"), virksomhet.land))
+            builder.append(renderListeFelt(ed.getValue("tilhorerSammeKonsern"), virksomhet.tilhorerSammeKonsern))
+            if (virksomhet is UtenlandskVirksomhetMedAnsettelsesform) {
+                builder.append(renderListeFelt(ed.getValue("ansettelsesform"), virksomhet.ansettelsesform))
+            }
             builder.append("</div>")
         }
 
         builder.append("</div>")
         return builder.toString()
+    }
+
+    private fun renderListeFelt(feltDef: FeltDefinisjonDto, verdi: Any?): String {
+        if (verdi == null) return ""
+        val visningsverdi = when (feltDef) {
+            is BooleanFeltDefinisjon -> if (verdi as Boolean) feltDef.jaLabel else feltDef.neiLabel
+            is SelectFeltDefinisjon -> {
+                val verdiStr = if (verdi is Enum<*>) verdi.name else verdi.toString()
+                feltDef.alternativer.find { it.verdi == verdiStr }?.label ?: verdiStr
+            }
+            is CountrySelectFeltDefinisjon -> when (verdi) {
+                is LandKode -> verdi.hentNavn(språk)
+                is String -> LandKode.hentLandnavn(verdi, språk)
+                else -> verdi.toString()
+            }
+            else -> verdi.toString()
+        }
+        return renderListeElement(feltDef.label, visningsverdi)
     }
 
     private fun renderGeneriskListe(felt: ListeFeltDefinisjon, liste: List<*>): String {

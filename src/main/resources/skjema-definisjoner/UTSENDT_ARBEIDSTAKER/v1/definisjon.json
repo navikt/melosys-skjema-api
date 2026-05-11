@@ -154,6 +154,70 @@
                   }
                 }
               ]
+            },
+            "vegnavnOgHusnummer": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Vegnavn og husnummer",
+                "en": "Street name and number"
+              },
+              "pakrevd": true
+            },
+            "bygning": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Bygning",
+                "en": "Building"
+              },
+              "pakrevd": false
+            },
+            "postkode": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Postkode",
+                "en": "Postal code"
+              },
+              "pakrevd": false
+            },
+            "byStedsnavn": {
+              "type": "TEXT",
+              "label": {
+                "nb": "By/stedsnavn",
+                "en": "City/place name"
+              },
+              "pakrevd": false
+            },
+            "region": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Region",
+                "en": "Region"
+              },
+              "pakrevd": false
+            },
+            "land": {
+              "type": "COUNTRY_SELECT",
+              "label": {
+                "nb": "Land",
+                "en": "Country"
+              },
+              "pakrevd": true
+            },
+            "tilhorerSammeKonsern": {
+              "type": "BOOLEAN",
+              "label": {
+                "nb": "Tilhører samme konsern som norsk arbeidsgiver?",
+                "en": "Belongs to the same group as the Norwegian employer?"
+              },
+              "jaLabel": {
+                "nb": "Ja",
+                "en": "Yes"
+              },
+              "neiLabel": {
+                "nb": "Nei",
+                "en": "No"
+              },
+              "pakrevd": true
             }
           }
         }
@@ -965,6 +1029,70 @@
                 "en": "Company name"
               },
               "pakrevd": false
+            },
+            "vegnavnOgHusnummer": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Vegnavn og husnummer",
+                "en": "Street name and number"
+              },
+              "pakrevd": true
+            },
+            "bygning": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Bygning",
+                "en": "Building"
+              },
+              "pakrevd": false
+            },
+            "postkode": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Postkode",
+                "en": "Postal code"
+              },
+              "pakrevd": false
+            },
+            "byStedsnavn": {
+              "type": "TEXT",
+              "label": {
+                "nb": "By/stedsnavn",
+                "en": "City/place name"
+              },
+              "pakrevd": false
+            },
+            "region": {
+              "type": "TEXT",
+              "label": {
+                "nb": "Region",
+                "en": "Region"
+              },
+              "pakrevd": false
+            },
+            "land": {
+              "type": "COUNTRY_SELECT",
+              "label": {
+                "nb": "Land",
+                "en": "Country"
+              },
+              "pakrevd": true
+            },
+            "tilhorerSammeKonsern": {
+              "type": "BOOLEAN",
+              "label": {
+                "nb": "Tilhører samme konsern som norsk arbeidsgiver?",
+                "en": "Belongs to the same group as the Norwegian employer?"
+              },
+              "jaLabel": {
+                "nb": "Ja",
+                "en": "Yes"
+              },
+              "neiLabel": {
+                "nb": "Nei",
+                "en": "No"
+              },
+              "pakrevd": true
             }
           }
         }
