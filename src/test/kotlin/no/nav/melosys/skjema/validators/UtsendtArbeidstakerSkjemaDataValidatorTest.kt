@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgIn
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
 import no.nav.melosys.skjema.validators.utsendingsperiodeogland.UtsendingsperiodeOgLandValidator
+import no.nav.melosys.skjema.validators.vedlegg.VedleggValgValidator
 import io.kotest.assertions.throwables.shouldThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,6 +39,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
     private val arbeidssituasjonValidator = mockk<ArbeidssituasjonValidator>()
     private val skatteforholdOgInntektValidator = mockk<SkatteforholdOgInntektValidator>()
     private val familiemedlemmerValidator = mockk<FamiliemedlemmerValidator>()
+    private val vedleggValgValidator = mockk<VedleggValgValidator>()
 
     private val validator = UtsendtArbeidstakerSkjemaDataValidator(
         arbeidsgiverensVirksomhetValidator = arbeidsgiverensVirksomhetValidator,
@@ -49,6 +51,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         arbeidssituasjonValidator = arbeidssituasjonValidator,
         skatteforholdOgInntektValidator = skatteforholdOgInntektValidator,
         familiemedlemmerValidator = familiemedlemmerValidator,
+        vedleggValgValidator = vedleggValgValidator,
     )
 
     @BeforeEach
@@ -63,6 +66,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             arbeidssituasjonValidator,
             skatteforholdOgInntektValidator,
             familiemedlemmerValidator,
+            vedleggValgValidator,
         )
         every { arbeidsgiverensVirksomhetValidator.validate(any()) } returns emptyList()
         every { utenlandsoppdragetValidator.validate(any()) } returns emptyList()
@@ -73,6 +77,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         every { arbeidssituasjonValidator.validate(any()) } returns emptyList()
         every { skatteforholdOgInntektValidator.validate(any()) } returns emptyList()
         every { familiemedlemmerValidator.validate(any()) } returns emptyList()
+        every { vedleggValgValidator.validate(any()) } returns emptyList()
     }
 
     @ParameterizedTest(name = "{1}")
@@ -96,6 +101,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             listOf(
                 { verify { utsendingsperiodeOgLandValidator.validate(any()) } },
                 { verify { tilleggsopplysningerValidator.validate(any()) } },
+                { verify { vedleggValgValidator.validate(any()) } },
                 { verify { arbeidsgiverensVirksomhetValidator.validate(any()) } },
                 { verify { utenlandsoppdragetValidator.validate(any()) } },
                 { verify { arbeidstakerensLonnValidator.validate(any()) } },
@@ -113,6 +119,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             listOf(
                 { verify { utsendingsperiodeOgLandValidator.validate(any()) } },
                 { verify { tilleggsopplysningerValidator.validate(any()) } },
+                { verify { vedleggValgValidator.validate(any()) } },
                 { verify { arbeidssituasjonValidator.validate(any()) } },
                 { verify { skatteforholdOgInntektValidator.validate(any()) } },
                 { verify { familiemedlemmerValidator.validate(any()) } },
@@ -130,6 +137,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             listOf(
                 { verify { utsendingsperiodeOgLandValidator.validate(any()) } },
                 { verify { tilleggsopplysningerValidator.validate(any()) } },
+                { verify { vedleggValgValidator.validate(any()) } },
                 { verify { arbeidsgiverensVirksomhetValidator.validate(any()) } },
                 { verify { utenlandsoppdragetValidator.validate(any()) } },
                 { verify { arbeidstakerensLonnValidator.validate(any()) } },
