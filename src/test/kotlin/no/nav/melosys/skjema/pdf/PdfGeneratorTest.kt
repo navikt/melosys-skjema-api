@@ -649,6 +649,11 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Arbeidsgivers del"
             html shouldContain "Arbeidsgiverens virksomhet i Norge"
 
+            html shouldContain "I hvilket land skal du utføre arbeid?"
+            html shouldContain "Sverige"
+            html shouldContain "Fra dato"
+            html shouldContain "Til dato"
+
             // Sjekk at arbeidstaker-overskrift IKKE er med (nøyaktig match)
             html shouldNotContain """<h2 class="part-heading">Arbeidstakers del</h2>"""
         }
@@ -670,6 +675,7 @@ private fun lagKomplettArbeidstakerData(): UtsendtArbeidstakerArbeidstakersSkjem
 
 private fun lagKomplettArbeidsgiverData(): UtsendtArbeidstakerArbeidsgiversSkjemaDataDto {
     return UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
+        utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
         arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
         utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
         arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
