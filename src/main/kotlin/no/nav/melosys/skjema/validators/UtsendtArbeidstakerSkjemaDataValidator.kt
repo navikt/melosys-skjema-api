@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
@@ -22,6 +23,7 @@ import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgIn
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
 import no.nav.melosys.skjema.validators.utsendingsperiodeogland.UtsendingsperiodeOgLandValidator
+import no.nav.melosys.skjema.validators.vedlegg.VedleggValgValidator
 import org.springframework.stereotype.Component
 
 @Component
@@ -35,6 +37,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
     private val arbeidssituasjonValidator: ArbeidssituasjonValidator,
     private val skatteforholdOgInntektValidator: SkatteforholdOgInntektValidator,
     private val familiemedlemmerValidator: FamiliemedlemmerValidator,
+    private val vedleggValgValidator: VedleggValgValidator,
 ) {
     fun validate(dto: ArbeidsgiverensVirksomhetINorgeDto?) {
         throwIfViolations(arbeidsgiverensVirksomhetValidator.validate(dto))
@@ -72,11 +75,16 @@ class UtsendtArbeidstakerSkjemaDataValidator(
         throwIfViolations(familiemedlemmerValidator.validate(dto))
     }
 
+    fun validate(dto: VedleggValgDto?) {
+        throwIfViolations(vedleggValgValidator.validate(dto))
+    }
+
     fun validateUtsendtArbeidstakerSkjemaData(skjemaData: UtsendtArbeidstakerSkjemaData) {
         val violations = mutableListOf<Violation>()
 
         violations += utsendingsperiodeOgLandValidator.validate(skjemaData.utsendingsperiodeOgLand)
         violations += tilleggsopplysningerValidator.validate(skjemaData.tilleggsopplysninger)
+        violations += vedleggValgValidator.validate(skjemaData.vedlegg)
 
         when (skjemaData) {
             is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> {

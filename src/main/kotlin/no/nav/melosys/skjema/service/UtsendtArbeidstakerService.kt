@@ -22,9 +22,11 @@ import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -49,7 +51,8 @@ class UtsendtArbeidstakerService(
     private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
-    private val skjemaDefinisjonService: SkjemaDefinisjonService
+    private val skjemaDefinisjonService: SkjemaDefinisjonService,
+    @Lazy private val vedleggService: VedleggService,
 ) {
 
     /**
@@ -453,6 +456,24 @@ class UtsendtArbeidstakerService(
         }
     }
 
+    @Transactional
+    fun saveVedleggValg(skjemaId: UUID, request: VedleggValgDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving vedlegg-valg for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
+
+        if (!request.harAnnenDokumentasjon) {
+            vedleggService.slettAlleForSkjema(skjemaId)
+        }
+
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(vedlegg = request)
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(vedlegg = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(vedlegg = request)
+            }
+        }
+    }
+
     /**
      * Bygger metadata-objekt med korrekt fullmektig-logikk.
      *
@@ -688,7 +709,7 @@ class UtsendtArbeidstakerService(
      * I tillegg for UTKAST: kun den som starta utkastet kan redigere — utkast er personlig
      * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
-    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
+    fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
         krevSkrivetilgang(findAktivByIdOrThrow(skjemaId))
 
     private fun krevSkrivetilgang(skjema: Skjema): Skjema {

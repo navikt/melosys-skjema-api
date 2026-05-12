@@ -16,6 +16,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
@@ -63,6 +64,12 @@ class SeksjonRenderer(
         data.tilleggsopplysninger?.let { dto ->
             definisjon.seksjoner["tilleggsopplysningerArbeidstaker"]?.let { seksjon ->
                 builder.append(byggTilleggsopplysninger(dto, seksjon))
+            }
+        }
+
+        data.vedlegg?.let { dto ->
+            definisjon.seksjoner["vedleggArbeidstaker"]?.let { seksjon ->
+                builder.append(byggVedleggValg(dto, seksjon))
             }
         }
 
@@ -127,6 +134,15 @@ class SeksjonRenderer(
         return byggSeksjon(seksjon) {
             felt("harFlereOpplysningerTilSoknaden", data.harFlereOpplysningerTilSoknaden)
             felt("tilleggsopplysningerTilSoknad", data.tilleggsopplysningerTilSoknad)
+        }
+    }
+
+    private fun byggVedleggValg(
+        data: VedleggValgDto,
+        seksjon: SeksjonDefinisjonDto
+    ): String {
+        return byggSeksjon(seksjon) {
+            felt("harAnnenDokumentasjon", data.harAnnenDokumentasjon)
         }
     }
 
@@ -201,6 +217,12 @@ class SeksjonRenderer(
             }
         }
 
+        data.vedlegg?.let { dto ->
+            definisjon.seksjoner["vedleggArbeidstaker"]?.let { seksjon ->
+                builder.append(byggVedleggValg(dto, seksjon))
+            }
+        }
+
         return builder.toString()
     }
 
@@ -239,6 +261,12 @@ class SeksjonRenderer(
         data.tilleggsopplysninger?.let { dto ->
             definisjon.seksjoner["tilleggsopplysningerArbeidsgiver"]?.let { seksjon ->
                 builder.append(byggTilleggsopplysninger(dto, seksjon))
+            }
+        }
+
+        data.vedlegg?.let { dto ->
+            definisjon.seksjoner["vedleggArbeidsgiver"]?.let { seksjon ->
+                builder.append(byggVedleggValg(dto, seksjon))
             }
         }
 

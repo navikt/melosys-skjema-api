@@ -32,7 +32,7 @@ class VedleggService(
 
     @Transactional
     fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaErIkkeRedigerbartException()
@@ -99,7 +99,7 @@ class VedleggService(
 
     @Transactional
     fun slett(skjemaId: UUID, vedleggId: UUID) {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
 
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaErIkkeRedigerbartException()
@@ -112,6 +112,25 @@ class VedleggService(
         vedleggRepository.delete(vedlegg)
 
         log.info { "Vedlegg slettet: $vedleggId for skjema $skjemaId" }
+    }
+
+    @Transactional
+    fun slettAlleForSkjema(skjemaId: UUID) {
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
+
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
+
+        val vedleggListe = vedleggRepository.findBySkjemaId(skjemaId)
+        if (vedleggListe.isEmpty()) return
+
+        vedleggListe.forEach { vedlegg ->
+            vedleggStorageClient.slett(vedlegg.storageReferanse)
+        }
+        vedleggRepository.deleteAll(vedleggListe)
+
+        log.info { "Slettet ${vedleggListe.size} vedlegg for skjema $skjemaId" }
     }
 }
 

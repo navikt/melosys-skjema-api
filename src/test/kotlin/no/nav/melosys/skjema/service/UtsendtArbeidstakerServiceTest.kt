@@ -24,6 +24,7 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -53,6 +54,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val eventPublisher = mockk<ApplicationEventPublisher>()
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
+    val mockVedleggService = mockk<VedleggService>(relaxed = true)
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
         mockInnsendingRepository,
@@ -66,7 +68,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockSkjemaDataValidator,
         eventPublisher,
         referanseIdGenerator,
-        mockSkjemaDefinisjonService
+        mockSkjemaDefinisjonService,
+        mockVedleggService
     )
 
     val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")
@@ -391,6 +394,40 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!)
             }
+        }
+    }
+
+    context("saveVedleggValg") {
+        test("skal slette alle vedlegg når harAnnenDokumentasjon=false") {
+            val skjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.UTKAST,
+                fnr = korrektSyntetiskFnr
+            )
+
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjema.id!!) } returns skjema
+            every { mockSkjemaRepository.save(any()) } returns skjema
+
+            service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = false))
+
+            verify(exactly = 1) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
+        }
+
+        test("skal IKKE slette vedlegg når harAnnenDokumentasjon=true") {
+            val skjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                status = SkjemaStatus.UTKAST,
+                fnr = korrektSyntetiskFnr
+            )
+
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjema.id!!) } returns skjema
+            every { mockSkjemaRepository.save(any()) } returns skjema
+
+            service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = true))
+
+            verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
         }
     }
 
