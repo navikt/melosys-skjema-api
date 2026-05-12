@@ -392,21 +392,25 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
             resultat.kobletSkjemaId shouldBe null
             resultat.erstatterSkjemaId shouldBe null
         }
-        test("skal matche med samlet periode over flere kandidater") {
+        test("skal kun matche kandidat med overlappende periode, ikke koble via samlet periode-spektrum") {
+            // Regresjon: før ble samlet periode (min fraDato, max tilDato) brukt, som lagde en bro
+            // over gap mellom kandidater. Et nytt skjema kunne da koble seg til en kandidat med
+            // periode som ikke faktisk overlappet, så lenge en annen kandidat dro samletPeriode
+            // langt nok ut.
             val skjemaId = UUID.randomUUID()
-            val kandidatAId = UUID.randomUUID()
-            val kandidatBId = UUID.randomUUID()
+            val kandidatMaiId = UUID.randomUUID()
+            val kandidatAugustId = UUID.randomUUID()
 
-            // Nytt skjema (arbeidstaker) med periode apr-jun
-            val arbeidstakerPeriode = PeriodeDto(
-                fraDato = LocalDate.of(2024, 4, 1),
-                tilDato = LocalDate.of(2024, 6, 30)
+            // Nytt skjema (arbeidstaker) med periode 13.-16. august
+            val skjemaPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 8, 13),
+                tilDato = LocalDate.of(2024, 8, 16)
             )
 
             val arbeidstakerData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
                 utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
                     utsendelseLand = LandKode.SE,
-                    utsendelsePeriode = arbeidstakerPeriode
+                    utsendelsePeriode = skjemaPeriode
                 )
             )
 
@@ -424,63 +428,135 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
                 data = arbeidstakerData
             )
 
-            // Kandidat A (arbeidsgiver) med periode jan-mar
-            val kandidatAData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+            // Kandidat i mai (overlapper IKKE august) — denne lå først i listen og ble feilaktig valgt før
+            val kandidatMaiData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
                 utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
                     utsendelseLand = LandKode.SE,
                     utsendelsePeriode = PeriodeDto(
-                        fraDato = LocalDate.of(2024, 1, 1),
-                        tilDato = LocalDate.of(2024, 3, 31)
+                        fraDato = LocalDate.of(2024, 5, 7),
+                        tilDato = LocalDate.of(2024, 5, 7)
                     )
                 )
             )
 
-            val kandidatAMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            val kandidatMai = skjemaMedDefaultVerdier(
+                id = kandidatMaiId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                ),
+                data = kandidatMaiData
             )
 
+            // Kandidat i august (overlapper) — den korrekte motparten
+            val kandidatAugustData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = PeriodeDto(
+                        fraDato = LocalDate.of(2024, 8, 13),
+                        tilDato = LocalDate.of(2024, 8, 15)
+                    )
+                )
+            )
+
+            val kandidatAugust = skjemaMedDefaultVerdier(
+                id = kandidatAugustId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                ),
+                data = kandidatAugustData
+            )
+
+            every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidatMai, kandidatAugust)
+            every { mockSkjemaRepository.save(any()) } returnsArgument 0
+
+            val resultat = service.finnOgKobl(skjema)
+
+            resultat.kobletSkjemaId shouldBe kandidatAugustId
+            resultat.erstatterSkjemaId shouldBe null
+        }
+
+        test("skal ikke koble når ingen enkelt-kandidat har overlappende periode") {
+            val skjemaId = UUID.randomUUID()
+            val kandidatAId = UUID.randomUUID()
+            val kandidatBId = UUID.randomUUID()
+
+            // Nytt skjema med periode apr-jun
+            val skjemaPeriode = PeriodeDto(
+                fraDato = LocalDate.of(2024, 4, 1),
+                tilDato = LocalDate.of(2024, 6, 30)
+            )
+
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = arbeidstakerFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                ),
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                    utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                        utsendelseLand = LandKode.SE,
+                        utsendelsePeriode = skjemaPeriode
+                    )
+                )
+            )
+
+            // Kandidat A: jan-mar (ingen overlapp), Kandidat B: jul-des (ingen overlapp)
             val kandidatA = skjemaMedDefaultVerdier(
                 id = kandidatAId,
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
-                metadata = kandidatAMetadata,
-                data = kandidatAData
-            )
-
-            // Kandidat B (arbeidsgiver) med periode jul-des
-            val kandidatBData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
-                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
-                    utsendelseLand = LandKode.SE,
-                    utsendelsePeriode = PeriodeDto(
-                        fraDato = LocalDate.of(2024, 7, 1),
-                        tilDato = LocalDate.of(2024, 12, 31)
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                ),
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                        utsendelseLand = LandKode.SE,
+                        utsendelsePeriode = PeriodeDto(
+                            fraDato = LocalDate.of(2024, 1, 1),
+                            tilDato = LocalDate.of(2024, 3, 31)
+                        )
                     )
                 )
-            )
-
-            val kandidatBMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
-                juridiskEnhetOrgnr = juridiskEnhetOrgnr
             )
 
             val kandidatB = skjemaMedDefaultVerdier(
                 id = kandidatBId,
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
-                metadata = kandidatBMetadata,
-                data = kandidatBData
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr
+                ),
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                        utsendelseLand = LandKode.SE,
+                        utsendelsePeriode = PeriodeDto(
+                            fraDato = LocalDate.of(2024, 7, 1),
+                            tilDato = LocalDate.of(2024, 12, 31)
+                        )
+                    )
+                )
             )
 
             every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidatA, kandidatB)
-            every { mockSkjemaRepository.save(any()) } returnsArgument 0
 
             val resultat = service.finnOgKobl(skjema)
 
-            // Samlet periode (jan-des) overlapper med apr-jun, så motpart-kobling skal skje
-            resultat.kobletSkjemaId shouldBe kandidatAId
+            resultat.kobletSkjemaId shouldBe null
             resultat.erstatterSkjemaId shouldBe null
         }
     }

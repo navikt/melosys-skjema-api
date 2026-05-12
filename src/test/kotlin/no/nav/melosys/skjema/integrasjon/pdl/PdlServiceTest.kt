@@ -4,7 +4,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.time.LocalDate
+import java.time.LocalDateTime
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndring
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndringstype
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlMetadata
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
@@ -186,4 +190,103 @@ class PdlServiceTest {
 
         assertThat(exception.message).isEqualTo("Person har ingen fødselsdato registrert i PDL")
     }
+
+    @Test
+    fun `hentNavn returnerer fullt navn fra PDL`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(PdlNavn(fornavn = "Kurt", mellomnavn = null, etternavn = "Sand")),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Kurt Sand")
+    }
+
+    @Test
+    fun `hentNavn propagerer feil fra PDL-oppslag`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        every { pdlConsumer.hentPerson(fodselsnummer) } throws RuntimeException("PDL nede")
+
+        assertThrows<RuntimeException> { pdlService.hentNavn(fodselsnummer) }
+    }
+
+    @Test
+    fun `hentNavn kaster IllegalArgumentException når person mangler navn i PDL`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = emptyList(),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        val exception = assertThrows<IllegalArgumentException> {
+            pdlService.hentNavn(fodselsnummer)
+        }
+        assertThat(exception.message).isEqualTo("Person har ingen navn registrert i PDL")
+    }
+
+    @Test
+    fun `hentNavn velger sist registrerte navn ved parallelle verdier`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(
+                navnMedRegistrert("Ola", "Nordmann", LocalDateTime.of(2020, 1, 1, 0, 0)),
+                navnMedRegistrert("Hans", "Nordmann", LocalDateTime.of(2024, 6, 1, 0, 0))
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Hans Nordmann")
+    }
+
+    @Test
+    fun `hentNavn ignorerer historiske navn`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(
+                navnMedRegistrert("Hans", "Nordmann", LocalDateTime.of(2024, 6, 1, 0, 0), historisk = true),
+                navnMedRegistrert("Ola", "Nordmann", LocalDateTime.of(2020, 1, 1, 0, 0))
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Ola Nordmann")
+    }
+
+    @Test
+    fun `verifiserOgHentPerson aksepterer etternavn-match mot enhver parallell verdi`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(
+                navnMedRegistrert("Ola", "Nordmann", LocalDateTime.of(2020, 1, 1, 0, 0)),
+                navnMedRegistrert("Hans", "Hansen", LocalDateTime.of(2024, 6, 1, 0, 0))
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        // Bruker oppgir det "gamle" etternavnet (FREG-master), men PDL-master har annet
+        val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "Nordmann")
+
+        // Returnert navn er sist registrerte
+        assertThat(navn).isEqualTo("Hans Hansen")
+    }
+
+    private fun navnMedRegistrert(
+        fornavn: String,
+        etternavn: String,
+        registrert: LocalDateTime,
+        historisk: Boolean = false
+    ) = PdlNavn(
+        fornavn = fornavn,
+        mellomnavn = null,
+        etternavn = etternavn,
+        metadata = PdlMetadata(
+            historisk = historisk,
+            endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, registrert))
+        )
+    )
 }

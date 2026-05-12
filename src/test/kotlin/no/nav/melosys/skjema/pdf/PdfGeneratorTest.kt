@@ -65,7 +65,13 @@ class PdfGeneratorTest : FunSpec({
         referanseId: String,
         språk: Språk = Språk.NORSK_BOKMAL,
         arbeidstakerData: UtsendtArbeidstakerArbeidstakersSkjemaDataDto? = null,
-        arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null
+        arbeidsgiverData: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto? = null,
+        aktørInfo: AktørInfo = AktørInfo(
+            arbeidsgiverNavn = "Test Bedrift AS",
+            orgnr = "123456789",
+            arbeidstakerNavn = "Ola Nordmann",
+            arbeidstakerFnr = "12345678901"
+        )
     ): SkjemaPdfData {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
         val skjemaData: UtsendtArbeidstakerSkjemaData = arbeidstakerData ?: arbeidsgiverData
@@ -76,6 +82,7 @@ class PdfGeneratorTest : FunSpec({
             referanseId = referanseId,
             innsendtDato = Instant.now(),
             innsendtSprak = språk,
+            aktørInfo = aktørInfo,
             skjemaData = skjemaData,
             kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
@@ -246,6 +253,125 @@ class PdfGeneratorTest : FunSpec({
 
             html shouldContain ">Yes<"
             html shouldContain ">No<"
+        }
+    }
+
+    context("Aktør-info seksjon") {
+        test("viser arbeidsgiver-navn og orgnr på norsk") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_NO",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "11223344556"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Nav Kontaktsenter AS"
+            html shouldContain "987654321"
+            html shouldContain "Arbeidsgiver"
+            html shouldContain "Organisasjonsnummer"
+        }
+
+        test("viser arbeidstaker-navn og fnr på norsk") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_AT",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "11223344556"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Kari Nordmann"
+            html shouldContain "11223344556"
+            html shouldContain "Arbeidstaker"
+            html shouldContain "Fødselsnummer"
+        }
+
+        test("viser engelske ledetekster") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_EN",
+                språk = Språk.ENGELSK,
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Test Corp Ltd",
+                    orgnr = "111222333",
+                    arbeidstakerNavn = "John Doe",
+                    arbeidstakerFnr = "99887766554"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Employer"
+            html shouldContain "Organisation number"
+            html shouldContain "Employee"
+            html shouldContain "National identity number"
+            html shouldContain "Test Corp Ltd"
+            html shouldContain "John Doe"
+        }
+
+        test("viser 'D-nummer' som label når identifikator er d-nummer") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_DN",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "41015678901" // Starter med 4 → D-nummer
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "D-nummer"
+            html shouldNotContain "Fødselsnummer"
+        }
+
+        test("viser 'Fødselsnummer' som label når identifikator er fødselsnummer") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_FN",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "11223344556" // Starter med 1 → fødselsnummer
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Fødselsnummer"
+            html shouldNotContain "D-nummer"
+        }
+
+        test("escaper HTML-spesialtegn i aktør-info") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_XS",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Tom & Jerry AS",
+                    orgnr = "123456789",
+                    arbeidstakerNavn = "O'Brien",
+                    arbeidstakerFnr = "12345678901"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Tom &amp; Jerry AS"
+            html shouldContain "O&#39;Brien"
         }
     }
 
@@ -523,6 +649,11 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Arbeidsgivers del"
             html shouldContain "Arbeidsgiverens virksomhet i Norge"
 
+            html shouldContain "I hvilket land skal du utføre arbeid?"
+            html shouldContain "Sverige"
+            html shouldContain "Fra dato"
+            html shouldContain "Til dato"
+
             // Sjekk at arbeidstaker-overskrift IKKE er med (nøyaktig match)
             html shouldNotContain """<h2 class="part-heading">Arbeidstakers del</h2>"""
         }
@@ -544,6 +675,7 @@ private fun lagKomplettArbeidstakerData(): UtsendtArbeidstakerArbeidstakersSkjem
 
 private fun lagKomplettArbeidsgiverData(): UtsendtArbeidstakerArbeidsgiversSkjemaDataDto {
     return UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
+        utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
         arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
         utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
         arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),

@@ -26,7 +26,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(RateLimitExceededException::class)
     fun handleRateLimitExceeded(e: RateLimitExceededException): ResponseEntity<Map<String, String>> {
-        log.warn { "Rate limit overskredet: ${e.message}" }
+        log.warn(e) { "Rate limit overskredet: ${e.message}" }
 
         val config = rateLimitConfig.getConfigFor(e.operationType)
         val retryAfterSeconds = config.getTimeWindow().seconds
@@ -67,7 +67,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(OrganisasjonEksistererIkkeException::class)
     fun handleOrganisasjonEksistererIkke(e: OrganisasjonEksistererIkkeException): ResponseEntity<Map<String, String>> {
-        log.warn { "Organisasjon eksisterer ikke: ${e.message}" }
+        log.warn(e) { "Organisasjon eksisterer ikke: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
@@ -76,7 +76,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(SkjemaErIkkeRedigerbartException::class)
     fun handleSkjemaErIkkeRedigerbart(e: SkjemaErIkkeRedigerbartException): ResponseEntity<ErrorResponse> {
-        log.warn { "Skjema er ikke redigerbart: ${e.message}" }
+        log.warn(e) { "Skjema er ikke redigerbart: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
@@ -85,7 +85,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(PersonVerifiseringException::class)
     fun handlePersonVerifiseringFeilet(e: PersonVerifiseringException): ResponseEntity<Map<String, String>> {
-        log.warn { "Verifisering av person feilet: ${e.message}" }
+        log.warn(e) { "Verifisering av person feilet: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
@@ -94,7 +94,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(AccessDeniedException::class)
     fun handleAccessDenied(e: AccessDeniedException): ResponseEntity<Map<String, String>> {
-        log.warn { "Tilgang nektet: ${e.message}" }
+        log.warn(e) { "Tilgang nektet: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.FORBIDDEN)
@@ -103,7 +103,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(VedleggVirusFunnetException::class)
     fun handleVedleggVirusFunnet(e: VedleggVirusFunnetException): ResponseEntity<Map<String, String>> {
-        log.warn { "Virus funnet i vedlegg: ${e.message}" }
+        log.warn(e) { "Virus funnet i vedlegg: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.UNPROCESSABLE_ENTITY)
@@ -112,7 +112,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(SkjemaTypeMismatchException::class)
     fun handleSkjemaTypeMismatch(e: SkjemaTypeMismatchException): ResponseEntity<ErrorResponse> {
-        log.warn { "Skjematype samsvarer ikke: ${e.message}" }
+        log.warn(e) { "Skjematype samsvarer ikke: ${e.message}" }
 
         return ResponseEntity
             .badRequest()
@@ -121,7 +121,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(e: IllegalArgumentException): ResponseEntity<Map<String, String>> {
-        log.warn { "Ugyldig forespørsel: ${e.message}" }
+        log.warn(e) { "Ugyldig forespørsel: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
@@ -130,7 +130,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFound(e: NoSuchElementException): ResponseEntity<Map<String, String>> {
-        log.warn { "Ressurs ikke funnet: ${e.message}" }
+        log.warn(e) { "Ressurs ikke funnet: ${e.message}" }
 
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)

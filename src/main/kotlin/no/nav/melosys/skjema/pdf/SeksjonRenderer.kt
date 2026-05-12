@@ -216,6 +216,12 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
+        data.utsendingsperiodeOgLand?.let { dto ->
+            definisjon.seksjoner["utsendingsperiodeOgLand"]?.let { seksjon ->
+                builder.append(byggUtsendingsperiodeOgLand(dto, seksjon))
+            }
+        }
+
         data.arbeidsgiverensVirksomhetINorge?.let { dto ->
             definisjon.seksjoner["arbeidsgiverensVirksomhetINorge"]?.let { seksjon ->
                 builder.append(byggArbeidsgiverensVirksomhetINorge(dto, seksjon))

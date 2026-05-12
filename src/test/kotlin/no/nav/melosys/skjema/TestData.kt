@@ -277,6 +277,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     skjemadel: Skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
     arbeidsgiverNavn: String = "Test Arbeidsgiver AS",
+    arbeidstakerNavn: String = "Test Testesen",
     fullmektigFnr: String? = etAnnetKorrektSyntetiskFnr,
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
@@ -288,6 +289,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -295,6 +297,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -303,6 +306,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -310,6 +314,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             skjemadel = skjemadel,
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -319,6 +324,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -328,6 +334,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
+            arbeidstakerNavn = arbeidstakerNavn,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )

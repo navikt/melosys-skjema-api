@@ -30,6 +30,7 @@ object HtmlDokumentGenerator {
         return buildString {
             append(byggHtmlStart())
             append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
+            append(byggAktørInfoSeksjon(skjema.aktørInfo, språk))
             appendSkjemaData(skjema.skjemaData, skjema.definisjon, seksjonRenderer, språk)
             skjema.kobletSkjemaData?.let { appendSkjemaData(it, skjema.definisjon, seksjonRenderer, språk) }
             append(byggHtmlSlutt())
@@ -134,6 +135,73 @@ object HtmlDokumentGenerator {
             append(seksjonRenderer.byggKombinertArbeidsgiversSeksjoner(data, definisjon))
             append("""<h2 class="part-heading">${escapeHtml(arbeidstakerOverskrift(språk))}</h2>""")
             append(seksjonRenderer.byggKombinertArbeidstakersSeksjoner(data, definisjon))
+        }
+    }
+
+    private fun byggAktørInfoSeksjon(aktørInfo: AktørInfo, språk: Språk): String {
+        val arbeidstakerRolle = when (språk) {
+            Språk.NORSK_BOKMAL -> "Arbeidstaker"
+            Språk.ENGELSK -> "Employee"
+        }
+        val arbeidsgiverRolle = when (språk) {
+            Språk.NORSK_BOKMAL -> "Arbeidsgiver"
+            Språk.ENGELSK -> "Employer"
+        }
+        val orgnrTekst = when (språk) {
+            Språk.NORSK_BOKMAL -> "Organisasjonsnummer"
+            Språk.ENGELSK -> "Organisation number"
+        }
+        val identTekst = personidentifikatorLabel(aktørInfo.arbeidstakerFnr, språk)
+        val navnTekst = when (språk) {
+            Språk.NORSK_BOKMAL -> "Navn"
+            Språk.ENGELSK -> "Name"
+        }
+
+        return """
+            <div class="form-summary">
+                <div class="form-summary-header">
+                    <h3 class="form-summary-heading">${escapeHtml(arbeidstakerRolle)}</h3>
+                </div>
+                <div class="form-summary-answers">
+                    <div class="form-summary-answer">
+                        <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
+                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidstakerNavn)}</p>
+                    </div>
+                    <div class="form-summary-answer">
+                        <p class="form-summary-label">${escapeHtml(identTekst)}</p>
+                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidstakerFnr)}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-summary">
+                <div class="form-summary-header">
+                    <h3 class="form-summary-heading">${escapeHtml(arbeidsgiverRolle)}</h3>
+                </div>
+                <div class="form-summary-answers">
+                    <div class="form-summary-answer">
+                        <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
+                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidsgiverNavn)}</p>
+                    </div>
+                    <div class="form-summary-answer">
+                        <p class="form-summary-label">${escapeHtml(orgnrTekst)}</p>
+                        <p class="form-summary-value">${escapeHtml(aktørInfo.orgnr)}</p>
+                    </div>
+                </div>
+            </div>
+        """.trimIndent()
+    }
+
+    /**
+     * Utleder riktig label for personidentifikator basert på om det er et D-nummer eller fødselsnummer.
+     * D-nummer gjenkjennes ved at første siffer er 4–7 (dag-delen er økt med 4).
+     */
+    private fun personidentifikatorLabel(ident: String, språk: Språk): String {
+        val erDnummer = ident.length == 11 && ident[0].digitToInt() in 4..7
+        return when {
+            erDnummer && språk == Språk.NORSK_BOKMAL -> "D-nummer"
+            erDnummer && språk == Språk.ENGELSK -> "D number"
+            språk == Språk.NORSK_BOKMAL -> "Fødselsnummer"
+            else -> "National identity number"
         }
     }
 

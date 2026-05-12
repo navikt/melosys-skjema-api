@@ -1,9 +1,11 @@
 package no.nav.melosys.skjema.controller
 
+import com.ninjasquad.springmockk.MockkBean
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
+import io.mockk.every
 import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
@@ -12,6 +14,11 @@ import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
+import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.m2mTokenWithReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -43,10 +50,18 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
 
+    @MockkBean
+    private lateinit var pdlConsumer: PdlConsumer
+
     @BeforeEach
     fun setUp() {
         skjemaRepository.deleteAll()
         innsendingRepository.deleteAll()
+
+        every { pdlConsumer.hentPerson(any()) } returns PdlPerson(
+            navn = listOf(PdlNavn("Hans", null, "Hansen")),
+            foedselsdato = listOf(PdlFoedselsdato("1980-01-01"))
+        )
     }
 
     @Nested

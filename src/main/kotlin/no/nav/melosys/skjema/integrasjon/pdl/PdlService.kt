@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.validators.felles.ErFodselsEllerDNummerValidator
 import org.springframework.beans.factory.annotation.Value
@@ -40,20 +41,39 @@ class PdlService(
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        val personEtternavn = person.navn.firstOrNull()?.etternavn
-        if (!personEtternavn.equals(etternavn, ignoreCase = true)) {
+        // PDL kan ha flere parallelle navn (ulik master). Aksepterer match mot enhver aktuell verdi.
+        val matcherEtternavn = person.aktuelleNavn()
+            .any { it.etternavn.equals(etternavn, ignoreCase = true) }
+        if (!matcherEtternavn) {
             log.warn { "Etternavn matcher ikke ved verifisering" }
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        val navn = person.navn.firstOrNull()?.fulltNavn()
+        return Pair(person.hentFulltNavn(), person.hentFoedselsdato())
+    }
+
+    /**
+     * Henter fullt navn fra PDL.
+     * @throws IllegalArgumentException hvis person mangler navn registrert i PDL.
+     */
+    fun hentNavn(fodselsnummer: String): String =
+        pdlConsumer.hentPerson(fodselsnummer).hentFulltNavn()
+
+    // PDL kan returnere flere parallelle og historiske verdier per opplysning.
+    // Vi filtrerer bort historiske og velger sist registrerte aktuelle verdi.
+
+    private fun PdlPerson.aktuelleNavn() = navn.filter { it.metadata.erIkkeHistorisk() }
+
+    private fun PdlPerson.hentFulltNavn(): String =
+        aktuelleNavn().maxByOrNull { it.metadata.datoSistRegistrert() }
+            ?.fulltNavn()
             ?: throw IllegalArgumentException("Person har ingen navn registrert i PDL")
 
-        val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato
+    private fun PdlPerson.hentFoedselsdato(): LocalDate {
+        val dato = foedselsdato.filter { it.metadata.erIkkeHistorisk() }
+            .maxByOrNull { it.metadata.datoSistRegistrert() }
+            ?.foedselsdato
             ?: throw IllegalArgumentException("Person har ingen fødselsdato registrert i PDL")
-
-        val fodselsdato = LocalDate.parse(fodselsdatoString)
-
-        return Pair(navn, fodselsdato)
+        return LocalDate.parse(dato)
     }
 }
