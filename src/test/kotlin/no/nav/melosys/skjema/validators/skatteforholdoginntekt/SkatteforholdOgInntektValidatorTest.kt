@@ -46,16 +46,22 @@ class SkatteforholdOgInntektValidatorTest {
     }
 
     fun validCombinations(): Stream<Arguments> = listOf(
-        // Mottar ikke pengestøtte - alle felt kan være null
+        // Mottar ikke pengestøtte, gyldige inntektvalg
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = false,
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
+            hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
+            inntekt = null, // skattepliktig + kun norsk → inntekt ikke tillatt
         ),
-        // Mottar pengestøtte - alle påkrevde felt er satt
+        // Mottar pengestøtte - alle påkrevde felt er satt, gyldige inntektvalg
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = "SE",
             pengestotteSomMottasFraAndreLandBelop = "5000",
-            pengestotteSomMottasFraAndreLandBeskrivelse = "Studentstøtte fra Sverige"
+            pengestotteSomMottasFraAndreLandBeskrivelse = "Studentstøtte fra Sverige",
+            inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
+            hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
+            inntekt = null, // skattepliktig + kun norsk → inntekt ikke tillatt
         ),
         // Lønn + utenlandsk virksomhet + gyldig beløp
         skatteforholdOgInntektDtoMedDefaultVerdier().copy(

@@ -70,7 +70,6 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "Du må oppgi inntekter fra egen virksomhet",
             inntektSkalIkkeOppgis = "Inntekt skal ikke oppgis",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Inntekter fra egen virksomhet skal ikke oppgis",
-            kanIkkeHaLonnNarKunNorskVirksomhet = "Kan ikke ha lønn når kun norsk virksomhet er valgt og du er skattepliktig til Norge"
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "Du må oppgi tilleggsopplysninger",
@@ -153,7 +152,6 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "You must specify income from own business",
             inntektSkalIkkeOppgis = "Income should not be specified",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Income from own business should not be specified",
-            kanIkkeHaLonnNarKunNorskVirksomhet = "Cannot have salary when only Norwegian company is selected and you are liable to pay tax to Norway"
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "You must provide additional information",

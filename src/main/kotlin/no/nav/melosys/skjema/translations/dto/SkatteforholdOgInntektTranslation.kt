@@ -11,5 +11,4 @@ data class SkatteforholdOgInntektTranslation(
     val maaOppgiInntektFraEgenVirksomhet: String,
     val inntektSkalIkkeOppgis: String,
     val inntektFraEgenVirksomhetSkalIkkeOppgis: String,
-    val kanIkkeHaLonnNarKunNorskVirksomhet: String,
 )
