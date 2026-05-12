@@ -10,7 +10,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
-import no.nav.melosys.skjema.types.felles.PeriodeDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -69,35 +68,21 @@ class UtsendtArbeidstakerSkjemaKoblingService(
     ): Skjema? {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val ønsketDel = if (sammeDel) metadata.skjemadel else metadata.skjemadel.motpart()
-        val matchendeKandidater = kandidater.filter { kandidat ->
+        val skjemaPeriode = skjema.utsendelsePeriode() ?: return null
+
+        return kandidater.firstOrNull { kandidat ->
             val km = kandidat.metadata as UtsendtArbeidstakerMetadata
             km.skjemadel == ønsketDel
                 && km.juridiskEnhetOrgnr == metadata.juridiskEnhetOrgnr
                 && (sammeDel || km.kobletSkjemaId == null)
+                && kandidat.utsendelsePeriode()?.let { skjemaPeriode.overlapper(it) } == true
         }
-        if (matchendeKandidater.isEmpty()) return null
-
-        val samletPeriode = samletPeriode(matchendeKandidater) ?: return null
-        val skjemaPeriode = skjema.utsendelsePeriode() ?: return null
-
-        if (!skjemaPeriode.overlapper(samletPeriode)) return null
-
-        return matchendeKandidater.first()
     }
 
     private fun Skjemadel.motpart() = when (this) {
         Skjemadel.ARBEIDSTAKERS_DEL -> Skjemadel.ARBEIDSGIVERS_DEL
         Skjemadel.ARBEIDSGIVERS_DEL -> Skjemadel.ARBEIDSTAKERS_DEL
         Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> error("Kombinert skjemadel har ingen motpart")
-    }
-
-    private fun samletPeriode(skjemaer: List<Skjema>): PeriodeDto? {
-        val perioder = skjemaer.mapNotNull { it.utsendelsePeriode() }
-        if (perioder.isEmpty()) return null
-        return PeriodeDto(
-            fraDato = perioder.minOf { it.fraDato },
-            tilDato = perioder.maxOf { it.tilDato }
-        )
     }
 
     private fun utforErstatterKobling(nyttSkjema: Skjema, gammelSkjema: Skjema): UUID? {
