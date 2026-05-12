@@ -92,7 +92,7 @@ object PdfStyles {
             margin: 0;
         }
 
-        /* Checkbox-gruppe */
+        /* Checkbox-gruppe (DejaVu Sans subset for ☑ U+2611) */
         .checkbox-gruppe {
             margin-top: 4px;
         }

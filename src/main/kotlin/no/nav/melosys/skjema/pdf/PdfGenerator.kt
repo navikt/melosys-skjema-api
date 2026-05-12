@@ -98,13 +98,14 @@ private fun registrerFonter(builder: PdfRendererBuilder) {
         "sans-serif", 700, BaseRendererBuilder.FontStyle.NORMAL, true
     )
 
-    // Registrer DejaVu Sans for symboler (☑ U+2611 o.l.)
+    // Registrer DejaVu Sans subset for checkbox-symbol (☑ U+2611).
+    // Subset er generert med pyftsubset og inneholder kun dette ene tegnet (4 KB).
     builder.useFont(
-        { hentRessurs("/pdf/fonts/DejaVuSans.ttf") ?: throw IllegalStateException("Fant ikke DejaVuSans.ttf på classpath") },
+        { hentRessurs("/pdf/fonts/DejaVuSans-Checkbox.ttf") },
         "DejaVu Sans", 400, BaseRendererBuilder.FontStyle.NORMAL, true
     )
 
-    log.debug { "Registrerte Liberation Sans og DejaVu Sans fonter fra classpath" }
+    log.debug { "Registrerte Liberation Sans og DejaVu Sans (checkbox-subset) fonter fra classpath" }
 }
 
 /**

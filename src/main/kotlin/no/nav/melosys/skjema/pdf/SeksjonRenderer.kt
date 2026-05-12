@@ -460,8 +460,8 @@ class SeksjonRenderer(
  * Eksempel: "1234567" → "1 234 567 kr"
  */
 private fun String.formaterSomKroner(): String {
-    val tall = toLongOrNull() ?: return this
-    val formatert = tall.toString().reversed().chunked(3).joinToString(" ").reversed()
+    val tall = trim().toLongOrNull() ?: return this
+    val formatert = java.text.NumberFormat.getNumberInstance(java.util.Locale("no", "NO")).format(tall)
     return "$formatert kr"
 }
 
