@@ -9,6 +9,7 @@ spring:
       minimum-idle: 1
 
   jackson:
+    default-property-inclusion: non_null
     deserialization:
       fail-on-unknown-properties: false
       fail-on-missing-creator-properties: true

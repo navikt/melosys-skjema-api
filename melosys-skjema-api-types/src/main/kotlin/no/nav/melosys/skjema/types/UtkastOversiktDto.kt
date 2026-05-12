@@ -12,7 +12,7 @@ data class UtkastOversiktDto(
     val id: UUID,
     val arbeidsgiverNavn: String?,
     val arbeidsgiverOrgnr: String?,
-    val arbeidstakerNavn: String?,
+    val arbeidstakerNavn: String,
     val arbeidstakerFnrMaskert: String?, // Maskert fnr (f.eks. "01019*****")
     val opprettetDato: Instant,
     val sistEndretDato: Instant,

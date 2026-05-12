@@ -14,7 +14,7 @@ data class InnsendtSoknadOversiktDto(
     val referanseId: String?,
     val arbeidsgiverNavn: String?,
     val arbeidsgiverOrgnr: String,
-    val arbeidstakerNavn: String?,
+    val arbeidstakerNavn: String,
     val arbeidstakerFnrMaskert: String?, // Maskert fnr (f.eks. "010190*****")
     val arbeidstakerFodselsdato: LocalDate,
     val innsendtDato: Instant,
