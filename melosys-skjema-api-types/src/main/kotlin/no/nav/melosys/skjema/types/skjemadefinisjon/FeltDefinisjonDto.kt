@@ -118,6 +118,8 @@ data class CountrySelectFeltDefinisjon(
  * @property fjernLabel Label for "Fjern"-knappen
  * @property tomListeMelding Melding som vises når listen er tom
  * @property elementDefinisjon Definisjon av feltene i hvert liste-element
+ * @property itemTypeLabels Tittel per element-type for diskriminerte lister (f.eks. norsk/utenlandsk
+ * virksomhet). Nøklene mappes mot et type-felt på hvert element i UI-flyten. Null for ikke-diskriminerte lister.
  */
 data class ListeFeltDefinisjon(
     override val label: String,

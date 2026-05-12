@@ -166,7 +166,9 @@ class FeltRenderer(
         }
 
         val ed = felt.elementDefinisjon
-        val itemTypeLabels = felt.itemTypeLabels.orEmpty()
+        val itemTypeLabels = requireNotNull(felt.itemTypeLabels) {
+            "Mangler itemTypeLabels i definisjonen for virksomhetsliste '${felt.label}'"
+        }
         val builder = StringBuilder()
         builder.append("""<div class="list-container">""")
         builder.append("""<div class="list-label">${escapeHtml(felt.label)}</div>""")
