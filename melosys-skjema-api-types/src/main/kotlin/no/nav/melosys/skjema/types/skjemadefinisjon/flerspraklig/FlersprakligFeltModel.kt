@@ -65,12 +65,14 @@ data class FlersprakligBooleanFeltDto(
 data class FlersprakligTextFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
-    override val pakrevd: Boolean = true
+    override val pakrevd: Boolean = true,
+    val format: String? = null
 ) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = TextFeltDefinisjon(
         label = label.hent(språk),
         hjelpetekst = hjelpetekst?.hent(språk),
-        pakrevd = pakrevd
+        pakrevd = pakrevd,
+        format = format
     )
 }
 

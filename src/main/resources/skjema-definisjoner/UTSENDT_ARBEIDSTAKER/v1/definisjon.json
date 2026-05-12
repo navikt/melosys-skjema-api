@@ -211,6 +211,7 @@
         },
         "pengestotteSomMottasFraAndreLandBelop": {
           "type": "TEXT",
+          "format": "BELOP",
           "label": {
             "nb": "Hvor mye penger mottar du brutto per måned?",
             "en": "How much money do you receive gross per month?"
@@ -279,6 +280,7 @@
         },
         "inntekt": {
           "type": "TEXT",
+          "format": "BELOP",
           "label": {
             "nb": "Lønnsinntekt",
             "en": "Salary"
@@ -291,6 +293,7 @@
         },
         "inntektFraEgenVirksomhet": {
           "type": "TEXT",
+          "format": "BELOP",
           "label": {
             "nb": "Inntekter fra egen virksomhet",
             "en": "Income from your own business"

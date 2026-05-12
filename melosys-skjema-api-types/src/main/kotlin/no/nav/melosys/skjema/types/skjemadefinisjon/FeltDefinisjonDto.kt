@@ -48,11 +48,14 @@ data class BooleanFeltDefinisjon(
 
 /**
  * Enkelt tekstfelt (input).
+ *
+ * @property format Valgfritt visningsformat, f.eks. "BELOP" for beløpsfelter
  */
 data class TextFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
-    override val pakrevd: Boolean = true
+    override val pakrevd: Boolean = true,
+    val format: String? = null
 ) : FeltDefinisjonDto()
 
 /**
