@@ -29,6 +29,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.HttpStatus
@@ -273,6 +274,17 @@ class UtsendtArbeidstakerController(
     fun registerFamiliemedlemmer(@PathVariable skjemaId: UUID, @RequestBody @Valid request: FamiliemedlemmerDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
         log.info { "Registering familiemedlemmer information" }
         val skjema = utsendtArbeidstakerService.saveFamiliemedlemmer(skjemaId, request)
+        return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/{skjemaId}/vedlegg")
+    @Operation(summary = "Register vedlegg-valg")
+    @ApiResponse(responseCode = "200", description = "Vedlegg-valg registered")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun registerVedleggValg(@PathVariable skjemaId: UUID, @RequestBody @Valid request: VedleggValgDto): ResponseEntity<UtsendtArbeidstakerSkjemaDto> {
+        log.info { "Registering vedlegg-valg" }
+        val skjema = utsendtArbeidstakerService.saveVedleggValg(skjemaId, request)
         return ResponseEntity.ok(skjema)
     }
 

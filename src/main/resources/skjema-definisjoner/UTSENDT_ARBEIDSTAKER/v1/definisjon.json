@@ -358,6 +358,30 @@
         }
       }
     },
+    "vedleggArbeidstaker": {
+      "tittel": {
+        "nb": "Vedlegg",
+        "en": "Attachments"
+      },
+      "felter": {
+        "harAnnenDokumentasjon": {
+          "type": "BOOLEAN",
+          "label": {
+            "nb": "Har du noen annen dokumentasjon du ønsker å legge ved?",
+            "en": "Do you have any other documentation you wish to attach?"
+          },
+          "jaLabel": {
+            "nb": "Ja, jeg legger de ved denne søknaden",
+            "en": "Yes, I am attaching them with this application"
+          },
+          "neiLabel": {
+            "nb": "Nei, jeg har ingen ekstra dokumentasjon jeg vil legge ved",
+            "en": "No, I have no extra documentation I want to attach"
+          },
+          "pakrevd": true
+        }
+      }
+    },
     "arbeidsgiverensVirksomhetINorge": {
       "tittel": {
         "nb": "Arbeidsgiverens virksomhet i Norge",
@@ -1000,6 +1024,30 @@
           },
           "maxLength": 2000,
           "pakrevd": false
+        }
+      }
+    },
+    "vedleggArbeidsgiver": {
+      "tittel": {
+        "nb": "Vedlegg",
+        "en": "Attachments"
+      },
+      "felter": {
+        "harAnnenDokumentasjon": {
+          "type": "BOOLEAN",
+          "label": {
+            "nb": "Har du noen annen dokumentasjon du ønsker å legge ved?",
+            "en": "Do you have any other documentation you wish to attach?"
+          },
+          "jaLabel": {
+            "nb": "Ja, jeg legger de ved denne søknaden",
+            "en": "Yes, I am attaching them with this application"
+          },
+          "neiLabel": {
+            "nb": "Nei, jeg har ingen ekstra dokumentasjon jeg vil legge ved",
+            "en": "No, I have no extra documentation I want to attach"
+          },
+          "pakrevd": true
         }
       }
     }

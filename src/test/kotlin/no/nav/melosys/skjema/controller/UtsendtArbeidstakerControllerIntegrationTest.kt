@@ -514,7 +514,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/utsendingsperiode-og-land"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/skatteforhold-og-inntekt"),
-        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer")
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/vedlegg")
     )
 
     fun stegTestFixtures(): List<Arguments> {
@@ -922,6 +923,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 this.errors shouldBe mapOf(
                     "utsendingsperiodeOgLand" to "fellesTranslation.feltErPaakrevd",
                     "tilleggsopplysninger" to "fellesTranslation.feltErPaakrevd",
+                    "vedlegg" to "fellesTranslation.feltErPaakrevd",
                     "arbeidssituasjon" to "fellesTranslation.feltErPaakrevd",
                     "skatteforholdOgInntekt" to "fellesTranslation.feltErPaakrevd",
                     "familiemedlemmer" to "fellesTranslation.feltErPaakrevd",

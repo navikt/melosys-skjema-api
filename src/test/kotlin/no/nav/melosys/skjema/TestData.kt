@@ -61,6 +61,7 @@ import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheterMedAnsettelsesform
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhet
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
 
@@ -95,7 +96,8 @@ fun altinnTilgangerResponseMedDefaultVerdier() = AltinnTilgangerResponse(
 fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
     arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier(),
     utenlandsoppdraget = utenlandsoppdragetDtoMedDefaultVerdier(),
-    arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier()
+    arbeidstakerensLonn = arbeidstakerensLonnDtoMedDefaultVerdier(),
+    vedlegg = vedleggValgDtoMedDefaultVerdier()
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
@@ -205,6 +207,10 @@ fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(
     tilleggsopplysningerTilSoknad = null
 )
 
+fun vedleggValgDtoMedDefaultVerdier() = VedleggValgDto(
+    harAnnenDokumentasjon = false
+)
+
 fun norskVirksomhetMedDefaultVerdier() = NorskVirksomhet(
     organisasjonsnummer = korrektSyntetiskOrgnr
 )
@@ -250,6 +256,7 @@ fun arbeidstakersSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsta
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
     utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
     arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
+    vedlegg = vedleggValgDtoMedDefaultVerdier(),
 )
 
 fun arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(
@@ -265,6 +272,7 @@ fun arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidst
     ),
     utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
     tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
+    vedlegg = vedleggValgDtoMedDefaultVerdier(),
 )
 
 fun utsendtArbeidstakerMetadataMedDefaultVerdier(
