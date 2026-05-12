@@ -109,10 +109,14 @@ class FeltRenderer(
     }
 
     private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
-        val valgtMap = (verdi as? Map<*, *>)?.mapValues { it.value as? Boolean ?: false } ?: return ""
-        val stringKeyMap = valgtMap.mapKeys { (key, _) -> key.toString() }
+        val valgteVerdier: Set<String> = when (verdi) {
+            is Set<*> -> verdi.map { it.toString() }.toSet()
+            is Collection<*> -> verdi.map { it.toString() }.toSet()
+            is Map<*, *> -> verdi.filterValues { it == true }.keys.map { it.toString() }.toSet()
+            else -> return ""
+        }
         val valgteLabels = felt.alternativer
-            .filter { stringKeyMap[it.verdi] == true }
+            .filter { it.verdi in valgteVerdier }
             .map { it.label }
         if (valgteLabels.isEmpty()) return ""
 

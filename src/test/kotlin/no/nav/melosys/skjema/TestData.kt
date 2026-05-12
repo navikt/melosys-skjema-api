@@ -200,8 +200,8 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
     landSomUtbetalerPengestotte = null,
     pengestotteSomMottasFraAndreLandBelop = null,
     pengestotteSomMottasFraAndreLandBeskrivelse = null,
-    inntektFraNorskEllerUtenlandskVirksomhet = mapOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET to true, ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET to false),
-    hvilkeTyperInntektHarDu = mapOf(InntektType.LOENN to true, InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET to false),
+    inntektFraNorskEllerUtenlandskVirksomhet = setOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET),
+    hvilkeTyperInntektHarDu = setOf(InntektType.LOENN),
     inntekt = null,
     inntektFraEgenVirksomhet = null
 )

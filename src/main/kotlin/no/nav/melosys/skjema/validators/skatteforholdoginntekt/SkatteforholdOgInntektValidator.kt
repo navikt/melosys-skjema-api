@@ -68,13 +68,13 @@ class SkatteforholdOgInntektValidator {
 
     /**
      * Validerer at minst én inntektkilde og minst én inntekttype er valgt.
-     * null behandles som "ingen valgt" (manglende input).
+     * null eller tomt sett behandles som "ingen valgt" (manglende input).
      */
     private fun validateInntektValg(
-        inntektKilder: Map<ArbeidsinntektKilde, Boolean>?,
-        inntektTyper: Map<InntektType, Boolean>?
+        inntektKilder: Set<ArbeidsinntektKilde>?,
+        inntektTyper: Set<InntektType>?
     ): List<Violation> {
-        if (inntektKilder == null || inntektKilder.none { it.value }) {
+        if (inntektKilder.isNullOrEmpty()) {
             return listOf(
                 Violation(
                     field = SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name,
@@ -82,7 +82,7 @@ class SkatteforholdOgInntektValidator {
                 )
             )
         }
-        if (inntektTyper == null || inntektTyper.none { it.value }) {
+        if (inntektTyper.isNullOrEmpty()) {
             return listOf(
                 Violation(
                     field = SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name,
@@ -99,22 +99,23 @@ class SkatteforholdOgInntektValidator {
      */
     private fun validateInntektBelop(
         dto: SkatteforholdOgInntektDto,
-        inntektKilder: Map<ArbeidsinntektKilde, Boolean>,
-        inntektTyper: Map<InntektType, Boolean>
+        inntektKilder: Set<ArbeidsinntektKilde>,
+        inntektTyper: Set<InntektType>
     ): List<Violation> {
-        val harLoenn = inntektTyper[InntektType.LOENN] == true
-        val harEgenVirksomhet = inntektTyper[InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET] == true
-        val harNorskVirksomhet = inntektKilder[ArbeidsinntektKilde.NORSK_VIRKSOMHET] == true
-        val harUtenlandskVirksomhet = inntektKilder[ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET] == true
+        val harLoenn = InntektType.LOENN in inntektTyper
+        val harEgenVirksomhet = InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET in inntektTyper
+        val harNorskVirksomhet = ArbeidsinntektKilde.NORSK_VIRKSOMHET in inntektKilder
+        val harUtenlandskVirksomhet = ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET in inntektKilder
 
-        val inntektIkkeTillatt =
+        // Lønnsinntekt skal ikke oppgis når bruker er skattepliktig til Norge
+        // og har kun norsk virksomhet (ikke utenlandsk).
+        val loennIkkeTillatt =
             harLoenn &&
-                !harEgenVirksomhet &&
                 dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
                 harNorskVirksomhet &&
                 !harUtenlandskVirksomhet
 
-        if (inntektIkkeTillatt) {
+        if (loennIkkeTillatt) {
             if (!dto.inntekt.isNullOrBlank()) {
                 return listOf(
                     Violation(
@@ -123,18 +124,7 @@ class SkatteforholdOgInntektValidator {
                     )
                 )
             }
-            if (!dto.inntektFraEgenVirksomhet.isNullOrBlank()) {
-                return listOf(
-                    Violation(
-                        field = SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name,
-                        translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name)
-                    )
-                )
-            }
-            return emptyList()
-        }
-
-        if (harLoenn) {
+        } else if (harLoenn) {
             belopViolation(
                 dto.inntekt,
                 SkatteforholdOgInntektDto::inntekt.name,
