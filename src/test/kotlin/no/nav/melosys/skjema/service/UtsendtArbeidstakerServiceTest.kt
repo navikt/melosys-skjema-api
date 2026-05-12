@@ -27,6 +27,11 @@ import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
@@ -386,6 +391,162 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!)
             }
+        }
+    }
+
+    context("MELOSYS-8065: SENDT RADGIVER_MED_FULLMAKT-skjema med tapt fullmakt") {
+        val fullmektigFnr = "99999999999"
+        val arbeidstakerFnr = "12345678910"
+
+        fun radgiverMedFullmaktSendtSkjema(skjemaId: UUID, medData: Boolean = true) = skjemaMedDefaultVerdier(
+            id = skjemaId,
+            status = SkjemaStatus.SENDT,
+            fnr = arbeidstakerFnr,
+            orgnr = testArbeidsgiver.orgnr,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                fullmektigFnr = fullmektigFnr
+            ),
+            data = if (medData) arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier() else null
+        )
+
+        test("hentSkjema: tapt fullmakt + Altinn-tilgang → returnerer skjema med strippet AT-data") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId)
+            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+
+            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+
+            data.arbeidsgiversData.arbeidsgiverensVirksomhetINorge shouldNotBe null
+            data.arbeidstakersData.arbeidssituasjon shouldBe null
+            data.arbeidstakersData.skatteforholdOgInntekt shouldBe null
+            data.arbeidstakersData.familiemedlemmer shouldBe null
+        }
+
+        test("hentSkjema: aktiv fullmakt → returnerer full data") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId)
+            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns true
+
+            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+
+            data.arbeidstakersData.arbeidssituasjon shouldNotBe null
+        }
+
+        test("hentSkjema: tapt fullmakt + ingen Altinn-tilgang → AccessDeniedException") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
+
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
+        }
+
+        test("getSkjemaMetadata: tapt fullmakt + Altinn-tilgang → returnerer metadata") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+
+            service.getSkjemaMetadata(skjemaId).representasjonstype shouldBe Representasjonstype.RADGIVER_MED_FULLMAKT
+        }
+
+        test("getSkjemaMetadata: tapt fullmakt + ingen Altinn-tilgang → AccessDeniedException") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
+
+            shouldThrow<AccessDeniedException> { service.getSkjemaMetadata(skjemaId) }
+        }
+
+        test("hentSkjema: ARBEIDSGIVER (uten _MED_FULLMAKT) med Altinn-tilgang skal returnere full data uten stripping") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                status = SkjemaStatus.SENDT,
+                fnr = arbeidstakerFnr,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                ),
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+            )
+
+            every { mockSubjectHandler.getUserID() } returns korrektSyntetiskFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+
+            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+
+            data.arbeidsgiverensVirksomhetINorge shouldNotBe null
+        }
+
+        test("hentSkjema: UTKAST med _MED_FULLMAKT uten fullmakt skal kaste AccessDenied (streng kontroll bevart for utkast)") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                status = SkjemaStatus.UTKAST,
+                fnr = arbeidstakerFnr,
+                orgnr = testArbeidsgiver.orgnr,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT,
+                    fullmektigFnr = fullmektigFnr
+                ),
+                opprettetAv = fullmektigFnr,
+                endretAv = fullmektigFnr
+            )
+
+            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
+
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
+        }
+    }
+
+    context("UTKAST: kun den som starta utkastet har tilgang (personlig eierskap)") {
+        val hrPersonA = "11111111111"
+        val hrPersonB = "22222222222"
+        val arbeidstakerFnr = "12345678910"
+
+        fun arbeidsgiverUtkastStartetAv(creatorFnr: String, skjemaId: UUID) = skjemaMedDefaultVerdier(
+            id = skjemaId,
+            status = SkjemaStatus.UTKAST,
+            fnr = arbeidstakerFnr,
+            orgnr = testArbeidsgiver.orgnr,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+            ),
+            opprettetAv = creatorFnr,
+            endretAv = creatorFnr
+        )
+
+        test("hentSkjema: opprinnelig creator med Altinn-tilgang får tilgang til eget utkast") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns hrPersonA
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId)
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+
+            service.hentSkjema(skjemaId).id shouldBe skjemaId
+        }
+
+        test("hentSkjema: annen kollega med Altinn-tilgang får IKKE lese andres utkast") {
+            val skjemaId = UUID.randomUUID()
+            every { mockSubjectHandler.getUserID() } returns hrPersonB
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId)
+            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
+
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
         }
     }
 })

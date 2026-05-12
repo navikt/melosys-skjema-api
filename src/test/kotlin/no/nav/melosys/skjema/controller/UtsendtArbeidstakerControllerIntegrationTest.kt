@@ -537,6 +537,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 fullmektigFnr = korrektSyntetiskFnr,
             ),
+            opprettetAv = korrektSyntetiskFnr,
+            endretAv = korrektSyntetiskFnr,
         )
 
         fun arbeidstakerSkjema(data: SkjemaData = atBaseData) = skjemaMedDefaultVerdier(
@@ -555,6 +557,8 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                 fullmektigFnr = korrektSyntetiskFnr,
                 skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
             ),
+            opprettetAv = korrektSyntetiskFnr,
+            endretAv = korrektSyntetiskFnr,
         )
 
         return listOf(
