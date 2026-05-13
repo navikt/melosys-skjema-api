@@ -24,3 +24,4 @@ data class SkatteforholdOgInntektDto(
     val inntekt: String? = null,
     val inntektFraEgenVirksomhet: String? = null
 )
+

@@ -467,7 +467,7 @@ class SeksjonRenderer(
  */
 private fun String.formaterSomKroner(): String {
     val tall = trim().toLongOrNull() ?: return this
-    val formatert = java.text.NumberFormat.getNumberInstance(java.util.Locale("no", "NO")).format(tall)
+    val formatert = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("no-NO")).format(tall)
     return "$formatert kr"
 }
 
