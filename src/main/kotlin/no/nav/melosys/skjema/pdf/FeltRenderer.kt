@@ -111,7 +111,6 @@ class FeltRenderer(
     private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
         val valgteVerdier: Set<String> = when (verdi) {
             is Collection<*> -> verdi.map { it.toString() }.toSet()
-            is Map<*, *> -> verdi.filterValues { it == true }.keys.map { it.toString() }.toSet()
             else -> return ""
         }
         val valgteLabels = felt.alternativer

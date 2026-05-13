@@ -32,6 +32,8 @@ sealed class FeltDefinisjonDto {
     abstract val pakrevd: Boolean
 }
 
+enum class FeltFormat { BELOP }
+
 /**
  * Boolean-felt (Ja/Nei).
  *
@@ -55,7 +57,7 @@ data class TextFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
     override val pakrevd: Boolean = true,
-    val format: String? = null
+    val format: FeltFormat? = null
 ) : FeltDefinisjonDto()
 
 /**

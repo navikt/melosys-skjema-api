@@ -95,23 +95,44 @@ class SkatteforholdOgInntektValidator {
 
     /**
      * Validerer inntektsbeløp basert på valgte inntektkilder og -typer.
-     * Returnerer ved første feil for konsistens med øvrige validatorer.
+     * Delegerer til spesialiserte metoder per inntekttype.
      */
     private fun validateInntektBelop(
         dto: SkatteforholdOgInntektDto,
         inntektKilder: Set<ArbeidsinntektKilde>,
         inntektTyper: Set<InntektType>
     ): List<Violation> {
-        val harLoenn = InntektType.LOENN in inntektTyper
-        val harEgenVirksomhet = InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET in inntektTyper
         val harNorskVirksomhet = ArbeidsinntektKilde.NORSK_VIRKSOMHET in inntektKilder
         val harUtenlandskVirksomhet = ArbeidsinntektKilde.UTENLANDSK_VIRKSOMHET in inntektKilder
 
-        // Lønnsinntekt skal ikke oppgis når bruker er skattepliktig til Norge
-        // og har kun norsk virksomhet (ikke utenlandsk).
+        val loennViolations = validateLoennsinntekt(dto, inntektTyper, harNorskVirksomhet, harUtenlandskVirksomhet)
+        if (loennViolations.isNotEmpty()) return loennViolations
+
+        return validateEgenVirksomhetsInntekt(dto, inntektTyper)
+    }
+
+    private fun validateLoennsinntekt(
+        dto: SkatteforholdOgInntektDto,
+        inntektTyper: Set<InntektType>,
+        harNorskVirksomhet: Boolean,
+        harUtenlandskVirksomhet: Boolean
+    ): List<Violation> {
+        val harLoenn = InntektType.LOENN in inntektTyper
+
+        if (!harLoenn) {
+            if (!dto.inntekt.isNullOrBlank()) {
+                return listOf(
+                    Violation(
+                        field = SkatteforholdOgInntektDto::inntekt.name,
+                        translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
+                    )
+                )
+            }
+            return emptyList()
+        }
+
         val loennIkkeTillatt =
-            harLoenn &&
-                dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
+            dto.erSkattepliktigTilNorgeIHeleutsendingsperioden &&
                 harNorskVirksomhet &&
                 !harUtenlandskVirksomhet
 
@@ -124,20 +145,23 @@ class SkatteforholdOgInntektValidator {
                     )
                 )
             }
-        } else if (harLoenn) {
-            belopViolation(
-                dto.inntekt,
-                SkatteforholdOgInntektDto::inntekt.name,
-                SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
-            )?.let { return listOf(it) }
-        } else if (!dto.inntekt.isNullOrBlank()) {
-            return listOf(
-                Violation(
-                    field = SkatteforholdOgInntektDto::inntekt.name,
-                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name)
-                )
-            )
+            return emptyList()
         }
+
+        belopViolation(
+            dto.inntekt,
+            SkatteforholdOgInntektDto::inntekt.name,
+            SkatteforholdOgInntektTranslation::maaOppgiInntekt.name
+        )?.let { return listOf(it) }
+
+        return emptyList()
+    }
+
+    private fun validateEgenVirksomhetsInntekt(
+        dto: SkatteforholdOgInntektDto,
+        inntektTyper: Set<InntektType>
+    ): List<Violation> {
+        val harEgenVirksomhet = InntektType.INNTEKT_FRA_EGEN_VIRKSOMHET in inntektTyper
 
         if (harEgenVirksomhet) {
             belopViolation(

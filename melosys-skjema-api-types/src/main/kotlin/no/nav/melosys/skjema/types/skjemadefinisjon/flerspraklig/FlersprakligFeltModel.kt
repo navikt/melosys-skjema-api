@@ -9,6 +9,7 @@ import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.FeltDefinisjonDto
+import no.nav.melosys.skjema.types.skjemadefinisjon.FeltFormat
 import no.nav.melosys.skjema.types.skjemadefinisjon.ListeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.PeriodeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.SelectFeltDefinisjon
@@ -66,7 +67,7 @@ data class FlersprakligTextFeltDto(
     override val label: FlersprakligTekst,
     override val hjelpetekst: FlersprakligTekst? = null,
     override val pakrevd: Boolean = true,
-    val format: String? = null
+    val format: FeltFormat? = null
 ) : FlersprakligFeltModel() {
     override fun tilFeltDto(språk: Språk) = TextFeltDefinisjon(
         label = label.hent(språk),
