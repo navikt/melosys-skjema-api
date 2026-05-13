@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.pdf
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Familiemedlem
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
@@ -114,10 +113,7 @@ class FeltRenderer(
                 if (verdi.isEmpty()) {
                     felt.tomListeMelding?.let { renderEnkeltFelt(felt.label, it) } ?: ""
                 } else {
-                    when (val første = verdi.firstOrNull()) {
-                        is Familiemedlem -> renderFamiliemedlemmer(felt, verdi as List<Familiemedlem>)
-                        else -> renderGeneriskListe(felt, verdi)
-                    }
+                    renderGeneriskListe(felt, verdi)
                 }
             }
 
@@ -126,42 +122,6 @@ class FeltRenderer(
         }
     }
 
-    private fun renderFamiliemedlemmer(felt: ListeFeltDefinisjon, liste: List<Familiemedlem>): String {
-        val builder = StringBuilder()
-        builder.append("""<div class="list-container">""")
-        builder.append("""<div class="list-label">${escapeHtml(felt.label)}</div>""")
-
-        liste.forEachIndexed { index, medlem ->
-            builder.append("""<div class="list-item">""")
-            builder.append("""<div class="list-item-title">${index + 1}. familiemedlem</div>""")
-
-            felt.elementDefinisjon["fornavn"]?.let { feltDef ->
-                builder.append(renderListeElement(feltDef.label, medlem.fornavn))
-            }
-            felt.elementDefinisjon["etternavn"]?.let { feltDef ->
-                builder.append(renderListeElement(feltDef.label, medlem.etternavn))
-            }
-
-            if (medlem.harNorskFodselsnummerEllerDnummer) {
-                medlem.fodselsnummer?.let { fnr ->
-                    felt.elementDefinisjon["fodselsnummer"]?.let { feltDef ->
-                        builder.append(renderListeElement(feltDef.label, fnr))
-                    }
-                }
-            } else {
-                medlem.fodselsdato?.let { dato ->
-                    felt.elementDefinisjon["fodselsdato"]?.let { feltDef ->
-                        builder.append(renderListeElement(feltDef.label, dato.format(datoFormatter)))
-                    }
-                }
-            }
-
-            builder.append("</div>")
-        }
-
-        builder.append("</div>")
-        return builder.toString()
-    }
 
     private fun renderVirksomheter(felt: ListeFeltDefinisjon, virksomheter: NorskeOgUtenlandskeVirksomheter): String {
         val norske = virksomheter.norskeVirksomheter ?: emptyList()

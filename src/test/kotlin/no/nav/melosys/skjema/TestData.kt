@@ -48,7 +48,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Familiemedlem
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -167,17 +166,8 @@ fun omBordPaFlyDtoMedDefaultVerdier() = OmBordPaFlyDto(
     vanligHjemmebaseNavn = null
 )
 
-fun familiemedlemMedDefaultVerdier() = Familiemedlem(
-    fornavn = "John",
-    etternavn = "Doe",
-    harNorskFodselsnummerEllerDnummer = true,
-    fodselsnummer = korrektSyntetiskFnr,
-    fodselsdato = null
-)
-
 fun familiemedlemmerDtoMedDefaultVerdier() = FamiliemedlemmerDto(
     skalHaMedFamiliemedlemmer = false,
-    familiemedlemmer = emptyList()
 )
 
 fun utsendingsperiodeOgLandDtoMedDefaultVerdier() = UtsendingsperiodeOgLandDto(

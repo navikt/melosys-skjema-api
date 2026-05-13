@@ -928,7 +928,6 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     "tilleggsopplysninger" to "fellesTranslation.feltErPaakrevd",
                     "arbeidssituasjon" to "fellesTranslation.feltErPaakrevd",
                     "skatteforholdOgInntekt" to "fellesTranslation.feltErPaakrevd",
-                    "familiemedlemmer" to "fellesTranslation.feltErPaakrevd",
                 )
             }
     }

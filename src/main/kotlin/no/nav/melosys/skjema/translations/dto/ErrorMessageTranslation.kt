@@ -14,6 +14,5 @@ data class ErrorMessageTranslation(
     val utsendingsperiodeOgLandTranslation: UtsendingsperiodeOgLandTranslation,
     val utenlandsoppdragetTranslation: UtenlandsoppdragetTranslation,
     val utenlandsoppdragetArbeidstakerTranslation: UtenlandsoppdragetArbeidstakerTranslation,
-    val familiemedlemmerTranslation: FamiliemedlemmerTranslation,
     val fellesTranslation: FellesTranslation,
 )
