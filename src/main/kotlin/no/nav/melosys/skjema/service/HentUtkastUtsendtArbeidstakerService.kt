@@ -130,7 +130,7 @@ class HentUtkastUtsendtArbeidstakerService(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
-            arbeidstakerNavn = null,
+            arbeidstakerNavn = metadata.arbeidstakerNavn,
             arbeidstakerFnrMaskert = maskerFnr(skjema.fnr),
             opprettetDato = skjema.opprettetDato,
             sistEndretDato = skjema.endretDato,

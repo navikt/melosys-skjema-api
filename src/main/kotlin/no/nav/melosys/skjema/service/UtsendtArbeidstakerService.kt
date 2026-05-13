@@ -121,8 +121,26 @@ class UtsendtArbeidstakerService(
         )
     }
 
-    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto =
-        hentSkjemaMedLesetilgang(skjemaId).toUtsendtArbeidstakerDto()
+    /**
+     * Henter et skjema for visning.
+     *
+     * For UTKAST: krever skrivetilgang og at innlogget bruker er den som starta utkastet.
+     * For SENDT: lenient kontroll via [validerLesetilgangForSendtSkjema] — fullmektig som har mistet
+     * fullmakten men fortsatt har Altinn-tilgang får se skjemaet med arbeidstakers data strippet.
+     */
+    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
+        val skjema = findAktivByIdOrThrow(skjemaId)
+        if (skjema.status != SkjemaStatus.SENDT) {
+            return krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto()
+        }
+
+        val dto = skjema.toUtsendtArbeidstakerDto()
+        return if (validerLesetilgangForSendtSkjema(skjema) == false) {
+            dto.copy(data = stripArbeidstakersData(dto.data))
+        } else {
+            dto
+        }
+    }
 
     /**
      * Soft-sletter et skjema med status UTKAST.
@@ -285,9 +303,13 @@ class UtsendtArbeidstakerService(
 
     }
 
-    fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata{
-        val skjema = hentSkjemaMedLesetilgang(skjemaId)
-
+    fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata {
+        val skjema = findAktivByIdOrThrow(skjemaId)
+        if (skjema.status == SkjemaStatus.SENDT) {
+            validerLesetilgangForSendtSkjema(skjema)
+        } else {
+            krevSkrivetilgang(skjema)
+        }
         return skjema.utsendtArbeidstakerMetadataOrThrow()
     }
 
@@ -300,14 +322,13 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = skjemaRepository.findAktivById(skjemaId)
-            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+        val skjema = findAktivByIdOrThrow(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
         }
 
-        val fullmaktAktiv = harAktivFullmaktForInnsendtSkjema(skjema)
+        val fullmaktAktiv = validerLesetilgangForSendtSkjema(skjema)
 
         if (fullmaktAktiv == false) {
             log.warn { "Fullmakt tapt for innsendt skjema ${skjema.id}, arbeidstaker-data strippet" }
@@ -350,13 +371,16 @@ class UtsendtArbeidstakerService(
      * @throws NoSuchElementException hvis skjema ikke finnes
      * @throws AccessDeniedException hvis tilgang nektes
      */
-    fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findAktivById(skjemaId)
-            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+    fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema =
+        krevLesetilgang(findAktivByIdOrThrow(skjemaId))
 
-        return skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
+    private fun krevLesetilgang(skjema: Skjema): Skjema =
+        skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
-    }
+
+    private fun findAktivByIdOrThrow(skjemaId: UUID): Skjema =
+        skjemaRepository.findAktivById(skjemaId)
+            ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
 
     fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
@@ -533,11 +557,15 @@ class UtsendtArbeidstakerService(
     /**
      * Sjekker tilgang og om fullmakt er aktiv for innsendte skjemaer.
      *
+     * Returverdien styrer om arbeidstakers data skal strippes hos kalleren:
+     * - `null` = strippes ikke (ikke _MED_FULLMAKT, eller bruker er arbeidstakeren selv)
+     * - `true` = strippes ikke (aktiv fullmakt)
+     * - `false` = strippes (fullmakt tapt, men Altinn-fallback ga tilgang)
+     *
      * Kaster AccessDeniedException hvis bruker ikke har tilgang i det hele tatt.
-     * For _MED_FULLMAKT-typer der fullmakt er tapt men bruker har Altinn-tilgang: returnerer false.
      * For ANNEN_PERSON uten fullmakt: kaster AccessDeniedException (ingen fallback).
      */
-    private fun harAktivFullmaktForInnsendtSkjema(skjema: Skjema): Boolean? {
+    private fun validerLesetilgangForSendtSkjema(skjema: Skjema): Boolean? {
         val currentUser = subjectHandler.getUserID()
 
         if (skjema.fnr == currentUser) {
@@ -593,18 +621,22 @@ class UtsendtArbeidstakerService(
     /**
      * Validerer at innlogget bruker har tilgang til skjemaet.
      *
-     * Sjekker følgende i prioritert rekkefølge:
-     * 1. Er bruker arbeidstaker? (fnr match)
-     * 2. Er bruker fullmektig? (fullmektigFnr match + aktiv fullmakt via repr-api)
-     * 3. Har bruker Altinn-tilgang til arbeidsgiver? (orgnr match)
+     * For UTKAST: kun den som starta utkastet (opprettetAv-match) i tillegg til rollesjekk —
+     * utkast er personlig og deles ikke mellom brukere med samme rolle.
+     *
+     * For andre statuser: arbeidstaker selv (fnr-match) eller rollesjekk
+     * (fullmektig med aktiv fullmakt, eller Altinn-tilgang til arbeidsgiver).
      *
      * VIKTIG: Fullmakt verifiseres ALLTID mot repr-api for å sikre at den fortsatt er aktiv.
-     *
-     * @param skjema Skjemaet som skal sjekkes
-     * @throws IllegalArgumentException hvis bruker ikke har tilgang
      */
     private fun harInnloggetBrukerLesetilgangTilSkjema(skjema: Skjema): Boolean {
-        if (skjema.fnr == subjectHandler.getUserID()) {
+        val currentUser = subjectHandler.getUserID()
+
+        if (skjema.status == SkjemaStatus.UTKAST && skjema.opprettetAv != currentUser) {
+            return false
+        }
+
+        if (skjema.fnr == currentUser) {
             return true
         }
 
@@ -620,17 +652,17 @@ class UtsendtArbeidstakerService(
 
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> {
                 val metadata = skjemaMetadata as ArbeidsgiverMedFullmaktMetadata
-                metadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
 
             Representasjonstype.RADGIVER_MED_FULLMAKT -> {
                 val metadata = skjemaMetadata as RadgiverMedFullmaktMetadata
-                metadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+                metadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
 
             Representasjonstype.ANNEN_PERSON -> {
                 val annenPersonMetadata = skjemaMetadata as AnnenPersonMetadata
-                annenPersonMetadata.fullmektigFnr == subjectHandler.getUserID() && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
+                annenPersonMetadata.fullmektigFnr == currentUser && reprService.harSkriverettigheterForMedlemskap(skjema.fnr)
             }
         }
     }
@@ -648,20 +680,26 @@ class UtsendtArbeidstakerService(
     /**
      * Henter skjema og verifiserer at innlogget bruker har skrivetilgang.
      *
-     * Til forskjell fra [hentSkjemaMedLesetilgang] (som også gir lesetilgang basert på fnr-match)
-     * krever denne at brukeren har riktig rolle for å kunne skrive:
+     * Krever at brukeren har riktig rolle:
      * - DEG_SELV: Kun arbeidstaker selv (fnr-match)
      * - ARBEIDSGIVER/RADGIVER: Kun via Altinn-tilgang til organisasjonen
      * - *_MED_FULLMAKT/ANNEN_PERSON: Kun fullmektig med aktiv fullmakt
+     *
+     * I tillegg for UTKAST: kun den som starta utkastet kan redigere — utkast er personlig
+     * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
-    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema {
-        val skjema = skjemaRepository.findAktivById(skjemaId)
-            ?: throw NoSuchElementException("Skjema with id $skjemaId not found")
+    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
+        krevSkrivetilgang(findAktivByIdOrThrow(skjemaId))
 
-        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+    private fun krevSkrivetilgang(skjema: Skjema): Skjema {
         val currentUser = subjectHandler.getUserID()
 
-        val harTilgang = when (skjemaMetadata.representasjonstype) {
+        if (skjema.status == SkjemaStatus.UTKAST && skjema.opprettetAv != currentUser) {
+            throw AccessDeniedException("Innlogget bruker har ikke skrivetilgang til skjema")
+        }
+
+        val skjemaMetadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+        val harRolle = when (skjemaMetadata.representasjonstype) {
             Representasjonstype.DEG_SELV -> skjema.fnr == currentUser
 
             Representasjonstype.ARBEIDSGIVER,
@@ -683,7 +721,7 @@ class UtsendtArbeidstakerService(
             }
         }
 
-        if (!harTilgang) {
+        if (!harRolle) {
             throw AccessDeniedException("Innlogget bruker har ikke skrivetilgang til skjema")
         }
 
