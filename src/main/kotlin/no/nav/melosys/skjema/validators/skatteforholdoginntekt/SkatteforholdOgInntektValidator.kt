@@ -168,9 +168,11 @@ class SkatteforholdOgInntektValidator {
     }
 
     companion object {
-        /** Gyldig beløp: heltall større enn 0, eksempel: "1000", "500" */
+        private val GYLDIG_BELOP_REGEX = Regex("^[1-9]\\d*$")
+
+        /** Gyldig beløp: kun sifre, heltall større enn 0, eksempel: "1000", "500" */
         internal fun erGyldigBelop(belop: String?): Boolean =
-            belop?.trim()?.toLongOrNull()?.let { it > 0 } == true
+            belop?.trim()?.let { GYLDIG_BELOP_REGEX.matches(it) } == true
 
         private fun translationFieldName(fieldName: String) =
             "${ErrorMessageTranslation::skatteforholdOgInntektTranslation.name}.$fieldName"

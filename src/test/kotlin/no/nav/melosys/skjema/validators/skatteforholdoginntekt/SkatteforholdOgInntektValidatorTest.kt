@@ -40,7 +40,7 @@ class SkatteforholdOgInntektValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["0", "-100", "3456.78", "100,00", "1 000", "", "abc", "12.5"])
+    @ValueSource(strings = ["0", "-100", "+100", "3456.78", "100,00", "1 000", "", "abc", "12.5", "01"])
     fun `erGyldigBelop should reject invalid formats`(belop: String) {
         SkatteforholdOgInntektValidator.erGyldigBelop(belop) shouldBe false
     }
