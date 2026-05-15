@@ -92,6 +92,21 @@ object PdfStyles {
             margin: 0;
         }
 
+        /* Checkbox-gruppe (DejaVu Sans subset for ☑ U+2611) */
+        .checkbox-gruppe {
+            margin-top: 4px;
+        }
+        .checkbox-item {
+            font-size: 11pt;
+            color: #262626;
+            margin: 4px 0;
+        }
+        .checkbox-icon {
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 11pt;
+            margin-right: 4px;
+        }
+
         /* Liste-elementer (familiemedlemmer, virksomheter) */
         .list-container {
             padding: 10px 16px;

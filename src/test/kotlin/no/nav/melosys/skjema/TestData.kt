@@ -19,6 +19,8 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.Virksomhet
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstakerSoknadRequest
 import no.nav.melosys.skjema.types.felles.PersonDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsinntektKilde
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.InntektType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
@@ -197,7 +199,11 @@ fun skatteforholdOgInntektDtoMedDefaultVerdier() = SkatteforholdOgInntektDto(
     mottarPengestotteFraAnnetEosLandEllerSveits = false,
     landSomUtbetalerPengestotte = null,
     pengestotteSomMottasFraAndreLandBelop = null,
-    pengestotteSomMottasFraAndreLandBeskrivelse = null
+    pengestotteSomMottasFraAndreLandBeskrivelse = null,
+    inntektFraNorskEllerUtenlandskVirksomhet = setOf(ArbeidsinntektKilde.NORSK_VIRKSOMHET),
+    hvilkeTyperInntektHarDu = setOf(InntektType.LOENN),
+    inntekt = null,
+    inntektFraEgenVirksomhet = null
 )
 
 fun tilleggsopplysningerDtoMedDefaultVerdier() = TilleggsopplysningerDto(

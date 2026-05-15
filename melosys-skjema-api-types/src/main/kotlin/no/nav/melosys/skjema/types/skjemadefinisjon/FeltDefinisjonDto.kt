@@ -23,13 +23,16 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = PeriodeFeltDefinisjon::class, name = "PERIOD"),
     JsonSubTypes.Type(value = SelectFeltDefinisjon::class, name = "SELECT"),
     JsonSubTypes.Type(value = CountrySelectFeltDefinisjon::class, name = "COUNTRY_SELECT"),
-    JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST")
+    JsonSubTypes.Type(value = ListeFeltDefinisjon::class, name = "LIST"),
+    JsonSubTypes.Type(value = CheckboxGruppeFeltDefinisjon::class, name = "CHECKBOX_GROUP")
 )
 sealed class FeltDefinisjonDto {
     abstract val label: String
     abstract val hjelpetekst: String?
     abstract val pakrevd: Boolean
 }
+
+enum class FeltFormat { BELOP }
 
 /**
  * Boolean-felt (Ja/Nei).
@@ -47,11 +50,14 @@ data class BooleanFeltDefinisjon(
 
 /**
  * Enkelt tekstfelt (input).
+ *
+ * @property format Valgfritt visningsformat, f.eks. "BELOP" for beløpsfelter
  */
 data class TextFeltDefinisjon(
     override val label: String,
     override val hjelpetekst: String? = null,
-    override val pakrevd: Boolean = true
+    override val pakrevd: Boolean = true,
+    val format: FeltFormat? = null
 ) : FeltDefinisjonDto()
 
 /**
@@ -128,3 +134,16 @@ data class ListeFeltDefinisjon(
     val tomListeMelding: String? = null,
     val elementDefinisjon: Map<String, FeltDefinisjonDto>
 ) : FeltDefinisjonDto()
+
+/**
+ * Checkbox-gruppe med predefinerte alternativer.
+ *
+ * @property alternativer Liste over checkbox-alternativer
+ */
+data class CheckboxGruppeFeltDefinisjon(
+    override val label: String,
+    override val hjelpetekst: String? = null,
+    override val pakrevd: Boolean = false,
+    val alternativer: List<AlternativDefinisjonDto>
+) : FeltDefinisjonDto()
+

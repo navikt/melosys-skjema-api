@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
+import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.DateFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.FeltDefinisjonDto
@@ -39,6 +40,7 @@ class FeltRenderer(
             is SelectFeltDefinisjon -> renderSelect(felt, verdi)
             is CountrySelectFeltDefinisjon -> renderCountry(felt, verdi)
             is ListeFeltDefinisjon -> renderListe(felt, verdi)
+            is CheckboxGruppeFeltDefinisjon -> renderCheckboxGruppe(felt, verdi)
         }
     }
 
@@ -104,6 +106,30 @@ class FeltRenderer(
             else -> verdi.toString()
         }
         return renderEnkeltFelt(felt.label, landnavn)
+    }
+
+    private fun renderCheckboxGruppe(felt: CheckboxGruppeFeltDefinisjon, verdi: Any): String {
+        val valgteVerdier: Set<String> = when (verdi) {
+            is Collection<*> -> verdi.map { it.toString() }.toSet()
+            else -> return ""
+        }
+        val valgteLabels = felt.alternativer
+            .filter { it.verdi in valgteVerdier }
+            .map { it.label }
+        if (valgteLabels.isEmpty()) return ""
+
+        val listeHtml = valgteLabels.joinToString("\n") { label ->
+            """<div class="checkbox-item"><span class="checkbox-icon">&#x2611;</span> ${escapeHtml(label)}</div>"""
+        }
+
+        return """
+            <div class="form-summary-answer">
+                <p class="form-summary-label">${escapeHtml(felt.label)}</p>
+                <div class="form-summary-value checkbox-gruppe">
+                    $listeHtml
+                </div>
+            </div>
+        """.trimIndent()
     }
 
     @Suppress("UNCHECKED_CAST")

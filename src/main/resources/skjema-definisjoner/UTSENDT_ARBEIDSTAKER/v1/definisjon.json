@@ -211,9 +211,10 @@
         },
         "pengestotteSomMottasFraAndreLandBelop": {
           "type": "TEXT",
+          "format": "BELOP",
           "label": {
-            "nb": "Hvor mye penger mottar du brutto per måned",
-            "en": "How much money do you receive gross per month"
+            "nb": "Hvor mye penger mottar du brutto per måned?",
+            "en": "How much money do you receive gross per month?"
           },
           "hjelpetekst": {
             "nb": "Oppgi beløpet i norske kroner",
@@ -224,8 +225,78 @@
         "pengestotteSomMottasFraAndreLandBeskrivelse": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Hva slags pengestøtte mottar du",
-            "en": "What kind of financial support do you receive"
+            "nb": "Hva slags pengestøtte mottar du?",
+            "en": "What kind of financial support do you receive?"
+          },
+          "pakrevd": false
+        },
+        "inntektFraNorskEllerUtenlandskVirksomhet": {
+          "type": "CHECKBOX_GROUP",
+          "label": {
+            "nb": "Får du arbeidsinntekten din fra en norsk eller utenlandsk virksomhet?",
+            "en": "Is your work income from a Norwegian or foreign company?"
+          },
+          "pakrevd": false,
+          "alternativer": [
+            {
+              "verdi": "NORSK_VIRKSOMHET",
+              "label": {
+                "nb": "Norsk virksomhet",
+                "en": "Norwegian company"
+              }
+            },
+            {
+              "verdi": "UTENLANDSK_VIRKSOMHET",
+              "label": {
+                "nb": "Utenlandsk virksomhet",
+                "en": "Foreign company"
+              }
+            }
+          ]
+        },
+        "hvilkeTyperInntektHarDu": {
+          "type": "CHECKBOX_GROUP",
+          "label": {
+            "nb": "Hvilken inntekt har du?",
+            "en": "What kind of income do you have?"
+          },
+          "pakrevd": false,
+          "alternativer": [
+            {
+              "verdi": "LOENN",
+              "label": {
+                "nb": "Lønnsinntekt",
+                "en": "Salary"
+              }
+            },
+            {
+              "verdi": "INNTEKT_FRA_EGEN_VIRKSOMHET",
+              "label": {
+                "nb": "Inntekt fra egen virksomhet",
+                "en": "Income from your own business"
+              }
+            }
+          ]
+        },
+        "inntekt": {
+          "type": "TEXT",
+          "format": "BELOP",
+          "label": {
+            "nb": "Lønnsinntekt",
+            "en": "Salary"
+          },
+          "hjelpetekst": {
+            "nb": "Du skal føre opp samlet månedlig inntekt, inkludert eventuelle utenlandstillegg og verdi av naturalytelser dekt av virksomheten. Hvis inntekten din varierer fra måned til måned, oppgi gjennomsnittlig inntekt i brutto per måned.",
+            "en": "You should report your total monthly income, including any foreign allowances and the value of benefits in kind covered by the company. If your income varies from month to month, please state the average gross income per month."
+          },
+          "pakrevd": false
+        },
+        "inntektFraEgenVirksomhet": {
+          "type": "TEXT",
+          "format": "BELOP",
+          "label": {
+            "nb": "Inntekter fra egen virksomhet",
+            "en": "Income from your own business"
           },
           "pakrevd": false
         }
