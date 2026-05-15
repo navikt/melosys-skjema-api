@@ -732,7 +732,7 @@
         "vegadresse": {
           "type": "TEXT",
           "label": {
-            "nb": "Vegadresse",
+            "nb": "Gate/vei",
             "en": "Street address"
           },
           "pakrevd": false
