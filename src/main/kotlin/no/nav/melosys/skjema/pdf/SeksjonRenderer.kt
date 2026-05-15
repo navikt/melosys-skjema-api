@@ -200,7 +200,7 @@ class SeksjonRenderer(
         }
 
         data.tilleggsopplysninger?.let { dto ->
-            definisjon.seksjoner["tilleggsopplysninger"]?.let { seksjon ->
+            definisjon.seksjoner["tilleggsopplysningerArbeidstaker"]?.let { seksjon ->
                 builder.append(byggTilleggsopplysninger(dto, seksjon))
             }
         }
