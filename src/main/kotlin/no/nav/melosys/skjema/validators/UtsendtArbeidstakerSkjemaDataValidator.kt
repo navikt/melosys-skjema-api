@@ -72,6 +72,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
         throwIfViolations(familiemedlemmerValidator.validate(dto))
     }
 
+
     fun validateUtsendtArbeidstakerSkjemaData(skjemaData: UtsendtArbeidstakerSkjemaData) {
         val violations = mutableListOf<Violation>()
 

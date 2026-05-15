@@ -30,10 +30,8 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Familiemedlem
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
-import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
@@ -375,86 +373,6 @@ class PdfGeneratorTest : FunSpec({
         }
     }
 
-    context("Familiemedlemmer") {
-        test("viser familiemedlemmer med fødselsnummer") {
-            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
-                familiemedlemmer = FamiliemedlemmerDto(
-                    skalHaMedFamiliemedlemmer = true,
-                    familiemedlemmer = listOf(
-                        Familiemedlem(
-                            fornavn = "Kari",
-                            etternavn = "Nordmann",
-                            harNorskFodselsnummerEllerDnummer = true,
-                            fodselsnummer = "12345678901",
-                            fodselsdato = null
-                        )
-                    )
-                )
-            )
-
-            val skjema = lagSkjemaPdfData(
-                referanseId = "FAMFNR",
-                arbeidstakerData = arbeidstakerData
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "Kari"
-            html shouldContain "Nordmann"
-            html shouldContain "12345678901"
-            html shouldContain "1. familiemedlem"
-        }
-
-        test("viser familiemedlemmer med fødselsdato") {
-            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
-                familiemedlemmer = FamiliemedlemmerDto(
-                    skalHaMedFamiliemedlemmer = true,
-                    familiemedlemmer = listOf(
-                        Familiemedlem(
-                            fornavn = "Ola",
-                            etternavn = "Nordmann Jr.",
-                            harNorskFodselsnummerEllerDnummer = false,
-                            fodselsnummer = null,
-                            fodselsdato = LocalDate.of(2015, 6, 15)
-                        )
-                    )
-                )
-            )
-
-            val skjema = lagSkjemaPdfData(
-                referanseId = "FAMDTO",
-                arbeidstakerData = arbeidstakerData
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "Ola"
-            html shouldContain "Nordmann Jr."
-            html shouldContain "15.06.2015"
-        }
-
-        test("viser flere familiemedlemmer med nummerering") {
-            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
-                familiemedlemmer = FamiliemedlemmerDto(
-                    skalHaMedFamiliemedlemmer = true,
-                    familiemedlemmer = listOf(
-                        Familiemedlem("Kari", "Nordmann", true, "12345678901", null),
-                        Familiemedlem("Ola", "Nordmann", false, null, LocalDate.of(2015, 1, 1))
-                    )
-                )
-            )
-
-            val skjema = lagSkjemaPdfData(
-                referanseId = "FAMFLR",
-                arbeidstakerData = arbeidstakerData
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "1. familiemedlem"
-            html shouldContain "2. familiemedlem"
-        }
-    }
 
     context("Arbeidssted-typer") {
         test("viser arbeidssted på land med adresse") {
@@ -587,17 +505,9 @@ class PdfGeneratorTest : FunSpec({
 
         test("håndterer norske tegn korrekt") {
             val arbeidstakerData = lagKomplettArbeidstakerData().copy(
-                familiemedlemmer = FamiliemedlemmerDto(
-                    skalHaMedFamiliemedlemmer = true,
-                    familiemedlemmer = listOf(
-                        Familiemedlem(
-                            fornavn = "Bjørn Ærlig",
-                            etternavn = "Østgård",
-                            harNorskFodselsnummerEllerDnummer = true,
-                            fodselsnummer = "12345678901",
-                            fodselsdato = null
-                        )
-                    )
+                tilleggsopplysninger = TilleggsopplysningerDto(
+                    harFlereOpplysningerTilSoknaden = true,
+                    tilleggsopplysningerTilSoknad = "Bjørn Ærlig Østgård"
                 )
             )
 
@@ -608,8 +518,7 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Bjørn Ærlig"
-            html shouldContain "Østgård"
+            html shouldContain "Bjørn Ærlig Østgård"
 
             // Verifiser at PDF kan genereres uten feil
             val pdfBytes = genererPdf(skjema)
