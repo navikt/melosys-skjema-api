@@ -75,7 +75,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
             every { mockClamAvClient.scan(fil) } just Runs
             every { mockVedleggStorageClient.lastOpp(any(), any(), any()) } just Runs
@@ -93,10 +93,9 @@ class VedleggServiceTest : FunSpec({
         }
 
         test("feiler når skjema ikke er UTKAST") {
-            val skjema = lagSkjema(status = SkjemaStatus.SENDT)
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } throws SkjemaErIkkeRedigerbartException()
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.lastOpp(skjemaId, fil)
@@ -107,7 +106,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 10
 
             shouldThrow<IllegalArgumentException> {
@@ -119,7 +118,7 @@ class VedleggServiceTest : FunSpec({
             val skjema = lagSkjema()
             val fil = lagMultipartFile()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 0
             every { mockClamAvClient.scan(fil) } throws VedleggVirusFunnetException("Virus funnet")
 
@@ -155,7 +154,7 @@ class VedleggServiceTest : FunSpec({
             val vedlegg = mockk<Vedlegg>()
             every { vedlegg.storageReferanse } returns "skjemaer/$skjemaId/vedlegg/$vedleggId/test.pdf"
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId) } returns vedlegg
             every { mockVedleggStorageClient.slett(any()) } just Runs
             every { mockVedleggRepository.delete(vedlegg) } just Runs
@@ -169,7 +168,7 @@ class VedleggServiceTest : FunSpec({
         test("feiler når vedlegg ikke finnes") {
             val skjema = lagSkjema()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId) } returns null
 
             shouldThrow<NoSuchElementException> {
@@ -178,9 +177,7 @@ class VedleggServiceTest : FunSpec({
         }
 
         test("feiler når skjema ikke er UTKAST") {
-            val skjema = lagSkjema(status = SkjemaStatus.SENDT)
-
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } throws SkjemaErIkkeRedigerbartException()
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.slett(skjemaId, vedleggId)
@@ -196,7 +193,7 @@ class VedleggServiceTest : FunSpec({
             val vedlegg1 = mockk<Vedlegg> { every { storageReferanse } returns ref1 }
             val vedlegg2 = mockk<Vedlegg> { every { storageReferanse } returns ref2 }
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg1, vedlegg2)
             every { mockVedleggStorageClient.slett(any()) } just Runs
             every { mockVedleggRepository.deleteAll(any<List<Vedlegg>>()) } just Runs
@@ -211,7 +208,7 @@ class VedleggServiceTest : FunSpec({
         test("returnerer tidlig når ingen vedlegg finnes") {
             val skjema = lagSkjema()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns emptyList()
 
             vedleggService.slettAlleForSkjema(skjemaId)
@@ -221,9 +218,7 @@ class VedleggServiceTest : FunSpec({
         }
 
         test("feiler når skjema ikke er UTKAST") {
-            val skjema = lagSkjema(status = SkjemaStatus.SENDT)
-
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } throws SkjemaErIkkeRedigerbartException()
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.slettAlleForSkjema(skjemaId)

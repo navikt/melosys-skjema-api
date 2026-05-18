@@ -161,11 +161,7 @@ class UtsendtArbeidstakerService(
      */
     @Transactional
     fun slettUtkast(skjemaId: UUID) {
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = hentRedigerbartSkjema(skjemaId)
 
         skjema.status = SkjemaStatus.SLETTET
         skjema.endretAv = subjectHandler.getUserID()
@@ -238,11 +234,7 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = hentRedigerbartSkjema(skjemaId)
 
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
@@ -460,10 +452,9 @@ class UtsendtArbeidstakerService(
     }
 
     private fun validerVedleggMotValg(skjemaId: UUID, vedlegg: VedleggValgDto?) {
+        if (vedlegg == null) return
         val harVedlegg = vedleggService.harVedleggForSkjema(skjemaId)
-        val harAnnenDokumentasjon = vedlegg?.harAnnenDokumentasjon
-        if ((harAnnenDokumentasjon == true && !harVedlegg) ||
-            (harAnnenDokumentasjon == false && harVedlegg)) {
+        if (vedlegg.harAnnenDokumentasjon != harVedlegg) {
             throw ValidationException(listOf(
                 Violation(field = "vedlegg", translationKey = FELT_ER_PAAKREVD)
             ))
@@ -706,13 +697,18 @@ class UtsendtArbeidstakerService(
         skjemaId: UUID,
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
+        val skjema = hentRedigerbartSkjema(skjemaId)
+        val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
+        skjema.data = updateFunction(existing)
+        return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
+    }
+
+    fun hentRedigerbartSkjema(skjemaId: UUID): Skjema {
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaErIkkeRedigerbartException()
         }
-        val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
-        skjema.data = updateFunction(existing)
-        return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
+        return skjema
     }
 
     /**
