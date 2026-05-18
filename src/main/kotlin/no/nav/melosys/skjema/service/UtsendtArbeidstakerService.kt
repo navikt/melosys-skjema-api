@@ -722,7 +722,7 @@ class UtsendtArbeidstakerService(
      * I tillegg for UTKAST: kun den som starta utkastet kan redigere — utkast er personlig
      * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
-    fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
+    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
         krevSkrivetilgang(findAktivByIdOrThrow(skjemaId))
 
     private fun krevSkrivetilgang(skjema: Skjema): Skjema {
