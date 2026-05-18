@@ -4,6 +4,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeid
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OffshoreDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandDto
@@ -349,13 +350,15 @@ class SeksjonRenderer(
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
             felt("fastEllerVekslendeArbeidssted", data.fastEllerVekslendeArbeidssted)
             // Adressefelter fra fastArbeidssted
-            data.fastArbeidssted?.let { adresse ->
-                felt("vegadresse", adresse.vegadresse)
-                felt("nummer", adresse.nummer)
-                felt("postkode", adresse.postkode)
-                felt("bySted", adresse.bySted)
-                felt("land", utsendelseLand)
-            }
+            data.fastArbeidssted
+                ?.takeIf { data.fastEllerVekslendeArbeidssted == FastEllerVekslendeArbeidssted.FAST }
+                ?.let { adresse ->
+                    felt("vegadresse", adresse.vegadresse)
+                    felt("nummer", adresse.nummer)
+                    felt("postkode", adresse.postkode)
+                    felt("bySted", adresse.bySted)
+                    felt("land", utsendelseLand)
+                }
             felt("erHjemmekontor", data.erHjemmekontor)
         }
     }
@@ -421,7 +424,7 @@ class SeksjonRenderer(
     /**
      * Builder for å bygge en seksjon med felter.
      */
-    inner class SeksjonBuilder(
+    class SeksjonBuilder(
         private val seksjon: SeksjonDefinisjonDto,
         private val feltRenderer: FeltRenderer
     ) {
