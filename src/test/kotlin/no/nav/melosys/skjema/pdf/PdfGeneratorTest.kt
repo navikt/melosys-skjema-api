@@ -33,10 +33,12 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider
@@ -595,7 +597,31 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "12345"
             html shouldContain "Stockholm County"
             html shouldContain "Sverige"
-            html shouldContain "Tilhører samme konsern som norsk arbeidsgiver?"
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            tilhorerKonsernVerdi shouldBe "Ja"
+        }
+
+        test("rendrer tilhorerSammeKonsern=false som Nei") {
+            val utenlandsk = utenlandskVirksomhetMedDefaultVerdier().copy(tilhorerSammeKonsern = false)
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidstakerensLonn = ArbeidstakerensLonnDto(
+                    arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                    virksomheterSomUtbetalerLonnOgNaturalytelser = NorskeOgUtenlandskeVirksomheter(
+                        norskeVirksomheter = null,
+                        utenlandskeVirksomheter = listOf(utenlandsk)
+                    )
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "UTLAGN",
+                arbeidsgiverData = arbeidsgiverData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            tilhorerKonsernVerdi shouldBe "Nei"
         }
 
         test("viser alle felter inkludert ansettelsesform når arbeidstaker jobber for flere virksomheter") {
@@ -654,6 +680,18 @@ class PdfGeneratorTest : FunSpec({
         }
     }
 })
+
+/**
+ * Plukker ut verdien som rendreres rett etter en gitt label i den genererte HTML-en.
+ * Brukes for å verifisere felt-verdier uten å være avhengig av label-uavhengige strenger som
+ * "Ja"/"Nei", som finnes mange steder i en typisk PDF.
+ */
+private fun verdiEtterLabel(html: String, label: String): String? {
+    val regex = Regex(
+        """<span class="list-item-label">${Regex.escape(label)}</span>\s*<span class="list-item-value">([^<]*)</span>"""
+    )
+    return regex.find(html)?.groupValues?.get(1)
+}
 
 private fun lagKomplettArbeidstakerData(): UtsendtArbeidstakerArbeidstakersSkjemaDataDto {
     return UtsendtArbeidstakerArbeidstakersSkjemaDataDto(

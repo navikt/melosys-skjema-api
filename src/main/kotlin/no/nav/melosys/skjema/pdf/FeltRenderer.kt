@@ -10,6 +10,7 @@ import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheterMedAnse
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetBase
 import no.nav.melosys.skjema.types.felles.UtenlandskVirksomhetMedAnsettelsesform
+import no.nav.melosys.skjema.types.felles.VirksomhetTypeKey
 import no.nav.melosys.skjema.types.skjemadefinisjon.BooleanFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CheckboxGruppeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.CountrySelectFeltDefinisjon
@@ -163,14 +164,14 @@ class FeltRenderer(
 
         norske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
-            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue("norsk"))}</div>""")
+            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue(VirksomhetTypeKey.NORSK))}</div>""")
             builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
             builder.append("</div>")
         }
 
         utenlandske.forEach { virksomhet ->
             builder.append("""<div class="list-item">""")
-            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue("utenlandsk"))}</div>""")
+            builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue(VirksomhetTypeKey.UTENLANDSK))}</div>""")
             builder.append(renderListeFelt(ed.getValue("navn"), virksomhet.navn))
             builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
             builder.append(renderListeFelt(ed.getValue("vegnavnOgHusnummer"), virksomhet.vegnavnOgHusnummer))
