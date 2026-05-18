@@ -92,20 +92,5 @@ spec:
           namespace: nais-system
   envFrom:
     - secret: melosys-skjema-api
-  env:
-    - name: ARBEIDSGIVER_NOTIFIKASJON_URL
-      value: https://ag-notifikasjon-produsent-api.intern.nav.no/api/graphql
-    - name: MERKELAPP
-      value: test-fager # TODO: riktig prod-verdi
-    - name: RESSURS_ID
-      value: test-fager # TODO: riktig prod-verdi
-    - name: PDL_URL
-      value: https://pdl-api.prod-fss-pub.nais.io/graphql
-    - name: PDL_SCOPE
-      value: api://prod-gcp.pdl.pdl-api/.default
-    - name: VEDLEGG_BUCKET_NAME
-      value: melosys-skjema-vedlegg-prod
-    - name: CLAMAV_URL
-      value: http://clamav.nais-system
   kafka:
     pool: nav-prod
