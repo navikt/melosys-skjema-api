@@ -5,6 +5,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 
 /**
  * Informasjon om arbeidsgiver og arbeidstaker for visning øverst i PDF.
@@ -29,5 +30,6 @@ data class SkjemaPdfData(
     val aktørInfo: AktørInfo,
     val skjemaData: UtsendtArbeidstakerSkjemaData,
     val kobletSkjemaData: UtsendtArbeidstakerSkjemaData?,
+    val vedlegg: List<VedleggDto>,
     val definisjon: SkjemaDefinisjonDto
 )

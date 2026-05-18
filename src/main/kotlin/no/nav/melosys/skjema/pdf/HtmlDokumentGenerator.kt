@@ -25,7 +25,7 @@ object HtmlDokumentGenerator {
     fun byggHtml(skjema: SkjemaPdfData): String {
         val språk = skjema.innsendtSprak
         val feltRenderer = FeltRenderer(språk)
-        val seksjonRenderer = SeksjonRenderer(feltRenderer)
+        val seksjonRenderer = SeksjonRenderer(feltRenderer, skjema.vedlegg)
 
         return buildString {
             append(byggHtmlStart())

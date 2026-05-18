@@ -77,6 +77,10 @@ class VedleggService(
         return vedleggRepository.findBySkjemaId(skjemaId).map { it.toVedleggDto() }
     }
 
+    fun harVedleggForSkjema(skjemaId: UUID): Boolean {
+        return vedleggRepository.countBySkjemaId(skjemaId) > 0
+    }
+
     fun hent(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
         return hentInnhold(skjemaId, vedleggId)

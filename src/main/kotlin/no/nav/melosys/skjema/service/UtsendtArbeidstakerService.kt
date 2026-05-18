@@ -461,7 +461,7 @@ class UtsendtArbeidstakerService(
 
     private fun validerVedleggMotValg(skjemaId: UUID, vedlegg: VedleggValgDto?) {
         if (vedlegg?.harAnnenDokumentasjon == true &&
-            vedleggService.listBySkjemaId(skjemaId).isEmpty()) {
+            !vedleggService.harVedleggForSkjema(skjemaId)) {
             throw ValidationException(listOf(
                 Violation(field = "vedlegg", translationKey = FELT_ER_PAAKREVD)
             ))

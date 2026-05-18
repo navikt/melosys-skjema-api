@@ -18,6 +18,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SeksjonDefinisjonDto
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 
@@ -26,7 +27,8 @@ import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
  * Ingen Map-konvertering eller reflection - direkte tilgang til felter.
  */
 class SeksjonRenderer(
-    private val feltRenderer: FeltRenderer
+    private val feltRenderer: FeltRenderer,
+    private val vedlegg: List<VedleggDto> = emptyList(),
 ) {
 
     // ==================== ARBEIDSTAKER ====================
@@ -146,6 +148,11 @@ class SeksjonRenderer(
     ): String {
         return byggSeksjon(seksjon) {
             felt("harAnnenDokumentasjon", data.harAnnenDokumentasjon)
+            if (data.harAnnenDokumentasjon) {
+                vedlegg.forEach { v ->
+                    feltDirekte(v.filnavn, v.filtype.name)
+                }
+            }
         }
     }
 

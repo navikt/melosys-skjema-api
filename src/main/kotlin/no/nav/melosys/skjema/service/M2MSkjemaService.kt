@@ -150,6 +150,7 @@ class M2MSkjemaService(
             aktørInfo = aktørInfo,
             skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
             kobletSkjemaData = kobletSkjemaData,
+            vedlegg = vedleggService.listBySkjemaId(skjema.id!!),
             definisjon = definisjon
         )
     }

@@ -89,6 +89,7 @@ class PdfGeneratorTest : FunSpec({
             aktørInfo = aktørInfo,
             skjemaData = skjemaData,
             kobletSkjemaData = kobletSkjemaData,
+            vedlegg = emptyList(),
             definisjon = definisjon
         )
     }
@@ -670,6 +671,7 @@ class PdfGeneratorTest : FunSpec({
                 ),
                 skjemaData = data,
                 kobletSkjemaData = null,
+                vedlegg = emptyList(),
                 definisjon = definisjon
             )
 
