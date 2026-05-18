@@ -460,8 +460,10 @@ class UtsendtArbeidstakerService(
     }
 
     private fun validerVedleggMotValg(skjemaId: UUID, vedlegg: VedleggValgDto?) {
-        if (vedlegg?.harAnnenDokumentasjon == true &&
-            !vedleggService.harVedleggForSkjema(skjemaId)) {
+        val harVedlegg = vedleggService.harVedleggForSkjema(skjemaId)
+        val harAnnenDokumentasjon = vedlegg?.harAnnenDokumentasjon
+        if ((harAnnenDokumentasjon == true && !harVedlegg) ||
+            (harAnnenDokumentasjon == false && harVedlegg)) {
             throw ValidationException(listOf(
                 Violation(field = "vedlegg", translationKey = FELT_ER_PAAKREVD)
             ))
@@ -705,6 +707,9 @@ class UtsendtArbeidstakerService(
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
         val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
         val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
         skjema.data = updateFunction(existing)
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()

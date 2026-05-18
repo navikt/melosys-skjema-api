@@ -122,8 +122,8 @@ class M2MSkjemaService(
     private fun byggSkjemaPdfData(skjema: Skjema, innsending: Innsending): SkjemaPdfData {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
-        val kobletSkjemaData = metadata.kobletSkjemaId?.let { kobletId ->
-            skjemaRepository.findByIdAndStatusSendt(kobletId)?.data as? UtsendtArbeidstakerSkjemaData
+        val kobletSkjema = metadata.kobletSkjemaId?.let { kobletId ->
+            skjemaRepository.findByIdAndStatusSendt(kobletId)
         }
 
         val definisjon = skjemaDefinisjonService.hent(
@@ -149,8 +149,10 @@ class M2MSkjemaService(
             innsendtSprak = innsending.innsendtSprak,
             aktørInfo = aktørInfo,
             skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
-            kobletSkjemaData = kobletSkjemaData,
+            kobletSkjemaData = kobletSkjema?.data as? UtsendtArbeidstakerSkjemaData,
             vedlegg = vedleggService.listBySkjemaId(skjema.id!!),
+            kobletVedlegg = kobletSkjema?.id?.let { vedleggService.listBySkjemaId(it) }
+                ?: emptyList(),
             definisjon = definisjon
         )
     }
