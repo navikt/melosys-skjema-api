@@ -24,7 +24,10 @@ import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
+import no.nav.melosys.skjema.validators.ValidationException
+import no.nav.melosys.skjema.validators.Violation
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
@@ -244,6 +247,7 @@ class UtsendtArbeidstakerService(
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
+        validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
         // 1. Generer referanseId og hent aktiv versjon
         val referanseId = referanseIdGenerator.generer()
@@ -452,6 +456,15 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
             }
+        }
+    }
+
+    private fun validerVedleggMotValg(skjemaId: UUID, vedlegg: VedleggValgDto?) {
+        if (vedlegg?.harAnnenDokumentasjon == true &&
+            vedleggService.listBySkjemaId(skjemaId).isEmpty()) {
+            throw ValidationException(listOf(
+                Violation(field = "vedlegg", translationKey = FELT_ER_PAAKREVD)
+            ))
         }
     }
 
