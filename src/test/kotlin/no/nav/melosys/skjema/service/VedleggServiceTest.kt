@@ -180,4 +180,46 @@ class VedleggServiceTest : FunSpec({
             }
         }
     }
+
+    context("slettAlleForSkjema") {
+        test("sletter alle vedlegg vellykket") {
+            val skjema = lagSkjema()
+            val ref1 = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
+            val ref2 = "skjemaer/$skjemaId/vedlegg/v2/b.pdf"
+            val vedlegg1 = mockk<Vedlegg> { every { storageReferanse } returns ref1 }
+            val vedlegg2 = mockk<Vedlegg> { every { storageReferanse } returns ref2 }
+
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg1, vedlegg2)
+            every { mockVedleggStorageClient.slett(any()) } just Runs
+            every { mockVedleggRepository.deleteAll(any<List<Vedlegg>>()) } just Runs
+
+            vedleggService.slettAlleForSkjema(skjemaId)
+
+            verify { mockVedleggStorageClient.slett(ref1) }
+            verify { mockVedleggStorageClient.slett(ref2) }
+            verify { mockVedleggRepository.deleteAll(listOf(vedlegg1, vedlegg2)) }
+        }
+
+        test("returnerer tidlig når ingen vedlegg finnes") {
+            val skjema = lagSkjema()
+            val tomtSkjemaId = UUID.randomUUID()
+
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(tomtSkjemaId) } returns skjema
+            every { mockVedleggRepository.findBySkjemaId(tomtSkjemaId) } returns emptyList()
+
+            // Skal returnere uten å kalle deleteAll eller storage.slett
+            vedleggService.slettAlleForSkjema(tomtSkjemaId)
+        }
+
+        test("feiler når skjema ikke er UTKAST") {
+            val skjema = lagSkjema(status = SkjemaStatus.SENDT)
+
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+
+            shouldThrow<SkjemaErIkkeRedigerbartException> {
+                vedleggService.slettAlleForSkjema(skjemaId)
+            }
+        }
+    }
 })

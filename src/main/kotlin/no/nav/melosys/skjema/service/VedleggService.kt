@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.Vedlegg
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.extensions.toVedleggDto
@@ -32,11 +33,7 @@ class VedleggService(
 
     @Transactional
     fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = hentRedigerbartSkjema(skjemaId)
 
         val antallEksisterende = vedleggRepository.countBySkjemaId(skjemaId)
         require(antallEksisterende < MAKS_ANTALL_VEDLEGG) {
@@ -99,11 +96,7 @@ class VedleggService(
 
     @Transactional
     fun slett(skjemaId: UUID, vedleggId: UUID) {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        hentRedigerbartSkjema(skjemaId)
 
         val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
             ?: throw NoSuchElementException("Vedlegg med id $vedleggId ikke funnet for skjema $skjemaId")
@@ -116,11 +109,7 @@ class VedleggService(
 
     @Transactional
     fun slettAlleForSkjema(skjemaId: UUID) {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        hentRedigerbartSkjema(skjemaId)
 
         val vedleggListe = vedleggRepository.findBySkjemaId(skjemaId)
         if (vedleggListe.isEmpty()) return
@@ -131,6 +120,14 @@ class VedleggService(
         vedleggRepository.deleteAll(vedleggListe)
 
         log.info { "Slettet ${vedleggListe.size} vedlegg for skjema $skjemaId" }
+    }
+
+    private fun hentRedigerbartSkjema(skjemaId: UUID): Skjema {
+        val skjema = utsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId)
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
+        return skjema
     }
 }
 
