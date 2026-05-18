@@ -4,6 +4,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -59,6 +60,12 @@ class VedleggServiceTest : FunSpec({
     }
 
     beforeTest {
+        clearMocks(
+            mockUtsendtArbeidstakerService,
+            mockVedleggRepository,
+            mockClamAvClient,
+            mockVedleggStorageClient,
+        )
         SubjectHandler.set(mockSubjectHandler)
         every { mockSubjectHandler.getUserID() } returns fnr
     }
@@ -203,13 +210,14 @@ class VedleggServiceTest : FunSpec({
 
         test("returnerer tidlig når ingen vedlegg finnes") {
             val skjema = lagSkjema()
-            val tomtSkjemaId = UUID.randomUUID()
 
-            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(tomtSkjemaId) } returns skjema
-            every { mockVedleggRepository.findBySkjemaId(tomtSkjemaId) } returns emptyList()
+            every { mockUtsendtArbeidstakerService.hentSkjemaMedSkrivetilgang(skjemaId) } returns skjema
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns emptyList()
 
-            // Skal returnere uten å kalle deleteAll eller storage.slett
-            vedleggService.slettAlleForSkjema(tomtSkjemaId)
+            vedleggService.slettAlleForSkjema(skjemaId)
+
+            verify(exactly = 0) { mockVedleggStorageClient.slett(any()) }
+            verify(exactly = 0) { mockVedleggRepository.deleteAll(any<List<Vedlegg>>()) }
         }
 
         test("feiler når skjema ikke er UTKAST") {
