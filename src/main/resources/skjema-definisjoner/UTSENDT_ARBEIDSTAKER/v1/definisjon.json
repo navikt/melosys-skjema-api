@@ -695,6 +695,14 @@
           },
           "pakrevd": false
         },
+        "land": {
+          "type": "COUNTRY_SELECT",
+          "label": {
+            "nb": "Land",
+            "en": "Country"
+          },
+          "pakrevd": false
+        },
         "erHjemmekontor": {
           "type": "BOOLEAN",
           "label": {

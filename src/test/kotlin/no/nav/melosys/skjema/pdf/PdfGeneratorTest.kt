@@ -9,7 +9,6 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import java.io.File
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 import kotlin.io.path.createTempFile
 import kotlin.io.path.writeBytes
@@ -394,6 +393,8 @@ class PdfGeneratorTest : FunSpec({
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "På land"
+            html shouldContain "Land"
+            html shouldContain "Sverige"
             lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", genererPdf(skjema))
         }
 
