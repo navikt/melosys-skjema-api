@@ -350,15 +350,15 @@ class SeksjonRenderer(
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
             felt("fastEllerVekslendeArbeidssted", data.fastEllerVekslendeArbeidssted)
             // Adressefelter fra fastArbeidssted
-            data.fastArbeidssted
-                ?.takeIf { data.fastEllerVekslendeArbeidssted == FastEllerVekslendeArbeidssted.FAST }
-                ?.let { adresse ->
+            if (data.fastEllerVekslendeArbeidssted == FastEllerVekslendeArbeidssted.FAST) {
+                data.fastArbeidssted?.let { adresse ->
                     felt("vegadresse", adresse.vegadresse)
                     felt("nummer", adresse.nummer)
                     felt("postkode", adresse.postkode)
                     felt("bySted", adresse.bySted)
-                    felt("land", utsendelseLand)
                 }
+                felt("land", utsendelseLand)
+            }
             felt("erHjemmekontor", data.erHjemmekontor)
         }
     }

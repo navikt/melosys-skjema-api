@@ -399,6 +399,28 @@ class PdfGeneratorTest : FunSpec({
             lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", genererPdf(skjema))
         }
 
+        test("viser land for fast arbeidssted uten adresse") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                    arbeidsstedType = ArbeidsstedType.PA_LAND,
+                    paLand = paLandDtoMedDefaultVerdier().copy(fastArbeidssted = null),
+                    offshore = null,
+                    paSkip = null,
+                    omBordPaFly = null
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "LANDNA",
+                arbeidsgiverData = arbeidsgiverData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Land"
+            html shouldContain "Sverige"
+        }
+
         test("viser ikke fast adresse for vekslende arbeidssted på land") {
             val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
                 arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
