@@ -120,7 +120,6 @@ class SeksjonRenderer(
     ): String {
         return byggSeksjon(seksjon) {
             felt("skalHaMedFamiliemedlemmer", data.skalHaMedFamiliemedlemmer)
-            felt("familiemedlemmer", data.familiemedlemmer)
         }
     }
 

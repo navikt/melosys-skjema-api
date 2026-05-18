@@ -427,7 +427,6 @@ class UtsendtArbeidstakerService(
 
     fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
 
         return updateSkjemaData(skjemaId) { dto ->
             when (dto) {
