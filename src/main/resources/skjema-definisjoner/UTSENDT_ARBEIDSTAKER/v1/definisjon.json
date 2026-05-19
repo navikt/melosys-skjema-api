@@ -11,8 +11,8 @@
         "utsendelseLand": {
           "type": "COUNTRY_SELECT",
           "label": {
-            "nb": "I hvilket land skal du utføre arbeid?",
-            "en": "In which country will you be working?"
+            "nb": "I hvilket land skal arbeidet utføres?",
+            "en": "In which country will the work be performed?"
           },
           "pakrevd": true
         },
