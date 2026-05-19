@@ -429,8 +429,8 @@
         "tilleggsopplysningerTilSoknad": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Beskriv de flere opplysningene du har til søknaden",
-            "en": "Describe the additional information you have for the application"
+            "nb": "Beskriv disse her",
+            "en": "Describe them here"
           },
           "maxLength": 2000,
           "pakrevd": false
@@ -1148,8 +1148,8 @@
         "tilleggsopplysningerTilSoknad": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Beskriv de flere opplysningene du har til søknaden",
-            "en": "Describe the additional information you have for the application"
+            "nb": "Beskriv disse her",
+            "en": "Describe them here"
           },
           "maxLength": 2000,
           "pakrevd": false
