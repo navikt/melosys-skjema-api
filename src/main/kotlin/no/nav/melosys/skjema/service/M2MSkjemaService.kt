@@ -14,6 +14,7 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerDokumentTittel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
@@ -51,6 +52,10 @@ class M2MSkjemaService(
             referanseId = innsending.referanseId,
             innsendtTidspunkt = innsending.opprettetDato.toOsloLocalDateTime(),
             innsenderFnr = innsending.innsenderFnr,
+            dokumentTittel = UtsendtArbeidstakerDokumentTittel.utled(
+                skjema.data as UtsendtArbeidstakerSkjemaData,
+                innsending.innsendtSprak
+            ),
             vedlegg = vedleggListe
         )
     }

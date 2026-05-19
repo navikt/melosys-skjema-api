@@ -560,6 +560,9 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
+            html shouldContain "Bekreftelse fra arbeidsgiver på utsending til annet EØS-land eller Sveits"
+            html shouldNotContain "Søknad om A1"
+
             // Sjekk at arbeidsgiver-seksjoner er med
             html shouldContain "Arbeidsgivers del"
             html shouldContain "Arbeidsgiverens virksomhet i Norge"

@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.pdf
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerDokumentTittel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
@@ -26,10 +27,11 @@ object HtmlDokumentGenerator {
         val språk = skjema.innsendtSprak
         val feltRenderer = FeltRenderer(språk)
         val seksjonRenderer = SeksjonRenderer(feltRenderer)
+        val tittel = UtsendtArbeidstakerDokumentTittel.utled(skjema.skjemaData, språk)
 
         return buildString {
             append(byggHtmlStart())
-            append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
+            append(byggHeader(tittel, skjema.referanseId, skjema.innsendtDato, språk))
             append(byggAktørInfoSeksjon(skjema.aktørInfo, språk))
             appendSkjemaData(skjema.skjemaData, skjema.definisjon, seksjonRenderer, språk)
             skjema.kobletSkjemaData?.let { appendSkjemaData(it, skjema.definisjon, seksjonRenderer, språk) }
@@ -69,12 +71,7 @@ object HtmlDokumentGenerator {
 
     private fun byggHtmlSlutt(): String = "</body></html>"
 
-    private fun byggHeader(referanseId: String, innsendtDato: Instant, språk: Språk): String {
-        val tittel = when (språk) {
-            Språk.NORSK_BOKMAL -> "Søknad om A1 for utsendte arbeidstakere i EØS/Sveits"
-            Språk.ENGELSK -> "Application for posted worker within EU/EEA and Switzerland"
-        }
-
+    private fun byggHeader(tittel: String, referanseId: String, innsendtDato: Instant, språk: Språk): String {
         val referanseTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Referansenummer"
             Språk.ENGELSK -> "Reference number"
