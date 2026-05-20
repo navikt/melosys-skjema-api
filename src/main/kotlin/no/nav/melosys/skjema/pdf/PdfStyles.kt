@@ -49,6 +49,7 @@ object PdfStyles {
             margin: 32px 0 16px 0;
             padding-bottom: 8px;
             border-bottom: 2px solid #C6C2BF;
+            page-break-after: avoid;
         }
 
         /* FormSummary-stil seksjon */
@@ -56,17 +57,20 @@ object PdfStyles {
             background: #FFFFFF;
             border: 1px solid #C6C2BF;
             margin-bottom: 24px;
+            page-break-inside: avoid;
         }
         .form-summary-header {
             background: #F7F7F7;
             padding: 12px 16px;
             border-bottom: 1px solid #C6C2BF;
+            page-break-after: avoid;
         }
         .form-summary-heading {
             font-size: 12pt;
             font-weight: bold;
             color: #262626;
             margin: 0;
+            page-break-after: avoid;
         }
         .form-summary-answers {
             padding: 0;

@@ -215,6 +215,19 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Fra dato"
             html shouldContain "Til dato"
         }
+
+        test("CSS forhindrer linjeskift mellom overskrift og innhold") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "LSKIFT",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "page-break-after: avoid"
+            html shouldContain "page-break-inside: avoid"
+        }
     }
 
     context("HTML-innhold - Engelsk") {
