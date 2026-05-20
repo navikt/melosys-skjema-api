@@ -9,7 +9,6 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import java.io.File
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 import kotlin.io.path.createTempFile
 import kotlin.io.path.writeBytes
@@ -75,7 +74,9 @@ class PdfGeneratorTest : FunSpec({
             orgnr = "123456789",
             arbeidstakerNavn = "Ola Nordmann",
             arbeidstakerFnr = "12345678901"
-        )
+        ),
+        fullmektigInfo: FullmektigInfo? = null,
+        radgiverInfo: RadgiverInfo? = null
     ): SkjemaPdfData {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
         val skjemaData: UtsendtArbeidstakerSkjemaData = arbeidstakerData ?: arbeidsgiverData
@@ -87,6 +88,8 @@ class PdfGeneratorTest : FunSpec({
             innsendtDato = Instant.now(),
             innsendtSprak = språk,
             aktørInfo = aktørInfo,
+            fullmektigInfo = fullmektigInfo,
+            radgiverInfo = radgiverInfo,
             skjemaData = skjemaData,
             kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
@@ -376,6 +379,244 @@ class PdfGeneratorTest : FunSpec({
 
             html shouldContain "Tom &amp; Jerry AS"
             html shouldContain "O&#39;Brien"
+        }
+    }
+
+    context("Fullmektig-info seksjon") {
+        test("viser fullmektig med navn og fødselsnummer på norsk") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "FLM_NO",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Per Fullmansen",
+                    fnr = "11223344556"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Fullmektig"
+            html shouldContain "Per Fullmansen"
+            html shouldContain "11223344556"
+            html shouldContain "Fødselsnummer"
+        }
+
+        test("viser ikke fullmektig når fullmektigInfo er null") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "FLM_NL",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = null
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldNotContain "Fullmektig"
+            html shouldNotContain "Power of attorney"
+        }
+
+        test("viser fullmektig med engelske ledetekster") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "FLM_EN",
+                språk = Språk.ENGELSK,
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Per Fullmansen",
+                    fnr = "11223344556"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Power of attorney"
+            html shouldContain "Per Fullmansen"
+            html shouldContain "National identity number"
+        }
+
+        test("viser D-nummer label for fullmektig med d-nummer") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "FLM_DN",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Dina Dnummer",
+                    fnr = "41015678901" // Starter med 4 → D-nummer
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "D-nummer"
+            html shouldContain "Dina Dnummer"
+        }
+
+        test("fullmektig vises etter arbeidstaker og før arbeidsgiver") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "FLM_OR",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Per Fullmansen",
+                    fnr = "11223344556"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            val arbeidstakerPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidstaker</h3>""")
+            val fullmektigPos = html.indexOf("""<h3 class="form-summary-heading">Fullmektig</h3>""")
+            val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
+
+            (arbeidstakerPos < fullmektigPos) shouldBe true
+            (fullmektigPos < arbeidsgiverPos) shouldBe true
+        }
+    }
+
+    context("Rådgiver-info seksjon") {
+        test("viser rådgiverfirma og rådgiver-person på norsk") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_NO",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Regnskap & Råd AS",
+                    firmaOrgnr = "998877665",
+                    personNavn = "Kari Rådgiver",
+                    personFnr = "22334455667"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Rådgiverfirma som representerer arbeidsgiver"
+            html shouldContain "Regnskap &amp; Råd AS"
+            html shouldContain "998877665"
+            html shouldContain "Person hos rådgiverfirma med delegert tilgang til arbeidsgiver"
+            html shouldContain "Kari Rådgiver"
+            html shouldContain "22334455667"
+        }
+
+        test("viser ikke rådgiver-info når radgiverInfo er null") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_NL",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                radgiverInfo = null
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldNotContain "Rådgiverfirma"
+            html shouldNotContain "Advisory firm"
+        }
+
+        test("viser rådgiver-info med engelske ledetekster") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_EN",
+                språk = Språk.ENGELSK,
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Advice Corp",
+                    firmaOrgnr = "998877665",
+                    personNavn = "John Advisor",
+                    personFnr = "22334455667"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Advisory firm representing employer"
+            html shouldContain "Person at advisory firm with delegated access to employer"
+            html shouldContain "Advice Corp"
+            html shouldContain "John Advisor"
+        }
+
+        test("viser D-nummer label for rådgiver-person med d-nummer") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_DN",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Råd AS",
+                    firmaOrgnr = "998877665",
+                    personNavn = "Kari Rådgiver",
+                    personFnr = "41015678901" // Starter med 4 → D-nummer
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "D-nummer"
+            html shouldContain "Kari Rådgiver"
+        }
+
+        test("rådgiver-info vises etter arbeidsgiver") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_OR",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Råd AS",
+                    firmaOrgnr = "998877665",
+                    personNavn = "Kari Rådgiver",
+                    personFnr = "22334455667"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
+            val radgiverPos = html.indexOf("Rådgiverfirma som representerer arbeidsgiver")
+
+            (arbeidsgiverPos < radgiverPos) shouldBe true
+        }
+    }
+
+    context("Komplett aktør-rekkefølge") {
+        test("rekkefølge: Arbeidstaker -> Fullmektig -> Arbeidsgiver -> Rådgiver") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RKKFLG",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Per Fullmansen",
+                    fnr = "11223344556"
+                ),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Råd AS",
+                    firmaOrgnr = "998877665",
+                    personNavn = "Kari Rådgiver",
+                    personFnr = "22334455667"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            val arbeidstakerPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidstaker</h3>""")
+            val fullmektigPos = html.indexOf("""<h3 class="form-summary-heading">Fullmektig</h3>""")
+            val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
+            val radgiverPos = html.indexOf("Rådgiverfirma som representerer arbeidsgiver")
+
+            (arbeidstakerPos < fullmektigPos) shouldBe true
+            (fullmektigPos < arbeidsgiverPos) shouldBe true
+            (arbeidsgiverPos < radgiverPos) shouldBe true
+        }
+
+        test("PDF genereres uten feil med fullmektig og rådgiver") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "PDFFLR",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                arbeidsgiverData = lagKomplettArbeidsgiverData(),
+                fullmektigInfo = FullmektigInfo(
+                    navn = "Per Fullmansen",
+                    fnr = "11223344556"
+                ),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Råd AS",
+                    firmaOrgnr = "998877665",
+                    personNavn = "Kari Rådgiver",
+                    personFnr = "22334455667"
+                )
+            )
+
+            val pdfBytes = genererPdf(skjema)
+
+            pdfBytes shouldNotBe null
+            pdfBytes.size shouldNotBe 0
+            String(pdfBytes.take(4).toByteArray()) shouldBe "%PDF"
+            lagrePdfForInspeksjon("komplett-med-fullmektig-og-radgiver.pdf", pdfBytes)
         }
     }
 

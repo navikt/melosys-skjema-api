@@ -30,7 +30,7 @@ object HtmlDokumentGenerator {
         return buildString {
             append(byggHtmlStart())
             append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
-            append(byggAktørInfoSeksjon(skjema.aktørInfo, språk))
+            append(byggAktørInfoSeksjon(skjema.aktørInfo, skjema.fullmektigInfo, skjema.radgiverInfo, språk))
             appendSkjemaData(skjema.skjemaData, skjema.definisjon, seksjonRenderer, språk)
             skjema.kobletSkjemaData?.let { appendSkjemaData(it, skjema.definisjon, seksjonRenderer, språk) }
             append(byggHtmlSlutt())
@@ -138,7 +138,7 @@ object HtmlDokumentGenerator {
         }
     }
 
-    private fun byggAktørInfoSeksjon(aktørInfo: AktørInfo, språk: Språk): String {
+    private fun byggAktørInfoSeksjon(aktørInfo: AktørInfo, fullmektigInfo: FullmektigInfo?, radgiverInfo: RadgiverInfo?, språk: Språk): String {
         val arbeidstakerRolle = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidstaker"
             Språk.ENGELSK -> "Employee"
@@ -157,7 +157,8 @@ object HtmlDokumentGenerator {
             Språk.ENGELSK -> "Name"
         }
 
-        return """
+        return buildString {
+            append("""
             <div class="form-summary">
                 <div class="form-summary-header">
                     <h3 class="form-summary-heading">${escapeHtml(arbeidstakerRolle)}</h3>
@@ -173,6 +174,34 @@ object HtmlDokumentGenerator {
                     </div>
                 </div>
             </div>
+            """.trimIndent())
+
+            if (fullmektigInfo != null) {
+                val fullmektigRolle = when (språk) {
+                    Språk.NORSK_BOKMAL -> "Fullmektig"
+                    Språk.ENGELSK -> "Power of attorney"
+                }
+                val fullmektigIdentTekst = personidentifikatorLabel(fullmektigInfo.fnr, språk)
+                append("""
+                <div class="form-summary">
+                    <div class="form-summary-header">
+                        <h3 class="form-summary-heading">${escapeHtml(fullmektigRolle)}</h3>
+                    </div>
+                    <div class="form-summary-answers">
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(fullmektigInfo.navn)}</p>
+                        </div>
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(fullmektigIdentTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(fullmektigInfo.fnr)}</p>
+                        </div>
+                    </div>
+                </div>
+                """.trimIndent())
+            }
+
+            append("""
             <div class="form-summary">
                 <div class="form-summary-header">
                     <h3 class="form-summary-heading">${escapeHtml(arbeidsgiverRolle)}</h3>
@@ -188,7 +217,52 @@ object HtmlDokumentGenerator {
                     </div>
                 </div>
             </div>
-        """.trimIndent()
+            """.trimIndent())
+
+            if (radgiverInfo != null) {
+                val radgiverFirmaRolle = when (språk) {
+                    Språk.NORSK_BOKMAL -> "Rådgiverfirma som representerer arbeidsgiver"
+                    Språk.ENGELSK -> "Advisory firm representing employer"
+                }
+                val radgiverPersonRolle = when (språk) {
+                    Språk.NORSK_BOKMAL -> "Person hos rådgiverfirma med delegert tilgang til arbeidsgiver"
+                    Språk.ENGELSK -> "Person at advisory firm with delegated access to employer"
+                }
+                val radgiverPersonIdentTekst = personidentifikatorLabel(radgiverInfo.personFnr, språk)
+                append("""
+                <div class="form-summary">
+                    <div class="form-summary-header">
+                        <h3 class="form-summary-heading">${escapeHtml(radgiverFirmaRolle)}</h3>
+                    </div>
+                    <div class="form-summary-answers">
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(radgiverInfo.firmaNavn)}</p>
+                        </div>
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(orgnrTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(radgiverInfo.firmaOrgnr)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-summary">
+                    <div class="form-summary-header">
+                        <h3 class="form-summary-heading">${escapeHtml(radgiverPersonRolle)}</h3>
+                    </div>
+                    <div class="form-summary-answers">
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(radgiverInfo.personNavn)}</p>
+                        </div>
+                        <div class="form-summary-answer">
+                            <p class="form-summary-label">${escapeHtml(radgiverPersonIdentTekst)}</p>
+                            <p class="form-summary-value">${escapeHtml(radgiverInfo.personFnr)}</p>
+                        </div>
+                    </div>
+                </div>
+                """.trimIndent())
+            }
+        }
     }
 
     /**

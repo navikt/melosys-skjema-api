@@ -8,6 +8,8 @@ import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
 import no.nav.melosys.skjema.pdf.AktørInfo
+import no.nav.melosys.skjema.pdf.FullmektigInfo
+import no.nav.melosys.skjema.pdf.RadgiverInfo
 import no.nav.melosys.skjema.pdf.SkjemaPdfData
 import no.nav.melosys.skjema.pdf.genererPdf
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -15,6 +17,10 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
@@ -142,15 +148,48 @@ class M2MSkjemaService(
             arbeidstakerFnr = skjema.fnr
         )
 
+        val fullmektigInfo = hentFullmektigInfo(metadata)
+        val radgiverInfo = hentRadgiverInfo(metadata, innsending)
+
         return SkjemaPdfData(
             skjemaId = skjema.id!!,
             referanseId = innsending.referanseId,
             innsendtDato = innsending.opprettetDato,
             innsendtSprak = innsending.innsendtSprak,
             aktørInfo = aktørInfo,
+            fullmektigInfo = fullmektigInfo,
+            radgiverInfo = radgiverInfo,
             skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
             kobletSkjemaData = kobletSkjemaData,
             definisjon = definisjon
+        )
+    }
+
+    private fun hentFullmektigInfo(metadata: UtsendtArbeidstakerMetadata): FullmektigInfo? {
+        val fullmektigFnr = when (metadata) {
+            is AnnenPersonMetadata -> metadata.fullmektigFnr
+            is ArbeidsgiverMedFullmaktMetadata -> metadata.fullmektigFnr
+            is RadgiverMedFullmaktMetadata -> metadata.fullmektigFnr
+            else -> null
+        } ?: return null
+
+        val navn = pdlConsumer.hentPerson(fullmektigFnr).navn.first().fulltNavn()
+        return FullmektigInfo(navn = navn, fnr = fullmektigFnr)
+    }
+
+    private fun hentRadgiverInfo(metadata: UtsendtArbeidstakerMetadata, innsending: Innsending): RadgiverInfo? {
+        val radgiverfirma = when (metadata) {
+            is RadgiverMetadata -> metadata.radgiverfirma
+            is RadgiverMedFullmaktMetadata -> metadata.radgiverfirma
+            else -> null
+        } ?: return null
+
+        val personNavn = pdlConsumer.hentPerson(innsending.innsenderFnr).navn.first().fulltNavn()
+        return RadgiverInfo(
+            firmaNavn = radgiverfirma.navn,
+            firmaOrgnr = radgiverfirma.orgnr,
+            personNavn = personNavn,
+            personFnr = innsending.innsenderFnr
         )
     }
 }
