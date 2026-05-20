@@ -25,14 +25,17 @@ object HtmlDokumentGenerator {
     fun byggHtml(skjema: SkjemaPdfData): String {
         val språk = skjema.innsendtSprak
         val feltRenderer = FeltRenderer(språk)
-        val seksjonRenderer = SeksjonRenderer(feltRenderer)
+        val primaryRenderer = SeksjonRenderer(feltRenderer, skjema.vedlegg)
 
         return buildString {
             append(byggHtmlStart())
             append(byggHeader(skjema.referanseId, skjema.innsendtDato, språk))
             append(byggAktørInfoSeksjon(skjema.aktørInfo, språk))
-            appendSkjemaData(skjema.skjemaData, skjema.definisjon, seksjonRenderer, språk)
-            skjema.kobletSkjemaData?.let { appendSkjemaData(it, skjema.definisjon, seksjonRenderer, språk) }
+            appendSkjemaData(skjema.skjemaData, skjema.definisjon, primaryRenderer, språk)
+            skjema.kobletSkjemaData?.let {
+                val kobletRenderer = SeksjonRenderer(feltRenderer, skjema.kobletVedlegg)
+                appendSkjemaData(it, skjema.definisjon, kobletRenderer, språk)
+            }
             append(byggHtmlSlutt())
         }
     }

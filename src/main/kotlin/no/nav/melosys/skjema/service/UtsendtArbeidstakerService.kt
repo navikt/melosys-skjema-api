@@ -22,9 +22,14 @@ import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
+import no.nav.melosys.skjema.validators.ValidationException
+import no.nav.melosys.skjema.validators.Violation
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -49,7 +54,8 @@ class UtsendtArbeidstakerService(
     private val skjemaDataValidator: UtsendtArbeidstakerSkjemaDataValidator,
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
-    private val skjemaDefinisjonService: SkjemaDefinisjonService
+    private val skjemaDefinisjonService: SkjemaDefinisjonService,
+    @Lazy private val vedleggService: VedleggService,
 ) {
 
     /**
@@ -155,11 +161,7 @@ class UtsendtArbeidstakerService(
      */
     @Transactional
     fun slettUtkast(skjemaId: UUID) {
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = hentRedigerbartSkjema(skjemaId)
 
         skjema.status = SkjemaStatus.SLETTET
         skjema.endretAv = subjectHandler.getUserID()
@@ -232,15 +234,12 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = hentRedigerbartSkjema(skjemaId)
 
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
+        validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
         // 1. Generer referanseId og hent aktiv versjon
         val referanseId = referanseIdGenerator.generer()
@@ -448,6 +447,34 @@ class UtsendtArbeidstakerService(
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
+            }
+        }
+    }
+
+    private fun validerVedleggMotValg(skjemaId: UUID, vedlegg: VedleggValgDto?) {
+        if (vedlegg == null) return
+        val harVedlegg = vedleggService.harVedleggForSkjema(skjemaId)
+        if (vedlegg.harAnnenDokumentasjon != harVedlegg) {
+            throw ValidationException(listOf(
+                Violation(field = "vedlegg", translationKey = FELT_ER_PAAKREVD)
+            ))
+        }
+    }
+
+    @Transactional
+    fun saveVedleggValg(skjemaId: UUID, request: VedleggValgDto): UtsendtArbeidstakerSkjemaDto {
+        log.info { "Saving vedlegg-valg for skjema: $skjemaId" }
+        skjemaDataValidator.validate(request)
+
+        if (!request.harAnnenDokumentasjon) {
+            vedleggService.slettAlleForSkjema(skjemaId)
+        }
+
+        return updateSkjemaData(skjemaId) { dto ->
+            when (dto) {
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(vedlegg = request)
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(vedlegg = request)
+                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(vedlegg = request)
             }
         }
     }
@@ -670,10 +697,18 @@ class UtsendtArbeidstakerService(
         skjemaId: UUID,
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+        val skjema = hentRedigerbartSkjema(skjemaId)
         val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
         skjema.data = updateFunction(existing)
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
+    }
+
+    fun hentRedigerbartSkjema(skjemaId: UUID): Skjema {
+        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
+        return skjema
     }
 
     /**
