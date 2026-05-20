@@ -7,8 +7,16 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
+import java.time.LocalDateTime
 import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndring
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndringstype
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlMetadata
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 
 class ReprServiceTest : FunSpec({
 
@@ -234,4 +242,38 @@ class ReprServiceTest : FunSpec({
         // Skal finne MED-fullmakten selv om det er flere fullmakter
         service.harSkriverettigheterForMedlemskap("12345678901") shouldBe true
     }
+
+    test("hentPersonerMedFullmakt velger siste registrerte navn fra PDL") {
+        val fullmakt = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val person = PdlPerson(
+            navn = listOf(
+                navnMedRegistrert("Gammelt", "Navn", LocalDateTime.of(2020, 1, 1, 0, 0)),
+                navnMedRegistrert("Foretrukket", "Navn", LocalDateTime.of(2024, 1, 1, 0, 0))
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to person)
+
+        val result = service.hentPersonerMedFullmakt()
+
+        result.shouldHaveSize(1)
+        result[0].navn shouldBe "Foretrukket Navn"
+        result[0].fodselsdato shouldBe LocalDate.of(1990, 1, 1)
+    }
 })
+
+private fun navnMedRegistrert(
+    fornavn: String,
+    etternavn: String,
+    registrert: LocalDateTime
+) = PdlNavn(
+    fornavn = fornavn,
+    mellomnavn = null,
+    etternavn = etternavn,
+    metadata = PdlMetadata(
+        endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, registrert))
+    )
+)
+

@@ -4,14 +4,15 @@ import java.time.LocalDateTime
 
 /**
  * PDL kan ha flere parallelle verdier (f.eks. ulik master = FREG vs PDL),
- * og kan også returnere historiske verdier. Konsumenter må selv velge hvilken
- * de skal bruke. Vi velger siste ikke-historiske registrering.
+ * og konsumenter må selv velge hvilken de skal bruke. Historiske verdier
+ * filtreres i PdlPerson; vi velger siste registrerte verdi blant de
+ * aktuelle verdiene.
  */
 data class PdlMetadata(
     val historisk: Boolean? = null,
     val endringer: List<PdlEndring> = emptyList()
 ) {
-    fun erIkkeHistorisk(): Boolean = historisk != true
+    fun erGjeldende(): Boolean = historisk != true
 
     fun datoSistRegistrert(): LocalDateTime =
         endringer.filter { it.erIkkeOpphor() }

@@ -138,8 +138,7 @@ class M2MSkjemaService(
             språk = innsending.innsendtSprak
         )
 
-        val arbeidstakerNavn = pdlConsumer.hentPerson(skjema.fnr)
-            .navn.first().fulltNavn()
+        val arbeidstakerNavn = pdlConsumer.hentPerson(skjema.fnr).hentFulltNavn()
 
         val aktørInfo = AktørInfo(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
@@ -173,7 +172,7 @@ class M2MSkjemaService(
             else -> null
         } ?: return null
 
-        val navn = pdlConsumer.hentPerson(fullmektigFnr).navn.first().fulltNavn()
+        val navn = pdlConsumer.hentPerson(fullmektigFnr).hentFulltNavn()
         return FullmektigInfo(navn = navn, fnr = fullmektigFnr)
     }
 
@@ -184,7 +183,7 @@ class M2MSkjemaService(
             else -> null
         } ?: return null
 
-        val personNavn = pdlConsumer.hentPerson(innsending.innsenderFnr).navn.first().fulltNavn()
+        val personNavn = pdlConsumer.hentPerson(innsending.innsenderFnr).hentFulltNavn()
         return RadgiverInfo(
             firmaNavn = radgiverfirma.navn,
             firmaOrgnr = radgiverfirma.orgnr,
