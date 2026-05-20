@@ -11,8 +11,8 @@
         "utsendelseLand": {
           "type": "COUNTRY_SELECT",
           "label": {
-            "nb": "I hvilket land skal du utføre arbeid?",
-            "en": "In which country will you be working?"
+            "nb": "I hvilket land skal arbeidet utføres?",
+            "en": "In which country will the work be performed?"
           },
           "pakrevd": true
         },
@@ -429,8 +429,8 @@
         "tilleggsopplysningerTilSoknad": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Beskriv de flere opplysningene du har til søknaden",
-            "en": "Describe the additional information you have for the application"
+            "nb": "Beskriv disse her",
+            "en": "Describe them here"
           },
           "maxLength": 2000,
           "pakrevd": false
@@ -1172,8 +1172,8 @@
         "tilleggsopplysningerTilSoknad": {
           "type": "TEXTAREA",
           "label": {
-            "nb": "Beskriv de flere opplysningene du har til søknaden",
-            "en": "Describe the additional information you have for the application"
+            "nb": "Beskriv disse her",
+            "en": "Describe them here"
           },
           "maxLength": 2000,
           "pakrevd": false

@@ -565,7 +565,7 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Arbeidsgivers del"
             html shouldContain "Arbeidsgiverens virksomhet i Norge"
 
-            html shouldContain "I hvilket land skal du utføre arbeid?"
+            html shouldContain "I hvilket land skal arbeidet utføres?"
             html shouldContain "Sverige"
             html shouldContain "Fra dato"
             html shouldContain "Til dato"
