@@ -8,4 +8,5 @@ interface VedleggRepository : JpaRepository<Vedlegg, UUID> {
     fun findBySkjemaId(skjemaId: UUID): List<Vedlegg>
     fun findByIdAndSkjemaId(id: UUID, skjemaId: UUID): Vedlegg?
     fun countBySkjemaId(skjemaId: UUID): Long
+    fun existsBySkjemaId(skjemaId: UUID): Boolean
 }

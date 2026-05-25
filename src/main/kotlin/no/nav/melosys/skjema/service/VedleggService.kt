@@ -3,7 +3,6 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Vedlegg
-import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.extensions.toVedleggDto
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
@@ -11,7 +10,6 @@ import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.vedlegg.FilValidator
-import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,11 +30,7 @@ class VedleggService(
 
     @Transactional
     fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        val skjema = utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
 
         val antallEksisterende = vedleggRepository.countBySkjemaId(skjemaId)
         require(antallEksisterende < MAKS_ANTALL_VEDLEGG) {
@@ -80,6 +74,10 @@ class VedleggService(
         return vedleggRepository.findBySkjemaId(skjemaId).map { it.toVedleggDto() }
     }
 
+    fun harVedleggForSkjema(skjemaId: UUID): Boolean {
+        return vedleggRepository.existsBySkjemaId(skjemaId)
+    }
+
     fun hent(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
         return hentInnhold(skjemaId, vedleggId)
@@ -99,11 +97,7 @@ class VedleggService(
 
     @Transactional
     fun slett(skjemaId: UUID, vedleggId: UUID) {
-        val skjema = utsendtArbeidstakerService.hentSkjemaMedLesetilgang(skjemaId)
-
-        if (skjema.status != SkjemaStatus.UTKAST) {
-            throw SkjemaErIkkeRedigerbartException()
-        }
+        utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
 
         val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
             ?: throw NoSuchElementException("Vedlegg med id $vedleggId ikke funnet for skjema $skjemaId")
@@ -112,6 +106,21 @@ class VedleggService(
         vedleggRepository.delete(vedlegg)
 
         log.info { "Vedlegg slettet: $vedleggId for skjema $skjemaId" }
+    }
+
+    @Transactional
+    fun slettAlleForSkjema(skjemaId: UUID) {
+        utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
+
+        val vedleggListe = vedleggRepository.findBySkjemaId(skjemaId)
+        if (vedleggListe.isEmpty()) return
+
+        vedleggListe.forEach { vedlegg ->
+            vedleggStorageClient.slett(vedlegg.storageReferanse)
+        }
+        vedleggRepository.deleteAll(vedleggListe)
+
+        log.info { "Slettet ${vedleggListe.size} vedlegg for skjema $skjemaId" }
     }
 }
 
