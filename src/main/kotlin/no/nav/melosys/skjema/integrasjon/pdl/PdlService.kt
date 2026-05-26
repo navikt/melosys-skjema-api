@@ -41,7 +41,7 @@ class PdlService(
         }
 
         // PDL kan ha flere parallelle navn (ulik master). Aksepterer match mot enhver aktuell verdi.
-        val matcherEtternavn = person.gjeldendeNavn()
+        val matcherEtternavn = person.ikkeHistoriskeNavn()
             .any { it.etternavn.equals(etternavn, ignoreCase = true) }
         if (!matcherEtternavn) {
             log.warn { "Etternavn matcher ikke ved verifisering" }

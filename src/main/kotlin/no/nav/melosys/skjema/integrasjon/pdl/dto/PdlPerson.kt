@@ -11,16 +11,16 @@ data class PdlPerson(
      * Historiske navn filtreres bort her. Blant aktuelle verdier
      * velger vi navnet med siste ikke-opphørte registrering, som i melosys-api.
      */
-    fun hentNavn(): PdlNavn = gjeldendeNavn()
+    fun hentNavn(): PdlNavn = ikkeHistoriskeNavn()
         .maxByOrNull { it.metadata.datoSistRegistrert() }
         ?: throw IllegalArgumentException("Person har ingen gjeldende navn registrert i PDL")
 
     fun hentFulltNavn(): String = hentNavn().fulltNavn()
 
     /**
-     * Returnerer kun gjeldende (ikke-historiske) navn. For alle navn inkludert historikk, bruk [navn] direkte.
+     * Returnerer kun ikke-historiske navn. For alle navn inkludert historikk, bruk [navn] direkte.
      */
-    fun gjeldendeNavn(): List<PdlNavn> = navn.filter { it.metadata.erIkkeHistorisk() }
+    fun ikkeHistoriskeNavn(): List<PdlNavn> = navn.filter { it.metadata.erIkkeHistorisk() }
 
     fun hentFoedselsdato(): LocalDate {
         val dato = foedselsdato
