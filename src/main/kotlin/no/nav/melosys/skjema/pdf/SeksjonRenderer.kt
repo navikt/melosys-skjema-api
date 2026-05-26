@@ -4,6 +4,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeid
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OffshoreDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandDto
@@ -15,6 +16,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeid
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -190,7 +192,7 @@ class SeksjonRenderer(
         }
 
         ag.arbeidsstedIUtlandet?.let { dto ->
-            builder.append(byggArbeidsstedIUtlandet(dto, definisjon))
+            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
         }
 
         return builder.toString()
@@ -281,7 +283,7 @@ class SeksjonRenderer(
         }
 
         data.arbeidsstedIUtlandet?.let { dto ->
-            builder.append(byggArbeidsstedIUtlandet(dto, definisjon))
+            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
         }
 
         return builder.toString()
@@ -332,7 +334,8 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedIUtlandet(
         data: ArbeidsstedIUtlandetDto,
-        definisjon: SkjemaDefinisjonDto
+        definisjon: SkjemaDefinisjonDto,
+        utsendelseLand: LandKode? = null
     ): String {
         val builder = StringBuilder()
 
@@ -347,7 +350,7 @@ class SeksjonRenderer(
         when (data.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> data.paLand?.let { dto ->
                 definisjon.seksjoner["arbeidsstedPaLand"]?.let { seksjon ->
-                    builder.append(byggArbeidsstedPaLand(dto, seksjon))
+                    builder.append(byggArbeidsstedPaLand(dto, seksjon, utsendelseLand))
                 }
             }
 
@@ -375,17 +378,21 @@ class SeksjonRenderer(
 
     private fun byggArbeidsstedPaLand(
         data: PaLandDto,
-        seksjon: SeksjonDefinisjonDto
+        seksjon: SeksjonDefinisjonDto,
+        utsendelseLand: LandKode? = null
     ): String {
         return byggSeksjon(seksjon) {
             felt("navnPaVirksomhet", data.navnPaVirksomhet)
             felt("fastEllerVekslendeArbeidssted", data.fastEllerVekslendeArbeidssted)
             // Adressefelter fra fastArbeidssted
-            data.fastArbeidssted?.let { adresse ->
-                felt("vegadresse", adresse.vegadresse)
-                felt("nummer", adresse.nummer)
-                felt("postkode", adresse.postkode)
-                felt("bySted", adresse.bySted)
+            if (data.fastEllerVekslendeArbeidssted == FastEllerVekslendeArbeidssted.FAST) {
+                data.fastArbeidssted?.let { adresse ->
+                    felt("vegadresse", adresse.vegadresse)
+                    felt("nummer", adresse.nummer)
+                    felt("postkode", adresse.postkode)
+                    felt("bySted", adresse.bySted)
+                }
+                felt("land", utsendelseLand)
             }
             felt("erHjemmekontor", data.erHjemmekontor)
         }
@@ -452,7 +459,7 @@ class SeksjonRenderer(
     /**
      * Builder for å bygge en seksjon med felter.
      */
-    inner class SeksjonBuilder(
+    class SeksjonBuilder(
         private val seksjon: SeksjonDefinisjonDto,
         private val feltRenderer: FeltRenderer
     ) {
