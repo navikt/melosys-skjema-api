@@ -40,8 +40,9 @@ class PdlService(
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
         }
 
-        // PDL kan ha flere parallelle navn (ulik master). Aksepterer match mot enhver aktuell verdi.
-        val matcherEtternavn = person.ikkeHistoriskeNavn()
+        // PDL kan ha flere parallelle navn (ulik master). Aksepterer match mot enhver verdi,
+        // inkludert historiske — personen kan ha skiftet etternavn (f.eks. ved giftermål).
+        val matcherEtternavn = person.navn
             .any { it.etternavn.equals(etternavn, ignoreCase = true) }
         if (!matcherEtternavn) {
             log.warn { "Etternavn matcher ikke ved verifisering" }
