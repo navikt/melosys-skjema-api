@@ -29,6 +29,7 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.Språk
@@ -92,6 +93,7 @@ class PdfGeneratorTest : FunSpec({
             radgiverInfo = radgiverInfo,
             skjemaData = skjemaData,
             kobletSkjemaData = kobletSkjemaData,
+            vedlegg = emptyList(),
             definisjon = definisjon
         )
     }
@@ -217,6 +219,19 @@ class PdfGeneratorTest : FunSpec({
 
             html shouldContain "Fra dato"
             html shouldContain "Til dato"
+        }
+
+        test("CSS forhindrer linjeskift mellom overskrift og innhold") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "LSKIFT",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "page-break-after: avoid"
+            html shouldContain "page-break-inside: avoid"
         }
     }
 
@@ -641,7 +656,56 @@ class PdfGeneratorTest : FunSpec({
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "På land"
+            html shouldContain "Land"
+            html shouldContain "Sverige"
             lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", genererPdf(skjema))
+        }
+
+        test("viser land for fast arbeidssted uten adresse") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                    arbeidsstedType = ArbeidsstedType.PA_LAND,
+                    paLand = paLandDtoMedDefaultVerdier().copy(fastArbeidssted = null),
+                    offshore = null,
+                    paSkip = null,
+                    omBordPaFly = null
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "LANDNA",
+                arbeidsgiverData = arbeidsgiverData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Land"
+            html shouldContain "Sverige"
+        }
+
+        test("viser ikke fast adresse for vekslende arbeidssted på land") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                    arbeidsstedType = ArbeidsstedType.PA_LAND,
+                    paLand = paLandDtoMedDefaultVerdier().copy(
+                        fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.VEKSLENDE
+                    ),
+                    offshore = null,
+                    paSkip = null,
+                    omBordPaFly = null
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "VEKSL",
+                arbeidsgiverData = arbeidsgiverData
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Veksler ofte"
+            html shouldNotContain "Test Street"
+            html shouldNotContain "Stockholm"
         }
 
         test("viser arbeidssted offshore") {
@@ -805,7 +869,7 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Arbeidsgivers del"
             html shouldContain "Arbeidsgiverens virksomhet i Norge"
 
-            html shouldContain "I hvilket land skal du utføre arbeid?"
+            html shouldContain "I hvilket land skal arbeidet utføres?"
             html shouldContain "Sverige"
             html shouldContain "Fra dato"
             html shouldContain "Til dato"
@@ -911,6 +975,7 @@ class PdfGeneratorTest : FunSpec({
                 ),
                 skjemaData = data,
                 kobletSkjemaData = null,
+                vedlegg = emptyList(),
                 definisjon = definisjon
             )
 
