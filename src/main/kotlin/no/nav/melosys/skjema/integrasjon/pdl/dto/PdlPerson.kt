@@ -20,7 +20,7 @@ data class PdlPerson(
     /**
      * Returnerer kun gjeldende (ikke-historiske) navn. For alle navn inkludert historikk, bruk [navn] direkte.
      */
-    fun gjeldendeNavn(): List<PdlNavn> = navn.filter { it.metadata.erGjeldende() }
+    fun gjeldendeNavn(): List<PdlNavn> = navn.filter { it.metadata.erIkkeHistorisk() }
 
     fun hentFoedselsdato(): LocalDate {
         val dato = foedselsdato

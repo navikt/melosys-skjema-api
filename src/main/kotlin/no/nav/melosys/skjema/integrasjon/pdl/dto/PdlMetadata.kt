@@ -12,7 +12,9 @@ data class PdlMetadata(
     val historisk: Boolean? = null,
     val endringer: List<PdlEndring> = emptyList()
 ) {
-    fun erGjeldende(): Boolean = historisk != true
+    // historisk kan være null (f.eks. når PDL ikke returnerer feltet), og null betyr ikke-historisk.
+    // Bruker != true i stedet for == false for å håndtere null-caset korrekt.
+    fun erIkkeHistorisk(): Boolean = historisk != true
 
     fun datoSistRegistrert(): LocalDateTime =
         endringer.filter { it.erIkkeOpphor() }
