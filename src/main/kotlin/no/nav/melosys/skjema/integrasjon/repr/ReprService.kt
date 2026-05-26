@@ -152,17 +152,10 @@ class ReprService(
     ): PersonMedFullmaktDto? {
         val person = personerMap[fullmakt.fullmaktsgiver] ?: return null
 
-        val persondata = try {
-            person.hentFulltNavn() to person.hentFoedselsdato()
-        } catch (e: Exception) {
-            log.warn(e) { "Ugyldige persondata for fullmaktsgiver" }
-            return null
-        }
-
         return PersonMedFullmaktDto(
             fnr = fullmakt.fullmaktsgiver,
-            navn = persondata.first,
-            fodselsdato = persondata.second
+            navn = person.hentFulltNavn(),
+            fodselsdato = person.hentFoedselsdato()
         )
     }
 
