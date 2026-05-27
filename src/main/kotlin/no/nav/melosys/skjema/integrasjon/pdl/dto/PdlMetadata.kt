@@ -11,6 +11,7 @@ data class PdlMetadata(
     val historisk: Boolean? = null,
     val endringer: List<PdlEndring> = emptyList()
 ) {
+    // Bruker != true for å håndtere null korrekt.
     fun erIkkeHistorisk(): Boolean = historisk != true
 
     fun datoSistRegistrert(): LocalDateTime =

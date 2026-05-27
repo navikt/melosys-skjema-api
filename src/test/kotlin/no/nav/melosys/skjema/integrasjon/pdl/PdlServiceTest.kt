@@ -223,7 +223,7 @@ class PdlServiceTest {
         val exception = assertThrows<IllegalArgumentException> {
             pdlService.hentNavn(fodselsnummer)
         }
-        assertThat(exception.message).isEqualTo("Person har ingen navn registrert i PDL")
+        assertThat(exception.message).isEqualTo("Person har ingen gjeldende navn registrert i PDL")
     }
 
     @Test
@@ -239,21 +239,6 @@ class PdlServiceTest {
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
         assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Hans Nordmann")
-    }
-
-    @Test
-    fun `hentNavn ignorerer historiske navn`() {
-        val fodselsnummer = korrektSyntetiskFnr
-        val person = PdlPerson(
-            navn = listOf(
-                navnMedRegistrert("Hans", "Nordmann", LocalDateTime.of(2024, 6, 1, 0, 0), historisk = true),
-                navnMedRegistrert("Ola", "Nordmann", LocalDateTime.of(2020, 1, 1, 0, 0))
-            ),
-            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
-        )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
-
-        assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Ola Nordmann")
     }
 
     @Test
@@ -275,17 +260,54 @@ class PdlServiceTest {
         assertThat(navn).isEqualTo("Hans Hansen")
     }
 
+    @Test
+    fun `verifiserOgHentPerson ignorerer historiske navn ved etternavn-matching`() {
+        val fodselsnummer = korrektSyntetiskFnr
+        val person = PdlPerson(
+            navn = listOf(
+                PdlNavn(
+                    fornavn = "Ola",
+                    mellomnavn = null,
+                    etternavn = "GammeltNavn",
+                    metadata = PdlMetadata(
+                        historisk = true,
+                        endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, LocalDateTime.of(2015, 1, 1, 0, 0)))
+                    )
+                ),
+                PdlNavn(
+                    fornavn = "Ola",
+                    mellomnavn = null,
+                    etternavn = "NyttNavn",
+                    metadata = PdlMetadata(
+                        historisk = false,
+                        endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, LocalDateTime.of(2024, 1, 1, 0, 0)))
+                    )
+                )
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+
+        // Historisk etternavn skal ikke matche
+        val exception = assertThrows<PersonVerifiseringException> {
+            pdlService.verifiserOgHentPerson(fodselsnummer, "GammeltNavn")
+        }
+        assertThat(exception.message).isEqualTo("Fødselsnummer og etternavn matcher ikke")
+
+        // Aktuelt etternavn skal matche
+        val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "NyttNavn")
+        assertThat(navn).isEqualTo("Ola NyttNavn")
+    }
+
     private fun navnMedRegistrert(
         fornavn: String,
         etternavn: String,
-        registrert: LocalDateTime,
-        historisk: Boolean = false
+        registrert: LocalDateTime
     ) = PdlNavn(
         fornavn = fornavn,
         mellomnavn = null,
         etternavn = etternavn,
         metadata = PdlMetadata(
-            historisk = historisk,
             endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, registrert))
         )
     )
