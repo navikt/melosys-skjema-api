@@ -19,6 +19,25 @@ data class AktørInfo(
 )
 
 /**
+ * Informasjon om fullmektig som har sendt inn søknad på vegne av arbeidstaker.
+ */
+data class FullmektigInfo(
+    val navn: String,
+    val fnr: String
+)
+
+/**
+ * Informasjon om rådgiverfirma som representerer arbeidsgiver,
+ * og personen hos rådgiverfirmaet med delegert tilgang.
+ */
+data class RadgiverInfo(
+    val firmaNavn: String,
+    val firmaOrgnr: String,
+    val personNavn: String,
+    val personFnr: String
+)
+
+/**
  * Intern dataklasse for PDF-generering.
  * Inneholder all data som trengs for å generere PDF av et innsendt skjema.
  */
@@ -28,6 +47,8 @@ data class SkjemaPdfData(
     val innsendtDato: Instant,
     val innsendtSprak: Språk,
     val aktørInfo: AktørInfo,
+    val fullmektigInfo: FullmektigInfo? = null,
+    val radgiverInfo: RadgiverInfo? = null,
     val skjemaData: UtsendtArbeidstakerSkjemaData,
     val kobletSkjemaData: UtsendtArbeidstakerSkjemaData?,
     val vedlegg: List<VedleggDto>,

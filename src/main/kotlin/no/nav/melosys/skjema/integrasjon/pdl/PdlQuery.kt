@@ -18,7 +18,6 @@ object PdlQuery {
     private const val FOEDSELSDATO_FELT = """
         foedselsdato
         metadata {
-            historisk
             endringer {
                 type
                 registrert

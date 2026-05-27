@@ -4,11 +4,20 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.assertions.throwables.shouldThrow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
+import java.time.LocalDateTime
 import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndring
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndringstype
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlMetadata
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
+import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 
 class ReprServiceTest : FunSpec({
 
@@ -234,4 +243,109 @@ class ReprServiceTest : FunSpec({
         // Skal finne MED-fullmakten selv om det er flere fullmakter
         service.harSkriverettigheterForMedlemskap("12345678901") shouldBe true
     }
+
+    test("hentPersonerMedFullmakt velger siste registrerte navn fra PDL") {
+        val fullmakt = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val person = PdlPerson(
+            navn = listOf(
+                navnMedRegistrert("Gammelt", "Navn", LocalDateTime.of(2020, 1, 1, 0, 0)),
+                navnMedRegistrert("Foretrukket", "Navn", LocalDateTime.of(2024, 1, 1, 0, 0))
+            ),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to person)
+
+        val result = service.hentPersonerMedFullmakt()
+
+        result.shouldHaveSize(1)
+        result[0].navn shouldBe "Foretrukket Navn"
+        result[0].fodselsdato shouldBe LocalDate.of(1990, 1, 1)
+    }
+
+    test("hentPersonerMedFullmakt returnerer alle personer med fullmakt") {
+        val fullmakt1 = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val fullmakt2 = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "22222222222")
+        val person1 = PdlPerson(
+            navn = listOf(navnMedRegistrert("Første", "Person", LocalDateTime.of(2020, 1, 1, 0, 0))),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        val person2 = PdlPerson(
+            navn = listOf(navnMedRegistrert("Andre", "Person", LocalDateTime.of(2021, 6, 1, 0, 0))),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1985-05-15"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt1, fullmakt2)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901", "22222222222")) } returns mapOf(
+            "12345678901" to person1,
+            "22222222222" to person2
+        )
+
+        val result = service.hentPersonerMedFullmakt()
+
+        result.shouldHaveSize(2)
+    }
+
+    test("hentPersonerMedFullmakt kaster exception når person i PDL mangler navn") {
+        val fullmakt = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val personUtenNavn = PdlPerson(
+            navn = emptyList(),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenNavn)
+
+        shouldThrow<IllegalArgumentException> {
+            service.hentPersonerMedFullmakt()
+        }
+    }
+
+    test("hentPersonerMedFullmakt kaster exception når person i PDL mangler fødselsdato") {
+        val fullmakt = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val personUtenFoedselsdato = PdlPerson(
+            navn = listOf(navnMedRegistrert("Test", "Person", LocalDateTime.of(2020, 1, 1, 0, 0))),
+            foedselsdato = emptyList()
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenFoedselsdato)
+
+        shouldThrow<IllegalArgumentException> {
+            service.hentPersonerMedFullmakt()
+        }
+    }
+
+    test("hentPersonerMedFullmakt ekskluderer person som ikke finnes i PDL") {
+        val fullmaktPersonFinnesIPdl = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val fullmaktPersonManglerIPdl = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "99999999999")
+        val person = PdlPerson(
+            navn = listOf(navnMedRegistrert("Test", "Person", LocalDateTime.of(2020, 1, 1, 0, 0))),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmaktPersonFinnesIPdl, fullmaktPersonManglerIPdl)
+        // PDL svarer kun med én person selv om begge fnr ble spurt om
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901", "99999999999")) } returns mapOf("12345678901" to person)
+
+        val result = service.hentPersonerMedFullmakt()
+
+        result.shouldHaveSize(1)
+        result[0].fnr shouldBe "12345678901"
+    }
 })
+
+private fun navnMedRegistrert(
+    fornavn: String,
+    etternavn: String,
+    registrert: LocalDateTime
+) = PdlNavn(
+    fornavn = fornavn,
+    mellomnavn = null,
+    etternavn = etternavn,
+    metadata = PdlMetadata(
+        endringer = listOf(PdlEndring(PdlEndringstype.OPPRETT, registrert))
+    )
+)
+

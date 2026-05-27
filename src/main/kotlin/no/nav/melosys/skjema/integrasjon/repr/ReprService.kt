@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.time.LocalDate
 import no.nav.melosys.skjema.controller.dto.PersonMedFullmaktDto
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
@@ -152,20 +151,11 @@ class ReprService(
         personerMap: Map<String, no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson>
     ): PersonMedFullmaktDto? {
         val person = personerMap[fullmakt.fullmaktsgiver] ?: return null
-        val navn = person.navn.firstOrNull()?.fulltNavn() ?: return null
-        val fodselsdatoString = person.foedselsdato.firstOrNull()?.foedselsdato ?: return null
-
-        val fodselsdato = try {
-            LocalDate.parse(fodselsdatoString)
-        } catch (e: Exception) {
-            log.warn { "Ugyldig fødselsdato for fullmaktsgiver" }
-            return null
-        }
 
         return PersonMedFullmaktDto(
             fnr = fullmakt.fullmaktsgiver,
-            navn = navn,
-            fodselsdato = fodselsdato
+            navn = person.hentFulltNavn(),
+            fodselsdato = person.hentFoedselsdato()
         )
     }
 
