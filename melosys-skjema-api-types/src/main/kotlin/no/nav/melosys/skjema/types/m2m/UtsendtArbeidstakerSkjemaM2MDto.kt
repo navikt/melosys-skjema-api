@@ -11,5 +11,6 @@ data class UtsendtArbeidstakerSkjemaM2MDto(
     val referanseId: String,
     val innsendtTidspunkt: LocalDateTime,
     val innsenderFnr: String,
+    val dokumentTittel: String,
     val vedlegg: List<VedleggDto> = emptyList(),
 )

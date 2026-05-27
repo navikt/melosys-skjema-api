@@ -247,7 +247,7 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Application for posted worker"
+            html shouldContain "Application for A1 for workers posted in the EEA or Switzerland"
             html shouldContain "Employee"
             html shouldContain "Employer"
             html shouldContain "Foreign assignment"
@@ -807,6 +807,9 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
+            html shouldContain "Søknad om A1 for utsendte arbeidstakere i EØS eller Sveits"
+            html shouldNotContain "Bekreftelse fra arbeidsgiver på utsending til annet EØS-land eller Sveits"
+
             // Sjekk at arbeidstaker-seksjoner er med
             html shouldContain "Arbeidstakers del"
             html shouldContain "Utenlandsoppdraget"
@@ -824,6 +827,9 @@ class PdfGeneratorTest : FunSpec({
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Bekreftelse fra arbeidsgiver på utsending til annet EØS-land eller Sveits"
+            html shouldNotContain "Søknad om A1"
 
             // Sjekk at arbeidsgiver-seksjoner er med
             html shouldContain "Arbeidsgivers del"

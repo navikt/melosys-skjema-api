@@ -30,10 +30,13 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import org.springframework.context.ApplicationEventPublisher
 
@@ -85,6 +88,32 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         )
         // Default: Ingen kobling
         every { mockUtsendtArbeidstakerSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
+    }
+
+    context("hentInnsendtSkjema") {
+        test("skal sette dokumentTittel for arbeidsgivers del") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                status = SkjemaStatus.SENDT,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier(),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
+            )
+            val innsending = innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = Språk.NORSK_BOKMAL)
+            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
+
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
+
+            val response = service.hentInnsendtSkjema(skjemaId, null)
+
+            response.dokumentTittel shouldBe "Bekreftelse fra arbeidsgiver på utsending til annet EØS-land eller Sveits"
+        }
     }
 
     context("opprettUtsendtArbeidstakerSoknad") {

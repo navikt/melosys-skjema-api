@@ -105,6 +105,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
             responseBody.tidligereInnsendteSkjema shouldBe emptyList()
             responseBody.referanseId shouldBe "TEST01"
             responseBody.innsenderFnr shouldBe innsending.innsenderFnr
+            responseBody.dokumentTittel shouldBe "Søknad om A1 for utsendte arbeidstakere i EØS eller Sveits"
         }
 
         @Test

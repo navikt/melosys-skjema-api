@@ -25,6 +25,9 @@ data class InnsendtSkjemaResponse(
     @param:Schema(description = "Språk som ble brukt ved innsending", example = "nb")
     val innsendtSprak: Språk,
 
+    @param:Schema(description = "Dokumenttittel for visning", example = "Bekreftelse fra arbeidsgiver på utsending til annet EØS-land eller Sveits")
+    val dokumentTittel: String,
+
     @param:Schema(description = "Versjon av skjemadefinisjon som ble brukt", example = "1")
     val skjemaDefinisjonVersjon: String,
 
