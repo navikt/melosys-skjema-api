@@ -593,31 +593,6 @@ class PdfGeneratorTest : FunSpec({
             (fullmektigPos < arbeidsgiverPos) shouldBe true
             (arbeidsgiverPos < radgiverPos) shouldBe true
         }
-
-        test("PDF genereres uten feil med fullmektig og rådgiver") {
-            val skjema = lagSkjemaPdfData(
-                referanseId = "PDFFLR",
-                arbeidstakerData = lagKomplettArbeidstakerData(),
-                arbeidsgiverData = lagKomplettArbeidsgiverData(),
-                fullmektigInfo = FullmektigInfo(
-                    navn = "Per Fullmansen",
-                    fnr = "11223344556"
-                ),
-                radgiverInfo = RadgiverInfo(
-                    firmaNavn = "Råd AS",
-                    firmaOrgnr = "998877665",
-                    personNavn = "Kari Rådgiver",
-                    personFnr = "22334455667"
-                )
-            )
-
-            val pdfBytes = genererPdf(skjema)
-
-            pdfBytes shouldNotBe null
-            pdfBytes.size shouldNotBe 0
-            String(pdfBytes.take(4).toByteArray()) shouldBe "%PDF"
-            lagrePdfForInspeksjon("komplett-med-fullmektig-og-radgiver.pdf", pdfBytes)
-        }
     }
 
 
