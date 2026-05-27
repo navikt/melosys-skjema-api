@@ -261,7 +261,7 @@ class PdlServiceTest {
     }
 
     @Test
-    fun `verifiserOgHentPerson aksepterer historiske navn ved etternavn-matching`() {
+    fun `verifiserOgHentPerson ignorerer historiske navn ved etternavn-matching`() {
         val fodselsnummer = korrektSyntetiskFnr
         val person = PdlPerson(
             navn = listOf(
@@ -288,13 +288,15 @@ class PdlServiceTest {
         )
         every { pdlConsumer.hentPerson(fodselsnummer) } returns person
 
-        // Historisk etternavn skal også matche — personen kan ha skiftet navn (f.eks. ved giftermål)
-        val (navnMedGammelt, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "GammeltNavn")
-        assertThat(navnMedGammelt).isEqualTo("Ola NyttNavn")
+        // Historisk etternavn skal ikke matche
+        val exception = assertThrows<PersonVerifiseringException> {
+            pdlService.verifiserOgHentPerson(fodselsnummer, "GammeltNavn")
+        }
+        assertThat(exception.message).isEqualTo("Fødselsnummer og etternavn matcher ikke")
 
-        // Aktuelt etternavn skal selvsagt også matche
-        val (navnMedNytt, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "NyttNavn")
-        assertThat(navnMedNytt).isEqualTo("Ola NyttNavn")
+        // Aktuelt etternavn skal matche
+        val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "NyttNavn")
+        assertThat(navn).isEqualTo("Ola NyttNavn")
     }
 
     private fun navnMedRegistrert(
