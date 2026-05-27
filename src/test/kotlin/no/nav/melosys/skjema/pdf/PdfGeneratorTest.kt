@@ -280,7 +280,7 @@ class PdfGeneratorTest : FunSpec({
     }
 
     context("Aktør-info seksjon") {
-        test("viser arbeidsgiver-navn og orgnr på norsk") {
+        test("viser alle aktør-felter med norske ledetekster") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "AKT_NO",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
@@ -294,30 +294,14 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Nav Kontaktsenter AS"
-            html shouldContain "987654321"
             html shouldContain "Arbeidsgiver"
+            html shouldContain "Nav Kontaktsenter AS"
             html shouldContain "Organisasjonsnummer"
-        }
-
-        test("viser arbeidstaker-navn og fnr på norsk") {
-            val skjema = lagSkjemaPdfData(
-                referanseId = "AKT_AT",
-                arbeidstakerData = lagKomplettArbeidstakerData(),
-                aktørInfo = AktørInfo(
-                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
-                    orgnr = "987654321",
-                    arbeidstakerNavn = "Kari Nordmann",
-                    arbeidstakerFnr = "11223344556"
-                )
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "Kari Nordmann"
-            html shouldContain "11223344556"
+            html shouldContain "987654321"
             html shouldContain "Arbeidstaker"
+            html shouldContain "Kari Nordmann"
             html shouldContain "Fødselsnummer"
+            html shouldContain "11223344556"
         }
 
         test("viser engelske ledetekster") {
