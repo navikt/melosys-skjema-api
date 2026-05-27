@@ -350,6 +350,7 @@ class UtsendtArbeidstakerService(
             referanseId = innsending.referanseId,
             innsendtDato = skjema.endretDato,
             innsendtSprak = innsending.innsendtSprak,
+            dokumentTittel = UtsendtArbeidstakerDokumentTittel.utled(skjemaData, visSprak),
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
             skjemaData = if (fullmaktAktiv == false) stripArbeidstakersData(skjemaData) else skjemaData,
             definisjon = definisjon,
