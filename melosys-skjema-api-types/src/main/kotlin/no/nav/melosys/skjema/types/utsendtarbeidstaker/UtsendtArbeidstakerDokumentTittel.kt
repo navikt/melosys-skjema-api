@@ -13,7 +13,7 @@ object UtsendtArbeidstakerDokumentTittel {
             is UtsendtArbeidstakerArbeidstakersSkjemaDataDto,
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> when (språk) {
                 Språk.NORSK_BOKMAL -> "Søknad om A1 for utsendte arbeidstakere i EØS eller Sveits"
-                Språk.ENGELSK -> "Application for posted worker within EU/EEA and Switzerland"
+                Språk.ENGELSK -> "Application for A1 for posted workers in the EEA or Switzerland"
             }
         }
 }
