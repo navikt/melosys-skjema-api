@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.pdf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -145,10 +146,10 @@ class PdfGeneratorTest : FunSpec({
             )
 
             val pdfBytes = genererPdf(skjema)
+            lagrePdfForInspeksjon("komplett-soknad.pdf", pdfBytes)
 
             // PDF bør være minst 3KB for en komplett søknad
-            pdfBytes.size shouldNotBe 0
-            lagrePdfForInspeksjon("komplett-soknad.pdf", pdfBytes)
+            pdfBytes.size shouldBeGreaterThan 3_000
         }
     }
 
