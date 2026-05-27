@@ -247,7 +247,7 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Application for posted worker"
+            html shouldContain "Application for A1 for workers posted in the EEA or Switzerland"
             html shouldContain "Employee"
             html shouldContain "Employer"
             html shouldContain "Foreign assignment"
