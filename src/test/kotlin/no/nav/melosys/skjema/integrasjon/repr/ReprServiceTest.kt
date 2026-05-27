@@ -264,6 +264,29 @@ class ReprServiceTest : FunSpec({
         result[0].fodselsdato shouldBe LocalDate.of(1990, 1, 1)
     }
 
+    test("hentPersonerMedFullmakt returnerer alle personer med fullmakt") {
+        val fullmakt1 = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
+        val fullmakt2 = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "22222222222")
+        val person1 = PdlPerson(
+            navn = listOf(navnMedRegistrert("Første", "Person", LocalDateTime.of(2020, 1, 1, 0, 0))),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
+        )
+        val person2 = PdlPerson(
+            navn = listOf(navnMedRegistrert("Andre", "Person", LocalDateTime.of(2021, 6, 1, 0, 0))),
+            foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1985-05-15"))
+        )
+
+        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt1, fullmakt2)
+        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901", "22222222222")) } returns mapOf(
+            "12345678901" to person1,
+            "22222222222" to person2
+        )
+
+        val result = service.hentPersonerMedFullmakt()
+
+        result.shouldHaveSize(2)
+    }
+
     test("hentPersonerMedFullmakt kaster exception når person i PDL mangler navn") {
         val fullmakt = fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
         val personUtenNavn = PdlPerson(
