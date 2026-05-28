@@ -55,15 +55,21 @@ object PdfStyles {
         /* FormSummary-stil seksjon */
         .form-summary {
             background: #FFFFFF;
-            border: 1px solid #C6C2BF;
             margin-bottom: 24px;
+        }
+        .form-summary-start {
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .form-summary-header {
             background: #F7F7F7;
             padding: 12px 16px;
+            border: 1px solid #C6C2BF;
             border-bottom: 1px solid #C6C2BF;
             page-break-after: avoid;
+            break-after: avoid;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .form-summary-heading {
             font-size: 12pt;
@@ -79,7 +85,11 @@ object PdfStyles {
         /* Enkelt felt/svar */
         .form-summary-answer {
             padding: 10px 16px;
+            border-left: 1px solid #C6C2BF;
+            border-right: 1px solid #C6C2BF;
             border-bottom: 1px solid #E6E4E2;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .form-summary-answer p {
             margin: 0;
@@ -89,11 +99,15 @@ object PdfStyles {
             font-weight: bold;
             color: #59514B;
             margin: 0 0 2px 0;
+            page-break-after: avoid;
+            break-after: avoid;
         }
         .form-summary-value {
             font-size: 11pt;
             color: #262626;
             margin: 0;
+            page-break-before: avoid;
+            break-before: avoid;
         }
 
         /* Checkbox-gruppe (DejaVu Sans subset for ☑ U+2611) */
@@ -114,6 +128,8 @@ object PdfStyles {
         /* Liste-elementer (familiemedlemmer, virksomheter) */
         .list-container {
             padding: 10px 16px;
+            border-left: 1px solid #C6C2BF;
+            border-right: 1px solid #C6C2BF;
             border-bottom: 1px solid #E6E4E2;
         }
         .list-label {
@@ -122,12 +138,16 @@ object PdfStyles {
             color: #59514B;
             display: block;
             margin-bottom: 8px;
+            page-break-after: avoid;
+            break-after: avoid;
         }
         .list-item {
             background: #F7F7F7;
             border: 1px solid #E6E4E2;
             padding: 10px;
             margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .list-item-title {
             font-size: 9pt;
@@ -139,6 +159,8 @@ object PdfStyles {
         }
         .list-item-field {
             margin-bottom: 4px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .list-item-label {
             font-size: 9pt;

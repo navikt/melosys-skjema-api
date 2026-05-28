@@ -39,9 +39,11 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
+import org.apache.pdfbox.Loader
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider
 import org.verapdf.pdfa.Foundries
 import org.verapdf.pdfa.flavours.PDFAFlavour
@@ -150,6 +152,42 @@ class PdfGeneratorTest : FunSpec({
 
             // PDF bør være minst 3KB for en komplett søknad
             pdfBytes.size shouldBeGreaterThan 3_000
+        }
+
+        test("lagrer PDF for inspeksjon av seksjon som spenner over flere sider") {
+            val mangeUtenlandskeVirksomheter = List(30) { index ->
+                utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier().copy(
+                    navn = "Sidebryttest virksomhet ${index + 1}",
+                    organisasjonsnummer = "PGBREAK-${index + 1}",
+                    vegnavnOgHusnummer = "Lang testgate ${index + 1}",
+                    bygning = "Bygg ${index + 1}",
+                    postkode = "${1000 + index}",
+                    byStedsnavn = "Testby ${index + 1}",
+                    region = "Testregion ${index + 1}"
+                )
+            }
+            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
+                arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
+                    skalJobbeForFlereVirksomheter = true,
+                    virksomheterArbeidstakerJobberForIutsendelsesPeriode =
+                        norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier().copy(
+                            utenlandskeVirksomheter = mangeUtenlandskeVirksomheter
+                        )
+                )
+            )
+            val skjema = lagSkjemaPdfData(
+                referanseId = "PGBREAK",
+                arbeidstakerData = arbeidstakerData,
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val pdfBytes = genererPdf(skjema)
+            lagrePdfForInspeksjon("page-break-lang-boks.pdf", pdfBytes)
+
+            Loader.loadPDF(pdfBytes).use { document ->
+                document.numberOfPages shouldBeGreaterThan 3
+            }
         }
     }
 

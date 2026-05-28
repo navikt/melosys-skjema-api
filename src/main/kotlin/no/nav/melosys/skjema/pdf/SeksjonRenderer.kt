@@ -464,7 +464,7 @@ class SeksjonRenderer(
         private val seksjon: SeksjonDefinisjonDto,
         private val feltRenderer: FeltRenderer
     ) {
-        private val html = StringBuilder()
+        private val svar = mutableListOf<String>()
 
         fun felt(feltNavn: String, verdi: Any?) {
             if (verdi == null) return
@@ -472,22 +472,28 @@ class SeksjonRenderer(
             seksjon.felter[feltNavn]?.let { feltDef ->
                 val feltHtml = feltRenderer.render(feltDef, verdi)
                 if (feltHtml.isNotBlank()) {
-                    html.append(feltHtml)
+                    svar.add(feltHtml)
                 }
             }
         }
 
         fun feltDirekte(label: String, verdi: String) {
-            html.append(feltRenderer.renderEnkeltFelt(label, verdi))
+            svar.add(feltRenderer.renderEnkeltFelt(label, verdi))
         }
 
         fun build(): String {
+            val førsteSvar = svar.firstOrNull().orEmpty()
+            val resterendeSvar = svar.drop(1).joinToString("")
+
             return """
                 <div class="form-summary">
-                    <div class="form-summary-header">
-                        <h3 class="form-summary-heading">${escapeHtml(seksjon.tittel)}</h3>
+                    <div class="form-summary-start">
+                        <div class="form-summary-header">
+                            <h3 class="form-summary-heading">${escapeHtml(seksjon.tittel)}</h3>
+                        </div>
+                        $førsteSvar
                     </div>
-                    <div class="form-summary-answers">$html</div>
+                    <div class="form-summary-answers">$resterendeSvar</div>
                 </div>
             """.trimIndent()
         }
