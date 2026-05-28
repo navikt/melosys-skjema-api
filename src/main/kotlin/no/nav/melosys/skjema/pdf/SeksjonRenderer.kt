@@ -481,6 +481,12 @@ class SeksjonRenderer(
             svar.add(feltRenderer.renderEnkeltFelt(label, verdi))
         }
 
+        /**
+         * Første svar grupperes med overskriften i «form-summary-start» som har
+         * `page-break-inside: avoid` i CSS-en. Det sikrer at overskriften aldri
+         * havner alene nederst på en side. Resten av svarene ligger i
+         * «form-summary-answers» som kan brytes fritt over sider.
+         */
         fun build(): String {
             val førsteSvar = svar.firstOrNull().orEmpty()
             val resterendeSvar = svar.drop(1).joinToString("")
