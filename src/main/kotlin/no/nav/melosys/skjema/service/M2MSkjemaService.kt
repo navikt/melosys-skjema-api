@@ -19,6 +19,7 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerDokumentTittel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AnnenPersonMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
@@ -149,7 +150,8 @@ class M2MSkjemaService(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             orgnr = skjema.orgnr,
             arbeidstakerNavn = arbeidstakerNavn,
-            arbeidstakerFnr = skjema.fnr
+            arbeidstakerFnr = skjema.fnr,
+            kontaktpersonNavn = hentKontaktpersonNavn(metadata, innsending)
         )
 
         val fullmektigInfo = hentFullmektigInfo(metadata)
@@ -180,8 +182,16 @@ class M2MSkjemaService(
             else -> null
         } ?: return null
 
-        val navn = pdlConsumer.hentPerson(fullmektigFnr).hentFulltNavn()
-        return FullmektigInfo(navn = navn, fnr = fullmektigFnr)
+        val fullmektig = pdlConsumer.hentPerson(fullmektigFnr)
+        return FullmektigInfo(navn = fullmektig.hentFulltNavn(), foedselsdato = fullmektig.hentFoedselsdato())
+    }
+
+    private fun hentKontaktpersonNavn(metadata: UtsendtArbeidstakerMetadata, innsending: Innsending): String? {
+        return when (metadata) {
+            is ArbeidsgiverMetadata, is ArbeidsgiverMedFullmaktMetadata ->
+                pdlConsumer.hentPerson(innsending.innsenderFnr).hentFulltNavn()
+            else -> null
+        }
     }
 
     private fun hentRadgiverInfo(metadata: UtsendtArbeidstakerMetadata, innsending: Innsending): RadgiverInfo? {
@@ -194,9 +204,7 @@ class M2MSkjemaService(
         val personNavn = pdlConsumer.hentPerson(innsending.innsenderFnr).hentFulltNavn()
         return RadgiverInfo(
             firmaNavn = radgiverfirma.navn,
-            firmaOrgnr = radgiverfirma.orgnr,
-            personNavn = personNavn,
-            personFnr = innsending.innsenderFnr
+            personNavn = personNavn
         )
     }
 }

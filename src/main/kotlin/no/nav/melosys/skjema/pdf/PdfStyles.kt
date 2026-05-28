@@ -27,6 +27,12 @@ object PdfStyles {
             padding-bottom: 24px;
             border-bottom: 4px solid #0067C5;
         }
+        .nav-logo {
+            display: block;
+            width: 64px;
+            height: auto;
+            margin: 0 0 16px 0;
+        }
         .document-title {
             font-size: 22pt;
             font-weight: bold;
