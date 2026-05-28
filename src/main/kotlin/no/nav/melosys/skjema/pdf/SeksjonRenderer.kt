@@ -264,6 +264,10 @@ class SeksjonRenderer(
             }
         }
 
+        data.arbeidsstedIUtlandet?.let { dto ->
+            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
+        }
+
         data.arbeidstakerensLonn?.let { dto ->
             definisjon.seksjoner["arbeidstakerensLonn"]?.let { seksjon ->
                 builder.append(byggArbeidstakerensLonn(dto, seksjon))
@@ -282,9 +286,6 @@ class SeksjonRenderer(
             }
         }
 
-        data.arbeidsstedIUtlandet?.let { dto ->
-            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
-        }
 
         return builder.toString()
     }
