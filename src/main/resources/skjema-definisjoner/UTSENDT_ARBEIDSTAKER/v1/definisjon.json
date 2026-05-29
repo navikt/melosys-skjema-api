@@ -450,12 +450,12 @@
             "en": "Do you have any other documentation you wish to attach?"
           },
           "jaLabel": {
-            "nb": "Ja, jeg legger dem ved denne søknaden",
-            "en": "Yes, I am attaching them with this application"
+            "nb": "Ja",
+            "en": "Yes"
           },
           "neiLabel": {
-            "nb": "Nei, jeg har ingen ekstra dokumentasjon jeg vil legge ved",
-            "en": "No, I have no extra documentation I want to attach"
+            "nb": "Nei",
+            "en": "No"
           },
           "pakrevd": true
         }
@@ -1201,12 +1201,12 @@
             "en": "Do you have any other documentation you wish to attach?"
           },
           "jaLabel": {
-            "nb": "Ja, jeg legger dem ved denne søknaden",
-            "en": "Yes, I am attaching them with this application"
+            "nb": "Ja",
+            "en": "Yes"
           },
           "neiLabel": {
-            "nb": "Nei, jeg har ingen ekstra dokumentasjon jeg vil legge ved",
-            "en": "No, I have no extra documentation I want to attach"
+            "nb": "Nei",
+            "en": "No"
           },
           "pakrevd": true
         }
