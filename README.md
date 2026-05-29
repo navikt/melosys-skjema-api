@@ -140,8 +140,10 @@ graph TB
 
 Systemet deployes automatisk via GitHub Actions til NAIS-plattformen:
 
-- **Dev-miljø**: Automatisk deploy ved push til `main`-branch
-- **Prod-miljø**: Deploy ved publisering av ny release på GitHub
+- **Dev-miljø**: Automatisk deploy ved push til `main`-branch eller `dev/**`-brancher
+- **Prod-miljø**: Automatisk deploy kun ved push til `main`-branch
+
+For å teste endringer i dev uten å deploye til prod, opprett en branch med prefix `dev/` (f.eks. `dev/min-feature`) og push til GitHub.
 
 Begge miljøer kjører på NAIS med følgende oppsett:
 - Docker-images bygges og pushes til Google Artifact Registry (GAR)

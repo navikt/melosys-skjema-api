@@ -2,7 +2,8 @@ name: Build and deploy
 on:
   push:
     branches:
-      - main
+      - 'main'
+      - 'dev/**'
   workflow_dispatch:
 
 jobs:
@@ -57,9 +58,9 @@ jobs:
           RESOURCE: .nais/app-dev.yaml
           WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
 
-  # TODO: Skal skilles ut i releases, men det gjøres i MELOSYS-7933. I førsteomgang deployer vi automatisk til prod ved merge.
   deploy-prod:
     name: Deploy prod-gcp
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
