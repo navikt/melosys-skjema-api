@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.pdf
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Base64
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerDokumentTittel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
@@ -18,6 +19,12 @@ object HtmlDokumentGenerator {
 
     private val datoTidFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
         .withZone(ZoneId.of("Europe/Oslo"))
+    private val norskDatoFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+    private val navLogoDataUri: String by lazy {
+        val logoBytes = object {}.javaClass.getResourceAsStream("/pdf/nav-logo.png")?.readBytes()
+            ?: throw IllegalStateException("Fant ikke NAV-logo på classpath: /pdf/nav-logo.png")
+        "data:image/png;base64,${Base64.getEncoder().encodeToString(logoBytes)}"
+    }
 
     /**
      * Bygger komplett HTML-dokument fra skjemadata.
@@ -87,6 +94,7 @@ object HtmlDokumentGenerator {
 
         return """
             <div class="document-header">
+                <img class="nav-logo" src="$navLogoDataUri" alt="NAV" />
                 <h1 class="document-title">${escapeHtml(tittel)}</h1>
                 <div class="document-meta">
                     <p><strong>${escapeHtml(referanseTekst)}:</strong> ${escapeHtml(referanseId)}</p>
@@ -139,6 +147,10 @@ object HtmlDokumentGenerator {
     }
 
     private fun byggAktørInfoSeksjon(aktørInfo: AktørInfo, fullmektigInfo: FullmektigInfo?, radgiverInfo: RadgiverInfo?, språk: Språk): String {
+        val aktørerOverskrift = when (språk) {
+            Språk.NORSK_BOKMAL -> "Aktører"
+            Språk.ENGELSK -> "Parties"
+        }
         val arbeidstakerRolle = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidstaker"
             Språk.ENGELSK -> "Employee"
@@ -156,50 +168,31 @@ object HtmlDokumentGenerator {
             Språk.NORSK_BOKMAL -> "Navn"
             Språk.ENGELSK -> "Name"
         }
+        val virksomhetsnavnTekst = when (språk) {
+            Språk.NORSK_BOKMAL -> "Virksomhetsnavn"
+            Språk.ENGELSK -> "Company name"
+        }
 
         return buildString {
+            append("""<h2 class="part-heading">${escapeHtml(aktørerOverskrift)}</h2>""")
             append("""
             <div class="form-summary">
                 <div class="form-summary-header">
                     <h3 class="form-summary-heading">${escapeHtml(arbeidstakerRolle)}</h3>
                 </div>
                 <div class="form-summary-answers">
-                    <div class="form-summary-answer">
-                        <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
-                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidstakerNavn)}</p>
-                    </div>
-                    <div class="form-summary-answer">
-                        <p class="form-summary-label">${escapeHtml(identTekst)}</p>
-                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidstakerFnr)}</p>
-                    </div>
+                    ${byggFormSummarySvar(navnTekst, aktørInfo.arbeidstakerNavn)}
+                    ${byggFormSummarySvar(identTekst, aktørInfo.arbeidstakerFnr)}
+                    ${fullmektigInfo?.let {
+                        val fullmektigTekst = when (språk) {
+                            Språk.NORSK_BOKMAL -> "Fullmektig"
+                            Språk.ENGELSK -> "Power of attorney"
+                        }
+                        byggFormSummarySvar(fullmektigTekst, "${it.navn} (${norskDatoFormatter.format(it.foedselsdato)})")
+                    }.orEmpty()}
                 </div>
             </div>
             """.trimIndent())
-
-            if (fullmektigInfo != null) {
-                val fullmektigRolle = when (språk) {
-                    Språk.NORSK_BOKMAL -> "Fullmektig"
-                    Språk.ENGELSK -> "Power of attorney"
-                }
-                val fullmektigIdentTekst = personidentifikatorLabel(fullmektigInfo.fnr, språk)
-                append("""
-                <div class="form-summary">
-                    <div class="form-summary-header">
-                        <h3 class="form-summary-heading">${escapeHtml(fullmektigRolle)}</h3>
-                    </div>
-                    <div class="form-summary-answers">
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(fullmektigInfo.navn)}</p>
-                        </div>
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(fullmektigIdentTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(fullmektigInfo.fnr)}</p>
-                        </div>
-                    </div>
-                </div>
-                """.trimIndent())
-            }
 
             append("""
             <div class="form-summary">
@@ -207,63 +200,38 @@ object HtmlDokumentGenerator {
                     <h3 class="form-summary-heading">${escapeHtml(arbeidsgiverRolle)}</h3>
                 </div>
                 <div class="form-summary-answers">
-                    <div class="form-summary-answer">
-                        <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
-                        <p class="form-summary-value">${escapeHtml(aktørInfo.arbeidsgiverNavn)}</p>
-                    </div>
-                    <div class="form-summary-answer">
-                        <p class="form-summary-label">${escapeHtml(orgnrTekst)}</p>
-                        <p class="form-summary-value">${escapeHtml(aktørInfo.orgnr)}</p>
-                    </div>
+                    ${byggFormSummarySvar(virksomhetsnavnTekst, aktørInfo.arbeidsgiverNavn)}
+                    ${byggFormSummarySvar(orgnrTekst, aktørInfo.orgnr)}
+                    ${radgiverInfo?.let {
+                        val radgiverFirmaTekst = when (språk) {
+                            Språk.NORSK_BOKMAL -> "Rådgiverfirma"
+                            Språk.ENGELSK -> "Advisory firm"
+                        }
+                        val kontaktpersonTekst = when (språk) {
+                            Språk.NORSK_BOKMAL -> "Kontaktperson rådgiverfirma"
+                            Språk.ENGELSK -> "Contact person at advisory firm"
+                        }
+                        byggFormSummarySvar(radgiverFirmaTekst, it.firmaNavn) + "\n" +
+                            byggFormSummarySvar(kontaktpersonTekst, it.personNavn)
+                    } ?: aktørInfo.kontaktpersonNavn?.let {
+                        val kontaktpersonTekst = when (språk) {
+                            Språk.NORSK_BOKMAL -> "Kontaktperson"
+                            Språk.ENGELSK -> "Contact person"
+                        }
+                        byggFormSummarySvar(kontaktpersonTekst, it)
+                    }.orEmpty()}
                 </div>
             </div>
             """.trimIndent())
-
-            if (radgiverInfo != null) {
-                val radgiverFirmaRolle = when (språk) {
-                    Språk.NORSK_BOKMAL -> "Rådgiverfirma som representerer arbeidsgiver"
-                    Språk.ENGELSK -> "Advisory firm representing employer"
-                }
-                val radgiverPersonRolle = when (språk) {
-                    Språk.NORSK_BOKMAL -> "Person hos rådgiverfirma med delegert tilgang til arbeidsgiver"
-                    Språk.ENGELSK -> "Person at advisory firm with delegated access to employer"
-                }
-                val radgiverPersonIdentTekst = personidentifikatorLabel(radgiverInfo.personFnr, språk)
-                append("""
-                <div class="form-summary">
-                    <div class="form-summary-header">
-                        <h3 class="form-summary-heading">${escapeHtml(radgiverFirmaRolle)}</h3>
-                    </div>
-                    <div class="form-summary-answers">
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(radgiverInfo.firmaNavn)}</p>
-                        </div>
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(orgnrTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(radgiverInfo.firmaOrgnr)}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-summary">
-                    <div class="form-summary-header">
-                        <h3 class="form-summary-heading">${escapeHtml(radgiverPersonRolle)}</h3>
-                    </div>
-                    <div class="form-summary-answers">
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(navnTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(radgiverInfo.personNavn)}</p>
-                        </div>
-                        <div class="form-summary-answer">
-                            <p class="form-summary-label">${escapeHtml(radgiverPersonIdentTekst)}</p>
-                            <p class="form-summary-value">${escapeHtml(radgiverInfo.personFnr)}</p>
-                        </div>
-                    </div>
-                </div>
-                """.trimIndent())
-            }
         }
     }
+
+    private fun byggFormSummarySvar(label: String, verdi: String): String = """
+        <div class="form-summary-answer">
+            <p class="form-summary-label">${escapeHtml(label)}</p>
+            <p class="form-summary-value">${escapeHtml(verdi)}</p>
+        </div>
+    """.trimIndent()
 
     /**
      * Utleder riktig label for personidentifikator basert på om det er et D-nummer eller fødselsnummer.

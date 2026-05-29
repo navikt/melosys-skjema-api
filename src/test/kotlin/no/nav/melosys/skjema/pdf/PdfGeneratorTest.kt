@@ -8,8 +8,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import java.io.File
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import kotlin.io.path.createTempFile
 import kotlin.io.path.writeBytes
@@ -39,6 +39,7 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
@@ -59,12 +60,6 @@ class PdfGeneratorTest : FunSpec({
     val properties = SkjemaDefinisjonProperties()
     val skjemaDefinisjonService = SkjemaDefinisjonService(properties, jsonMapper)
 
-    fun lagrePdfForInspeksjon(filnavn: String, pdfBytes: ByteArray) {
-        val outputFile = File("build/test-output/$filnavn")
-        outputFile.parentFile.mkdirs()
-        outputFile.writeBytes(pdfBytes)
-        log.info { "PDF lagret til: ${outputFile.absolutePath}" }
-    }
 
     fun lagSkjemaPdfData(
         referanseId: String,
@@ -121,7 +116,6 @@ class PdfGeneratorTest : FunSpec({
             )
 
             val pdfBytes = genererPdf(skjema)
-            lagrePdfForInspeksjon("pdfa-validering.pdf", pdfBytes)
 
             // Valider PDF/A-2u compliance med veraPDF (offisielt valideringsverktøy)
             val feil = validerPdfA2u(pdfBytes)
@@ -129,10 +123,6 @@ class PdfGeneratorTest : FunSpec({
             if (feil.isNotEmpty()) {
                 val feilTekst = feil.joinToString("\n") { "- ${it.ruleId}: ${it.message}" }
                 log.error { "PDF/A-2u valideringsfeil:\n$feilTekst" }
-                File("build/test-output/pdfa-errors.txt").apply {
-                    parentFile?.mkdirs()
-                    writeText("PDF/A-2u valideringsfeil:\n$feilTekst")
-                }
             }
 
             feil.shouldBeEmpty()
@@ -146,10 +136,43 @@ class PdfGeneratorTest : FunSpec({
             )
 
             val pdfBytes = genererPdf(skjema)
-            lagrePdfForInspeksjon("komplett-soknad.pdf", pdfBytes)
 
             // PDF bør være minst 3KB for en komplett søknad
             pdfBytes.size shouldBeGreaterThan 3_000
+        }
+
+        test("genererer PDF med seksjon som spenner over flere sider") {
+            val mangeUtenlandskeVirksomheter = List(30) { index ->
+                utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier().copy(
+                    navn = "Sidebryttest virksomhet ${index + 1}",
+                    organisasjonsnummer = "PGBREAK-${index + 1}",
+                    vegnavnOgHusnummer = "Lang testgate ${index + 1}",
+                    bygning = "Bygg ${index + 1}",
+                    postkode = "${1000 + index}",
+                    byStedsnavn = "Testby ${index + 1}",
+                    region = "Testregion ${index + 1}"
+                )
+            }
+            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
+                arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true,
+                    skalJobbeForFlereVirksomheter = true,
+                    virksomheterArbeidstakerJobberForIutsendelsesPeriode =
+                        norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier().copy(
+                            utenlandskeVirksomheter = mangeUtenlandskeVirksomheter
+                        )
+                )
+            )
+            val skjema = lagSkjemaPdfData(
+                referanseId = "PGBREAK",
+                arbeidstakerData = arbeidstakerData,
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val pdfBytes = genererPdf(skjema)
+
+            // En komplett søknad med 30 virksomheter bør gi en stor PDF
+            pdfBytes.size shouldBeGreaterThan 10_000
         }
     }
 
@@ -280,7 +303,7 @@ class PdfGeneratorTest : FunSpec({
     }
 
     context("Aktør-info seksjon") {
-        test("viser alle aktør-felter med norske ledetekster") {
+        test("viser aktører-overskrift og alle aktør-felter med norske ledetekster") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "AKT_NO",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
@@ -294,8 +317,10 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
+            html shouldContain "Aktører"
             html shouldContain "Arbeidsgiver"
             html shouldContain "Nav Kontaktsenter AS"
+            html shouldContain "Virksomhetsnavn"
             html shouldContain "Organisasjonsnummer"
             html shouldContain "987654321"
             html shouldContain "Arbeidstaker"
@@ -319,7 +344,9 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
+            html shouldContain "Parties"
             html shouldContain "Employer"
+            html shouldContain "Company name"
             html shouldContain "Organisation number"
             html shouldContain "Employee"
             html shouldContain "National identity number"
@@ -380,25 +407,68 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "Tom &amp; Jerry AS"
             html shouldContain "O&#39;Brien"
         }
+
+        test("viser kontaktperson under arbeidsgiver når kontaktpersonnavn er satt") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_KP",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "11223344556",
+                    kontaktpersonNavn = "Jobb Jobbesen"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Kontaktperson"
+            html shouldContain "Jobb Jobbesen"
+        }
+
+        test("viser ikke kontaktperson når kontaktpersonnavn er null") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_KN",
+                arbeidstakerData = lagKomplettArbeidstakerData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldNotContain "Kontaktperson"
+            html shouldNotContain "Contact person"
+        }
+
+        test("inkluderer NAV-logo i header") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "AKT_LG",
+                arbeidstakerData = lagKomplettArbeidstakerData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "nav-logo"
+            html shouldContain "data:image/png;base64,"
+            html shouldContain "alt=\"NAV\""
+        }
     }
 
     context("Fullmektig-info seksjon") {
-        test("viser fullmektig med navn og fødselsnummer på norsk") {
+        test("viser fullmektig med navn og fødselsdato under arbeidstaker på norsk") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "FLM_NO",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 fullmektigInfo = FullmektigInfo(
                     navn = "Per Fullmansen",
-                    fnr = "11223344556"
+                    foedselsdato = LocalDate.of(1994, 10, 10)
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Fullmektig"
-            html shouldContain "Per Fullmansen"
-            html shouldContain "11223344556"
-            html shouldContain "Fødselsnummer"
+            html shouldContain "Per Fullmansen (10.10.1994)"
+            html shouldNotContain "11223344556"
         }
 
         test("viser ikke fullmektig når fullmektigInfo er null") {
@@ -421,47 +491,31 @@ class PdfGeneratorTest : FunSpec({
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 fullmektigInfo = FullmektigInfo(
                     navn = "Per Fullmansen",
-                    fnr = "11223344556"
+                    foedselsdato = LocalDate.of(1994, 10, 10)
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Power of attorney"
-            html shouldContain "Per Fullmansen"
-            html shouldContain "National identity number"
+            html shouldContain "Per Fullmansen (10.10.1994)"
+            html shouldNotContain "11223344556"
         }
 
-        test("viser D-nummer label for fullmektig med d-nummer") {
-            val skjema = lagSkjemaPdfData(
-                referanseId = "FLM_DN",
-                arbeidstakerData = lagKomplettArbeidstakerData(),
-                fullmektigInfo = FullmektigInfo(
-                    navn = "Dina Dnummer",
-                    fnr = "41015678901" // Starter med 4 → D-nummer
-                )
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "D-nummer"
-            html shouldContain "Dina Dnummer"
-        }
-
-        test("fullmektig vises etter arbeidstaker og før arbeidsgiver") {
+        test("fullmektig vises som felt etter arbeidstaker-ident og før arbeidsgiver") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "FLM_OR",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 fullmektigInfo = FullmektigInfo(
                     navn = "Per Fullmansen",
-                    fnr = "11223344556"
+                    foedselsdato = LocalDate.of(1994, 10, 10)
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             val arbeidstakerPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidstaker</h3>""")
-            val fullmektigPos = html.indexOf("""<h3 class="form-summary-heading">Fullmektig</h3>""")
+            val fullmektigPos = html.indexOf("Fullmektig")
             val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
 
             (arbeidstakerPos < fullmektigPos) shouldBe true
@@ -470,26 +524,49 @@ class PdfGeneratorTest : FunSpec({
     }
 
     context("Rådgiver-info seksjon") {
-        test("viser rådgiverfirma og rådgiver-person på norsk") {
+        test("viser rådgiverfirma og kontaktperson rådgiverfirma på norsk uten orgnr eller fnr") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "RAD_NO",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 radgiverInfo = RadgiverInfo(
                     firmaNavn = "Regnskap & Råd AS",
-                    firmaOrgnr = "998877665",
-                    personNavn = "Kari Rådgiver",
-                    personFnr = "22334455667"
+                    personNavn = "Kari Rådgiver"
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Rådgiverfirma som representerer arbeidsgiver"
+            html shouldContain "Rådgiverfirma"
             html shouldContain "Regnskap &amp; Råd AS"
-            html shouldContain "998877665"
-            html shouldContain "Person hos rådgiverfirma med delegert tilgang til arbeidsgiver"
+            html shouldNotContain "998877665"
+            html shouldContain "Kontaktperson rådgiverfirma"
             html shouldContain "Kari Rådgiver"
-            html shouldContain "22334455667"
+            html shouldNotContain "22334455667"
+        }
+
+        test("viser kun rådgiverfirmaets kontaktperson når både arbeidsgiver og rådgiver har kontaktperson") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "RAD_KP",
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                aktørInfo = AktørInfo(
+                    arbeidsgiverNavn = "Nav Kontaktsenter AS",
+                    orgnr = "987654321",
+                    arbeidstakerNavn = "Kari Nordmann",
+                    arbeidstakerFnr = "11223344556",
+                    kontaktpersonNavn = "Jobb Jobbesen"
+                ),
+                radgiverInfo = RadgiverInfo(
+                    firmaNavn = "Regnskap & Råd AS",
+                    personNavn = "Kari Rådgiver"
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            Regex("Kontaktperson").findAll(html).count() shouldBe 1
+            html shouldContain "Kontaktperson rådgiverfirma"
+            html shouldContain "Kari Rådgiver"
+            html shouldNotContain "Jobb Jobbesen"
         }
 
         test("viser ikke rådgiver-info når radgiverInfo er null") {
@@ -512,83 +589,61 @@ class PdfGeneratorTest : FunSpec({
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 radgiverInfo = RadgiverInfo(
                     firmaNavn = "Advice Corp",
-                    firmaOrgnr = "998877665",
-                    personNavn = "John Advisor",
-                    personFnr = "22334455667"
+                    personNavn = "John Advisor"
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Advisory firm representing employer"
-            html shouldContain "Person at advisory firm with delegated access to employer"
+            html shouldContain "Advisory firm"
+            html shouldContain "Contact person at advisory firm"
             html shouldContain "Advice Corp"
             html shouldContain "John Advisor"
         }
 
-        test("viser D-nummer label for rådgiver-person med d-nummer") {
-            val skjema = lagSkjemaPdfData(
-                referanseId = "RAD_DN",
-                arbeidstakerData = lagKomplettArbeidstakerData(),
-                radgiverInfo = RadgiverInfo(
-                    firmaNavn = "Råd AS",
-                    firmaOrgnr = "998877665",
-                    personNavn = "Kari Rådgiver",
-                    personFnr = "41015678901" // Starter med 4 → D-nummer
-                )
-            )
-
-            val html = HtmlDokumentGenerator.byggHtml(skjema)
-
-            html shouldContain "D-nummer"
-            html shouldContain "Kari Rådgiver"
-        }
-
-        test("rådgiver-info vises etter arbeidsgiver") {
+        test("rådgiver-info vises som felter under arbeidsgiver") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "RAD_OR",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 radgiverInfo = RadgiverInfo(
                     firmaNavn = "Råd AS",
-                    firmaOrgnr = "998877665",
-                    personNavn = "Kari Rådgiver",
-                    personFnr = "22334455667"
+                    personNavn = "Kari Rådgiver"
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
-            val radgiverPos = html.indexOf("Rådgiverfirma som representerer arbeidsgiver")
+            val radgiverPos = html.indexOf("Rådgiverfirma")
 
             (arbeidsgiverPos < radgiverPos) shouldBe true
         }
     }
 
     context("Komplett aktør-rekkefølge") {
-        test("rekkefølge: Arbeidstaker -> Fullmektig -> Arbeidsgiver -> Rådgiver") {
+        test("rekkefølge: Aktører -> Arbeidstaker med fullmektig -> Arbeidsgiver med rådgiver") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "RKKFLG",
                 arbeidstakerData = lagKomplettArbeidstakerData(),
                 fullmektigInfo = FullmektigInfo(
                     navn = "Per Fullmansen",
-                    fnr = "11223344556"
+                    foedselsdato = LocalDate.of(1994, 10, 10)
                 ),
                 radgiverInfo = RadgiverInfo(
                     firmaNavn = "Råd AS",
-                    firmaOrgnr = "998877665",
-                    personNavn = "Kari Rådgiver",
-                    personFnr = "22334455667"
+                    personNavn = "Kari Rådgiver"
                 )
             )
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
+            val aktørerPos = html.indexOf("""<h2 class="part-heading">Aktører</h2>""")
             val arbeidstakerPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidstaker</h3>""")
-            val fullmektigPos = html.indexOf("""<h3 class="form-summary-heading">Fullmektig</h3>""")
+            val fullmektigPos = html.indexOf("Fullmektig")
             val arbeidsgiverPos = html.indexOf("""<h3 class="form-summary-heading">Arbeidsgiver</h3>""")
-            val radgiverPos = html.indexOf("Rådgiverfirma som representerer arbeidsgiver")
+            val radgiverPos = html.indexOf("Rådgiverfirma")
 
+            (aktørerPos < arbeidstakerPos) shouldBe true
             (arbeidstakerPos < fullmektigPos) shouldBe true
             (fullmektigPos < arbeidsgiverPos) shouldBe true
             (arbeidsgiverPos < radgiverPos) shouldBe true
@@ -618,7 +673,6 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "På land"
             html shouldContain "Land"
             html shouldContain "Sverige"
-            lagrePdfForInspeksjon("arbeidssted-pa-land.pdf", genererPdf(skjema))
         }
 
         test("viser land for fast arbeidssted uten adresse") {
@@ -687,7 +741,6 @@ class PdfGeneratorTest : FunSpec({
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Offshore"
-            lagrePdfForInspeksjon("arbeidssted-offshore.pdf", genererPdf(skjema))
         }
 
         test("viser arbeidssted på skip") {
@@ -709,7 +762,6 @@ class PdfGeneratorTest : FunSpec({
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "På skip"
-            lagrePdfForInspeksjon("arbeidssted-pa-skip.pdf", genererPdf(skjema))
         }
 
         test("viser arbeidssted om bord på fly") {
@@ -731,7 +783,6 @@ class PdfGeneratorTest : FunSpec({
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
             html shouldContain "Om bord på fly"
-            lagrePdfForInspeksjon("arbeidssted-om-bord-pa-fly.pdf", genererPdf(skjema))
         }
     }
 

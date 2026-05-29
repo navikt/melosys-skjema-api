@@ -264,6 +264,10 @@ class SeksjonRenderer(
             }
         }
 
+        data.arbeidsstedIUtlandet?.let { dto ->
+            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
+        }
+
         data.arbeidstakerensLonn?.let { dto ->
             definisjon.seksjoner["arbeidstakerensLonn"]?.let { seksjon ->
                 builder.append(byggArbeidstakerensLonn(dto, seksjon))
@@ -282,9 +286,6 @@ class SeksjonRenderer(
             }
         }
 
-        data.arbeidsstedIUtlandet?.let { dto ->
-            builder.append(byggArbeidsstedIUtlandet(dto, definisjon, data.utsendingsperiodeOgLand?.utsendelseLand))
-        }
 
         return builder.toString()
     }
@@ -463,7 +464,7 @@ class SeksjonRenderer(
         private val seksjon: SeksjonDefinisjonDto,
         private val feltRenderer: FeltRenderer
     ) {
-        private val html = StringBuilder()
+        private val svar = mutableListOf<String>()
 
         fun felt(feltNavn: String, verdi: Any?) {
             if (verdi == null) return
@@ -471,22 +472,34 @@ class SeksjonRenderer(
             seksjon.felter[feltNavn]?.let { feltDef ->
                 val feltHtml = feltRenderer.render(feltDef, verdi)
                 if (feltHtml.isNotBlank()) {
-                    html.append(feltHtml)
+                    svar.add(feltHtml)
                 }
             }
         }
 
         fun feltDirekte(label: String, verdi: String) {
-            html.append(feltRenderer.renderEnkeltFelt(label, verdi))
+            svar.add(feltRenderer.renderEnkeltFelt(label, verdi))
         }
 
+        /**
+         * Første svar grupperes med overskriften i «form-summary-start» som har
+         * `page-break-inside: avoid` i CSS-en. Det sikrer at overskriften aldri
+         * havner alene nederst på en side. Resten av svarene ligger i
+         * «form-summary-answers» som kan brytes fritt over sider.
+         */
         fun build(): String {
+            val førsteSvar = svar.firstOrNull().orEmpty()
+            val resterendeSvar = svar.drop(1).joinToString("")
+
             return """
                 <div class="form-summary">
-                    <div class="form-summary-header">
-                        <h3 class="form-summary-heading">${escapeHtml(seksjon.tittel)}</h3>
+                    <div class="form-summary-start">
+                        <div class="form-summary-header">
+                            <h3 class="form-summary-heading">${escapeHtml(seksjon.tittel)}</h3>
+                        </div>
+                        $førsteSvar
                     </div>
-                    <div class="form-summary-answers">$html</div>
+                    <div class="form-summary-answers">$resterendeSvar</div>
                 </div>
             """.trimIndent()
         }

@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.pdf
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.Språk
@@ -15,7 +16,8 @@ data class AktørInfo(
     val arbeidsgiverNavn: String,
     val orgnr: String,
     val arbeidstakerNavn: String,
-    val arbeidstakerFnr: String
+    val arbeidstakerFnr: String,
+    val kontaktpersonNavn: String? = null
 )
 
 /**
@@ -23,7 +25,7 @@ data class AktørInfo(
  */
 data class FullmektigInfo(
     val navn: String,
-    val fnr: String
+    val foedselsdato: LocalDate
 )
 
 /**
@@ -32,9 +34,7 @@ data class FullmektigInfo(
  */
 data class RadgiverInfo(
     val firmaNavn: String,
-    val firmaOrgnr: String,
-    val personNavn: String,
-    val personFnr: String
+    val personNavn: String
 )
 
 /**
