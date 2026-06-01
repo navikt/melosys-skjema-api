@@ -39,10 +39,10 @@ object WebClientConfig {
             .jitter(0.75)
             .filter { throwable: Throwable? ->
                 when (throwable) {
-                    // HTTP-svar fra tjenesten: kun 5xx er forbigående og verdt et nytt forsøk
+                    // HTTP-svar mottatt: kun 5xx regnes som forbigående
                     is WebClientResponseException -> throwable.statusCode.is5xxServerError
-                    // Forbindelsesfeil (connection timeout, reset, DNS) nådde aldri frem til et svar
-                    // og er typisk forbigående nettverkshikke mot prod-fss-pub. Skal forsøkes på nytt.
+                    // Forbindelsesfeil (timeout, reset, DNS) — kom aldri frem til et svar,
+                    // typisk forbigående og trygt å forsøke på nytt
                     is WebClientRequestException -> true
                     else -> false
                 }
