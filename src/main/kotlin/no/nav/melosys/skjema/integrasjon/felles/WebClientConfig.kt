@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.integrasjon.felles
 import java.time.Duration
 import org.springframework.http.HttpStatusCode
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction
+import org.springframework.web.reactive.function.client.WebClientRequestException
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
@@ -37,18 +38,20 @@ object WebClientConfig {
             .backoff(maxAttempts.toLong(), Duration.ofMillis(backoffDurationMillis.toLong()))
             .jitter(0.75)
             .filter { throwable: Throwable? ->
-                if (throwable is WebClientResponseException) {
-                    throwable.statusCode.is5xxServerError
-                } else {
-                    false
+                when (throwable) {
+                    // HTTP-svar fra tjenesten: kun 5xx er forbigående og verdt et nytt forsøk
+                    is WebClientResponseException -> throwable.statusCode.is5xxServerError
+                    // Forbindelsesfeil (connection timeout, reset, DNS) nådde aldri frem til et svar
+                    // og er typisk forbigående nettverkshikke mot prod-fss-pub. Skal forsøkes på nytt.
+                    is WebClientRequestException -> true
+                    else -> false
                 }
             }
-            .onRetryExhaustedThrow { retryBackoffSpec: RetryBackoffSpec?, retrySignal: RetrySignal ->
-                val throwable = retrySignal.failure()
-                if (throwable is WebClientResponseException) {
-                    throw throwable
+            .onRetryExhaustedThrow { _: RetryBackoffSpec?, retrySignal: RetrySignal ->
+                when (val throwable = retrySignal.failure()) {
+                    is WebClientResponseException, is WebClientRequestException -> throw throwable
+                    else -> throw RuntimeException(throwable)
                 }
-                throw RuntimeException(throwable)
             }
     }
 }
