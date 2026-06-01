@@ -23,45 +23,44 @@ class WebClientConfigTest {
 
     @Test
     fun `retryer forbigående forbindelsesfeil og lykkes til slutt`() {
-        val forsoek = AtomicInteger(0)
+        val attempts = AtomicInteger(0)
 
         val resultat = Mono.defer {
-            if (forsoek.incrementAndGet() < 3) Mono.error(connectionTimeout()) else Mono.just("ok")
+            if (attempts.incrementAndGet() < 3) Mono.error(connectionTimeout()) else Mono.just("ok")
         }
             .retryWhen(WebClientConfig.defaultRetry(maxAttempts = 3, backoffDurationMillis = 10))
             .block()
 
         assertThat(resultat).isEqualTo("ok")
-        assertThat(forsoek.get()).isEqualTo(3)
+        assertThat(attempts.get()).isEqualTo(3)
     }
 
     @Test
     fun `retryer ikke HTTP 4xx-svar`() {
-        val forsoek = AtomicInteger(0)
+        val attempts = AtomicInteger(0)
         val badRequest = WebClientResponseException.create(
             HttpStatus.BAD_REQUEST.value(), "Bad Request", HttpHeaders.EMPTY, ByteArray(0), null
         )
 
         assertThatThrownBy {
-            Mono.defer { forsoek.incrementAndGet(); Mono.error<String>(badRequest) }
+            Mono.defer { attempts.incrementAndGet(); Mono.error<String>(badRequest) }
                 .retryWhen(WebClientConfig.defaultRetry(maxAttempts = 3, backoffDurationMillis = 10))
                 .block()
         }.isInstanceOf(WebClientResponseException::class.java)
 
-        assertThat(forsoek.get()).isEqualTo(1)
+        assertThat(attempts.get()).isEqualTo(1)
     }
 
     @Test
     fun `retryer ikke vilkårlige feil`() {
-        val forsoek = AtomicInteger(0)
+        val attempts = AtomicInteger(0)
 
         assertThatThrownBy {
-            Mono.defer { forsoek.incrementAndGet(); Mono.error<String>(IllegalArgumentException("nei")) }
+            Mono.defer { attempts.incrementAndGet(); Mono.error<String>(IllegalArgumentException("nei")) }
                 .retryWhen(WebClientConfig.defaultRetry(maxAttempts = 3, backoffDurationMillis = 10))
                 .block()
         }.isInstanceOf(IllegalArgumentException::class.java)
 
-        assertThat(forsoek.get()).isEqualTo(1)
+        assertThat(attempts.get()).isEqualTo(1)
     }
 }
-
