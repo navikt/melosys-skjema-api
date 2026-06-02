@@ -47,9 +47,6 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-  codec:
-    max-in-memory-size: 16MB
-
 server:
   port: ${SERVER_PORT:8080}
 
