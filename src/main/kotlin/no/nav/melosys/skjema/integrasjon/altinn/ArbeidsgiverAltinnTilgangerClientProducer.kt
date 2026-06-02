@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction
+import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 
@@ -21,6 +22,7 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
 
     companion object {
         private const val CLIENT_NAME = "arbeidsgiver-altinn-tilganger"
+        private const val MAX_IN_MEMORY_SIZE_BYTES = 16 * 1024 * 1024
     }
 
     @Bean
@@ -39,6 +41,11 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
 
         return webClientBuilder
             .baseUrl(arbeidsgiverAltinnTilgangerBaseUrl)
+            .exchangeStrategies(
+                ExchangeStrategies.builder()
+                    .codecs { it.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE_BYTES) }
+                    .build()
+            )
             .filter(tokenXContextExchangeFilter)
             .filter(WebClientConfig.errorFilter("Kall mot arbeidsgiver-altinn-tilganger feilet"))
             .filter(headerFilter())
