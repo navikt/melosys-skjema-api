@@ -74,7 +74,7 @@ class ArbeidstakerVarslingService(
 
         val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
         val tekster = lagVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, skjemaLenke))
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke()))
         log.info { "Sendt varsel til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
     }
 
@@ -90,6 +90,9 @@ class ArbeidstakerVarslingService(
             val m = utkast.metadata as? UtsendtArbeidstakerMetadata
             m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
         }
+
+    private fun byggSkjemaLenke(): String =
+        skjemaLenke.trimEnd('/') + ARBEIDSTAKER_SKJEMA_PATH
 
     private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
@@ -123,5 +126,6 @@ class ArbeidstakerVarslingService(
 
     companion object {
         private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
+        private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad"
     }
 }

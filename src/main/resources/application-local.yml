@@ -30,7 +30,7 @@ MERKELAPP: foo123
 RESSURS_ID: foo123
 EREG_URL: http://localhost:8083/ereg
 BRUK_SYNTETISK_FNR: true
-VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: http://localhost:3000/utsendt-arbeidstaker
+VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: http://localhost:3000
 PDL_URL: http://localhost:8083/graphql
 REPR_URL: http://localhost:8083/repr
 AZURE_APP_WELL_KNOWN_URL: http://host.docker.internal:8082/isso/.well-known/openid-configuration
