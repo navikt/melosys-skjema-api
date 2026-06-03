@@ -21,7 +21,8 @@ class ArbeidstakerVarslingServiceTest {
 
     private val brukervarselProducer: BrukervarselProducer = mockk(relaxed = true)
     private val skjemaRepository: SkjemaRepository = mockk()
-    private val skjemaLenke = "https://test.nav.no/melosys-skjema/utsendt-arbeidstaker"
+    private val skjemaLenke = "https://test.nav.no"
+    private val forventetLenke = "https://test.nav.no/medlemskap-lovvalg/soknad"
 
     private val service = ArbeidstakerVarslingService(brukervarselProducer, skjemaRepository, skjemaLenke)
 
@@ -47,7 +48,7 @@ class ArbeidstakerVarslingServiceTest {
                     melding.tekster.size == 2 &&
                     melding.tekster.any { it.språk == Språk.NORSK_BOKMAL && it.default } &&
                     melding.tekster.any { it.språk == Språk.ENGELSK } &&
-                    melding.link == skjemaLenke
+                    melding.link == forventetLenke
                 }
             )
         }
@@ -95,7 +96,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == skjemaLenke })
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == forventetLenke })
         }
     }
 
