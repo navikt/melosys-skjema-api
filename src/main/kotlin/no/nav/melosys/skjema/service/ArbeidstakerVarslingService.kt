@@ -92,7 +92,7 @@ class ArbeidstakerVarslingService(
         }
 
     private fun byggSkjemaLenke(): String =
-        skjemaLenke.trimEnd('/') + ARBEIDSTAKER_SKJEMA_PATH
+        skjemaLenke + ARBEIDSTAKER_SKJEMA_PATH
 
     private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
