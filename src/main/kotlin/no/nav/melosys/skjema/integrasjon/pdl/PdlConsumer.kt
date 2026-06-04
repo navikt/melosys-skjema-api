@@ -100,10 +100,7 @@ class PdlConsumer(
         }
 
         if (!response.errors.isNullOrEmpty()) {
-            // Faktisk PDL-feil må propagere — ikke skjules som tom liste.
             // "Person ikke funnet" håndteres separat via code == "not_found" nedenfor.
-            // Logg detaljene her, men kast en generell melding så ikke PDL-detaljer
-            // dupliseres inn i generiske feil-logger via GlobalExceptionHandler.
             log.error { "PDL bulk-query returnerte feil: ${response.errors}" }
             throw RuntimeException("Kall mot PDL (bulk) feilet")
         }

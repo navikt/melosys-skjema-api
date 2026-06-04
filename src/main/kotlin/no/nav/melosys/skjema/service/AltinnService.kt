@@ -23,8 +23,7 @@ class AltinnService(
             val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
 
             if (response.isError) {
-                // isError kan være true selv om responsen inneholder gyldige tilganger
-                // (delvis feil hos Altinn). Logg feilen, men returner tilgangene vi faktisk fikk.
+                // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
                 log.error { "Altinn-tilganger returnerte feil-status, returnerer tilgjengelige tilganger likevel" }
             }
 
@@ -46,8 +45,6 @@ class AltinnService(
     fun harBrukerTilgang(orgnr: String): Boolean {
         log.info { "Sjekker om bruker har tilgang til organisasjon: $orgnr" }
 
-        // Ved feil mot Altinn lar vi exceptionen propagere (→ 500) i stedet for å returnere false.
-        // En stille false ville ikke kunne skilles fra reell "ingen tilgang", og ville skjult at systemet er nede.
         val tilganger = hentOrganisasjonerMedTilgang()
         return tilganger.any { it.orgnr == orgnr }
     }
@@ -56,7 +53,7 @@ class AltinnService(
         val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
         
         if (response.isError) {
-            // isError kan være true samtidig med gyldige tilganger — logg, men bruk dataene vi fikk.
+            // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
             log.error { "Altinn-tilganger returnerte feil-status, bruker tilgjengelige tilganger likevel" }
         }
         

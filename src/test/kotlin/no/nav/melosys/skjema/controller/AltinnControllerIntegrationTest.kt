@@ -116,7 +116,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
 
         val orgnr = "123456789"
-        // isError kan være true samtidig med gyldige tilganger — vi skal fortsatt returnere listen.
         val response = altinnTilgangerResponseMedDefaultVerdier().copy(
             isError = true,
             hierarki = listOf(

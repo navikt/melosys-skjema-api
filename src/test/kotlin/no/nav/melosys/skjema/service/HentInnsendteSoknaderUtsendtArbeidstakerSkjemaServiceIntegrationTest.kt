@@ -884,7 +884,6 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         every { subjectHandler.getUserID() } returns userFnr
         every { reprService.hentKanRepresentere() } throws RuntimeException("Repr service unavailable")
 
-        // Skal propagere feilen (→ 500) i stedet for å skjule den bak en tom liste
         val request = HentInnsendteSoknaderRequest(
             side = 1,
             antall = 10,

@@ -74,8 +74,6 @@ class ReprService(
      * fullmakt til å handle på vegne av denne personen.
      */
     private fun harRettigheter(fnr: String, rettighetsType: RettighetsType): Boolean {
-        // La feil mot repr-api propagere (→ 500) i stedet for å returnere false.
-        // En stille false kunne ikke skilles fra reell "ingen rettighet" og ville skjult systemfeil.
         val fullmakter = hentKanRepresentere()
 
         return fullmakter.any { fullmakt ->
@@ -88,16 +86,11 @@ class ReprService(
 
     /**
      * Henter fødselsnummer til alle personer innlogget bruker har aktiv fullmakt for.
-     * Returnerer tomt sett ved feil (konservativt — behandler som ingen aktive fullmakter).
+     * Lar feil mot repr-api propagere (→ 500) i stedet for å skjule det bak et tomt sett,
+     * som ville filtrert bort utkast/søknader og feilinformert brukeren.
      */
     fun hentFullmaktsgiverFnr(): Set<String> {
-        return try {
-            hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
-        } catch (e: Exception) {
-            // Konservativt: returner tomt sett (påvirker kun fullmaktAktiv-flagg), men logg som error med stacktrace.
-            log.error(e) { "Feil ved henting av fullmakter" }
-            emptySet()
-        }
+        return hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
     }
 
     private enum class RettighetsType {

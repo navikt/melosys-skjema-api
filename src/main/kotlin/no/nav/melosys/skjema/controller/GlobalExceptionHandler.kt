@@ -139,10 +139,7 @@ class GlobalExceptionHandler(
             .body(mapOf("message" to (e.message ?: "Ressurs ikke funnet")))
     }
 
-    /**
-     * Token-support sin auth-exception (manglende/ugyldig token) må IKKE fanges av den
-     * generiske fallbacken under — da ville 401 blitt til 500. Behold 401-oppførselen.
-     */
+    // Må fanges eksplisitt slik at manglende/ugyldig token forblir 401 og ikke blir 500 av fallbacken under.
     @ExceptionHandler(JwtTokenUnauthorizedException::class)
     fun handleUautorisert(e: JwtTokenUnauthorizedException): ResponseEntity<ErrorResponse> {
         log.warn(e) { "Uautorisert forespørsel: ${e.message}" }
@@ -152,17 +149,9 @@ class GlobalExceptionHandler(
             .body(ErrorResponse(message = "Ikke autentisert"))
     }
 
-    /**
-     * Generisk fallback for uventede feil. Sikrer at alle uhåndterte exceptions logges
-     * som error med stacktrace ett sted, og at frontend får konsistent 500-respons
-     * (i stedet for at feil skjules bak f.eks. tomme lister). Lekker ikke interne detaljer.
-     *
-     * Spring sine egne MVC-/rammeverk-exceptions (malformed body → 400, feil HTTP-metode → 405,
-     * manglende medietype → 415 osv.) og alt som er annotert med @ResponseStatus re-kastes, slik
-     * at Spring sine standard-resolvere håndterer dem med riktig statuskode i stedet for 500.
-     */
     @ExceptionHandler(Exception::class)
     fun handleUventetFeil(e: Exception): ResponseEntity<ErrorResponse> {
+        // Re-kast Spring sine egne exceptions og @ResponseStatus slik at riktig statuskode beholdes (400/405/415 osv.).
         if (e.javaClass.name.startsWith("org.springframework.") ||
             e.javaClass.isAnnotationPresent(ResponseStatus::class.java)
         ) {
