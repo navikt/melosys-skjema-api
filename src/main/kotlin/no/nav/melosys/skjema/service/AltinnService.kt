@@ -46,14 +46,10 @@ class AltinnService(
     fun harBrukerTilgang(orgnr: String): Boolean {
         log.info { "Sjekker om bruker har tilgang til organisasjon: $orgnr" }
 
-        return try {
-            val tilganger = hentOrganisasjonerMedTilgang()
-            tilganger.any { it.orgnr == orgnr }
-        } catch (e: Exception) {
-            // Konservativ deny: ved feil returnerer vi false, men logger som error med stacktrace.
-            log.error(e) { "Feil ved sjekk av tilgang til organisasjon $orgnr" }
-            false
-        }
+        // Ved feil mot Altinn lar vi exceptionen propagere (→ 500) i stedet for å returnere false.
+        // En stille false ville ikke kunne skilles fra reell "ingen tilgang", og ville skjult at systemet er nede.
+        val tilganger = hentOrganisasjonerMedTilgang()
+        return tilganger.any { it.orgnr == orgnr }
     }
     
     private fun hentOrganisasjonerMedTilgang(): List<OrganisasjonMedTilgang> {

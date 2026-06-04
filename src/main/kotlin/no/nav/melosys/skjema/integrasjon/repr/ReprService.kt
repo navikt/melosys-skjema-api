@@ -74,18 +74,15 @@ class ReprService(
      * fullmakt til å handle på vegne av denne personen.
      */
     private fun harRettigheter(fnr: String, rettighetsType: RettighetsType): Boolean {
-        return try {
-            val fullmakter = hentKanRepresentere()
+        // La feil mot repr-api propagere (→ 500) i stedet for å returnere false.
+        // En stille false kunne ikke skilles fra reell "ingen rettighet" og ville skjult systemfeil.
+        val fullmakter = hentKanRepresentere()
 
-            fullmakter.any { fullmakt ->
-                fullmakt.fullmaktsgiver == fnr && when (rettighetsType) {
-                    RettighetsType.LESE -> fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-                    RettighetsType.SKRIVE -> fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-                }
+        return fullmakter.any { fullmakt ->
+            fullmakt.fullmaktsgiver == fnr && when (rettighetsType) {
+                RettighetsType.LESE -> fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                RettighetsType.SKRIVE -> fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
             }
-        } catch (e: Exception) {
-            log.error(e) { "Feil ved validering av ${rettighetsType.name.lowercase()}rettigheter" }
-            false
         }
     }
 

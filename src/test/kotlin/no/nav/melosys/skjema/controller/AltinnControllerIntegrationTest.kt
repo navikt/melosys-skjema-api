@@ -245,6 +245,25 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
+    fun `GET harTilgang skal returnere 500 når kallet mot Altinn kaster`() {
+        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+
+        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } throws
+            RuntimeException("Altinn er nede")
+
+        val token = mockOAuth2Server.getToken(
+            claims = mapOf("pid" to "12345678901")
+        )
+
+        webTestClient.get()
+            .uri("/api/harTilgang/123456789")
+            .header("Authorization", "Bearer $token")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().is5xxServerError
+    }
+
+    @Test
     fun `GET harTilgang skal validere organisasjonsnummer format`() {
         clearMocks(arbeidsgiverAltinnTilgangerConsumer)
         
