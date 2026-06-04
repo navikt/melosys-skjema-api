@@ -23,9 +23,9 @@ class AltinnService(
             val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
 
             if (response.isError) {
-                // Feil-status fra Altinn er en systemfeil, ikke en "ingen tilganger"-tilstand.
-                // Må propagere slik at frontend kan skille feil fra tom liste.
-                throw RuntimeException("Altinn-tilganger returnerte feil-status")
+                // isError kan være true selv om responsen inneholder gyldige tilganger
+                // (delvis feil hos Altinn). Logg feilen, men returner tilgangene vi faktisk fikk.
+                log.error { "Altinn-tilganger returnerte feil-status, returnerer tilgjengelige tilganger likevel" }
             }
 
             val organisasjoner = finnOrganisasjonerMedRessurs(response, altinnRessurs)
@@ -60,8 +60,8 @@ class AltinnService(
         val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
         
         if (response.isError) {
-            log.error { "Altinn-tilganger returnerte feil-status" }
-            return emptyList()
+            // isError kan være true samtidig med gyldige tilganger — logg, men bruk dataene vi fikk.
+            log.error { "Altinn-tilganger returnerte feil-status, bruker tilgjengelige tilganger likevel" }
         }
         
         return finnOrganisasjonerMedRessurs(response, altinnRessurs)
