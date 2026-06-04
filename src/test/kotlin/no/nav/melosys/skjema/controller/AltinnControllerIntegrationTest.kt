@@ -112,6 +112,28 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
+    fun `GET hentTilganger skal returnere 500 når Altinn returnerer feil-status`() {
+        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+
+        val response = altinnTilgangerResponseMedDefaultVerdier().copy(
+            isError = true,
+        )
+
+        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
+
+        val token = mockOAuth2Server.getToken(
+            claims = mapOf("pid" to "12345678901")
+        )
+
+        webTestClient.get()
+            .uri("/api/hentTilganger")
+            .header("Authorization", "Bearer $token")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().is5xxServerError
+    }
+
+    @Test
     @DisplayName("GET /api/harTilgang/{orgnr} skal returnere true når bruker har tilgang")
     fun `GET harTilgang skal returnere true når bruker har tilgang`() {
         // Clear any previous mocks on this bean

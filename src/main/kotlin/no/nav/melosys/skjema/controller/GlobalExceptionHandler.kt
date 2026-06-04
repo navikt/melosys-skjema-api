@@ -136,4 +136,18 @@ class GlobalExceptionHandler(
             .status(HttpStatus.NOT_FOUND)
             .body(mapOf("message" to (e.message ?: "Ressurs ikke funnet")))
     }
+
+    /**
+     * Generisk fallback for uventede feil. Sikrer at alle uhåndterte exceptions logges
+     * som error med stacktrace ett sted, og at frontend får konsistent 500-respons
+     * (i stedet for at feil skjules bak f.eks. tomme lister). Lekker ikke interne detaljer.
+     */
+    @ExceptionHandler(Exception::class)
+    fun handleUventetFeil(e: Exception): ResponseEntity<ErrorResponse> {
+        log.error(e) { "Uventet feil: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ErrorResponse(message = "Det oppstod en uventet feil"))
+    }
 }

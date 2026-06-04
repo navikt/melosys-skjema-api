@@ -21,10 +21,11 @@ class AltinnService(
 
         return try {
             val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
-            
+
             if (response.isError) {
-                log.warn { "Altinn-tilganger returnerte feil-status" }
-                return emptyList()
+                // Feil-status fra Altinn er en systemfeil, ikke en "ingen tilganger"-tilstand.
+                // Må propagere slik at frontend kan skille feil fra tom liste.
+                throw RuntimeException("Altinn-tilganger returnerte feil-status")
             }
 
             val organisasjoner = finnOrganisasjonerMedRessurs(response, altinnRessurs)
@@ -37,8 +38,8 @@ class AltinnService(
                 )
             }
         } catch (e: Exception) {
-            log.error { "Feil ved henting av tilganger fra Altinn: ${e.message}" }
-            emptyList()
+            log.error(e) { "Feil ved henting av tilganger fra Altinn" }
+            throw e
         }
     }
 
@@ -49,7 +50,8 @@ class AltinnService(
             val tilganger = hentOrganisasjonerMedTilgang()
             tilganger.any { it.orgnr == orgnr }
         } catch (e: Exception) {
-            log.error { "Feil ved sjekk av tilgang til organisasjon $orgnr: ${e.message}" }
+            // Konservativ deny: ved feil returnerer vi false, men logger som error med stacktrace.
+            log.error(e) { "Feil ved sjekk av tilgang til organisasjon $orgnr" }
             false
         }
     }
@@ -58,7 +60,7 @@ class AltinnService(
         val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
         
         if (response.isError) {
-            log.warn { "Altinn-tilganger returnerte feil-status" }
+            log.error { "Altinn-tilganger returnerte feil-status" }
             return emptyList()
         }
         

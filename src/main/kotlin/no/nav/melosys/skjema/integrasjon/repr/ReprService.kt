@@ -97,7 +97,8 @@ class ReprService(
         return try {
             hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
         } catch (e: Exception) {
-            log.warn(e) { "Feil ved henting av fullmakter" }
+            // Konservativt: returner tomt sett (påvirker kun fullmaktAktiv-flagg), men logg som error med stacktrace.
+            log.error(e) { "Feil ved henting av fullmakter" }
             emptySet()
         }
     }
