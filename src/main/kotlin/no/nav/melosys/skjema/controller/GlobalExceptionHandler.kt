@@ -11,10 +11,12 @@ import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIk
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import no.nav.melosys.skjema.validators.ValidationException
+import no.nav.security.token.support.spring.validation.interceptor.JwtTokenUnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 private val log = KotlinLogging.logger { }
@@ -138,12 +140,35 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Token-support sin auth-exception (manglende/ugyldig token) må IKKE fanges av den
+     * generiske fallbacken under — da ville 401 blitt til 500. Behold 401-oppførselen.
+     */
+    @ExceptionHandler(JwtTokenUnauthorizedException::class)
+    fun handleUautorisert(e: JwtTokenUnauthorizedException): ResponseEntity<ErrorResponse> {
+        log.warn(e) { "Uautorisert forespørsel: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ErrorResponse(message = "Ikke autentisert"))
+    }
+
+    /**
      * Generisk fallback for uventede feil. Sikrer at alle uhåndterte exceptions logges
      * som error med stacktrace ett sted, og at frontend får konsistent 500-respons
      * (i stedet for at feil skjules bak f.eks. tomme lister). Lekker ikke interne detaljer.
+     *
+     * Spring sine egne MVC-/rammeverk-exceptions (malformed body → 400, feil HTTP-metode → 405,
+     * manglende medietype → 415 osv.) og alt som er annotert med @ResponseStatus re-kastes, slik
+     * at Spring sine standard-resolvere håndterer dem med riktig statuskode i stedet for 500.
      */
     @ExceptionHandler(Exception::class)
     fun handleUventetFeil(e: Exception): ResponseEntity<ErrorResponse> {
+        if (e.javaClass.name.startsWith("org.springframework.") ||
+            e.javaClass.isAnnotationPresent(ResponseStatus::class.java)
+        ) {
+            throw e
+        }
+
         log.error(e) { "Uventet feil: ${e.message}" }
 
         return ResponseEntity

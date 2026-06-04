@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -606,8 +607,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     @Test
-    @DisplayName("ANNEN_PERSON: Skal returnere tom liste når repr-api feiler")
-    fun `skal returnere tom liste når repr-api feiler for ANNEN_PERSON`() {
+    @DisplayName("ANNEN_PERSON: Skal la repr-api-feil propagere")
+    fun `skal la repr-api-feil propagere for ANNEN_PERSON`() {
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
         every { reprService.hentKanRepresentere() } throws RuntimeException("Repr-API nede")
@@ -618,10 +619,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
             representasjonstype = Representasjonstype.ANNEN_PERSON
         )
 
-        val response = service.hentInnsendteSoknader(request)
-
-        response.totaltAntall shouldBe 0
-        response.soknader.shouldBeEmpty()
+        shouldThrow<RuntimeException> {
+            service.hentInnsendteSoknader(request)
+        }
     }
 
     // ========================================
@@ -878,24 +878,22 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     // ========================================
 
     @Test
-    @DisplayName("Error: Skal håndtere ReprService feil ved henting av fullmakter")
-    fun `skal håndtere ReprService feil gracefully`() {
+    @DisplayName("Error: Skal la ReprService-feil propagere ved henting av fullmakter")
+    fun `skal la ReprService-feil propagere`() {
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
         every { reprService.hentKanRepresentere() } throws RuntimeException("Repr service unavailable")
 
-        // Skal returnere tom liste i stedet for å feile
+        // Skal propagere feilen (→ 500) i stedet for å skjule den bak en tom liste
         val request = HentInnsendteSoknaderRequest(
             side = 1,
             antall = 10,
             representasjonstype = Representasjonstype.ANNEN_PERSON
         )
 
-        val response = service.hentInnsendteSoknader(request)
-
-        response.shouldNotBeNull()
-        response.totaltAntall shouldBe 0
-        response.soknader.shouldBeEmpty()
+        shouldThrow<RuntimeException> {
+            service.hentInnsendteSoknader(request)
+        }
     }
 
     @Test

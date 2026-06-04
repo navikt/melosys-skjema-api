@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -68,14 +69,14 @@ class AltinnServiceTest : FunSpec({
         result.shouldBeEmpty()
     }
     
-    test("hentBrukersTilganger skal returnere tom liste ved exception") {
-        every { 
+    test("hentBrukersTilganger skal kaste videre ved exception") {
+        every {
             mockConsumer.hentTilganger(null) 
         } throws RuntimeException("Nettverksfeil")
         
-        val result = service.hentBrukersTilganger()
-        
-        result.shouldBeEmpty()
+        shouldThrow<RuntimeException> {
+            service.hentBrukersTilganger()
+        }
     }
     
     test("harBrukerTilgang skal returnere true når bruker har tilgang") {
@@ -126,16 +127,16 @@ class AltinnServiceTest : FunSpec({
         result shouldBe false
     }
     
-    test("harBrukerTilgang skal returnere false ved exception") {
+    test("harBrukerTilgang skal kaste videre ved exception") {
         val orgnr = "123456789"
         
         every { 
             mockConsumer.hentTilganger(null) 
         } throws RuntimeException("Tilgangsfeil")
         
-        val result = service.harBrukerTilgang(orgnr)
-        
-        result shouldBe false
+        shouldThrow<RuntimeException> {
+            service.harBrukerTilgang(orgnr)
+        }
     }
     
     test("skal finne organisasjoner i hierarki med underenheter") {
