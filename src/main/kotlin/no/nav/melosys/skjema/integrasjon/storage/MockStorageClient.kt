@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 
 private val log = KotlinLogging.logger { }
@@ -19,7 +20,18 @@ class MockStorageClient(
     @param:Value("\${vedlegg.mock-storage-url}") private val baseUrl: String
 ) : VedleggStorageClient {
 
-    private val webClient: WebClient = WebClient.builder().baseUrl(baseUrl).build()
+    private companion object {
+        const val MAX_IN_MEMORY_SIZE_BYTES = 16 * 1024 * 1024
+    }
+
+    private val webClient: WebClient = WebClient.builder()
+        .baseUrl(baseUrl)
+        .exchangeStrategies(
+            ExchangeStrategies.builder()
+                .codecs { it.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE_BYTES) }
+                .build()
+        )
+        .build()
 
     override fun lastOpp(storageReferanse: String, data: ByteArray, contentType: String) {
         log.info { "Mock-storage: laster opp '$storageReferanse' (${data.size} bytes)" }
