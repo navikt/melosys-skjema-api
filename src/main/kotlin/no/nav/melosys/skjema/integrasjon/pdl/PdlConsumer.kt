@@ -109,14 +109,11 @@ class PdlConsumer(
             .block()
 
         if (response == null) {
-            log.error { "Respons fra PDL bulk-query er null" }
             throw RuntimeException("Respons fra PDL bulk-query er null")
         }
 
         if (!response.errors.isNullOrEmpty()) {
-            // "Person ikke funnet" håndteres separat via code == "not_found" nedenfor.
-            log.error { "PDL bulk-query returnerte feil: ${response.errors}" }
-            throw RuntimeException("Kall mot PDL (bulk) feilet")
+            throw RuntimeException("Kall mot PDL (bulk) feilet: ${response.errors}")
         }
 
         val entries = response.data?.hentPersonBolk ?: emptyList()

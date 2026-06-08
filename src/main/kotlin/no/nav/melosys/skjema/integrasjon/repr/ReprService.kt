@@ -30,7 +30,6 @@ class ReprService(
                             fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
                 }
         } catch (e: Exception) {
-            log.error(e) { "Feil ved henting av fullmakter fra repr-api" }
             throw RuntimeException("Kunne ikke hente fullmakter fra repr-api", e)
         }
     }

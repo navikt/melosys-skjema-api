@@ -112,7 +112,6 @@ class SkjemaDefinisjonService(
                 jsonMapper.readValue(stream, FlersprakligSkjemaDefinisjonModel::class.java)
             }
         } catch (e: Exception) {
-            log.error(e) { "Feil ved lesing av skjemadefinisjon fra $path" }
             throw IllegalStateException("Kunne ikke lese skjemadefinisjon fra $path: ${e.message}", e)
         }
     }

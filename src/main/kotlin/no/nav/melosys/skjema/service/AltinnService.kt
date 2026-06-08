@@ -37,8 +37,7 @@ class AltinnService(
                 )
             }
         } catch (e: Exception) {
-            log.error(e) { "Feil ved henting av tilganger fra Altinn" }
-            throw e
+            throw RuntimeException("Kunne ikke hente tilganger fra Altinn", e)
         }
     }
 
