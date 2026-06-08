@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
+import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLError
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLResponse
@@ -10,6 +11,7 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlHentPersonResponse
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -17,8 +19,14 @@ private val log = KotlinLogging.logger { }
 
 @Component
 class PdlConsumer(
-    private val pdlClient: WebClient
+    private val pdlClient: WebClient,
+    private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider
 ) {
+
+    companion object {
+        private const val CLIENT_NAME = "pdl"
+        private const val NAV_CONSUMER_TOKEN = "Nav-Consumer-Token"
+    }
 
     /**
      * Henter person fra PDL med navn og fødselsdato.
@@ -36,9 +44,12 @@ class PdlConsumer(
             query = PdlQuery.HENT_PERSON_NAVN_FODSELSDATO,
             variables = mapOf("ident" to ident)
         )
+        val authorizationHeader = authorizationHeaderProvider.clientCredentialsAuthorizationHeader(CLIENT_NAME)
 
         val response = pdlClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
+            .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+            .header(NAV_CONSUMER_TOKEN, authorizationHeader)
             .bodyValue(graphQLRequest)
             .retrieve()
             .bodyToMono(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonResponse>>() {})
@@ -85,9 +96,12 @@ class PdlConsumer(
             query = PdlQuery.HENT_PERSON_BOLK,
             variables = mapOf("identer" to identer)
         )
+        val authorizationHeader = authorizationHeaderProvider.clientCredentialsAuthorizationHeader(CLIENT_NAME)
 
         val response = pdlClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
+            .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+            .header(NAV_CONSUMER_TOKEN, authorizationHeader)
             .bodyValue(graphQLRequest)
             .retrieve()
             .bodyToMono(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonBolkResponse>>() {})

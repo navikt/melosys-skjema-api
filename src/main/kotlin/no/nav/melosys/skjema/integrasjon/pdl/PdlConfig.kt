@@ -23,7 +23,6 @@ class PdlConfig(
     @Bean
     fun pdlClient(
         webClientBuilder: WebClient.Builder,
-        pdlAuthFilter: PdlAuthFilterAzure,
         correlationIdOutgoingFilter: no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingFilter
     ): WebClient {
         log.info { "Konfigurerer PDL-klient med base URL: $pdlUrl" }
@@ -35,7 +34,6 @@ class PdlConfig(
                 headers.contentType = MediaType.APPLICATION_JSON
                 headers.set(BEHANDLINGSNUMMER, MELOSYS_SKJEMA_BEHANDLINGSNUMMER)
             }
-            .filter(pdlAuthFilter)
             .filter(correlationIdOutgoingFilter)
             .filter(WebClientConfig.errorFilter("Kall mot PDL feilet"))
             .build()

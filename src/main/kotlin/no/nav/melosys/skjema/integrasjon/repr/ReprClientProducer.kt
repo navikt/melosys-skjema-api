@@ -6,10 +6,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import java.time.Duration
 import java.util.concurrent.TimeUnit
-import no.nav.melosys.skjema.integrasjon.felles.TokenXContextExchangeFilter
 import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
-import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
-import no.nav.security.token.support.client.spring.ClientConfigurationProperties
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -29,23 +26,11 @@ class ReprClientProducer(
     @param:Value("\${repr.timeout.write-seconds:30}") private val writeTimeoutSeconds: Long
 ) {
 
-    companion object {
-        private const val CLIENT_NAME = "repr-api"
-    }
-
     @Bean
     fun reprClientTokenX(
-        webClientBuilder: WebClient.Builder,
-        clientConfigurationProperties: ClientConfigurationProperties,
-        oAuth2AccessTokenService: OAuth2AccessTokenService
+        webClientBuilder: WebClient.Builder
     ): WebClient {
         log.info { "Konfigurerer ReprConsumer med base URL: $reprBaseUrl" }
-
-        val tokenXContextExchangeFilter = TokenXContextExchangeFilter(
-            clientConfigurationProperties,
-            oAuth2AccessTokenService,
-            CLIENT_NAME
-        )
 
         val httpClient = HttpClient.create()
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (connectTimeoutSeconds * 1000).toInt())
@@ -58,7 +43,6 @@ class ReprClientProducer(
         return webClientBuilder
             .baseUrl(reprBaseUrl)
             .clientConnector(ReactorClientHttpConnector(httpClient))
-            .filter(tokenXContextExchangeFilter)
             .filter(WebClientConfig.errorFilter("Kall mot repr-api feilet"))
             .filter(headerFilter())
             .build()
