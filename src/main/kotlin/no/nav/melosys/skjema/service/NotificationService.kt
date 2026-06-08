@@ -36,8 +36,7 @@ class NotificationService(
             log.info { "Sendt arbeidsgiver notifikasjon med beskjed id: $beskjedId til virksomhet: $virksomhetsnummer" }
             return beskjedId
         } catch (e: Exception) {
-            log.error(e) { "Feil ved sending av arbeidsgiver notifikasjon til virksomhet: $virksomhetsnummer" }
-            throw e
+            throw RuntimeException("Kunne ikke sende arbeidsgiver notifikasjon til virksomhet: $virksomhetsnummer", e)
         }
     }
 

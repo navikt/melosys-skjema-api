@@ -109,13 +109,11 @@ class PdlConsumer(
             .block()
 
         if (response == null) {
-            log.error { "Respons fra PDL bulk-query er null" }
-            return emptyMap()
+            throw RuntimeException("Respons fra PDL bulk-query er null")
         }
 
         if (!response.errors.isNullOrEmpty()) {
-            log.error { "PDL bulk-query returnerte feil: ${response.errors}" }
-            return emptyMap()
+            throw RuntimeException("Kall mot PDL (bulk) feilet: ${response.errors}")
         }
 
         val entries = response.data?.hentPersonBolk ?: emptyList()

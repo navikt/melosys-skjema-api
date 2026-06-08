@@ -129,12 +129,12 @@ class ReprServiceTest : FunSpec({
         result shouldBe false
     }
 
-    test("harSkriverettigheterForMedlemskap skal returnere false ved exception (fail-safe)") {
+    test("harSkriverettigheterForMedlemskap skal kaste ved exception (ikke skjule systemfeil)") {
         every { mockConsumer.hentKanRepresentere() } throws RuntimeException("Nettverksfeil")
 
-        val result = service.harSkriverettigheterForMedlemskap("12345678901")
-
-        result shouldBe false
+        shouldThrow<RuntimeException> {
+            service.harSkriverettigheterForMedlemskap("12345678901")
+        }
     }
 
     test("harLeserettigheterForMedlemskap skal returnere true når fullmakt finnes") {
@@ -167,12 +167,12 @@ class ReprServiceTest : FunSpec({
         result shouldBe false
     }
 
-    test("harLeserettigheterForMedlemskap skal returnere false ved exception (fail-safe)") {
+    test("harLeserettigheterForMedlemskap skal kaste ved exception (ikke skjule systemfeil)") {
         every { mockConsumer.hentKanRepresentere() } throws RuntimeException("Tilgangsfeil")
 
-        val result = service.harLeserettigheterForMedlemskap("12345678901")
-
-        result shouldBe false
+        shouldThrow<RuntimeException> {
+            service.harLeserettigheterForMedlemskap("12345678901")
+        }
     }
 
     test("skal validere fullmaktsgiver matching korrekt") {
