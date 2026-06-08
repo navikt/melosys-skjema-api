@@ -17,8 +17,10 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenResponse
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cache.CacheManager
 import org.springframework.http.HttpHeaders
 import reactor.core.scheduler.Schedulers
 
@@ -30,12 +32,25 @@ class PdlConsumerTest : ApiTestBase() {
     @Autowired
     private lateinit var wireMockServer: WireMockServer
 
+    @Autowired
+    private lateinit var cacheManager: CacheManager
+
     @MockkBean
     private lateinit var oAuth2AccessTokenService: OAuth2AccessTokenService
+
+    @BeforeEach
+    fun setup() {
+        evictPdlCacher()
+    }
 
     @AfterEach
     fun teardown() {
         wireMockServer.resetAll()
+        evictPdlCacher()
+    }
+
+    private fun evictPdlCacher() {
+        listOf("pdl-person", "pdl-personer-bulk").forEach { cacheManager.getCache(it)?.clear() }
     }
 
     @Test
