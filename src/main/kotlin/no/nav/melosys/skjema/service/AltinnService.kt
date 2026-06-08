@@ -24,7 +24,7 @@ class AltinnService(
 
             if (response.isError) {
                 // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
-                log.error { "Altinn-tilganger returnerte feil-status, returnerer tilgjengelige tilganger likevel" }
+                log.error { "Altinn-tilganger returnerte respons med isError=true, returnerer tilgjengelige tilganger likevel" }
             }
 
             val organisasjoner = finnOrganisasjonerMedRessurs(response, altinnRessurs)
