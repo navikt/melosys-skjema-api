@@ -6,8 +6,10 @@ import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.GraphQLResponse
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.NyBeskjedResponse
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.NyBeskjedVariables
+import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ClassPathResource
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -17,9 +19,14 @@ private val log = KotlinLogging.logger { }
 @Component
 class ArbeidsgiverNotifikasjonClient(
     private val arbeidsgiverNotifikasjonWebClient: WebClient,
+    private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider,
     @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
     @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
 ) {
+
+    companion object {
+        private const val CLIENT_NAME = "arbeidsgiver-notifikasjon"
+    }
 
     private val nyBeskjedMutation: String by lazy {
         ClassPathResource("graphql/opprett-ny-beskjed.graphql").inputStream.bufferedReader().use { it.readText() }
@@ -44,6 +51,7 @@ class ArbeidsgiverNotifikasjonClient(
 
         val response = arbeidsgiverNotifikasjonWebClient.post()
             .uri("/api/graphql")
+            .header(HttpHeaders.AUTHORIZATION, authorizationHeaderProvider.authorizationHeader(CLIENT_NAME))
             .bodyValue(graphQLRequest)
             .retrieve()
             .bodyToMono<GraphQLResponse<NyBeskjedResponse>>()

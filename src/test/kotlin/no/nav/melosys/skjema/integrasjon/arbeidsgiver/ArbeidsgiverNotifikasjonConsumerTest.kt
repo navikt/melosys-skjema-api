@@ -12,7 +12,10 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.mockk.every
+import io.mockk.mockk
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
+import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import org.springframework.web.reactive.function.client.WebClient
 
 class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
@@ -20,7 +23,8 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
     val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
     val merkelapp = "TestMerkelapp"
     val ressursId = "test-ressurs"
-    
+    val authorizationHeaderProvider = mockk<OAuth2AuthorizationHeaderProvider>()
+
     lateinit var consumer: ArbeidsgiverNotifikasjonClient
 
     beforeEach {
@@ -28,7 +32,8 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         val webClient = WebClient.builder()
             .baseUrl("http://localhost:${wireMockServer.port()}")
             .build()
-        consumer = ArbeidsgiverNotifikasjonClient(webClient, merkelapp, ressursId)
+        every { authorizationHeaderProvider.authorizationHeader("arbeidsgiver-notifikasjon") } returns "Bearer test-token"
+        consumer = ArbeidsgiverNotifikasjonClient(webClient, authorizationHeaderProvider, merkelapp, ressursId)
     }
 
     afterEach {
@@ -76,6 +81,7 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
         
         wireMockServer.verify(
             postRequestedFor(urlEqualTo("/api/graphql"))
+                .withHeader("Authorization", equalTo("Bearer test-token"))
                 .withRequestBody(matchingJsonPath("$.variables.eksternId", equalTo(eksternId)))
                 .withRequestBody(matchingJsonPath("$.variables.virksomhetsnummer", equalTo(virksomhetsnummer)))
                 .withRequestBody(matchingJsonPath("$.variables.tekst", equalTo(tekst)))
