@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
+import no.nav.melosys.skjema.integrasjon.ereg.exception.JuridiskEnhetIkkeFunnetException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import no.nav.melosys.skjema.validators.ValidationException
@@ -72,6 +73,15 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(mapOf("message" to e.message!!))
+    }
+
+    @ExceptionHandler(JuridiskEnhetIkkeFunnetException::class)
+    fun handleJuridiskEnhetIkkeFunnet(e: JuridiskEnhetIkkeFunnetException): ResponseEntity<Map<String, String>> {
+        log.warn(e) { "Fant ikke juridisk enhet: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .body(mapOf("message" to (e.message ?: "Fant ikke juridisk enhet for organisasjon")))
     }
 
     @ExceptionHandler(SkjemaErIkkeRedigerbartException::class)

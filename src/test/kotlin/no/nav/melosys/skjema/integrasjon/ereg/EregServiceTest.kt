@@ -4,11 +4,13 @@ import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
+import no.nav.melosys.skjema.integrasjon.ereg.exception.JuridiskEnhetIkkeFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class EregServiceTest {
@@ -59,6 +61,37 @@ class EregServiceTest {
         val result = eregService.organisasjonsnummerEksisterer(orgnr)
 
         assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `hentOrganisasjonMedJuridiskEnhet kaster JuridiskEnhetIkkeFunnetException naar hierarki mangler juridisk enhet`() {
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = null,
+            bestaarAvOrganisasjonsledd = null
+        )
+
+        every { eregConsumer.hentOrganisasjon(virksomhet.organisasjonsnummer, inkluderHierarki = true) } returns virksomhet
+
+        assertThatThrownBy { eregService.hentOrganisasjonMedJuridiskEnhet(virksomhet.organisasjonsnummer) }
+            .isInstanceOf(JuridiskEnhetIkkeFunnetException::class.java)
+    }
+
+    @Test
+    fun `hentOrganisasjonMedJuridiskEnhet kaster JuridiskEnhetIkkeFunnetException naar oppslag ikke er juridisk enhet`() {
+        val juridiskEnhetOrgnr = "100000000"
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = listOf(
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(organisasjonsnummer = juridiskEnhetOrgnr)
+            )
+        )
+        // EREG returnerer en Virksomhet (ikke JuridiskEnhet) for det oppslåtte nummeret
+        val feilType = virksomhetMedDefaultVerdier().copy(organisasjonsnummer = juridiskEnhetOrgnr)
+
+        every { eregConsumer.hentOrganisasjon(virksomhet.organisasjonsnummer, inkluderHierarki = true) } returns virksomhet
+        every { eregConsumer.hentOrganisasjon(juridiskEnhetOrgnr) } returns feilType
+
+        assertThatThrownBy { eregService.hentOrganisasjonMedJuridiskEnhet(virksomhet.organisasjonsnummer) }
+            .isInstanceOf(JuridiskEnhetIkkeFunnetException::class.java)
     }
 
 }

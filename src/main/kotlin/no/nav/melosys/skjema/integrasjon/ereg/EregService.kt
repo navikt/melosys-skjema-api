@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhet
 import no.nav.melosys.skjema.integrasjon.ereg.dto.Organisasjon
 import no.nav.melosys.skjema.integrasjon.ereg.dto.finnJuridiskEnhetOrganisasjonsnummer
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
+import no.nav.melosys.skjema.integrasjon.ereg.exception.JuridiskEnhetIkkeFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
@@ -61,8 +62,9 @@ class EregService(
         }
 
         val juridiskEnhetOrganisasjonsnummer = organisasjon.finnJuridiskEnhetOrganisasjonsnummer()
-            ?: error("Fant ikke juridisk enhet for organisasjon ${organisasjon.organisasjonsnummer}")
+            ?: throw JuridiskEnhetIkkeFunnetException(organisasjon.organisasjonsnummer)
 
-        return eregConsumer.hentOrganisasjon(juridiskEnhetOrganisasjonsnummer) as JuridiskEnhet
+        return eregConsumer.hentOrganisasjon(juridiskEnhetOrganisasjonsnummer) as? JuridiskEnhet
+            ?: throw JuridiskEnhetIkkeFunnetException(organisasjon.organisasjonsnummer)
     }
 }

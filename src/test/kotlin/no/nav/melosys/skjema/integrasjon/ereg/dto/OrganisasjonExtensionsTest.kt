@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
 import no.nav.melosys.skjema.organisasjonsleddMedDefaultVerdier
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 
 class OrganisasjonExtensionsTest {
 
@@ -106,5 +107,90 @@ class OrganisasjonExtensionsTest {
         )
 
         organisasjonsledd.finnJuridiskEnhetOrganisasjonsnummer().shouldBeNull()
+    }
+
+    @Test
+    fun `finnJuridiskEnhetOrganisasjonsnummer traverses alle grener naar foerste ledd er blindvei`() {
+        val blindveiLedd = organisasjonsleddMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = null,
+            organisasjonsleddOver = null
+        )
+        val gyldigLedd = organisasjonsleddMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = listOf(
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(organisasjonsnummer = "999888777")
+            )
+        )
+
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = null,
+            bestaarAvOrganisasjonsledd = listOf(
+                BestaarAvOrganisasjonsledd(organisasjonsledd = blindveiLedd),
+                BestaarAvOrganisasjonsledd(organisasjonsledd = gyldigLedd)
+            )
+        )
+
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe("999888777")
+        }
+    }
+
+    @Test
+    fun `finnJuridiskEnhetOrganisasjonsnummer hopper over koblinger uten organisasjonsnummer`() {
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = listOf(
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(organisasjonsnummer = null),
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(organisasjonsnummer = "111222333")
+            )
+        )
+
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer().run {
+            this.shouldNotBeNull()
+            this.shouldBe("111222333")
+        }
+    }
+
+    @Test
+    fun `finnJuridiskEnhetOrganisasjonsnummer foretrekker kobling som er gyldig paa gitt dato`() {
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = listOf(
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(
+                    organisasjonsnummer = "100000000",
+                    gyldighetsperiode = Gyldighetsperiode(
+                        fom = LocalDate.of(2000, 1, 1),
+                        tom = LocalDate.of(2010, 1, 1)
+                    )
+                ),
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(
+                    organisasjonsnummer = "200000000",
+                    gyldighetsperiode = Gyldighetsperiode(fom = LocalDate.of(2011, 1, 1))
+                )
+            )
+        )
+
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer(idag = LocalDate.of(2026, 6, 9)).run {
+            this.shouldNotBeNull()
+            this.shouldBe("200000000")
+        }
+    }
+
+    @Test
+    fun `finnJuridiskEnhetOrganisasjonsnummer faller tilbake til foerste kobling naar ingen er gyldige`() {
+        val virksomhet = virksomhetMedDefaultVerdier().copy(
+            inngaarIJuridiskEnheter = listOf(
+                inngaarIJuridiskEnhetMedDefaultVerdier().copy(
+                    organisasjonsnummer = "100000000",
+                    gyldighetsperiode = Gyldighetsperiode(
+                        fom = LocalDate.of(2000, 1, 1),
+                        tom = LocalDate.of(2010, 1, 1)
+                    )
+                )
+            )
+        )
+
+        virksomhet.finnJuridiskEnhetOrganisasjonsnummer(idag = LocalDate.of(2026, 6, 9)).run {
+            this.shouldNotBeNull()
+            this.shouldBe("100000000")
+        }
     }
 }
