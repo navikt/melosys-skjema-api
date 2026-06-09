@@ -6,8 +6,11 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.Runs
 import io.mockk.verify
+import java.util.Optional
 import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.exception.AccessDeniedException
@@ -106,7 +109,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
             every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
 
@@ -271,7 +274,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
 
@@ -301,7 +304,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
@@ -331,7 +334,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
@@ -359,7 +362,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
             val result = service.hentSkjemaMedLesetilgang(skjemaId)
@@ -386,7 +389,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
             val exception = shouldThrow<AccessDeniedException> {
@@ -401,7 +404,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjemaId = UUID.randomUUID()
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns null
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.empty()
 
             shouldThrow<NoSuchElementException> {
                 service.hentSkjemaMedLesetilgang(skjemaId)
@@ -418,7 +421,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns alleredeSendtSkjema.fnr
-            every { mockSkjemaRepository.findAktivById(alleredeSendtSkjema.id!!) } returns alleredeSendtSkjema
+            every { mockSkjemaRepository.findById(alleredeSendtSkjema.id!!) } returns Optional.of(alleredeSendtSkjema)
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!)
@@ -446,7 +449,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("hentSkjema: tapt fullmakt + Altinn-tilgang → returnerer skjema med strippet AT-data") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
@@ -461,7 +464,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("hentSkjema: aktiv fullmakt → returnerer full data") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
             val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
@@ -472,7 +475,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("hentSkjema: tapt fullmakt + ingen Altinn-tilgang → AccessDeniedException") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId, medData = false))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
@@ -482,7 +485,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("getSkjemaMetadata: tapt fullmakt + Altinn-tilgang → returnerer metadata") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId, medData = false))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
@@ -492,7 +495,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("getSkjemaMetadata: tapt fullmakt + ingen Altinn-tilgang → AccessDeniedException") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns radgiverMedFullmaktSendtSkjema(skjemaId, medData = false)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId, medData = false))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
@@ -514,7 +517,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns korrektSyntetiskFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
             val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
@@ -538,7 +541,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
             shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
@@ -566,7 +569,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("hentSkjema: opprinnelig creator med Altinn-tilgang får tilgang til eget utkast") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns hrPersonA
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId))
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
             service.hentSkjema(skjemaId).id shouldBe skjemaId
@@ -575,7 +578,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         test("hentSkjema: annen kollega med Altinn-tilgang får IKKE lese andres utkast") {
             val skjemaId = UUID.randomUUID()
             every { mockSubjectHandler.getUserID() } returns hrPersonB
-            every { mockSkjemaRepository.findAktivById(skjemaId) } returns arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId)
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId))
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
             shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
@@ -591,7 +594,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
-            every { mockSkjemaRepository.findAktivById(skjema.id!!) } returns skjema
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
             every { mockSkjemaRepository.save(any()) } returns skjema
 
             service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = false))
@@ -607,12 +610,51 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             )
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
-            every { mockSkjemaRepository.findAktivById(skjema.id!!) } returns skjema
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
             every { mockSkjemaRepository.save(any()) } returns skjema
 
             service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = true))
 
             verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
+        }
+    }
+
+    context("slettUtkast") {
+        test("skal hard-slette utkast og fjerne vedlegg-blobs") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.delete(skjema) } just Runs
+
+            service.slettUtkast(skjemaId)
+
+            verify(exactly = 1) { mockVedleggService.slettAlleForSkjema(skjemaId) }
+            verify(exactly = 1) { mockSkjemaRepository.delete(skjema) }
+        }
+
+        test("skal kaste SkjemaErIkkeRedigerbartException for innsendt skjema og ikke slette") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.SENDT, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+
+            shouldThrow<SkjemaErIkkeRedigerbartException> { service.slettUtkast(skjemaId) }
+
+            verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjemaId) }
+            verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
+        }
+
+        test("skal kaste AccessDeniedException ved manglende skrivetilgang og ikke slette") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns etAnnetKorrektSyntetiskFnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+
+            shouldThrow<AccessDeniedException> { service.slettUtkast(skjemaId) }
+
+            verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjemaId) }
+            verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
         }
     }
 })

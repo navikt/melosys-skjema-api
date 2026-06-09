@@ -30,6 +30,7 @@ import no.nav.melosys.skjema.validators.ValidationException
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Lazy
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -135,7 +136,7 @@ class UtsendtArbeidstakerService(
      * fullmakten men fortsatt har Altinn-tilgang får se skjemaet med arbeidstakers data strippet.
      */
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status != SkjemaStatus.SENDT) {
             return krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto()
         }
@@ -149,10 +150,11 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Soft-sletter et skjema med status UTKAST.
+     * Sletter et skjema med status UTKAST permanent (hard delete).
      *
-     * Validerer skrivetilgang og at skjemaet er i utkast-status.
-     * Setter status til SLETTET — skjemaet og tilhørende vedlegg beholdes i databasen.
+     * Validerer skrivetilgang og at skjemaet er i utkast-status. Sletter både skjema-raden
+     * og tilhørende vedlegg — inkludert vedlegg-blobs i bucket (GDPR: ingen foreldreløse filer).
+     * DB-cascade fjerner vedlegg/innsending/fullmakt-rader, men blob-filene må slettes eksplisitt.
      *
      * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
@@ -163,11 +165,10 @@ class UtsendtArbeidstakerService(
     fun slettUtkast(skjemaId: UUID) {
         val skjema = hentRedigerbartSkjema(skjemaId)
 
-        skjema.status = SkjemaStatus.SLETTET
-        skjema.endretAv = subjectHandler.getUserID()
-        skjemaRepository.save(skjema)
+        vedleggService.slettAlleForSkjema(skjemaId)
+        skjemaRepository.delete(skjema)
 
-        log.info { "Utkast slettet: $skjemaId" }
+        log.info { "Utkast slettet permanent: $skjemaId" }
     }
 
 
@@ -303,7 +304,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status == SkjemaStatus.SENDT) {
             validerLesetilgangForSendtSkjema(skjema)
         } else {
@@ -321,7 +322,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
@@ -372,14 +373,14 @@ class UtsendtArbeidstakerService(
      * @throws AccessDeniedException hvis tilgang nektes
      */
     fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema =
-        krevLesetilgang(findAktivByIdOrThrow(skjemaId))
+        krevLesetilgang(findByIdOrThrow(skjemaId))
 
     private fun krevLesetilgang(skjema: Skjema): Skjema =
         skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
 
-    private fun findAktivByIdOrThrow(skjemaId: UUID): Skjema =
-        skjemaRepository.findAktivById(skjemaId)
+    private fun findByIdOrThrow(skjemaId: UUID): Skjema =
+        skjemaRepository.findByIdOrNull(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
 
     fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
@@ -724,7 +725,7 @@ class UtsendtArbeidstakerService(
      * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
     private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
-        krevSkrivetilgang(findAktivByIdOrThrow(skjemaId))
+        krevSkrivetilgang(findByIdOrThrow(skjemaId))
 
     private fun krevSkrivetilgang(skjema: Skjema): Skjema {
         val currentUser = subjectHandler.getUserID()

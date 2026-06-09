@@ -10,8 +10,5 @@ enum class SkjemaStatus {
     UTKAST,
 
     /** Bruker har sendt inn søknaden. Asynkron prosessering pågår eller er fullført. */
-    SENDT,
-
-    /** Bruker har slettet utkastet. Soft delete - raden beholdes i databasen. */
-    SLETTET
+    SENDT
 }
