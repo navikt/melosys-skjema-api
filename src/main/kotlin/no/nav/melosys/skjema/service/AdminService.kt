@@ -37,11 +37,14 @@ class AdminService(
 ) {
 
     @Transactional(readOnly = true)
-    fun hentStatistikk(): AdminStatistikkDto = AdminStatistikkDto(
-        skjemaPerStatus = SkjemaStatus.entries.associateWith { skjemaRepository.countByStatus(it) },
-        innsendingPerStatus = InnsendingStatus.entries.associateWith { innsendingRepository.countByStatus(it) },
-        antallFeiledeInnsendinger = innsendingRepository.countByStatus(InnsendingStatus.KAFKA_FEILET)
-    )
+    fun hentStatistikk(): AdminStatistikkDto {
+        val innsendingPerStatus = InnsendingStatus.entries.associateWith { innsendingRepository.countByStatus(it) }
+        return AdminStatistikkDto(
+            skjemaPerStatus = SkjemaStatus.entries.associateWith { skjemaRepository.countByStatus(it) },
+            innsendingPerStatus = innsendingPerStatus,
+            antallFeiledeInnsendinger = innsendingPerStatus[InnsendingStatus.KAFKA_FEILET] ?: 0L
+        )
+    }
 
     @Transactional(readOnly = true)
     fun hentBruksstatistikk(): BrukStatistikkDto {
@@ -56,14 +59,19 @@ class AdminService(
 
         val antallKomplettInnsendt = innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] ?: 0L
         val antallKobledePar = adminStatistikkRepository.antallKobledeSkjema() / 2
+        val trend = adminStatistikkRepository.innsendtTrend(
+            grense1d = naa.minus(1, ChronoUnit.DAYS),
+            grense7d = naa.minus(7, ChronoUnit.DAYS),
+            grense30d = naa.minus(30, ChronoUnit.DAYS)
+        )
 
         return BrukStatistikkDto(
             tidspunkt = naa,
             utkast = hentUtkastStatistikk(naa),
             totaltInnsendt = adminStatistikkRepository.antallInnsendteSkjema(),
-            innsendtSisteDoegn = adminStatistikkRepository.antallInnsendtEtter(naa.minus(1, ChronoUnit.DAYS)),
-            innsendtSiste7Dager = adminStatistikkRepository.antallInnsendtEtter(naa.minus(7, ChronoUnit.DAYS)),
-            innsendtSiste30Dager = adminStatistikkRepository.antallInnsendtEtter(naa.minus(30, ChronoUnit.DAYS)),
+            innsendtSisteDoegn = trend.sisteDoegn,
+            innsendtSiste7Dager = trend.siste7Dager,
+            innsendtSiste30Dager = trend.siste30Dager,
             innsendtPerSkjemadel = innsendtPerSkjemadel,
             innsendtPerFlyt = innsendtPerFlyt,
             innsendtPerSprak = innsendtPerSprak,

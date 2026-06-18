@@ -25,6 +25,13 @@ interface UtkastAldersfordeling {
     val over30Dager: Long
 }
 
+/** Innsendingstrend (kumulative vinduer) beregnet i ett snapshot. */
+interface InnsendtTrend {
+    val sisteDoegn: Long
+    val siste7Dager: Long
+    val siste30Dager: Long
+}
+
 /**
  * Aggregeringsspørringer for bruksstatistikk på skjema/innsendinger.
  *
@@ -108,10 +115,16 @@ interface AdminStatistikkRepository : Repository<Skjema, UUID> {
     @Query("SELECT COUNT(DISTINCT s.orgnr) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT")
     fun antallUnikeVirksomheter(): Long
 
-    /** Antall innsendinger registrert etter et gitt tidspunkt (innsendingstrend). */
+    /** Innsendingstrend: kumulativt antall innsendinger i siste døgn / 7 / 30 dager (ett snapshot). */
     @Query(
         nativeQuery = true,
-        value = "SELECT COUNT(*) FROM innsending WHERE opprettet_dato >= :grense"
+        value = """
+        SELECT
+          COUNT(*) FILTER (WHERE opprettet_dato >= :grense1d) AS "sisteDoegn",
+          COUNT(*) FILTER (WHERE opprettet_dato >= :grense7d) AS "siste7Dager",
+          COUNT(*) FILTER (WHERE opprettet_dato >= :grense30d) AS "siste30Dager"
+        FROM innsending
+    """
     )
-    fun antallInnsendtEtter(grense: Instant): Long
+    fun innsendtTrend(grense1d: Instant, grense7d: Instant, grense30d: Instant): InnsendtTrend
 }
