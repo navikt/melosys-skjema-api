@@ -11,18 +11,20 @@ import org.springframework.validation.annotation.Validated
 @ConfigurationProperties(prefix = "m2m")
 data class M2mConfigProperties(
     @field:Valid
-    val readSkjemadata: ClientConfig = ClientConfig()
+    val readSkjemadata: ClientConfig = ClientConfig(),
+    @field:Valid
+    val admin: ClientConfig = ClientConfig()
 ) {
     data class ClientConfig(
-        @field:NotEmpty(message = "m2m.read-skjemadata.clients må være konfigurert")
+        @field:NotEmpty(message = "m2m-klientliste må være konfigurert")
         val clients: List<@NotBlank String> = emptyList()
     )
 
     @PostConstruct
     fun validateNoUnresolvedPlaceholders() {
-        readSkjemadata.clients.forEach { client ->
+        (readSkjemadata.clients + admin.clients).forEach { client ->
             require(!client.contains("\${")) {
-                "Uoppløst placeholder i m2m.read-skjemadata.clients: '$client'. Sjekk at miljøvariabelen er satt."
+                "Uoppløst placeholder i m2m-klientliste: '$client'. Sjekk at miljøvariabelen er satt."
             }
         }
     }

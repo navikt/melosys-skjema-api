@@ -196,3 +196,7 @@ m2m:
   read-skjemadata:
     clients:
       - ${MELOSYS_CLIENT_ID}
+  # Tillatte klienter for admin-endepunktene (/admin/**). Typisk melosys-console
+  # på formatet `<cluster>:teammelosys:melosys-console`. Komma-separert liste.
+  admin:
+    clients: ${MELOSYS_CONSOLE_AZP_NAMES}

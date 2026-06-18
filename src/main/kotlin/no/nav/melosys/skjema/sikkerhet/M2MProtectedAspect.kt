@@ -31,6 +31,14 @@ class M2MProtectedAspect(
         validateClientAccess(m2mConfigProperties.readSkjemadata.clients)
     }
 
+    @Before(
+        "@annotation(no.nav.melosys.skjema.sikkerhet.AdminBeskyttet) || " +
+            "@within(no.nav.melosys.skjema.sikkerhet.AdminBeskyttet)"
+    )
+    fun validateAdminAccess() {
+        validateClientAccess(m2mConfigProperties.admin.clients)
+    }
+
     private fun validateClientAccess(allowedClients: List<String>) {
         val context = tokenValidationContextHolder.getTokenValidationContext()
         val token = context.getJwtToken(AZURE)
