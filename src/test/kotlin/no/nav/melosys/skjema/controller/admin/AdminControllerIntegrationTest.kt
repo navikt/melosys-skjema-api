@@ -6,18 +6,26 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.verify
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.adminTokenMedTilgang
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -226,6 +234,128 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             body.antallFeilet shouldBe 0
             verify(exactly = 1) { innsendingService.prosesserInnsending(innsending1.skjema.id!!) }
             verify(exactly = 1) { innsendingService.prosesserInnsending(innsending2.skjema.id!!) }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /admin/statistikk/bruk")
+    inner class Bruksstatistikk {
+
+        private fun lagInnsendtSkjema(
+            representasjonstype: Representasjonstype,
+            skjemadel: Skjemadel,
+            sprak: Språk = Språk.NORSK_BOKMAL,
+            kobletSkjemaId: UUID? = null,
+            fnr: String = no.nav.melosys.skjema.korrektSyntetiskFnr,
+            referanseId: String
+        ) = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = fnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = representasjonstype,
+                    skjemadel = skjemadel,
+                    kobletSkjemaId = kobletSkjemaId
+                )
+            )
+        ).also { skjema ->
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, referanseId = referanseId)
+            )
+        }
+
+        @Test
+        fun `skal aggregere utkast, innsendte per skjemadel-flyt-spraak, koblinger og unike`() {
+            // Utkast: ett ferskt og ett gammelt (>30 dager)
+            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = Instant.now()))
+            val gammeltUtkastDato = Instant.now().minus(40, ChronoUnit.DAYS)
+            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = gammeltUtkastDato))
+
+            // Innsendte enkeltdeler
+            lagInnsendtSkjema(Representasjonstype.DEG_SELV, Skjemadel.ARBEIDSTAKERS_DEL, Språk.NORSK_BOKMAL, referanseId = "AA0001")
+            lagInnsendtSkjema(Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL, Språk.ENGELSK, fnr = etAnnetKorrektSyntetiskFnr, referanseId = "AA0002")
+
+            // Komplett innsending (begge deler i én)
+            lagInnsendtSkjema(Representasjonstype.RADGIVER, Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, referanseId = "AA0003")
+
+            // Koblet par: arbeidsgivers del + arbeidstakers del sendt hver for seg
+            val arbeidstakerDel = lagInnsendtSkjema(Representasjonstype.DEG_SELV, Skjemadel.ARBEIDSTAKERS_DEL, referanseId = "AA0004")
+            val arbeidsgiverDel = lagInnsendtSkjema(
+                Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL,
+                kobletSkjemaId = arbeidstakerDel.id, referanseId = "AA0005"
+            )
+            arbeidstakerDel.metadata =
+                (arbeidstakerDel.metadata as UtsendtArbeidstakerMetadata).medKobletSkjemaId(arbeidsgiverDel.id)
+            skjemaRepository.save(arbeidstakerDel)
+
+            val body = webTestClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BrukStatistikkDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            // Utkast med aldersfordeling
+            body.utkast.antall shouldBe 2
+            body.utkast.under1Dag shouldBe 1
+            body.utkast.over30Dager shouldBe 1
+            body.utkast.mellom1Og7Dager shouldBe 0
+            body.utkast.eldsteOpprettetDato.shouldNotBeNull()
+
+            // Innsendte totalt og per skjemadel (5 SENDT skjema)
+            body.totaltInnsendt shouldBe 5
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 2
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVERS_DEL] shouldBe 2
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] shouldBe 1
+
+            // Per flyt
+            body.innsendtPerFlyt[Representasjonstype.DEG_SELV] shouldBe 2
+            body.innsendtPerFlyt[Representasjonstype.ARBEIDSGIVER] shouldBe 2
+            body.innsendtPerFlyt[Representasjonstype.RADGIVER] shouldBe 1
+            body.innsendtPerFlyt[Representasjonstype.ANNEN_PERSON] shouldBe 0
+
+            // Per språk (4 nb, 1 en)
+            body.innsendtPerSprak[Språk.NORSK_BOKMAL] shouldBe 4
+            body.innsendtPerSprak[Språk.ENGELSK] shouldBe 1
+
+            // Koblinger: 1 komplett + 1 koblet par = 2 saker med begge deler
+            body.antallKomplettInnsendt shouldBe 1
+            body.antallKobledePar shouldBe 1
+            body.antallSakerMedBeggeDeler shouldBe 2
+
+            // Trend: alle innsendinger er ferske
+            body.innsendtSisteDoegn shouldBe 5
+
+            // Unike: to ulike fnr, én virksomhet (default orgnr)
+            body.antallUnikePersoner shouldBe 2
+            body.antallUnikeVirksomheter shouldBe 1
+        }
+
+        @Test
+        fun `skal returnere nuller naar ingen data`() {
+            val body = webTestClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BrukStatistikkDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            body.utkast.antall shouldBe 0
+            body.totaltInnsendt shouldBe 0
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 0
+            body.antallSakerMedBeggeDeler shouldBe 0
+            body.utkast.eldsteOpprettetDato shouldBe null
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            webTestClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .exchange()
+                .expectStatus().isForbidden
         }
     }
 }

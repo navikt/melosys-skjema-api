@@ -1,0 +1,117 @@
+package no.nav.melosys.skjema.repository
+
+import java.time.Instant
+import java.util.UUID
+import no.nav.melosys.skjema.entity.Skjema
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.Repository
+import org.springframework.stereotype.Repository as RepositoryAnnotation
+
+/** Projeksjon for «antall per kategori»-aggregeringer (GROUP BY). */
+interface AntallPerKategori {
+    val kategori: String?
+    val antall: Long
+}
+
+/**
+ * Aldersfordeling for utkast, beregnet i én spørring (ett snapshot) slik at bøttene alltid
+ * er ikke-negative og summerer til [totalt]. Bøttene er gjensidig utelukkende.
+ */
+interface UtkastAldersfordeling {
+    val totalt: Long
+    val under1Dag: Long
+    val mellom1Og7Dager: Long
+    val mellom7Og30Dager: Long
+    val over30Dager: Long
+}
+
+/**
+ * Aggregeringsspørringer for bruksstatistikk på skjema/innsendinger.
+ *
+ * Skjemadel/flyt/språk hentes via native JSONB-/kolonneaggregering (samme mønster som
+ * [UtsendtArbeidstakerSkjemaRepository]). Utkast-tellinger og unike tellinger gjøres med JPQL.
+ */
+@RepositoryAnnotation
+interface AdminStatistikkRepository : Repository<Skjema, UUID> {
+
+    @Query(
+        nativeQuery = true,
+        value = """
+        SELECT metadata->>'skjemadel' AS kategori, COUNT(*) AS antall
+        FROM skjema
+        WHERE type = 'UTSENDT_ARBEIDSTAKER' AND status = 'SENDT'
+        GROUP BY metadata->>'skjemadel'
+    """
+    )
+    fun antallInnsendtPerSkjemadel(): List<AntallPerKategori>
+
+    @Query(
+        nativeQuery = true,
+        value = """
+        SELECT metadata->>'representasjonstype' AS kategori, COUNT(*) AS antall
+        FROM skjema
+        WHERE type = 'UTSENDT_ARBEIDSTAKER' AND status = 'SENDT'
+        GROUP BY metadata->>'representasjonstype'
+    """
+    )
+    fun antallInnsendtPerFlyt(): List<AntallPerKategori>
+
+    @Query(
+        nativeQuery = true,
+        value = """
+        SELECT innsendt_sprak AS kategori, COUNT(*) AS antall
+        FROM innsending
+        GROUP BY innsendt_sprak
+    """
+    )
+    fun antallInnsendtPerSprak(): List<AntallPerKategori>
+
+    /**
+     * Antall innsendte skjema som er koblet til en motpart (begge deler sendt hver for seg).
+     * Hvert koblet par teller 2 (begge sider peker på hverandre), så del på 2 for antall par.
+     */
+    @Query(
+        nativeQuery = true,
+        value = """
+        SELECT COUNT(*)
+        FROM skjema
+        WHERE type = 'UTSENDT_ARBEIDSTAKER' AND status = 'SENDT'
+        AND metadata->>'kobletSkjemaId' IS NOT NULL
+    """
+    )
+    fun antallKobledeSkjema(): Long
+
+    @Query(
+        nativeQuery = true,
+        value = """
+        SELECT
+          COUNT(*) AS "totalt",
+          COUNT(*) FILTER (WHERE opprettet_dato >= :grense1d) AS "under1Dag",
+          COUNT(*) FILTER (WHERE opprettet_dato < :grense1d AND opprettet_dato >= :grense7d) AS "mellom1Og7Dager",
+          COUNT(*) FILTER (WHERE opprettet_dato < :grense7d AND opprettet_dato >= :grense30d) AS "mellom7Og30Dager",
+          COUNT(*) FILTER (WHERE opprettet_dato < :grense30d) AS "over30Dager"
+        FROM skjema
+        WHERE type = 'UTSENDT_ARBEIDSTAKER' AND status = 'UTKAST'
+    """
+    )
+    fun utkastAldersfordeling(grense1d: Instant, grense7d: Instant, grense30d: Instant): UtkastAldersfordeling
+
+    @Query("SELECT MIN(s.opprettetDato) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.UTKAST")
+    fun eldsteUtkastOpprettetDato(): Instant?
+
+    @Query("SELECT COUNT(s) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT")
+    fun antallInnsendteSkjema(): Long
+
+    @Query("SELECT COUNT(DISTINCT s.fnr) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT")
+    fun antallUnikePersoner(): Long
+
+    @Query("SELECT COUNT(DISTINCT s.orgnr) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT")
+    fun antallUnikeVirksomheter(): Long
+
+    /** Antall innsendinger registrert etter et gitt tidspunkt (innsendingstrend). */
+    @Query(
+        nativeQuery = true,
+        value = "SELECT COUNT(*) FROM innsending WHERE opprettet_dato >= :grense"
+    )
+    fun antallInnsendtEtter(grense: Instant): Long
+}

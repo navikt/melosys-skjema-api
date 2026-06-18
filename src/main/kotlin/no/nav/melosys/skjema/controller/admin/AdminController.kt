@@ -37,6 +37,18 @@ class AdminController(
         return adminService.hentStatistikk()
     }
 
+    @GetMapping("/statistikk/bruk")
+    @Operation(
+        summary = "Hent bruksstatistikk for skjemaene",
+        description = "Antall utkast med aldersfordeling, innsendte fordelt på skjemadel/flyt/språk, " +
+            "antall komplette og koblede saker, samt unike personer og virksomheter."
+    )
+    @ApiResponse(responseCode = "200", description = "Bruksstatistikk hentet")
+    fun hentBruksstatistikk(): BrukStatistikkDto {
+        log.info { "Admin: Henter bruksstatistikk" }
+        return adminService.hentBruksstatistikk()
+    }
+
     @GetMapping("/innsendinger/feilede")
     @Operation(summary = "List innsendinger som har feilet Kafka-sending (KAFKA_FEILET)")
     @ApiResponse(responseCode = "200", description = "Feilede innsendinger hentet")
