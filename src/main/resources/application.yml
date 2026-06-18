@@ -196,7 +196,9 @@ m2m:
   read-skjemadata:
     clients:
       - ${MELOSYS_CLIENT_ID}
-  # Tillatte klienter for admin-endepunktene (/admin/**). Typisk melosys-console
-  # på formatet `<cluster>:teammelosys:melosys-console`. Komma-separert liste.
+  # Tilgang til admin-endepunktene (/admin/**): både azp_name-allowlist og delt
+  # API-nøkkel må stemme (i tillegg til gyldig Azure AD-token).
+  # clients: typisk melosys-console på formatet `<cluster>:teammelosys:melosys-console`.
   admin:
     clients: ${MELOSYS_CONSOLE_AZP_NAMES}
+    apikey: ${MELOSYS_SKJEMA_ADMIN_APIKEY}

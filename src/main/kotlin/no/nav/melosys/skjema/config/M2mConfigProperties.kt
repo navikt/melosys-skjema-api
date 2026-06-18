@@ -13,18 +13,29 @@ data class M2mConfigProperties(
     @field:Valid
     val readSkjemadata: ClientConfig = ClientConfig(),
     @field:Valid
-    val admin: ClientConfig = ClientConfig()
+    val admin: AdminConfig = AdminConfig()
 ) {
     data class ClientConfig(
         @field:NotEmpty(message = "m2m-klientliste må være konfigurert")
         val clients: List<@NotBlank String> = emptyList()
     )
 
+    /**
+     * Tilgangsstyring for admin-endepunktene: både azp_name-allowlist ([clients]) og en delt
+     * API-nøkkel ([apikey]) må stemme (i tillegg til gyldig Azure AD-token).
+     */
+    data class AdminConfig(
+        @field:NotEmpty(message = "m2m.admin.clients må være konfigurert")
+        val clients: List<@NotBlank String> = emptyList(),
+        @field:NotBlank(message = "m2m.admin.apikey må være konfigurert")
+        val apikey: String = ""
+    )
+
     @PostConstruct
     fun validateNoUnresolvedPlaceholders() {
-        (readSkjemadata.clients + admin.clients).forEach { client ->
-            require(!client.contains("\${")) {
-                "Uoppløst placeholder i m2m-klientliste: '$client'. Sjekk at miljøvariabelen er satt."
+        (readSkjemadata.clients + admin.clients + admin.apikey).forEach { verdi ->
+            require(!verdi.contains("\${")) {
+                "Uoppløst placeholder i m2m-konfigurasjon: '$verdi'. Sjekk at miljøvariabelen er satt."
             }
         }
     }
