@@ -45,7 +45,7 @@ jobs:
     if: needs.check_docker_image_exists.outputs.exists != 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
       - name: Set up JDK 21
         uses: actions/setup-java@v5.2.0
         with:
@@ -82,7 +82,7 @@ jobs:
         run: |
           echo "CLUSTER=prod-gcp" >> $GITHUB_ENV
           echo "RESOURCE=.nais/app-prod.yaml" >> $GITHUB_ENV
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
       - name: Deploy til ${{ github.event.inputs.environment }}
