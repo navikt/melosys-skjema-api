@@ -474,7 +474,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal returnere nuller naar ingen SLETTET-utkast finnes`() {
+        fun `skal returnere nuller når ingen SLETTET-utkast finnes`() {
             val body = adminClient.post().uri("/admin/utkast/rydd-slettede")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
