@@ -8,6 +8,7 @@ import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import org.springdoc.core.customizers.OpenApiCustomizer
+import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -17,6 +18,20 @@ class SwaggerConfig {
     init {
         ModelResolver.enumsAsRef = true
     }
+
+    /**
+     * Egen OpenAPI-gruppe for admin-endepunktene under /admin.
+     *
+     * Eksponeres på /v3/api-docs/admin og brukes av melosys-console til å
+     * generere et generisk admin-grensesnitt. Den fulle spec'en på
+     * /v3/api-docs er uendret og brukes fortsatt til frontend-typegenerering.
+     */
+    @Bean
+    fun adminApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("admin")
+        .displayName("Melosys Skjema Admin API")
+        .pathsToMatch("/admin/**")
+        .build()
 
     @Bean
     fun customOpenAPI(): OpenAPI = OpenAPI()

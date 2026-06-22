@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.repository
 
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import org.springframework.data.jpa.repository.JpaRepository
@@ -37,4 +38,14 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
     fun findRetryKandidater(@Param("sisteForsoekTidspunktGrense") sisteForsoekTidspunktGrense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
 
     fun existsByReferanseId(referanseId: String): Boolean
+
+    /**
+     * Henter innsendinger med gitt status og laster tilhørende skjema i samme spørring
+     * (JOIN FETCH) for å unngå N+1 når admin-DTO-er mappes – viktig når mange innsendinger
+     * har feilet samtidig.
+     */
+    @Query("SELECT i FROM Innsending i JOIN FETCH i.skjema WHERE i.status = :status")
+    fun findByStatusMedSkjema(status: InnsendingStatus): List<Innsending>
+
+    fun countByStatus(status: InnsendingStatus): Long
 }

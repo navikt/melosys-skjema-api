@@ -70,6 +70,9 @@ spec:
         - application: melosys
           namespace: teammelosys
           cluster: prod-fss
+        - application: melosys-console
+          namespace: teammelosys
+          cluster: prod-gcp
     outbound:
       external:
         - host: pdl-api.prod-fss-pub.nais.io
@@ -90,6 +93,10 @@ spec:
           namespace: nais-system
         - application: logging
           namespace: nais-system
+  env:
+    # azp_name til melosys-console som har tilgang til /admin/**-endepunktene
+    - name: MELOSYS_CONSOLE_AZP_NAMES
+      value: prod-gcp:teammelosys:melosys-console
   envFrom:
     - secret: melosys-skjema-api
   kafka:
