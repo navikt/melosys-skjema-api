@@ -78,10 +78,10 @@ data class BrukStatistikkDto(
     /** Unike virksomheter (orgnr) blant innsendte skjema. */
     val antallUnikeVirksomheter: Long,
     /**
-     * Anonym toppliste over de mest aktive virksomhetene: antall innsendte skjema per virksomhet,
-     * sortert synkende. Inneholder bevisst kun tallene (rang 1, 2, 3 ...), ikke orgnr eller navn.
+     * Anonym toppliste over de mest aktive virksomhetene, sortert synkende på antall innsendinger.
+     * Inneholder bevisst kun tall (rang 1, 2, 3 ...), ikke orgnr eller navn.
      */
-    val topplisteVirksomheter: List<Long>
+    val topplisteVirksomheter: List<VirksomhetStatistikkDto>
 )
 
 /**
@@ -100,20 +100,51 @@ data class SaksdekningDto(
      * periode). Samme sak telles kun én gang selv om den har både komplett skjema og separate deler.
      */
     val antallSakerMedBeggeDeler: Long,
-    /** Separate arbeidstaker-deler som har en matchende arbeidsgiver-del. */
-    val antallArbeidstakerDelMedMotpart: Long,
-    /** Separate arbeidsgiver-deler som har en matchende arbeidstaker-del. */
-    val antallArbeidsgiverDelMedMotpart: Long,
-    /** Arbeidstaker-deler som (ennå) mangler en matchende arbeidsgiver-del. */
-    val antallArbeidstakerDelUtenMotpart: Long,
-    /** Arbeidsgiver-deler som (ennå) mangler en matchende arbeidstaker-del. */
-    val antallArbeidsgiverDelUtenMotpart: Long,
+    /** Status for separate arbeidstaker-deler (med motpart / venter). */
+    val arbeidstakerDeler: DelStatusDto,
+    /** Status for separate arbeidsgiver-deler (med motpart / venter). */
+    val arbeidsgiverDeler: DelStatusDto,
     /**
      * Mulige dobbeltinnsendinger: samme person har sendt samme del for samme juridiske enhet med
      * overlappende periode flere ganger. Versjons-erstatninger (erstatterSkjemaId) er holdt utenfor,
      * så dette er ekte mulige duplikater – ikke nye versjoner av samme søknad.
      */
-    val antallMuligeDobbeltinnsendinger: Long
+    val antallMuligeDobbeltinnsendinger: Long,
+    /**
+     * Antall saker der minst én del er sendt i flere versjoner (samme person + juridisk enhet + del
+     * sendt mer enn én gang). Inkluderer versjons-erstatninger – altså saker med «mer enn to deler».
+     */
+    val antallSakerMedFlereVersjoner: Long
+)
+
+/**
+ * Status for en deltype (arbeidstaker- eller arbeidsgiver-deler) som er sendt hver for seg. Viser om
+ * delen har en matchende motpart, og for de som venter: om motparten har påbegynt et utkast eller ikke.
+ */
+data class DelStatusDto(
+    /** Totalt antall separate deler av denne typen. */
+    val totalt: Long,
+    /** Har en matchende, innsendt motpart (samme person + juridisk enhet + overlappende periode). */
+    val medMotpart: Long,
+    /** Mangler innsendt motpart, men motparten har påbegynt et utkast (under arbeid). */
+    val venterMotpartHarUtkast: Long,
+    /** Mangler motpart helt – verken innsendt eller påbegynt utkast. */
+    val venterIngenMotpart: Long
+)
+
+/**
+ * Anonym statistikk for én virksomhet i topplisten – kun tall, ingen orgnr eller navn. Brukerne
+ * (innsendere) kan være flere personer som jobber for samme virksomhet.
+ */
+data class VirksomhetStatistikkDto(
+    val antallInnsendinger: Long,
+    /** Antall unike innsendere (personer som har sendt inn) for virksomheten. */
+    val antallUnikeInnsendere: Long,
+    val antallArbeidstakerDel: Long,
+    val antallArbeidsgiverDel: Long,
+    val antallKomplett: Long,
+    /** Saker (person + juridisk enhet) i virksomheten der begge deler er dekket. */
+    val antallSakerMedBeggeDeler: Long
 )
 
 /**
@@ -127,5 +158,7 @@ data class UtkastStatistikkDto(
     val mellom7Og30Dager: Long,
     val over30Dager: Long,
     /** Opprettelsestidspunkt for det eldste utkastet, eller null hvis ingen utkast finnes. */
-    val eldsteOpprettetDato: Instant?
+    val eldsteOpprettetDato: Instant?,
+    /** Påbegynte utkast fordelt på del – viser hvor folk starter, men (ennå) ikke har sendt inn. */
+    val perSkjemadel: Map<Skjemadel, Long>
 )

@@ -8,10 +8,12 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
+import no.nav.melosys.skjema.controller.admin.DelStatusDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
+import no.nav.melosys.skjema.controller.admin.VirksomhetStatistikkDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.extensions.overlapper
@@ -71,21 +73,26 @@ class AdminService(
             .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
             .toSet()
 
-        val innsendt = iPeriode
-            .mapNotNull { innsending ->
-                val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
-                InnsendtSkjema(
-                    id = innsending.skjema.id!!,
-                    fnr = innsending.skjema.fnr,
-                    orgnr = innsending.skjema.orgnr,
-                    juridiskEnhet = metadata.juridiskEnhetOrgnr,
-                    skjemadel = metadata.skjemadel,
-                    flyt = metadata.representasjonstype,
-                    sprak = innsending.innsendtSprak,
-                    periode = innsending.skjema.utsendelsePeriode(),
-                    erstattet = innsending.skjema.id in erstattedeIder
-                )
-            }
+        val innsendt = iPeriode.mapNotNull { innsending ->
+            val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+            InnsendtSkjema(
+                id = innsending.skjema.id!!,
+                fnr = innsending.skjema.fnr,
+                orgnr = innsending.skjema.orgnr,
+                innsenderFnr = innsending.innsenderFnr,
+                juridiskEnhet = metadata.juridiskEnhetOrgnr,
+                skjemadel = metadata.skjemadel,
+                flyt = metadata.representasjonstype,
+                sprak = innsending.innsendtSprak,
+                periode = innsending.skjema.utsendelsePeriode(),
+                erstattet = innsending.skjema.id in erstattedeIder
+            )
+        }
+
+        val utkast = adminStatistikkRepository.finnAlleUtkast().mapNotNull { skjema ->
+            val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+            UtkastSkjema(skjema.fnr, metadata.juridiskEnhetOrgnr, metadata.skjemadel, skjema.utsendelsePeriode())
+        }
 
         val trend = adminStatistikkRepository.innsendtTrend(
             grense1d = naa.minus(1, ChronoUnit.DAYS),
@@ -97,7 +104,7 @@ class AdminService(
             tidspunkt = naa,
             periodeFraOgMed = fraOgMed,
             periodeTilOgMed = tilOgMed,
-            utkast = hentUtkastStatistikk(naa),
+            utkast = hentUtkastStatistikk(naa, utkast),
             totaltInnsendt = innsendt.size.toLong(),
             innsendtSisteDoegn = trend.sisteDoegn,
             innsendtSiste7Dager = trend.siste7Dager,
@@ -105,10 +112,10 @@ class AdminService(
             innsendtPerSkjemadel = Skjemadel.entries.associateWith { sd -> innsendt.count { it.skjemadel == sd }.toLong() },
             innsendtPerFlyt = Representasjonstype.entries.associateWith { f -> innsendt.count { it.flyt == f }.toLong() },
             innsendtPerSprak = Språk.entries.associateWith { sp -> innsendt.count { it.sprak == sp }.toLong() },
-            saksdekning = beregnSaksdekning(innsendt),
+            saksdekning = beregnSaksdekning(innsendt, utkast),
             antallUnikePersoner = innsendt.mapTo(mutableSetOf()) { it.fnr }.size.toLong(),
             antallUnikeVirksomheter = innsendt.mapTo(mutableSetOf()) { it.orgnr }.size.toLong(),
-            topplisteVirksomheter = innsendt.groupingBy { it.orgnr }.eachCount().values.sortedDescending().map { it.toLong() }
+            topplisteVirksomheter = beregnToppliste(innsendt)
         )
     }
 
@@ -118,43 +125,73 @@ class AdminService(
     /**
      * Beregner saksdekning ut fra faktiske verdier: to deler hører til samme sak når de har samme
      * fnr + samme juridiske enhet + overlappende utsendelsesperiode — samme matching som mottak
-     * bruker for å gruppere relaterte deler.
+     * bruker for å gruppere relaterte deler. For ventende deler ses det også mot påbegynte utkast.
      */
-    private fun beregnSaksdekning(innsendt: List<InnsendtSkjema>): SaksdekningDto {
-        val antallKomplette = innsendt.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong()
+    private fun beregnSaksdekning(innsendt: List<InnsendtSkjema>, utkast: List<UtkastSkjema>): SaksdekningDto {
         val arbeidstakerDeler = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
         val arbeidsgiverDeler = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
         val arbeidstakerePerSak = arbeidstakerDeler.groupBy { it.sakNokkel() }
         val arbeidsgiverePerSak = arbeidsgiverDeler.groupBy { it.sakNokkel() }
-
-        val atMedMotpart = arbeidstakerDeler.count { at ->
-            arbeidsgiverePerSak[at.sakNokkel()]?.any { at.matcher(it) } == true
-        }.toLong()
-        val agMedMotpart = arbeidsgiverDeler.count { ag ->
-            arbeidstakerePerSak[ag.sakNokkel()]?.any { ag.matcher(it) } == true
-        }.toLong()
-
-        // Saker (unik person + juridisk enhet) med begge deler dekket – enten via et komplett skjema
-        // eller via separat at-del + ag-del som overlapper. Dedupliseres på sak slik at samme sak ikke
-        // telles flere ganger om den har både komplett skjema og separate deler.
-        val komplettSaker = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
-            .mapTo(mutableSetOf()) { it.sakNokkel() }
-        val separateSaker = arbeidstakerePerSak.keys.intersect(arbeidsgiverePerSak.keys).filterTo(mutableSetOf()) { nokkel ->
-            val ats = arbeidstakerePerSak.getValue(nokkel)
-            val ags = arbeidsgiverePerSak.getValue(nokkel)
-            ats.any { at -> ags.any { at.matcher(it) } }
-        }
+        val utkastArbeidstakerPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
+        val utkastArbeidsgiverPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
 
         return SaksdekningDto(
-            antallKomplette = antallKomplette,
-            antallSakerMedBeggeDeler = (komplettSaker + separateSaker).size.toLong(),
-            antallArbeidstakerDelMedMotpart = atMedMotpart,
-            antallArbeidsgiverDelMedMotpart = agMedMotpart,
-            antallArbeidstakerDelUtenMotpart = arbeidstakerDeler.size - atMedMotpart,
-            antallArbeidsgiverDelUtenMotpart = arbeidsgiverDeler.size - agMedMotpart,
-            antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler)
+            antallKomplette = innsendt.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
+            antallSakerMedBeggeDeler = antallSakerMedBeggeDeler(innsendt),
+            arbeidstakerDeler = delStatus(arbeidstakerDeler, arbeidsgiverePerSak, utkastArbeidsgiverPerSak),
+            arbeidsgiverDeler = delStatus(arbeidsgiverDeler, arbeidstakerePerSak, utkastArbeidstakerPerSak),
+            antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler),
+            antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(innsendt)
         )
     }
+
+    /**
+     * Status for en deltype: har en innsendt motpart (overlappende periode), eller venter.
+     * For de som venter skilles det på om motparten har påbegynt et utkast eller ikke.
+     *
+     * Merk – med vilje to ulike matchekriterier:
+     * - innsendt motpart krever overlappende periode (en reell, fullført sak).
+     * - utkast-motpart matcher kun på samme person + juridisk enhet (ikke periode), fordi et utkast
+     *   under arbeid ofte ikke har fylt inn periode ennå. Hensikten er «har motparten startet noe».
+     */
+    private fun delStatus(
+        deler: List<InnsendtSkjema>,
+        motpartSendtPerSak: Map<Pair<String, String>, List<InnsendtSkjema>>,
+        motpartUtkastPerSak: Map<Pair<String, String>, List<UtkastSkjema>>
+    ): DelStatusDto {
+        var medMotpart = 0L
+        var venterMotpartHarUtkast = 0L
+        var venterIngenMotpart = 0L
+        for (del in deler) {
+            when {
+                motpartSendtPerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> medMotpart++
+                // Bevisst kun person + juridisk enhet (ikke periode): se kommentar over.
+                motpartUtkastPerSak[del.sakNokkel()]?.isNotEmpty() == true -> venterMotpartHarUtkast++
+                else -> venterIngenMotpart++
+            }
+        }
+        return DelStatusDto(deler.size.toLong(), medMotpart, venterMotpartHarUtkast, venterIngenMotpart)
+    }
+
+    /** Saker (person + juridisk enhet) der begge deler er dekket – komplett eller matchende separate deler. */
+    private fun antallSakerMedBeggeDeler(innsendt: List<InnsendtSkjema>): Long {
+        val komplettSaker = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .mapTo(mutableSetOf()) { it.sakNokkel() }
+        val ats = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
+        val ags = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
+        val separateSaker = ats.keys.intersect(ags.keys).filterTo(mutableSetOf()) { nokkel ->
+            ats.getValue(nokkel).any { at -> ags.getValue(nokkel).any { at.matcher(it) } }
+        }
+        return (komplettSaker + separateSaker).size.toLong()
+    }
+
+    /** Saker der minst én deltype er sendt i flere overlappende versjoner (inkl. erstatninger). */
+    private fun antallSakerMedFlereVersjoner(innsendt: List<InnsendtSkjema>): Long =
+        innsendt.groupBy { it.sakNokkel() }.count { (_, saksdeler) ->
+            saksdeler.groupBy { it.skjemadel }.values.any { sammeDel ->
+                sammeDel.any { del -> sammeDel.any { it.id != del.id && del.matcher(it) } }
+            }
+        }.toLong()
 
     /** Antall deler som overlapper med en annen gjeldende del av samme type/sak (mulig dobbeltinnsending). */
     private fun antallDuplikater(deler: List<InnsendtSkjema>): Long =
@@ -163,26 +200,55 @@ class AdminService(
             .values
             .sumOf { gruppe -> gruppe.count { del -> gruppe.any { it.id != del.id && del.matcher(it) } }.toLong() }
 
+    /** Anonym toppliste per virksomhet (orgnr), sortert synkende på antall innsendinger. */
+    private fun beregnToppliste(innsendt: List<InnsendtSkjema>): List<VirksomhetStatistikkDto> =
+        innsendt.groupBy { it.orgnr }.values
+            .map { deler ->
+                VirksomhetStatistikkDto(
+                    antallInnsendinger = deler.size.toLong(),
+                    antallUnikeInnsendere = deler.mapTo(mutableSetOf()) { it.innsenderFnr }.size.toLong(),
+                    antallArbeidstakerDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.toLong(),
+                    antallArbeidsgiverDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.toLong(),
+                    antallKomplett = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
+                    antallSakerMedBeggeDeler = antallSakerMedBeggeDeler(deler)
+                )
+            }
+            .sortedByDescending { it.antallInnsendinger }
+
+    private interface SakDel {
+        val fnr: String
+        val juridiskEnhet: String
+        val periode: PeriodeDto?
+    }
+
+    private fun SakDel.sakNokkel(): Pair<String, String> = fnr to juridiskEnhet
+    private fun SakDel.matcher(annen: SakDel): Boolean {
+        val minPeriode = periode ?: return false
+        val annenPeriode = annen.periode ?: return false
+        return fnr == annen.fnr && juridiskEnhet == annen.juridiskEnhet && minPeriode.overlapper(annenPeriode)
+    }
+
     private data class InnsendtSkjema(
         val id: UUID,
-        val fnr: String,
+        override val fnr: String,
         val orgnr: String,
-        val juridiskEnhet: String,
+        val innsenderFnr: String,
+        override val juridiskEnhet: String,
         val skjemadel: Skjemadel,
         val flyt: Representasjonstype,
         val sprak: Språk,
-        val periode: PeriodeDto?,
+        override val periode: PeriodeDto?,
         val erstattet: Boolean
-    ) {
-        fun sakNokkel() = fnr to juridiskEnhet
-        fun matcher(annen: InnsendtSkjema): Boolean =
-            fnr == annen.fnr &&
-                juridiskEnhet == annen.juridiskEnhet &&
-                periode != null && annen.periode != null &&
-                periode.overlapper(annen.periode)
-    }
+    ) : SakDel
 
-    private fun hentUtkastStatistikk(naa: Instant): UtkastStatistikkDto {
+    private data class UtkastSkjema(
+        override val fnr: String,
+        override val juridiskEnhet: String,
+        val skjemadel: Skjemadel,
+        override val periode: PeriodeDto?
+    ) : SakDel
+
+    private fun hentUtkastStatistikk(naa: Instant, utkast: List<UtkastSkjema>): UtkastStatistikkDto {
         val fordeling = adminStatistikkRepository.utkastAldersfordeling(
             grense1d = naa.minus(1, ChronoUnit.DAYS),
             grense7d = naa.minus(7, ChronoUnit.DAYS),
@@ -194,7 +260,8 @@ class AdminService(
             mellom1Og7Dager = fordeling.mellom1Og7Dager,
             mellom7Og30Dager = fordeling.mellom7Og30Dager,
             over30Dager = fordeling.over30Dager,
-            eldsteOpprettetDato = adminStatistikkRepository.eldsteUtkastOpprettetDato()
+            eldsteOpprettetDato = adminStatistikkRepository.eldsteUtkastOpprettetDato(),
+            perSkjemadel = Skjemadel.entries.associateWith { sd -> utkast.count { it.skjemadel == sd }.toLong() }
         )
     }
 

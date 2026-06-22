@@ -284,7 +284,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
             sprak: Språk = Språk.NORSK_BOKMAL,
             erstatterSkjemaId: UUID? = null,
-            innsendtDato: Instant = Instant.now()
+            innsendtDato: Instant = Instant.now(),
+            innsenderFnr: String = "12345678901"
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -301,8 +302,20 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
         ).also { skjema ->
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato))
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato, innsenderFnr = innsenderFnr)
+            )
         }
+
+        /** Lager et påbegynt utkast (status UTKAST) for å teste venter-trakten. */
+        private fun lagUtkast(skjemadel: Skjemadel, fnr: String, juridiskEnhet: String = korrektSyntetiskOrgnr) =
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = fnr,
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel, juridiskEnhetOrgnr = juridiskEnhet)
+                )
+            )
 
         private fun hentBruk(fraOgMed: String? = null, tilOgMed: String? = null): BrukStatistikkDto =
             adminClient.get().uri { b ->
@@ -335,6 +348,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             body.utkast.over30Dager shouldBe 1
             body.utkast.mellom1Og7Dager shouldBe 0
             body.utkast.eldsteOpprettetDato.shouldNotBeNull()
+            body.utkast.perSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 2
 
             body.totaltInnsendt shouldBe 3
             body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 1
@@ -370,11 +384,34 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             s.antallKomplette shouldBe 1
             s.antallSakerMedBeggeDeler shouldBe 2 // 1 komplett + 1 matchende separat sak
-            s.antallArbeidstakerDelMedMotpart shouldBe 1
-            s.antallArbeidsgiverDelMedMotpart shouldBe 1
-            s.antallArbeidstakerDelUtenMotpart shouldBe 1
-            s.antallArbeidsgiverDelUtenMotpart shouldBe 1
+            s.arbeidstakerDeler.medMotpart shouldBe 1
+            s.arbeidsgiverDeler.medMotpart shouldBe 1
+            s.arbeidstakerDeler.venterIngenMotpart shouldBe 1 // P3, ingen motpart
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1 // P4, ingen motpart
             s.antallMuligeDobbeltinnsendinger shouldBe 0
+        }
+
+        @Test
+        fun `saksdekning - ventende del der motparten har paabegynt utkast`() {
+            // Arbeidsgiver har sendt sin del, men arbeidstaker har bare PÅBEGYNT et utkast
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "55000000001")
+            lagUtkast(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "55000000001")
+            // Arbeidsgiver har sendt sin del, og ingen motpart finnes (verken sendt eller utkast)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "55000000002")
+
+            val s = hentBruk().saksdekning
+            s.arbeidsgiverDeler.totalt shouldBe 2
+            s.arbeidsgiverDeler.medMotpart shouldBe 0
+            s.arbeidsgiverDeler.venterMotpartHarUtkast shouldBe 1 // har påbegynt utkast
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1
+        }
+
+        @Test
+        fun `saksdekning - flere versjoner av samme del telles som sak med flere versjoner`() {
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "58000000001", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "58000000001", periode = periodeOverlapp, erstatterSkjemaId = gammel.id)
+
+            hentBruk().saksdekning.antallSakerMedFlereVersjoner shouldBe 1
         }
 
         @Test
@@ -409,8 +446,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             val s = hentBruk().saksdekning
             s.antallSakerMedBeggeDeler shouldBe 0
-            s.antallArbeidstakerDelUtenMotpart shouldBe 1
-            s.antallArbeidsgiverDelUtenMotpart shouldBe 1
+            s.arbeidstakerDeler.venterIngenMotpart shouldBe 1
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1
         }
 
         @Test
@@ -438,12 +475,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `toppliste viser anonyme antall per virksomhet sortert synkende`() {
-            repeat(3) { i -> lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7000000000$i", orgnr = "910000001") }
-            repeat(2) { i -> lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7100000000$i", orgnr = "910000002") }
-            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "72000000001", orgnr = "910000003")
+        fun `toppliste viser anonyme detaljer per virksomhet sortert synkende`() {
+            // Virksomhet 1: 3 innsendinger, 2 ulike innsendere, alle arbeidstaker-deler
+            repeat(3) { i ->
+                lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7000000000$i", orgnr = "910000001", innsenderFnr = if (i == 0) "11111111111" else "22222222222")
+            }
+            repeat(2) { i -> lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "7100000000$i", orgnr = "910000002") }
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "72000000001", orgnr = "910000003")
 
-            hentBruk().topplisteVirksomheter shouldBe listOf(3L, 2L, 1L)
+            val topp = hentBruk().topplisteVirksomheter
+            topp.map { it.antallInnsendinger } shouldBe listOf(3L, 2L, 1L)
+            topp[0].antallUnikeInnsendere shouldBe 2
+            topp[0].antallArbeidstakerDel shouldBe 3
+            topp[1].antallArbeidsgiverDel shouldBe 2
+            topp[2].antallKomplett shouldBe 1
+            topp[2].antallSakerMedBeggeDeler shouldBe 1
         }
 
         @Test
