@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.controller.admin
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -51,8 +52,15 @@ data class RetryResultatDto(
 data class BrukStatistikkDto(
     /** Tidspunkt statistikken ble beregnet (aldersgrenser regnes fra dette). */
     val tidspunkt: Instant,
+    /**
+     * Periodefilteret som ble brukt (innsendingsdato). Null = ingen grense (alt).
+     * Gjelder alle innsendt-feltene (totalt, fordelinger, saksdekning, toppliste, unike).
+     * [utkast] og innsendt-trenden er nåtilstand og påvirkes ikke av perioden.
+     */
+    val periodeFraOgMed: LocalDate?,
+    val periodeTilOgMed: LocalDate?,
     val utkast: UtkastStatistikkDto,
-    /** Totalt antall innsendte skjema (status SENDT). */
+    /** Totalt antall innsendte skjema (status SENDT) i perioden. */
     val totaltInnsendt: Long,
     val innsendtSisteDoegn: Long,
     val innsendtSiste7Dager: Long,
@@ -68,7 +76,12 @@ data class BrukStatistikkDto(
     /** Unike personer (fnr) blant innsendte skjema. */
     val antallUnikePersoner: Long,
     /** Unike virksomheter (orgnr) blant innsendte skjema. */
-    val antallUnikeVirksomheter: Long
+    val antallUnikeVirksomheter: Long,
+    /**
+     * Anonym toppliste over de mest aktive virksomhetene: antall innsendte skjema per virksomhet,
+     * sortert synkende. Inneholder bevisst kun tallene (rang 1, 2, 3 ...), ikke orgnr eller navn.
+     */
+    val topplisteVirksomheter: List<Long>
 )
 
 /**
@@ -82,9 +95,9 @@ data class SaksdekningDto(
     /** Skjema sendt som ett samlet skjema (begge deler i én innsending). */
     val antallKomplette: Long,
     /**
-     * Saker der begge deler er dekket = komplette skjema + saker der en separat arbeidstaker-del og
-     * en separat arbeidsgiver-del matcher (samme fnr + juridisk enhet + overlappende periode).
-     * En «sak» = en unik (person, juridisk enhet) med begge deler i overlappende periode.
+     * Antall unike saker (person + juridisk enhet) der begge deler er dekket – enten via et komplett
+     * skjema, eller via en separat arbeidstaker-del og arbeidsgiver-del som matcher (overlappende
+     * periode). Samme sak telles kun én gang selv om den har både komplett skjema og separate deler.
      */
     val antallSakerMedBeggeDeler: Long,
     /** Separate arbeidstaker-deler som har en matchende arbeidsgiver-del. */

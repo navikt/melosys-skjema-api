@@ -274,18 +274,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         private val periodeOverlapp = PeriodeDto(LocalDate.parse("2026-03-01"), LocalDate.parse("2026-08-31"))
         private val periodeSenere = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-12-31"))
 
-        /** Lager et innsendt (SENDT) skjema med full kontroll på fnr, juridisk enhet, del og periode. */
+        /** Lager et innsendt (SENDT) skjema med full kontroll på fnr, virksomhet, del, periode og innsendingsdato. */
         private fun lagInnsendt(
             skjemadel: Skjemadel,
             fnr: String = "10000000001",
-            juridiskEnhet: String = korrektSyntetiskOrgnr,
+            orgnr: String = korrektSyntetiskOrgnr,
+            juridiskEnhet: String = orgnr,
             periode: PeriodeDto = periodeA,
             representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
             sprak: Språk = Språk.NORSK_BOKMAL,
-            erstatterSkjemaId: UUID? = null
+            erstatterSkjemaId: UUID? = null,
+            innsendtDato: Instant = Instant.now()
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
+                orgnr = orgnr,
                 status = SkjemaStatus.SENDT,
                 data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
                     utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = periode)
@@ -298,11 +301,16 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
         ).also { skjema ->
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak))
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato))
         }
 
-        private fun hentBruk(): BrukStatistikkDto =
-            adminClient.get().uri("/admin/statistikk/bruk")
+        private fun hentBruk(fraOgMed: String? = null, tilOgMed: String? = null): BrukStatistikkDto =
+            adminClient.get().uri { b ->
+                b.path("/admin/statistikk/bruk")
+                fraOgMed?.let { b.queryParam("fraOgMed", it) }
+                tilOgMed?.let { b.queryParam("tilOgMed", it) }
+                b.build()
+            }
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -370,6 +378,18 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `saksdekning - samme sak med komplett og separate deler telles kun en gang`() {
+            val fnr = "50000000001"
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = fnr)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = periodeOverlapp)
+
+            val s = hentBruk().saksdekning
+            s.antallKomplette shouldBe 1
+            s.antallSakerMedBeggeDeler shouldBe 1 // samme (fnr, juridisk enhet) – ikke dobbelttalt
+        }
+
+        @Test
         fun `saksdekning - mulige dobbeltinnsendinger, men ikke versjon-erstatninger`() {
             // Ekte dobbeltinnsending: samme person sender arbeidsgivers del to ganger, overlappende periode
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "30000000001", periode = periodeA)
@@ -403,6 +423,27 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             body.saksdekning.antallSakerMedBeggeDeler shouldBe 0
             body.saksdekning.antallMuligeDobbeltinnsendinger shouldBe 0
             body.utkast.eldsteOpprettetDato shouldBe null
+        }
+
+        @Test
+        fun `skal filtrere innsendt-statistikk paa innsendingsperiode`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000001", innsendtDato = Instant.parse("2026-01-15T10:00:00Z"))
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000002", innsendtDato = Instant.parse("2026-03-15T10:00:00Z"))
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000003", innsendtDato = Instant.parse("2026-06-15T10:00:00Z"))
+
+            hentBruk().totaltInnsendt shouldBe 3 // ingen grense = alt
+            hentBruk(fraOgMed = "2026-02-01", tilOgMed = "2026-04-30").totaltInnsendt shouldBe 1 // kun mars
+            hentBruk(fraOgMed = "2026-02-01").totaltInnsendt shouldBe 2 // mars + juni
+            hentBruk(tilOgMed = "2026-02-01").totaltInnsendt shouldBe 1 // kun januar
+        }
+
+        @Test
+        fun `toppliste viser anonyme antall per virksomhet sortert synkende`() {
+            repeat(3) { i -> lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7000000000$i", orgnr = "910000001") }
+            repeat(2) { i -> lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7100000000$i", orgnr = "910000002") }
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "72000000001", orgnr = "910000003")
+
+            hentBruk().topplisteVirksomheter shouldBe listOf(3L, 2L, 1L)
         }
 
         @Test
