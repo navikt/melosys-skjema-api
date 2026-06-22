@@ -63,16 +63,44 @@ data class BrukStatistikkDto(
     val innsendtPerFlyt: Map<Representasjonstype, Long>,
     /** Innsendte fordelt på valgt språk ved innsending. */
     val innsendtPerSprak: Map<Språk, Long>,
-    /** Antall innsendte komplette skjema (begge deler i én innsending). */
-    val antallKomplettInnsendt: Long,
-    /** Antall koblede par der arbeidsgivers del og arbeidstakers del er sendt hver for seg. */
-    val antallKobledePar: Long,
-    /** Saker der begge deler er dekket = komplette + koblede par. */
-    val antallSakerMedBeggeDeler: Long,
+    /** Saksdekning – om begge deler (arbeidstaker + arbeidsgiver) er dekket, regnet fra faktiske verdier. */
+    val saksdekning: SaksdekningDto,
     /** Unike personer (fnr) blant innsendte skjema. */
     val antallUnikePersoner: Long,
     /** Unike virksomheter (orgnr) blant innsendte skjema. */
     val antallUnikeVirksomheter: Long
+)
+
+/**
+ * Saksdekning for utsendt arbeidstaker: en komplett A1-sak trenger BÅDE arbeidstakers del og
+ * arbeidsgivers del. Disse kan komme som ett samlet skjema, eller som to separate deler.
+ *
+ * Tallene regnes ut fra **faktiske verdier** (samme fnr + samme juridiske enhet + overlappende
+ * utsendelsesperiode) — samme matching som mottak bruker for å gruppere relaterte deler.
+ */
+data class SaksdekningDto(
+    /** Skjema sendt som ett samlet skjema (begge deler i én innsending). */
+    val antallKomplette: Long,
+    /**
+     * Saker der begge deler er dekket = komplette skjema + saker der en separat arbeidstaker-del og
+     * en separat arbeidsgiver-del matcher (samme fnr + juridisk enhet + overlappende periode).
+     * En «sak» = en unik (person, juridisk enhet) med begge deler i overlappende periode.
+     */
+    val antallSakerMedBeggeDeler: Long,
+    /** Separate arbeidstaker-deler som har en matchende arbeidsgiver-del. */
+    val antallArbeidstakerDelMedMotpart: Long,
+    /** Separate arbeidsgiver-deler som har en matchende arbeidstaker-del. */
+    val antallArbeidsgiverDelMedMotpart: Long,
+    /** Arbeidstaker-deler som (ennå) mangler en matchende arbeidsgiver-del. */
+    val antallArbeidstakerDelUtenMotpart: Long,
+    /** Arbeidsgiver-deler som (ennå) mangler en matchende arbeidstaker-del. */
+    val antallArbeidsgiverDelUtenMotpart: Long,
+    /**
+     * Mulige dobbeltinnsendinger: samme person har sendt samme del for samme juridiske enhet med
+     * overlappende periode flere ganger. Versjons-erstatninger (erstatterSkjemaId) er holdt utenfor,
+     * så dette er ekte mulige duplikater – ikke nye versjoner av samme søknad.
+     */
+    val antallMuligeDobbeltinnsendinger: Long
 )
 
 /**

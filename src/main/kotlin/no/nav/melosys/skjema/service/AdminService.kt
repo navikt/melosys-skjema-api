@@ -8,17 +8,22 @@ import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
+import no.nav.melosys.skjema.controller.admin.SaksdekningDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
+import no.nav.melosys.skjema.extensions.overlapper
+import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.AntallPerKategori
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -57,8 +62,6 @@ class AdminService(
         val perSprak = adminStatistikkRepository.antallInnsendtPerSprak().tilMap()
         val innsendtPerSprak = Språk.entries.associateWith { perSprak[it.kode] ?: 0L }
 
-        val antallKomplettInnsendt = innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] ?: 0L
-        val antallKobledePar = adminStatistikkRepository.antallKobledeSkjema() / 2
         val trend = adminStatistikkRepository.innsendtTrend(
             grense1d = naa.minus(1, ChronoUnit.DAYS),
             grense7d = naa.minus(7, ChronoUnit.DAYS),
@@ -75,12 +78,89 @@ class AdminService(
             innsendtPerSkjemadel = innsendtPerSkjemadel,
             innsendtPerFlyt = innsendtPerFlyt,
             innsendtPerSprak = innsendtPerSprak,
-            antallKomplettInnsendt = antallKomplettInnsendt,
-            antallKobledePar = antallKobledePar,
-            antallSakerMedBeggeDeler = antallKomplettInnsendt + antallKobledePar,
+            saksdekning = beregnSaksdekning(),
             antallUnikePersoner = adminStatistikkRepository.antallUnikePersoner(),
             antallUnikeVirksomheter = adminStatistikkRepository.antallUnikeVirksomheter()
         )
+    }
+
+    /**
+     * Beregner saksdekning ut fra faktiske verdier: to deler hører til samme sak når de har samme
+     * fnr + samme juridiske enhet + overlappende utsendelsesperiode — samme matching som mottak
+     * bruker for å gruppere relaterte deler.
+     */
+    private fun beregnSaksdekning(): SaksdekningDto {
+        val alle = adminStatistikkRepository.finnAlleInnsendte()
+
+        // Id-er som er erstattet av en nyere versjon (holdes utenfor duplikat-tellingen).
+        val erstattedeIder: Set<UUID> = alle
+            .mapNotNull { (it.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
+            .toSet()
+
+        val deler = alle.mapNotNull { skjema ->
+            val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+            Del(
+                id = skjema.id!!,
+                fnr = skjema.fnr,
+                juridiskEnhet = metadata.juridiskEnhetOrgnr,
+                skjemadel = metadata.skjemadel,
+                periode = skjema.utsendelsePeriode(),
+                erstattet = skjema.id in erstattedeIder
+            )
+        }
+
+        val antallKomplette = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong()
+        val arbeidstakerDeler = deler.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+        val arbeidsgiverDeler = deler.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+        val arbeidstakerePerSak = arbeidstakerDeler.groupBy { it.sakNokkel() }
+        val arbeidsgiverePerSak = arbeidsgiverDeler.groupBy { it.sakNokkel() }
+
+        val atMedMotpart = arbeidstakerDeler.count { at ->
+            arbeidsgiverePerSak[at.sakNokkel()]?.any { at.matcher(it) } == true
+        }.toLong()
+        val agMedMotpart = arbeidsgiverDeler.count { ag ->
+            arbeidstakerePerSak[ag.sakNokkel()]?.any { ag.matcher(it) } == true
+        }.toLong()
+
+        // Saker (unik person + juridisk enhet) der separat at-del og ag-del overlapper.
+        val sakerMedBeggeSeparat = arbeidstakerePerSak.keys.intersect(arbeidsgiverePerSak.keys).count { nokkel ->
+            val ats = arbeidstakerePerSak.getValue(nokkel)
+            val ags = arbeidsgiverePerSak.getValue(nokkel)
+            ats.any { at -> ags.any { at.matcher(it) } }
+        }.toLong()
+
+        return SaksdekningDto(
+            antallKomplette = antallKomplette,
+            antallSakerMedBeggeDeler = antallKomplette + sakerMedBeggeSeparat,
+            antallArbeidstakerDelMedMotpart = atMedMotpart,
+            antallArbeidsgiverDelMedMotpart = agMedMotpart,
+            antallArbeidstakerDelUtenMotpart = arbeidstakerDeler.size - atMedMotpart,
+            antallArbeidsgiverDelUtenMotpart = arbeidsgiverDeler.size - agMedMotpart,
+            antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler)
+        )
+    }
+
+    /** Antall deler som overlapper med en annen gjeldende del av samme type/sak (mulig dobbeltinnsending). */
+    private fun antallDuplikater(deler: List<Del>): Long =
+        deler.filter { !it.erstattet }
+            .groupBy { it.sakNokkel() }
+            .values
+            .sumOf { gruppe -> gruppe.count { del -> gruppe.any { it.id != del.id && del.matcher(it) } }.toLong() }
+
+    private data class Del(
+        val id: UUID,
+        val fnr: String,
+        val juridiskEnhet: String,
+        val skjemadel: Skjemadel,
+        val periode: PeriodeDto?,
+        val erstattet: Boolean
+    ) {
+        fun sakNokkel() = fnr to juridiskEnhet
+        fun matcher(annen: Del): Boolean =
+            fnr == annen.fnr &&
+                juridiskEnhet == annen.juridiskEnhet &&
+                periode != null && annen.periode != null &&
+                periode.overlapper(annen.periode)
     }
 
     private fun hentUtkastStatistikk(naa: Instant): UtkastStatistikkDto {

@@ -74,19 +74,18 @@ interface AdminStatistikkRepository : Repository<Skjema, UUID> {
     fun antallInnsendtPerSprak(): List<AntallPerKategori>
 
     /**
-     * Antall innsendte skjema som er koblet til en motpart (begge deler sendt hver for seg).
-     * Hvert koblet par teller 2 (begge sider peker på hverandre), så del på 2 for antall par.
+     * Henter alle innsendte (SENDT) utsendt-arbeidstaker-skjema for saksdekningsanalyse i minnet.
+     *
+     * Saksdekning (begge deler dekket) regnes ut fra faktiske verdier — samme fnr + juridisk enhet +
+     * overlappende periode — på samme måte som mottak grupperer relaterte deler. Datamengden er liten
+     * og endepunktet kjøres sjelden, så in-memory er ok.
      */
     @Query(
-        nativeQuery = true,
-        value = """
-        SELECT COUNT(*)
-        FROM skjema
-        WHERE type = 'UTSENDT_ARBEIDSTAKER' AND status = 'SENDT'
-        AND metadata->>'kobletSkjemaId' IS NOT NULL
-    """
+        "SELECT s FROM Skjema s " +
+            "WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT " +
+            "AND s.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
     )
-    fun antallKobledeSkjema(): Long
+    fun finnAlleInnsendte(): List<Skjema>
 
     @Query(
         nativeQuery = true,
