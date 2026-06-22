@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.controller.admin
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -51,8 +52,15 @@ data class RetryResultatDto(
 data class BrukStatistikkDto(
     /** Tidspunkt statistikken ble beregnet (aldersgrenser regnes fra dette). */
     val tidspunkt: Instant,
+    /**
+     * Periodefilteret som ble brukt (innsendingsdato). Null = ingen grense (alt).
+     * Gjelder alle innsendt-feltene (totalt, fordelinger, saksdekning, toppliste, unike).
+     * [utkast] og innsendt-trenden er nåtilstand og påvirkes ikke av perioden.
+     */
+    val periodeFraOgMed: LocalDate?,
+    val periodeTilOgMed: LocalDate?,
     val utkast: UtkastStatistikkDto,
-    /** Totalt antall innsendte skjema (status SENDT). */
+    /** Totalt antall innsendte skjema (status SENDT) i perioden. */
     val totaltInnsendt: Long,
     val innsendtSisteDoegn: Long,
     val innsendtSiste7Dager: Long,
@@ -63,16 +71,49 @@ data class BrukStatistikkDto(
     val innsendtPerFlyt: Map<Representasjonstype, Long>,
     /** Innsendte fordelt på valgt språk ved innsending. */
     val innsendtPerSprak: Map<Språk, Long>,
-    /** Antall innsendte komplette skjema (begge deler i én innsending). */
-    val antallKomplettInnsendt: Long,
-    /** Antall koblede par der arbeidsgivers del og arbeidstakers del er sendt hver for seg. */
-    val antallKobledePar: Long,
-    /** Saker der begge deler er dekket = komplette + koblede par. */
-    val antallSakerMedBeggeDeler: Long,
+    /** Saksdekning – om begge deler (arbeidstaker + arbeidsgiver) er dekket, regnet fra faktiske verdier. */
+    val saksdekning: SaksdekningDto,
     /** Unike personer (fnr) blant innsendte skjema. */
     val antallUnikePersoner: Long,
     /** Unike virksomheter (orgnr) blant innsendte skjema. */
-    val antallUnikeVirksomheter: Long
+    val antallUnikeVirksomheter: Long,
+    /**
+     * Anonym toppliste over de mest aktive virksomhetene: antall innsendte skjema per virksomhet,
+     * sortert synkende. Inneholder bevisst kun tallene (rang 1, 2, 3 ...), ikke orgnr eller navn.
+     */
+    val topplisteVirksomheter: List<Long>
+)
+
+/**
+ * Saksdekning for utsendt arbeidstaker: en komplett A1-sak trenger BÅDE arbeidstakers del og
+ * arbeidsgivers del. Disse kan komme som ett samlet skjema, eller som to separate deler.
+ *
+ * Tallene regnes ut fra **faktiske verdier** (samme fnr + samme juridiske enhet + overlappende
+ * utsendelsesperiode) — samme matching som mottak bruker for å gruppere relaterte deler.
+ */
+data class SaksdekningDto(
+    /** Skjema sendt som ett samlet skjema (begge deler i én innsending). */
+    val antallKomplette: Long,
+    /**
+     * Antall unike saker (person + juridisk enhet) der begge deler er dekket – enten via et komplett
+     * skjema, eller via en separat arbeidstaker-del og arbeidsgiver-del som matcher (overlappende
+     * periode). Samme sak telles kun én gang selv om den har både komplett skjema og separate deler.
+     */
+    val antallSakerMedBeggeDeler: Long,
+    /** Separate arbeidstaker-deler som har en matchende arbeidsgiver-del. */
+    val antallArbeidstakerDelMedMotpart: Long,
+    /** Separate arbeidsgiver-deler som har en matchende arbeidstaker-del. */
+    val antallArbeidsgiverDelMedMotpart: Long,
+    /** Arbeidstaker-deler som (ennå) mangler en matchende arbeidsgiver-del. */
+    val antallArbeidstakerDelUtenMotpart: Long,
+    /** Arbeidsgiver-deler som (ennå) mangler en matchende arbeidstaker-del. */
+    val antallArbeidsgiverDelUtenMotpart: Long,
+    /**
+     * Mulige dobbeltinnsendinger: samme person har sendt samme del for samme juridiske enhet med
+     * overlappende periode flere ganger. Versjons-erstatninger (erstatterSkjemaId) er holdt utenfor,
+     * så dette er ekte mulige duplikater – ikke nye versjoner av samme søknad.
+     */
+    val antallMuligeDobbeltinnsendinger: Long
 )
 
 /**

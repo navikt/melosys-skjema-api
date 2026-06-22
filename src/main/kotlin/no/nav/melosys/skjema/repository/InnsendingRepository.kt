@@ -48,4 +48,15 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
     fun findByStatusMedSkjema(status: InnsendingStatus): List<Innsending>
 
     fun countByStatus(status: InnsendingStatus): Long
+
+    /**
+     * Henter alle innsendinger med tilhørende innsendte (SENDT) utsendt-arbeidstaker-skjema (JOIN FETCH),
+     * for bruksstatistikk regnet i minnet. Gir både innsendingstidspunkt/språk og skjemadata i én spørring.
+     */
+    @Query(
+        "SELECT i FROM Innsending i JOIN FETCH i.skjema s " +
+            "WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT " +
+            "AND s.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
+    )
+    fun finnAlleInnsendteMedSkjema(): List<Innsending>
 }
