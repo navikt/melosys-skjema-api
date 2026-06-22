@@ -30,7 +30,6 @@ class ReprService(
                             fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
                 }
         } catch (e: Exception) {
-            log.error(e) { "Feil ved henting av fullmakter fra repr-api" }
             throw RuntimeException("Kunne ikke hente fullmakter fra repr-api", e)
         }
     }
@@ -74,32 +73,23 @@ class ReprService(
      * fullmakt til å handle på vegne av denne personen.
      */
     private fun harRettigheter(fnr: String, rettighetsType: RettighetsType): Boolean {
-        return try {
-            val fullmakter = hentKanRepresentere()
+        val fullmakter = hentKanRepresentere()
 
-            fullmakter.any { fullmakt ->
-                fullmakt.fullmaktsgiver == fnr && when (rettighetsType) {
-                    RettighetsType.LESE -> fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-                    RettighetsType.SKRIVE -> fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
-                }
+        return fullmakter.any { fullmakt ->
+            fullmakt.fullmaktsgiver == fnr && when (rettighetsType) {
+                RettighetsType.LESE -> fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
+                RettighetsType.SKRIVE -> fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
             }
-        } catch (e: Exception) {
-            log.error(e) { "Feil ved validering av ${rettighetsType.name.lowercase()}rettigheter" }
-            false
         }
     }
 
     /**
      * Henter fødselsnummer til alle personer innlogget bruker har aktiv fullmakt for.
-     * Returnerer tomt sett ved feil (konservativt — behandler som ingen aktive fullmakter).
+     * Lar feil mot repr-api propagere (→ 500) i stedet for å skjule det bak et tomt sett,
+     * som ville filtrert bort utkast/søknader og feilinformert brukeren.
      */
     fun hentFullmaktsgiverFnr(): Set<String> {
-        return try {
-            hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
-        } catch (e: Exception) {
-            log.warn(e) { "Feil ved henting av fullmakter" }
-            emptySet()
-        }
+        return hentKanRepresentere().map { it.fullmaktsgiver }.toSet()
     }
 
     private enum class RettighetsType {

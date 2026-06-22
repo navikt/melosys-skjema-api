@@ -21,10 +21,10 @@ class AltinnService(
 
         return try {
             val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
-            
+
             if (response.isError) {
-                log.warn { "Altinn-tilganger returnerte feil-status" }
-                return emptyList()
+                // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
+                log.error { "Altinn-tilganger returnerte respons med isError=true, returnerer tilgjengelige tilganger likevel" }
             }
 
             val organisasjoner = finnOrganisasjonerMedRessurs(response, altinnRessurs)
@@ -37,29 +37,23 @@ class AltinnService(
                 )
             }
         } catch (e: Exception) {
-            log.error { "Feil ved henting av tilganger fra Altinn: ${e.message}" }
-            emptyList()
+            throw RuntimeException("Kunne ikke hente tilganger fra Altinn", e)
         }
     }
 
     fun harBrukerTilgang(orgnr: String): Boolean {
         log.info { "Sjekker om bruker har tilgang til organisasjon: $orgnr" }
 
-        return try {
-            val tilganger = hentOrganisasjonerMedTilgang()
-            tilganger.any { it.orgnr == orgnr }
-        } catch (e: Exception) {
-            log.error { "Feil ved sjekk av tilgang til organisasjon $orgnr: ${e.message}" }
-            false
-        }
+        val tilganger = hentOrganisasjonerMedTilgang()
+        return tilganger.any { it.orgnr == orgnr }
     }
     
     private fun hentOrganisasjonerMedTilgang(): List<OrganisasjonMedTilgang> {
         val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
         
         if (response.isError) {
-            log.warn { "Altinn-tilganger returnerte feil-status" }
-            return emptyList()
+            // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
+            log.error { "Altinn-tilganger returnerte feil-status, bruker tilgjengelige tilganger likevel" }
         }
         
         return finnOrganisasjonerMedRessurs(response, altinnRessurs)

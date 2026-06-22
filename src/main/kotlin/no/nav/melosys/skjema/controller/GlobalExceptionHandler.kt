@@ -11,10 +11,12 @@ import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIk
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import no.nav.melosys.skjema.validators.ValidationException
+import no.nav.security.token.support.spring.validation.interceptor.JwtTokenUnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 private val log = KotlinLogging.logger { }
@@ -135,5 +137,31 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(mapOf("message" to (e.message ?: "Ressurs ikke funnet")))
+    }
+
+    // Må fanges eksplisitt slik at manglende/ugyldig token forblir 401 og ikke blir 500 av fallbacken under.
+    @ExceptionHandler(JwtTokenUnauthorizedException::class)
+    fun handleUautorisert(e: JwtTokenUnauthorizedException): ResponseEntity<ErrorResponse> {
+        log.warn(e) { "Uautorisert forespørsel: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ErrorResponse(message = "Ikke autentisert"))
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleUventetFeil(e: Exception): ResponseEntity<ErrorResponse> {
+        // Re-kast Spring sine egne exceptions og @ResponseStatus slik at riktig statuskode beholdes (400/405/415 osv.).
+        if (e.javaClass.name.startsWith("org.springframework.") ||
+            e.javaClass.isAnnotationPresent(ResponseStatus::class.java)
+        ) {
+            throw e
+        }
+
+        log.error(e) { "Uventet feil: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ErrorResponse(message = "Det oppstod en uventet feil"))
     }
 }

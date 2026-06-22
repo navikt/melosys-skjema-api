@@ -195,12 +195,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     private fun hentForAnnenPerson(pageable: PageRequest, searchTerm: String?): Page<Skjema> {
-        val fullmakter = try {
-            reprService.hentKanRepresentere()
-        } catch (e: Exception) {
-            log.warn(e) { "Feil ved henting av fullmakter for bruker" }
-            emptyList()
-        }
+        val fullmakter = reprService.hentKanRepresentere()
 
         val fnrs = fullmakter.map { it.fullmaktsgiver }
 

@@ -516,23 +516,19 @@ class HentUtkastUtsendtArbeidstakerServiceTest : FunSpec({
             response.utkast[0].id shouldBe skjemaId1
         }
 
-        test("skal håndtere feil ved henting av fullmakter for ANNEN_PERSON") {
+        test("skal la feil ved henting av fullmakter propagere for ANNEN_PERSON") {
             val currentUser = "99999999999"
 
             every { mockSubjectHandler.getUserID() } returns currentUser
-            // ReprService.hentFullmaktsgiverFnr() returnerer emptySet() ved feil (intern try/catch)
-            every { mockReprService.hentFullmaktsgiverFnr() } returns emptySet()
-            every { mockSkjemaRepository.findByOpprettetAvAndTypeAndStatus(currentUser, any(), SkjemaStatus.UTKAST) } returns emptyList()
+            every { mockReprService.hentFullmaktsgiverFnr() } throws RuntimeException("Repr-API nede")
 
             val request = HentUtkastRequest(
                 representasjonstype = Representasjonstype.ANNEN_PERSON
             )
 
-            // Skal returnere tom liste når ingen fullmakter finnes
-            val response = service.hentUtkast(request)
-
-            response.antall shouldBe 0
-            response.utkast.size shouldBe 0
+            shouldThrow<RuntimeException> {
+                service.hentUtkast(request)
+            }
         }
     }
 })
