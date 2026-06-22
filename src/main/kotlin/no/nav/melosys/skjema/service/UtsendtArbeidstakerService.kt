@@ -168,7 +168,7 @@ class UtsendtArbeidstakerService(
         vedleggService.slettAlleForSkjema(skjemaId)
         skjemaRepository.delete(skjema)
 
-        log.info { "Utkast slettet permanent: $skjemaId" }
+        log.info { "Utkast slettet: $skjemaId" }
     }
 
 

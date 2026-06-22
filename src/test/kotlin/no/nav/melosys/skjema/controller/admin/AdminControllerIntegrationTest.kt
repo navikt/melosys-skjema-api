@@ -71,7 +71,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @BeforeEach
     fun setUp() {
-        // Native delete (cascade) – SLETTET-rader kan ikke lastes av JPA siden enumet mangler verdien.
+        // Native delete (cascade) – rydder også gamle SLETTET-rader som seedes via SQL i denne testen.
         jdbcTemplate.update("DELETE FROM skjema")
     }
 
@@ -494,6 +494,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
                 .exchange()
                 .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `JPA skal kunne laste legacy SLETTET-rad uten å kaste i opprydding-vinduet`() {
+            // Regresjon: SLETTET er fjernet som aktiv status, men beholdt i enumet slik at eksisterende
+            // rader kan mappes (EnumType.STRING) før admin-oppryddingen er kjørt i prod. Uten dette ville
+            // findById på en gammel soft-deletet rad kaste og gi 500 i klient-kodeløp.
+            val skjemaId = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SLETTET)
+            ).id.shouldNotBeNull()
+
+            val skjema = skjemaRepository.findById(skjemaId)
+
+            skjema.isPresent shouldBe true
+            skjema.get().status shouldBe SkjemaStatus.SLETTET
         }
     }
 }

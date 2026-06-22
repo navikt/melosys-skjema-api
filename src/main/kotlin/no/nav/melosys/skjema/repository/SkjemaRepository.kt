@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @Repository
@@ -23,8 +24,8 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
     /**
      * Henter storage-referansene til alle vedlegg som tilhører soft-deletede (SLETTET) skjemaer.
      *
-     * MIDLERTIDIG: brukes av admin-oppryddingen som hard-sletter gamle SLETTET-utkast. SLETTET er
-     * fjernet fra [SkjemaStatus]-enumet, så radene må adresseres med native SQL mot status-strengen.
+     * MIDLERTIDIG: brukes av admin-oppryddingen som hard-sletter gamle SLETTET-utkast. Native SQL mot
+     * status-strengen siden [SkjemaStatus.SLETTET] er deprecated legacy og ikke skal brukes i ny kode.
      */
     @Query(
         nativeQuery = true,
@@ -41,9 +42,12 @@ interface SkjemaRepository : JpaRepository<Skjema, UUID> {
      * Hard-sletter alle soft-deletede (SLETTET) skjemaer. DB-cascade fjerner tilhørende
      * vedlegg-/innsending-/fullmakt-rader. Returnerer antall slettede skjema-rader.
      *
-     * MIDLERTIDIG: engangs-opprydding via admin-endepunkt. Fjernes når prod er ryddet.
+     * MIDLERTIDIG: engangs-opprydding via admin-endepunkt. Fjernes når prod er ryddet. Egen kort
+     * `@Transactional` slik at selve DELETE-en kjøres isolert – kalleren holder ingen DB-transaksjon
+     * mens den gjør eksterne bucket-kall.
      */
     @Modifying
+    @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM skjema WHERE status = 'SLETTET'")
     fun slettAlleSletteSkjema(): Int
 }

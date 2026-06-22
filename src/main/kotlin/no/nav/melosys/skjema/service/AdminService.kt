@@ -155,9 +155,12 @@ class AdminService(
      * (DB-cascade fjerner vedlegg-/innsending-/fullmakt-rader). Blob-sletting er best-effort:
      * en feilet blob stopper ikke radslettingen, men telles og logges.
      *
+     * Bevisst IKKE `@Transactional`: de eksterne bucket-kallene gjøres utenfor DB-transaksjon for å
+     * unngå lange transaksjoner / lock-holdetid ved nettverkslatens. Selve DELETE-en kjøres i sin egen
+     * korte transaksjon ([SkjemaRepository.slettAlleSletteSkjema]).
+     *
      * Fjernes når prod er ryddet.
      */
-    @Transactional
     fun ryddSletteUtkast(): RyddUtkastResultatDto {
         val storageReferanser = skjemaRepository.finnVedleggStorageReferanserForSletteSkjema()
 
