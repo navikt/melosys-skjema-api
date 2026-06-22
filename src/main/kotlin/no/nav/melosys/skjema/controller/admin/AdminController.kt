@@ -89,4 +89,16 @@ class AdminController(
         log.info { "Admin: Retry av alle feilede innsendinger" }
         return adminService.retryAlleFeilede()
     }
+
+    @PostMapping("/utkast/rydd-slettede")
+    @Operation(
+        summary = "MIDLERTIDIG: hard-delete av soft-deletede (SLETTET) utkast",
+        description = "Engangs GDPR-opprydding av gamle soft-deletede utkast. Sletter skjema-rader " +
+            "(cascade) og tilhørende vedlegg-blobs i bucket. Fjernes når prod er ryddet."
+    )
+    @ApiResponse(responseCode = "200", description = "Opprydding utført")
+    fun ryddSletteUtkast(): RyddUtkastResultatDto {
+        log.info { "Admin: Rydder soft-deletede utkast" }
+        return adminService.ryddSletteUtkast()
+    }
 }
