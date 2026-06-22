@@ -52,6 +52,14 @@ interface AdminStatistikkRepository : Repository<Skjema, UUID> {
     @Query("SELECT MIN(s.opprettetDato) FROM Skjema s WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.UTKAST")
     fun eldsteUtkastOpprettetDato(): Instant?
 
+    /** Alle påbegynte utkast – brukes til å se om motparten til en ventende del har startet et utkast. */
+    @Query(
+        "SELECT s FROM Skjema s " +
+            "WHERE s.status = no.nav.melosys.skjema.types.common.SkjemaStatus.UTKAST " +
+            "AND s.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
+    )
+    fun finnAlleUtkast(): List<Skjema>
+
     /** Innsendingstrend: kumulativt antall innsendinger i siste døgn / 7 / 30 dager (ett snapshot). */
     @Query(
         nativeQuery = true,
