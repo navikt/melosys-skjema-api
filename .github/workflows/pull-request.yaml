@@ -25,7 +25,7 @@ jobs:
           DB_USERNAME: melosys
           DB_PASSWORD: melosys
       - name: Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@v6.4.1
         if: success() || failure()
         with:
           check_name: 'Tester'
