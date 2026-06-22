@@ -64,14 +64,14 @@ class AdminService(
         val fraGrense = fraOgMed?.atStartOfDay(OSLO)?.toInstant()
         val tilGrenseEksklusiv = tilOgMed?.plusDays(1)?.atStartOfDay(OSLO)?.toInstant()
 
-        val alleInnsendinger = innsendingRepository.finnAlleInnsendteMedSkjema()
-        // Id-er som er erstattet av en nyere versjon (på tvers av perioden), for duplikat-tellingen.
-        val erstattedeIder: Set<UUID> = alleInnsendinger
+        val iPeriode = innsendingRepository.finnAlleInnsendteMedSkjema()
+            .filter { innenfor(it.opprettetDato, fraGrense, tilGrenseEksklusiv) }
+        // Id-er som er erstattet av en nyere versjon innenfor perioden (holdes utenfor duplikat-tellingen).
+        val erstattedeIder: Set<UUID> = iPeriode
             .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
             .toSet()
 
-        val innsendt = alleInnsendinger
-            .filter { innenfor(it.opprettetDato, fraGrense, tilGrenseEksklusiv) }
+        val innsendt = iPeriode
             .mapNotNull { innsending ->
                 val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
                 InnsendtSkjema(
