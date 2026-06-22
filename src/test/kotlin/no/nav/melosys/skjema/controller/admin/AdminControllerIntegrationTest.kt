@@ -489,7 +489,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+        fun `skal returnere 403 når azp ikke matcher tillatt klient`() {
             adminClient.post().uri("/admin/utkast/rydd-slettede")
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
                 .exchange()
