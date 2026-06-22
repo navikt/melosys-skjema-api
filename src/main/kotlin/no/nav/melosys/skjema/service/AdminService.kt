@@ -147,8 +147,12 @@ class AdminService(
 
     /**
      * Status for en deltype: har en innsendt motpart (overlappende periode), eller venter.
-     * For de som venter skilles det på om motparten har påbegynt et utkast (samme person + virksomhet)
-     * eller om det ikke finnes noe motpart i det hele tatt.
+     * For de som venter skilles det på om motparten har påbegynt et utkast eller ikke.
+     *
+     * Merk – med vilje to ulike matchekriterier:
+     * - innsendt motpart krever overlappende periode (en reell, fullført sak).
+     * - utkast-motpart matcher kun på samme person + juridisk enhet (ikke periode), fordi et utkast
+     *   under arbeid ofte ikke har fylt inn periode ennå. Hensikten er «har motparten startet noe».
      */
     private fun delStatus(
         deler: List<InnsendtSkjema>,
@@ -161,6 +165,7 @@ class AdminService(
         for (del in deler) {
             when {
                 motpartSendtPerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> medMotpart++
+                // Bevisst kun person + juridisk enhet (ikke periode): se kommentar over.
                 motpartUtkastPerSak[del.sakNokkel()]?.isNotEmpty() == true -> venterMotpartHarUtkast++
                 else -> venterIngenMotpart++
             }
