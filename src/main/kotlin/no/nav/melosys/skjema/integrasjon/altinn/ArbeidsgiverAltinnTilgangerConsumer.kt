@@ -7,13 +7,14 @@ import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerRequest
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
 
 private val log = KotlinLogging.logger { }
 
 @Component
 class ArbeidsgiverAltinnTilgangerConsumer(
-    private val arbeidsgiverAltinnTilgangerClient: WebClient,
+    private val arbeidsgiverAltinnTilgangerClient: RestClient,
     private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider
 ) {
 
@@ -26,14 +27,12 @@ class ArbeidsgiverAltinnTilgangerConsumer(
 
         val request = AltinnTilgangerRequest(altinnFilter)
 
-        val response = arbeidsgiverAltinnTilgangerClient.post()
+        return arbeidsgiverAltinnTilgangerClient.post()
             .uri("/altinn-tilganger")
             .header(HttpHeaders.AUTHORIZATION, authorizationHeaderProvider.authorizationHeader(CLIENT_NAME))
-            .bodyValue(request)
+            .body(request)
             .retrieve()
-            .bodyToMono(AltinnTilgangerResponse::class.java)
-            .block()
-
-        return response ?: throw RuntimeException("Fikk null response fra arbeidsgiver-altinn-tilganger")
+            .body<AltinnTilgangerResponse>()
+            ?: throw RuntimeException("Fikk null response fra arbeidsgiver-altinn-tilganger")
     }
 }

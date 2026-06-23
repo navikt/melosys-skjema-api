@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
@@ -19,34 +19,31 @@ class MockStorageClient(
     @param:Value("\${vedlegg.mock-storage-url}") private val baseUrl: String
 ) : VedleggStorageClient {
 
-    private val webClient: WebClient = WebClient.builder().baseUrl(baseUrl).build()
+    private val restClient: RestClient = RestClient.builder().baseUrl(baseUrl).build()
 
     override fun lastOpp(storageReferanse: String, data: ByteArray, contentType: String) {
         log.info { "Mock-storage: laster opp '$storageReferanse' (${data.size} bytes)" }
-        webClient.put()
+        restClient.put()
             .uri { it.queryParam("ref", storageReferanse).build() }
             .contentType(MediaType.parseMediaType(contentType))
-            .bodyValue(data)
+            .body(data)
             .retrieve()
             .toBodilessEntity()
-            .block()
     }
 
     override fun slett(storageReferanse: String) {
         log.info { "Mock-storage: sletter '$storageReferanse'" }
-        webClient.delete()
+        restClient.delete()
             .uri { it.queryParam("ref", storageReferanse).build() }
             .retrieve()
             .toBodilessEntity()
-            .block()
     }
 
     override fun hent(storageReferanse: String): ByteArray {
         log.info { "Mock-storage: henter '$storageReferanse'" }
-        return webClient.get()
+        return restClient.get()
             .uri { it.queryParam("ref", storageReferanse).build() }
             .retrieve()
-            .bodyToMono(ByteArray::class.java)
-            .block() ?: error("Vedlegg '$storageReferanse' ikke funnet i mock-storage")
+            .body(ByteArray::class.java) ?: error("Vedlegg '$storageReferanse' ikke funnet i mock-storage")
     }
 }

@@ -11,14 +11,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ClassPathResource
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
 @Component
 class ArbeidsgiverNotifikasjonClient(
-    private val arbeidsgiverNotifikasjonWebClient: WebClient,
+    private val arbeidsgiverNotifikasjonRestClient: RestClient,
     private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider,
     @param:Value("\${arbeidsgiver.notifikasjon.merkelapp}") private val merkelapp: String,
     @param:Value("\${arbeidsgiver.notifikasjon.ressursId}") private val ressursId: String,
@@ -49,13 +48,12 @@ class ArbeidsgiverNotifikasjonClient(
             variables = variables
         )
 
-        val response = arbeidsgiverNotifikasjonWebClient.post()
+        val response = arbeidsgiverNotifikasjonRestClient.post()
             .uri("/api/graphql")
             .header(HttpHeaders.AUTHORIZATION, authorizationHeaderProvider.authorizationHeader(CLIENT_NAME))
-            .bodyValue(graphQLRequest)
+            .body(graphQLRequest)
             .retrieve()
-            .bodyToMono<GraphQLResponse<NyBeskjedResponse>>()
-            .block()
+            .body(object : org.springframework.core.ParameterizedTypeReference<GraphQLResponse<NyBeskjedResponse>>() {})
 
         if (response?.errors?.isNotEmpty() == true) {
             val errorMessage = response.errors.joinToString(", ") { it.message }

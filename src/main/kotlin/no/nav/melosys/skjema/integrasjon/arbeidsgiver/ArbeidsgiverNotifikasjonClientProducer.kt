@@ -1,13 +1,12 @@
 package no.nav.melosys.skjema.integrasjon.arbeidsgiver
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction
-import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
@@ -17,26 +16,15 @@ class ArbeidsgiverNotifikasjonClientProducer(
 ) {
 
     @Bean
-    fun arbeidsgiverNotifikasjonWebClient(
-        webClientBuilder: WebClient.Builder
-    ): WebClient {
+    fun arbeidsgiverNotifikasjonRestClient(
+        restClientBuilder: RestClient.Builder
+    ): RestClient {
         log.info { "Konfigurerer ArbeidsgiverNotifikasjonConsumer med base URL: $arbeidsgiverNotifikasjonBaseUrl" }
 
-        return webClientBuilder
+        return restClientBuilder
             .baseUrl(arbeidsgiverNotifikasjonBaseUrl)
-            .filter(WebClientConfig.errorFilter("Kall mot arbeidsgiver-notifikasjon feilet"))
-            .filter(headerFilter())
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .build()
-    }
-
-    private fun headerFilter(): ExchangeFilterFunction {
-        return ExchangeFilterFunction.ofRequestProcessor { request ->
-            Mono.just(
-                org.springframework.web.reactive.function.client.ClientRequest.from(request)
-                    .header("Accept", "application/json")
-                    .header("Content-Type", "application/json")
-                    .build()
-            )
-        }
     }
 }

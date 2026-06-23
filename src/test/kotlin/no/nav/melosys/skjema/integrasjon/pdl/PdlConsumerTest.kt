@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.CacheManager
 import org.springframework.http.HttpHeaders
-import reactor.core.scheduler.Schedulers
 
 class PdlConsumerTest : ApiTestBase() {
 
@@ -54,14 +53,11 @@ class PdlConsumerTest : ApiTestBase() {
     }
 
     @Test
-    fun `hentPerson retryer PDL-kall uten å hente token på non-blocking tråd`() {
+    fun `hentPerson retryer PDL-kall og henter token kun én gang`() {
         val expectedAccessToken = "pdl-token"
         val tokenCalls = AtomicInteger(0)
 
         every { oAuth2AccessTokenService.getAccessToken(any()) } answers {
-            if (Schedulers.isInNonBlockingThread()) {
-                throw AssertionError("Token skal ikke hentes på Reactor non-blocking tråd")
-            }
             tokenCalls.incrementAndGet()
             OAuth2AccessTokenResponse(access_token = expectedAccessToken)
         }

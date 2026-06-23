@@ -4,16 +4,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToFlux
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
 @Component
 class ReprConsumer(
-    private val reprClientTokenX: WebClient,
+    private val reprClientTokenX: RestClient,
     private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider
 ) {
 
@@ -25,14 +25,11 @@ class ReprConsumer(
     fun hentKanRepresentere(): List<Fullmakt> {
         log.info { "Kaller repr-api /api/v2/eksternbruker/fullmakt/kan-representere" }
 
-        val response = reprClientTokenX.get()
+        return reprClientTokenX.get()
             .uri("/api/v2/eksternbruker/fullmakt/kan-representere")
             .header(HttpHeaders.AUTHORIZATION, authorizationHeaderProvider.authorizationHeader(CLIENT_NAME))
             .retrieve()
-            .bodyToFlux<Fullmakt>()
-            .collectList()
-            .block()
-
-        return response ?: emptyList()
+            .body(object : ParameterizedTypeReference<List<Fullmakt>>() {})
+            ?: emptyList()
     }
 }
