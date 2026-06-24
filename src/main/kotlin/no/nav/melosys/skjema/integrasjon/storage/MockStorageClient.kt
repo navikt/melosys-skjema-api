@@ -16,10 +16,11 @@ private val log = KotlinLogging.logger { }
 @Service
 @Profile("local")
 class MockStorageClient(
-    @param:Value("\${vedlegg.mock-storage-url}") private val baseUrl: String
+    @param:Value("\${vedlegg.mock-storage-url}") private val baseUrl: String,
+    restClientBuilder: RestClient.Builder
 ) : VedleggStorageClient {
 
-    private val restClient: RestClient = RestClient.builder().baseUrl(baseUrl).build()
+    private val restClient: RestClient = restClientBuilder.baseUrl(baseUrl).build()
 
     override fun lastOpp(storageReferanse: String, data: ByteArray, contentType: String) {
         log.info { "Mock-storage: laster opp '$storageReferanse' (${data.size} bytes)" }
