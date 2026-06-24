@@ -7,14 +7,16 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.verify
 import java.time.Instant
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.adminTokenMedTilgang
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
-import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -24,9 +26,11 @@ import no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor.Companion.API_KEY_
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -274,55 +278,60 @@ class AdminControllerIntegrationTest : ApiTestBase() {
     @DisplayName("GET /admin/statistikk/bruk")
     inner class Bruksstatistikk {
 
-        private fun lagInnsendtSkjema(
-            representasjonstype: Representasjonstype,
+        private val periodeA = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-06-30"))
+        private val periodeOverlapp = PeriodeDto(LocalDate.parse("2026-03-01"), LocalDate.parse("2026-08-31"))
+        private val periodeSenere = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-12-31"))
+
+        /** Lager et innsendt (SENDT) skjema med full kontroll på fnr, virksomhet, del, periode og innsendingsdato. */
+        private fun lagInnsendt(
             skjemadel: Skjemadel,
+            fnr: String = "10000000001",
+            orgnr: String = korrektSyntetiskOrgnr,
+            juridiskEnhet: String = orgnr,
+            periode: PeriodeDto = periodeA,
+            representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
             sprak: Språk = Språk.NORSK_BOKMAL,
-            kobletSkjemaId: UUID? = null,
-            fnr: String = no.nav.melosys.skjema.korrektSyntetiskFnr,
-            referanseId: String
-        ) = skjemaRepository.save(
+            erstatterSkjemaId: UUID? = null,
+            innsendtDato: Instant = Instant.now(),
+            innsenderFnr: String = "12345678901"
+        ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
+                orgnr = orgnr,
                 status = SkjemaStatus.SENDT,
-                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
+                data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = periode)
+                ),
                 metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = representasjonstype,
                     skjemadel = skjemadel,
-                    kobletSkjemaId = kobletSkjemaId
+                    juridiskEnhetOrgnr = juridiskEnhet,
+                    erstatterSkjemaId = erstatterSkjemaId
                 )
             )
         ).also { skjema ->
             innsendingRepository.save(
-                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, referanseId = referanseId)
+                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato, innsenderFnr = innsenderFnr)
             )
         }
 
-        @Test
-        fun `skal aggregere utkast, innsendte per skjemadel-flyt-spraak, koblinger og unike`() {
-            // Utkast: ett ferskt og ett gammelt (>30 dager)
-            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = Instant.now()))
-            val gammeltUtkastDato = Instant.now().minus(40, ChronoUnit.DAYS)
-            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = gammeltUtkastDato))
-
-            // Innsendte enkeltdeler
-            lagInnsendtSkjema(Representasjonstype.DEG_SELV, Skjemadel.ARBEIDSTAKERS_DEL, Språk.NORSK_BOKMAL, referanseId = "AA0001")
-            lagInnsendtSkjema(Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL, Språk.ENGELSK, fnr = etAnnetKorrektSyntetiskFnr, referanseId = "AA0002")
-
-            // Komplett innsending (begge deler i én)
-            lagInnsendtSkjema(Representasjonstype.RADGIVER, Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, referanseId = "AA0003")
-
-            // Koblet par: arbeidsgivers del + arbeidstakers del sendt hver for seg
-            val arbeidstakerDel = lagInnsendtSkjema(Representasjonstype.DEG_SELV, Skjemadel.ARBEIDSTAKERS_DEL, referanseId = "AA0004")
-            val arbeidsgiverDel = lagInnsendtSkjema(
-                Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL,
-                kobletSkjemaId = arbeidstakerDel.id, referanseId = "AA0005"
+        /** Lager et påbegynt utkast (status UTKAST) for å teste venter-trakten. */
+        private fun lagUtkast(skjemadel: Skjemadel, fnr: String, juridiskEnhet: String = korrektSyntetiskOrgnr) =
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = fnr,
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel, juridiskEnhetOrgnr = juridiskEnhet)
+                )
             )
-            arbeidstakerDel.metadata =
-                (arbeidstakerDel.metadata as UtsendtArbeidstakerMetadata).medKobletSkjemaId(arbeidsgiverDel.id)
-            skjemaRepository.save(arbeidstakerDel)
 
-            val body = adminClient.get().uri("/admin/statistikk/bruk")
+        private fun hentBruk(fraOgMed: String? = null, tilOgMed: String? = null): BrukStatistikkDto =
+            adminClient.get().uri { b ->
+                b.path("/admin/statistikk/bruk")
+                fraOgMed?.let { b.queryParam("fraOgMed", it) }
+                tilOgMed?.let { b.queryParam("tilOgMed", it) }
+                b.build()
+            }
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -330,57 +339,165 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .expectBody<BrukStatistikkDto>()
                 .returnResult().responseBody.shouldNotBeNull()
 
-            // Utkast med aldersfordeling
+        @Test
+        fun `skal aggregere utkast, innsendte per skjemadel-flyt-spraak, trend og unike`() {
+            // Utkast: ett ferskt og ett gammelt (>30 dager)
+            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = Instant.now()))
+            skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.UTKAST, opprettetDato = Instant.now().minus(40, ChronoUnit.DAYS)))
+
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "10000000001", representasjonstype = Representasjonstype.DEG_SELV)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "10000000002", representasjonstype = Representasjonstype.ARBEIDSGIVER, sprak = Språk.ENGELSK)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "10000000003", representasjonstype = Representasjonstype.RADGIVER)
+
+            val body = hentBruk()
+
             body.utkast.antall shouldBe 2
             body.utkast.under1Dag shouldBe 1
             body.utkast.over30Dager shouldBe 1
             body.utkast.mellom1Og7Dager shouldBe 0
             body.utkast.eldsteOpprettetDato.shouldNotBeNull()
+            body.utkast.perSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 2
 
-            // Innsendte totalt og per skjemadel (5 SENDT skjema)
-            body.totaltInnsendt shouldBe 5
-            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 2
-            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVERS_DEL] shouldBe 2
+            body.totaltInnsendt shouldBe 3
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 1
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVERS_DEL] shouldBe 1
             body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] shouldBe 1
 
-            // Per flyt
-            body.innsendtPerFlyt[Representasjonstype.DEG_SELV] shouldBe 2
-            body.innsendtPerFlyt[Representasjonstype.ARBEIDSGIVER] shouldBe 2
+            body.innsendtPerFlyt[Representasjonstype.DEG_SELV] shouldBe 1
+            body.innsendtPerFlyt[Representasjonstype.ARBEIDSGIVER] shouldBe 1
             body.innsendtPerFlyt[Representasjonstype.RADGIVER] shouldBe 1
             body.innsendtPerFlyt[Representasjonstype.ANNEN_PERSON] shouldBe 0
 
-            // Per språk (4 nb, 1 en)
-            body.innsendtPerSprak[Språk.NORSK_BOKMAL] shouldBe 4
+            body.innsendtPerSprak[Språk.NORSK_BOKMAL] shouldBe 2
             body.innsendtPerSprak[Språk.ENGELSK] shouldBe 1
 
-            // Koblinger: 1 komplett + 1 koblet par = 2 saker med begge deler
-            body.antallKomplettInnsendt shouldBe 1
-            body.antallKobledePar shouldBe 1
-            body.antallSakerMedBeggeDeler shouldBe 2
-
-            // Trend: alle innsendinger er ferske
-            body.innsendtSisteDoegn shouldBe 5
-
-            // Unike: to ulike fnr, én virksomhet (default orgnr)
-            body.antallUnikePersoner shouldBe 2
+            body.innsendtSisteDoegn shouldBe 3
+            body.antallUnikePersoner shouldBe 3
             body.antallUnikeVirksomheter shouldBe 1
         }
 
         @Test
+        fun `saksdekning - komplett, matchende separate deler og uten motpart`() {
+            // Komplett (begge deler i ett)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "20000000001")
+            // Sak med begge deler hver for seg (samme person + enhet + overlappende periode)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "20000000002", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "20000000002", periode = periodeOverlapp)
+            // Kun arbeidstaker-del (ingen motpart)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "20000000003")
+            // Kun arbeidsgiver-del (ingen motpart)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "20000000004")
+
+            val s = hentBruk().saksdekning
+
+            s.antallKomplette shouldBe 1
+            s.antallSakerMedBeggeDeler shouldBe 2 // 1 komplett + 1 matchende separat sak
+            s.arbeidstakerDeler.medMotpart shouldBe 1
+            s.arbeidsgiverDeler.medMotpart shouldBe 1
+            s.arbeidstakerDeler.venterIngenMotpart shouldBe 1 // P3, ingen motpart
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1 // P4, ingen motpart
+            s.antallMuligeDobbeltinnsendinger shouldBe 0
+        }
+
+        @Test
+        fun `saksdekning - ventende del der motparten har paabegynt utkast`() {
+            // Arbeidsgiver har sendt sin del, men arbeidstaker har bare PÅBEGYNT et utkast
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "55000000001")
+            lagUtkast(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "55000000001")
+            // Arbeidsgiver har sendt sin del, og ingen motpart finnes (verken sendt eller utkast)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "55000000002")
+
+            val s = hentBruk().saksdekning
+            s.arbeidsgiverDeler.totalt shouldBe 2
+            s.arbeidsgiverDeler.medMotpart shouldBe 0
+            s.arbeidsgiverDeler.venterMotpartHarUtkast shouldBe 1 // har påbegynt utkast
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1
+        }
+
+        @Test
+        fun `saksdekning - flere versjoner av samme del telles som sak med flere versjoner`() {
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "58000000001", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "58000000001", periode = periodeOverlapp, erstatterSkjemaId = gammel.id)
+
+            hentBruk().saksdekning.antallSakerMedFlereVersjoner shouldBe 1
+        }
+
+        @Test
+        fun `saksdekning - samme sak med komplett og separate deler telles kun en gang`() {
+            val fnr = "50000000001"
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = fnr)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = periodeOverlapp)
+
+            val s = hentBruk().saksdekning
+            s.antallKomplette shouldBe 1
+            s.antallSakerMedBeggeDeler shouldBe 1 // samme (fnr, juridisk enhet) – ikke dobbelttalt
+        }
+
+        @Test
+        fun `saksdekning - mulige dobbeltinnsendinger, men ikke versjon-erstatninger`() {
+            // Ekte dobbeltinnsending: samme person sender arbeidsgivers del to ganger, overlappende periode
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "30000000001", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "30000000001", periode = periodeOverlapp)
+
+            // Versjon-erstatning: ny arbeidstaker-del erstatter en eldre (skal IKKE telles som duplikat)
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "30000000002", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "30000000002", periode = periodeOverlapp, erstatterSkjemaId = gammel.id)
+
+            hentBruk().saksdekning.antallMuligeDobbeltinnsendinger shouldBe 2
+        }
+
+        @Test
+        fun `saksdekning - ikke-overlappende periode gir ikke match`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "40000000001", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "40000000001", periode = periodeSenere)
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedBeggeDeler shouldBe 0
+            s.arbeidstakerDeler.venterIngenMotpart shouldBe 1
+            s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1
+        }
+
+        @Test
         fun `skal returnere nuller naar ingen data`() {
-            val body = adminClient.get().uri("/admin/statistikk/bruk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<BrukStatistikkDto>()
-                .returnResult().responseBody.shouldNotBeNull()
+            val body = hentBruk()
 
             body.utkast.antall shouldBe 0
             body.totaltInnsendt shouldBe 0
             body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL] shouldBe 0
-            body.antallSakerMedBeggeDeler shouldBe 0
+            body.saksdekning.antallSakerMedBeggeDeler shouldBe 0
+            body.saksdekning.antallMuligeDobbeltinnsendinger shouldBe 0
             body.utkast.eldsteOpprettetDato shouldBe null
+        }
+
+        @Test
+        fun `skal filtrere innsendt-statistikk paa innsendingsperiode`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000001", innsendtDato = Instant.parse("2026-01-15T10:00:00Z"))
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000002", innsendtDato = Instant.parse("2026-03-15T10:00:00Z"))
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000003", innsendtDato = Instant.parse("2026-06-15T10:00:00Z"))
+
+            hentBruk().totaltInnsendt shouldBe 3 // ingen grense = alt
+            hentBruk(fraOgMed = "2026-02-01", tilOgMed = "2026-04-30").totaltInnsendt shouldBe 1 // kun mars
+            hentBruk(fraOgMed = "2026-02-01").totaltInnsendt shouldBe 2 // mars + juni
+            hentBruk(tilOgMed = "2026-02-01").totaltInnsendt shouldBe 1 // kun januar
+        }
+
+        @Test
+        fun `toppliste viser anonyme detaljer per virksomhet sortert synkende`() {
+            // Virksomhet 1: 3 innsendinger, 2 ulike innsendere, alle arbeidstaker-deler
+            repeat(3) { i ->
+                lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "7000000000$i", orgnr = "910000001", innsenderFnr = if (i == 0) "11111111111" else "22222222222")
+            }
+            repeat(2) { i -> lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "7100000000$i", orgnr = "910000002") }
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "72000000001", orgnr = "910000003")
+
+            val topp = hentBruk().topplisteVirksomheter
+            topp.map { it.antallInnsendinger } shouldBe listOf(3L, 2L, 1L)
+            topp[0].antallUnikeInnsendere shouldBe 2
+            topp[0].antallArbeidstakerDel shouldBe 3
+            topp[1].antallArbeidsgiverDel shouldBe 2
+            topp[2].antallKomplett shouldBe 1
+            topp[2].antallSakerMedBeggeDeler shouldBe 1
         }
 
         @Test

@@ -4,13 +4,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.service.AdminService
 import no.nav.melosys.skjema.sikkerhet.AdminBeskyttet
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 private val log = KotlinLogging.logger {}
@@ -41,12 +44,16 @@ class AdminController(
     @Operation(
         summary = "Hent bruksstatistikk for skjemaene",
         description = "Antall utkast med aldersfordeling, innsendte fordelt på skjemadel/flyt/språk, " +
-            "antall komplette og koblede saker, samt unike personer og virksomheter."
+            "saksdekning, unike personer/virksomheter og anonym toppliste. Innsendt-statistikken kan " +
+            "filtreres på innsendingsdato med fraOgMed/tilOgMed (begge valgfrie; utelat for alt)."
     )
     @ApiResponse(responseCode = "200", description = "Bruksstatistikk hentet")
-    fun hentBruksstatistikk(): BrukStatistikkDto {
-        log.info { "Admin: Henter bruksstatistikk" }
-        return adminService.hentBruksstatistikk()
+    fun hentBruksstatistikk(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fraOgMed: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) tilOgMed: LocalDate?
+    ): BrukStatistikkDto {
+        log.info { "Admin: Henter bruksstatistikk (fraOgMed=$fraOgMed, tilOgMed=$tilOgMed)" }
+        return adminService.hentBruksstatistikk(fraOgMed, tilOgMed)
     }
 
     @GetMapping("/innsendinger/feilede")
