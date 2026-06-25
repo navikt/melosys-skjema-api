@@ -149,6 +149,7 @@ vedlegg:
 
 clamav:
   url: ${CLAMAV_URL}
+  read-timeout: 60s
 
 logging:
   level:
