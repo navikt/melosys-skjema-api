@@ -162,9 +162,7 @@ class M2MSkjemaService(
             fullmektigInfo = fullmektigInfo,
             radgiverInfo = radgiverInfo,
             skjemaData = skjema.data as UtsendtArbeidstakerSkjemaData,
-            kobletSkjemaData = null,
             vedlegg = vedleggService.listBySkjemaId(skjema.id!!),
-            kobletVedlegg = emptyList(),
             definisjon = definisjon
         )
     }
