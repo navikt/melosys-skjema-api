@@ -20,9 +20,26 @@ reprodusere og verifisere koblings-/journalføringsadferd ende-til-ende.
 |--------|----------|
 | `reproduser-arvet-kobling.sh` | Arbeidstaker → arbeidsgiver → **ny versjon** av arbeidstakers del. Den nye versjonen arver kobling til (utdatert) arbeidsgivers del. |
 | `reproduser-motpart-ag-forst.sh` | Arbeidsgiver sender sin del **først**, så arbeidstaker. Arbeidstakers del motpart-kobles til arbeidsgivers del. |
+| `_repro-lib.sh` | Delt bibliotek (source-es av de andre): env-defaults, testidentiteter og helpere. |
 
 Begge henter til slutt M2M-PDF for arbeidstakers del og viser om den (feilaktig) inneholder
 arbeidsgivers del.
+
+### Sende flere søknader
+
+`_repro-lib.sh` gir høynivå-helperne `send_arbeidstakerdel`/`send_arbeidsgiverdel` (opprett +
+fyll ut alle steg + send inn i ett kall). De setter `SKJEMA_ID` og `REFERANSE`, så et eget skript
+kan sende mange søknader på rad:
+
+```bash
+source scripts/_repro-lib.sh
+TOK=$(token tokenx "audience=melosys-skjema-api&pid=$ARBEIDSTAKER_FNR")
+for i in $(seq 1 5); do
+  send_arbeidstakerdel "$TOK"
+  echo "sendt #$i: skjemaId=$SKJEMA_ID referanse=$REFERANSE"
+  sleep "$SLEEP"
+done
+```
 
 ## Kjøre
 

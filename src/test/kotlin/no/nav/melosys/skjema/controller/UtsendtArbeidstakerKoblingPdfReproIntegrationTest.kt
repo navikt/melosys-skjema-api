@@ -48,7 +48,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 
 /**
- * MEL-16515 / MEL-8135 — reproduserer at et nytt ARBEIDSTAKERS_DEL-skjema som erstatter et eldre
+ * Reproduserer at et nytt ARBEIDSTAKERS_DEL-skjema som erstatter et eldre
  * skjema arver `kobletSkjemaId` til en allerede innsendt arbeidsgivers del, slik at M2M-PDF-en
  * (journalføringen) feilaktig inneholder BEGGE deler — selv om innbyggeren bare sendte inn sin
  * egen arbeidstakers del.

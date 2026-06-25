@@ -134,11 +134,6 @@ class M2MSkjemaService(
     private fun byggSkjemaPdfData(skjema: Skjema, innsending: Innsending): SkjemaPdfData {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
 
-        // MELOSYS-8092: Journalføringen skal gjenspeile det brukeren faktisk sendte inn — styrt av
-        // skjemadel. `kobletSkjema` brukes kun til samme-sak-vurdering (på /data), ikke til å bygge
-        // PDF-en. En ekte komplett søknad (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har begge deler i sitt
-        // eget data-objekt og rendres komplett uten kobling.
-
         val definisjon = skjemaDefinisjonService.hent(
             type = skjema.type,
             versjon = innsending.skjemaDefinisjonVersjon,
