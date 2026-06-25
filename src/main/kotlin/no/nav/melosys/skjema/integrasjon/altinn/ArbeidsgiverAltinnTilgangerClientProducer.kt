@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,9 +16,14 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
     @param:Value("\${arbeidsgiver.altinn.tilganger.url}") private val arbeidsgiverAltinnTilgangerBaseUrl: String,
 ) {
 
+    companion object {
+        private const val CLIENT_NAME = "arbeidsgiver-altinn-tilganger"
+    }
+
     @Bean
     fun arbeidsgiverAltinnTilgangerClient(
-        restClientBuilder: RestClient.Builder
+        restClientBuilder: RestClient.Builder,
+        authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
         log.info { "Konfigurerer ArbeidsgiverAltinnTilgangerConsumer med base URL: $arbeidsgiverAltinnTilgangerBaseUrl" }
 
@@ -25,6 +31,7 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
             .baseUrl(arbeidsgiverAltinnTilgangerBaseUrl)
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .requestInterceptor(authorizationHeaderInterceptorFactory.authorizationInterceptor(CLIENT_NAME))
             .build()
     }
 }

@@ -15,6 +15,7 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import org.springframework.web.client.RestClient
 
@@ -30,11 +31,15 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
 
     beforeEach {
         wireMockServer.start()
+        every { authorizationHeaderProvider.authorizationHeader("arbeidsgiver-notifikasjon") } returns "Bearer test-token"
         val restClient = RestClient.builder()
             .baseUrl("http://localhost:${wireMockServer.port()}")
+            .requestInterceptor(
+                AuthorizationHeaderInterceptorFactory(authorizationHeaderProvider)
+                    .authorizationInterceptor("arbeidsgiver-notifikasjon")
+            )
             .build()
-        every { authorizationHeaderProvider.authorizationHeader("arbeidsgiver-notifikasjon") } returns "Bearer test-token"
-        consumer = ArbeidsgiverNotifikasjonClient(restClient, authorizationHeaderProvider, merkelapp, ressursId)
+        consumer = ArbeidsgiverNotifikasjonClient(restClient, merkelapp, ressursId)
     }
 
     afterEach {

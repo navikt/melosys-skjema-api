@@ -1,11 +1,9 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
@@ -13,13 +11,8 @@ private val log = KotlinLogging.logger { }
 
 @Component
 class ReprConsumer(
-    private val reprClientTokenX: RestClient,
-    private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider
+    private val reprClientTokenX: RestClient
 ) {
-
-    companion object {
-        private const val CLIENT_NAME = "repr-api"
-    }
 
     @Cacheable(value = ["fullmakter"], key = "@cacheKeyProvider.getUserId()", condition = "@cacheKeyProvider.getUserId() != null")
     fun hentKanRepresentere(): List<Fullmakt> {
@@ -27,7 +20,6 @@ class ReprConsumer(
 
         return reprClientTokenX.get()
             .uri("/api/v2/eksternbruker/fullmakt/kan-representere")
-            .header(HttpHeaders.AUTHORIZATION, authorizationHeaderProvider.authorizationHeader(CLIENT_NAME))
             .retrieve()
             .body(object : ParameterizedTypeReference<List<Fullmakt>>() {})
             ?: emptyList()

@@ -53,7 +53,7 @@ class PdlConsumerTest : ApiTestBase() {
     }
 
     @Test
-    fun `hentPerson retryer PDL-kall og henter token kun én gang`() {
+    fun `hentPerson retryer PDL-kall og setter auth-headere via interceptor på hvert forsøk`() {
         val expectedAccessToken = "pdl-token"
         val tokenCalls = AtomicInteger(0)
 
@@ -112,7 +112,7 @@ class PdlConsumerTest : ApiTestBase() {
                 .withHeader(HttpHeaders.AUTHORIZATION, equalTo("Bearer $expectedAccessToken"))
                 .withHeader("Nav-Consumer-Token", equalTo("Bearer $expectedAccessToken"))
         )
-        tokenCalls.get() shouldBe 1
-        verify(exactly = 1) { oAuth2AccessTokenService.getAccessToken(any()) }
+        tokenCalls.get() shouldBe 2
+        verify(exactly = 2) { oAuth2AccessTokenService.getAccessToken(any()) }
     }
 }
