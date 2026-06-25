@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Reproduserer journalførings-bugen i det ENKLE tilfellet (ingen ny versjon / arvet kobling):
-# Arbeidsgiver sender sin del FØRST, så sender arbeidstaker sin del. Arbeidstakers del blir
-# motpart-koblet til arbeidsgivers del, og arbeidstakers PDF får da BEGGE deler.
+# Repro: arbeidsgiver sender sin del først, så arbeidstaker → motpart-kobling.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_repro-lib.sh"
 

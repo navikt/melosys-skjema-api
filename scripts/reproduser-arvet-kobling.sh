@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# Reproduserer "arvet kobling -> komplett PDF" mot LOKAL benk:
-#   arbeidstaker (v1) -> arbeidsgiver -> NY versjon av arbeidstakers del (v2).
-# v2 arver kobling til (utdatert) arbeidsgivers del, slik at M2M-PDF-en feilaktig får begge deler.
-#
-# Sender ekte skjema via melosys-skjema-api (:8090) med ekte tokens fra mock-oauth2-server (:8082).
-# Resten (Kafka -> melosys-api -> sak) skjer av seg selv.
+# Repro: arbeidstaker (v1) -> arbeidsgiver -> ny versjon arbeidstakers del (v2) som arver kobling.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_repro-lib.sh"
 

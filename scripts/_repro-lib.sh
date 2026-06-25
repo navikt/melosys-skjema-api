@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
-# Delt hjelpebibliotek for repro-skriptene. Source-es inn av kallende skript:
-#   source "$(dirname "${BASH_SOURCE[0]}")/_repro-lib.sh"
-#
-# Gir env-defaults, testidentiteter, lavnivå-helpere (token/post/opprett/fyll/send_inn) og
-# høynivå-helpere (send_arbeidstakerdel/send_arbeidsgiverdel) slik at det er trivielt å sende
-# inn flere skjema fra et kallende skript.
-#
-# Identiteter (se melosys-docker-compose/TESTBRUKERE.md):
-#   Arbeidstaker (DEG_SELV):     HANS HANSEN       01816023404
-#   Arbeidsgiver (ARBEIDSGIVER): KARAFFEL TRIVIELL 30056928150 (Altinn-tilgang til Ståles Stål)
-#   Organisasjon:                Ståles Stål AS    999999999
+# Delt bibliotek for repro-skriptene. Source-es inn av de andre.
+# Identiteter (melosys-docker-compose/TESTBRUKERE.md): arbeidstaker HANS HANSEN 01816023404,
+# arbeidsgiver KARAFFEL TRIVIELL 30056928150, org Ståles Stål AS 999999999.
 
 SKJEMA_API=${SKJEMA_API:-http://localhost:8090}
 MOCK_OAUTH=${MOCK_OAUTH:-http://localhost:8082}
@@ -21,25 +13,20 @@ ORGNR=${ORGNR:-999999999}
 ORGNAVN=${ORGNAVN:-"Ståles Stål AS"}
 LAND=${LAND:-BE}
 
-# Randomiser periode så hver kjøring blir en fersk sak (unngå kollisjon med gamle saker).
 _Y=$((2027 + RANDOM % 5)); _M=$(printf '%02d' $((1 + RANDOM % 9)))
 FRA=${FRA:-${_Y}-${_M}-01}
 TIL=${TIL:-${_Y}-${_M}-28}
 PERIODE="{\"utsendelseLand\":\"$LAND\",\"utsendelsePeriode\":{\"fraDato\":\"$FRA\",\"tilDato\":\"$TIL\"}}"
 
-# Pause mellom innsendinger så melosys-api rekker å committe sak + mapping før neste melding
-# konsumeres (demper duplikatsak-bug ved samtidig prosessering).
 SLEEP=${SLEEP:-4}
-
-# Hvor PDF-er lagres. Overstyr med OUTDIR=. for å skrive til arbeidsmappa.
 OUTDIR=${OUTDIR:-/tmp}
 
-token() { # token <issuer> <param>   (param: "pid=.." for tokenx, "scope=.." for isso)
+token() {
   curl -s -X POST "$MOCK_OAUTH/$1/token" \
     -d "grant_type=client_credentials&client_id=test&client_secret=dummy&$2" | jq -r '.access_token'
 }
 
-post() { # post <token> <path> <json>   -> echoer body, feiler ved ikke-2xx
+post() {
   local code body
   body=$(curl -s -w '\n%{http_code}' -X POST "$BASE/$2" \
     -H "Authorization: Bearer $1" -H 'Content-Type: application/json' -d "$3")
@@ -48,7 +35,7 @@ post() { # post <token> <path> <json>   -> echoer body, feiler ved ikke-2xx
   echo "$body"
 }
 
-opprett() { # opprett <token> <representasjonstype>  -> echoer skjemaId
+opprett() {
   local rep=$2 person
   if [[ "$rep" == DEG_SELV ]]; then person="{\"fnr\":\"$ARBEIDSTAKER_FNR\"}";
   else person="{\"fnr\":\"$ARBEIDSTAKER_FNR\",\"etternavn\":\"HANSEN\"}"; fi
@@ -57,7 +44,7 @@ opprett() { # opprett <token> <representasjonstype>  -> echoer skjemaId
     | jq -r '.id'
 }
 
-fyll_arbeidstakerdel() { # <token> <skjemaId>
+fyll_arbeidstakerdel() {
   post "$1" "$2/utsendingsperiode-og-land" "$PERIODE" >/dev/null
   post "$1" "$2/arbeidssituasjon" '{"harVaertEllerSkalVaereILonnetArbeidFoerUtsending":true,"skalJobbeForFlereVirksomheter":false}' >/dev/null
   post "$1" "$2/skatteforhold-og-inntekt" '{"erSkattepliktigTilNorgeIHeleutsendingsperioden":true,"mottarPengestotteFraAnnetEosLandEllerSveits":false,"inntektFraNorskEllerUtenlandskVirksomhet":["NORSK_VIRKSOMHET"],"hvilkeTyperInntektHarDu":["LOENN"]}' >/dev/null
@@ -66,7 +53,7 @@ fyll_arbeidstakerdel() { # <token> <skjemaId>
   post "$1" "$2/vedlegg" '{"harAnnenDokumentasjon":false}' >/dev/null
 }
 
-fyll_arbeidsgiverdel() { # <token> <skjemaId>
+fyll_arbeidsgiverdel() {
   post "$1" "$2/utsendingsperiode-og-land" "$PERIODE" >/dev/null
   post "$1" "$2/arbeidsgiverens-virksomhet-i-norge" '{"erArbeidsgiverenOffentligVirksomhet":false,"erArbeidsgiverenBemanningsEllerVikarbyraa":false,"opprettholderArbeidsgiverenVanligDrift":true}' >/dev/null
   post "$1" "$2/utenlandsoppdraget" '{"arbeidsgiverHarOppdragILandet":true,"arbeidstakerBleAnsattForUtenlandsoppdraget":false,"arbeidstakerForblirAnsattIHelePerioden":true,"arbeidstakerErstatterAnnenPerson":false}' >/dev/null
@@ -76,19 +63,17 @@ fyll_arbeidsgiverdel() { # <token> <skjemaId>
   post "$1" "$2/vedlegg" '{"harAnnenDokumentasjon":false}' >/dev/null
 }
 
-send_inn() { # <token> <skjemaId> -> echoer referanseId
+send_inn() {
   post "$1" "$2/send-inn" '' | jq -r '.referanseId'
 }
 
-# Høynivå: opprett + fyll + send en komplett del i ett kall. Setter SKJEMA_ID og REFERANSE
-# slik at flere innsendinger blir en enkel sekvens (eller løkke) i kallende skript.
-send_arbeidstakerdel() { # <token>
+send_arbeidstakerdel() {
   SKJEMA_ID=$(opprett "$1" DEG_SELV)
   fyll_arbeidstakerdel "$1" "$SKJEMA_ID"
   REFERANSE=$(send_inn "$1" "$SKJEMA_ID")
 }
 
-send_arbeidsgiverdel() { # <token>
+send_arbeidsgiverdel() {
   SKJEMA_ID=$(opprett "$1" ARBEIDSGIVER)
   fyll_arbeidsgiverdel "$1" "$SKJEMA_ID"
   REFERANSE=$(send_inn "$1" "$SKJEMA_ID")
