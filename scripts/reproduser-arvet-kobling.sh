@@ -31,6 +31,7 @@ echo "   koblet skjemadel  = $(jq -r '.kobletSkjema.metadata.skjemadel' <<<"$DAT
 PDF="$OUTDIR/v2-$AT_V2.pdf"
 curl -s "$SKJEMA_API/m2m/api/skjema/$AT_V2/pdf" -H "Authorization: Bearer $TOK_M2M" -o "$PDF"
 echo "   PDF lagret: $PDF ($(wc -c <"$PDF") bytes)"
+inspiser_pdf "$PDF"
 
 echo
 echo "✓ Fullført. Referanser: v1=$REF1  AG=$REF2  v2=$REF3"

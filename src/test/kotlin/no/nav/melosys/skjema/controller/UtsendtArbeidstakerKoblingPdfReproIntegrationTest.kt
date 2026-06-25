@@ -12,6 +12,7 @@ import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
@@ -134,7 +135,8 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
         sendInn(arbeidsgiverDel.id!!, innbyggerToken)
 
         // Nå er v1 og arbeidsgiverDel koblet sammen (komplett søknad).
-        skjemaRepository.findById(arbeidsgiverDel.id!!).get().utsendtKobletSkjemaId() shouldBe arbeidstakerV1.id
+        skjemaRepository.findById(arbeidsgiverDel.id!!).get()
+            .utsendtArbeidstakerMetadataOrThrow().kobletSkjemaId shouldBe arbeidstakerV1.id
 
         // --- 3) Innbygger (DEG_SELV) sender inn NY ARBEIDSTAKERS_DEL (v2) som erstatter v1 ---
         // Innbyggeren fyller KUN ut sin egen del på nytt; ingen ny arbeidsgivers del sendes.
@@ -253,7 +255,3 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
         return Loader.loadPDF(pdfBytes).use { PDFTextStripper().getText(it) }
     }
 }
-
-/** Leser ut `kobletSkjemaId` fra et UTSENDT_ARBEIDSTAKER-skjema sin metadata i testen. */
-private fun Skjema.utsendtKobletSkjemaId(): UUID? =
-    (metadata as no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata).kobletSkjemaId

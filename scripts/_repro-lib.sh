@@ -13,7 +13,7 @@ ORGNR=${ORGNR:-999999999}
 ORGNAVN=${ORGNAVN:-"Ståles Stål AS"}
 LAND=${LAND:-BE}
 
-_Y=$((2027 + RANDOM % 5)); _M=$(printf '%02d' $((1 + RANDOM % 9)))
+_Y=$((2027 + RANDOM % 50)); _M=$(printf '%02d' $((1 + RANDOM % 12)))
 FRA=${FRA:-${_Y}-${_M}-01}
 TIL=${TIL:-${_Y}-${_M}-28}
 PERIODE="{\"utsendelseLand\":\"$LAND\",\"utsendelsePeriode\":{\"fraDato\":\"$FRA\",\"tilDato\":\"$TIL\"}}"
@@ -77,4 +77,32 @@ send_arbeidsgiverdel() {
   SKJEMA_ID=$(opprett "$1" ARBEIDSGIVER)
   fyll_arbeidsgiverdel "$1" "$SKJEMA_ID"
   REFERANSE=$(send_inn "$1" "$SKJEMA_ID")
+}
+
+# Setter ny FRA/TIL/PERIODE. nyPeriode <fra> <til> for eksplisitt periode, eller uten
+# argumenter for en tilfeldig. Bruk mellom innsendinger for å få distinkte saker (ulik,
+# ikke-overlappende periode => ingen motpart-/erstatter-kobling).
+nyPeriode() {
+  if [[ $# -eq 2 ]]; then
+    FRA=$1; TIL=$2
+  else
+    local y m
+    y=$((2027 + RANDOM % 50)); m=$(printf '%02d' $((1 + RANDOM % 12)))
+    FRA="${y}-${m}-01"; TIL="${y}-${m}-28"
+  fi
+  PERIODE="{\"utsendelseLand\":\"$LAND\",\"utsendelsePeriode\":{\"fraDato\":\"$FRA\",\"tilDato\":\"$TIL\"}}"
+}
+
+# Inspiserer PDF-teksten og rapporterer hvilke deler den inneholder (krever pdftotext).
+inspiser_pdf() { # <pdf-fil>
+  if ! command -v pdftotext >/dev/null; then
+    echo "   (pdftotext ikke installert – hopper over tekst-sjekk)"; return
+  fi
+  local tekst; tekst=$(pdftotext -layout "$1" - 2>/dev/null || true)
+  grep -q "Arbeidstakers del" <<<"$tekst" && echo "   ✓ inneholder «Arbeidstakers del»"
+  if grep -q "Arbeidsgivers del" <<<"$tekst"; then
+    echo "   ⚠ inneholder «Arbeidsgivers del» (bug ikke fikset)"
+  else
+    echo "   ✓ inneholder IKKE «Arbeidsgivers del» (fiks virker)"
+  fi
 }

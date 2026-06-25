@@ -22,21 +22,24 @@ reprodusere og verifisere koblings-/journalføringsadferd ende-til-ende.
 | `reproduser-motpart-ag-forst.sh` | Arbeidsgiver sender sin del **først**, så arbeidstaker. Arbeidstakers del motpart-kobles til arbeidsgivers del. |
 | `_repro-lib.sh` | Delt bibliotek (source-es av de andre): env-defaults, testidentiteter og helpere. |
 
-Begge henter til slutt M2M-PDF for arbeidstakers del og viser om den (feilaktig) inneholder
-arbeidsgivers del.
+Begge henter til slutt M2M-PDF for arbeidstakers del og inspiserer teksten (krever `pdftotext`)
+for å vise om den (feilaktig) inneholder arbeidsgivers del.
 
 ### Sende flere søknader
 
 `_repro-lib.sh` gir høynivå-helperne `send_arbeidstakerdel`/`send_arbeidsgiverdel` (opprett +
 fyll ut alle steg + send inn i ett kall). De setter `SKJEMA_ID` og `REFERANSE`, så et eget skript
-kan sende mange søknader på rad:
+kan sende mange søknader på rad. Bruk `nyPeriode` mellom hver innsending for å få **distinkte
+saker** – ellers matcher samme person + enhet + overlappende periode og hver iterasjon blir en
+erstatter-/motpart-kobling av den forrige i stedet for en ny sak:
 
 ```bash
 source scripts/_repro-lib.sh
 TOK=$(token tokenx "audience=melosys-skjema-api&pid=$ARBEIDSTAKER_FNR")
 for i in $(seq 1 5); do
+  nyPeriode "203${i}-01-01" "203${i}-01-28"   # distinkt, ikke-overlappende periode => ny sak
   send_arbeidstakerdel "$TOK"
-  echo "sendt #$i: skjemaId=$SKJEMA_ID referanse=$REFERANSE"
+  echo "sendt #$i: skjemaId=$SKJEMA_ID referanse=$REFERANSE (periode $FRA–$TIL)"
   sleep "$SLEEP"
 done
 ```

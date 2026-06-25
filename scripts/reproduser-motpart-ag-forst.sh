@@ -25,5 +25,6 @@ echo "   kobletSkjema.id   = $(jq -r '.kobletSkjema.id' <<<"$DATA")"
 PDF="$OUTDIR/at-$AT.pdf"
 curl -s "$SKJEMA_API/m2m/api/skjema/$AT/pdf" -H "Authorization: Bearer $TOK_M2M" -o "$PDF"
 echo "   PDF: $PDF ($(wc -c <"$PDF") bytes)"
+inspiser_pdf "$PDF"
 echo
 echo "Referanser: AG=$REF_AG  AT=$REF_AT  | periode $FRA–$TIL"
