@@ -56,6 +56,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-restclient")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-aspectj")
+    implementation("org.springframework.retry:spring-retry:2.0.13")
     implementation("no.nav.security:token-validation-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-client-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-validation-core:${tokenSupportVersion}")

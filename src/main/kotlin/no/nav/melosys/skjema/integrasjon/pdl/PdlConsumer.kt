@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
-import no.nav.melosys.skjema.integrasjon.felles.RestClientConfig
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLError
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLResponse
@@ -11,7 +10,11 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlHentPersonResponse
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
+import org.springframework.web.client.HttpServerErrorException
+import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
@@ -29,6 +32,11 @@ class PdlConsumer(
      * @return PdlPerson med navn og fødselsdato
      * @throws IllegalArgumentException hvis person ikke finnes eller response er ugyldig
      */
+    @Retryable(
+        retryFor = [HttpServerErrorException::class, ResourceAccessException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000L, multiplier = 2.0, random = true)
+    )
     @Cacheable(value = ["pdl-person"], key = "#ident")
     fun hentPerson(ident: String): PdlPerson {
         log.debug { "Henter person fra PDL" }
@@ -38,13 +46,11 @@ class PdlConsumer(
             variables = mapOf("ident" to ident)
         )
 
-        val response = RestClientConfig.withRetry(maxAttempts = 3, backoffMillis = 1000) {
-            pdlClient.post()
-                .header("Nav-Call-Id", UUID.randomUUID().toString())
-                .body(graphQLRequest)
-                .retrieve()
-                .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonResponse>>() {})
-        }
+        val response = pdlClient.post()
+            .header("Nav-Call-Id", UUID.randomUUID().toString())
+            .body(graphQLRequest)
+            .retrieve()
+            .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonResponse>>() {})
 
         håndterFeil(response)
 
@@ -74,6 +80,11 @@ class PdlConsumer(
      * @param identer Liste med fødselsnummer/d-nummer
      * @return Map med fnr som key og PdlPerson som value (kun for personer som ble funnet)
      */
+    @Retryable(
+        retryFor = [HttpServerErrorException::class, ResourceAccessException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000L, multiplier = 2.0, random = true)
+    )
     @Cacheable(value = ["pdl-personer-bulk"], keyGenerator = "pdlBolkKeyGenerator")
     fun hentPersonerBolk(identer: List<String>): Map<String, PdlPerson> {
         if (identer.isEmpty()) {
@@ -87,13 +98,11 @@ class PdlConsumer(
             variables = mapOf("identer" to identer)
         )
 
-        val response = RestClientConfig.withRetry(maxAttempts = 3, backoffMillis = 1000) {
-            pdlClient.post()
-                .header("Nav-Call-Id", UUID.randomUUID().toString())
-                .body(graphQLRequest)
-                .retrieve()
-                .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonBolkResponse>>() {})
-        }
+        val response = pdlClient.post()
+            .header("Nav-Call-Id", UUID.randomUUID().toString())
+            .body(graphQLRequest)
+            .retrieve()
+            .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonBolkResponse>>() {})
 
         if (response == null) {
             throw RuntimeException("Respons fra PDL bulk-query er null")
