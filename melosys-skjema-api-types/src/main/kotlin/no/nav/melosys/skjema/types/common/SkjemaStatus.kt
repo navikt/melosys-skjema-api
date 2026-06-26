@@ -17,8 +17,8 @@ enum class SkjemaStatus {
      *
      * Beholdes kun så JPA fortsatt kan mappe eksisterende rader med `status='SLETTET'` uten å kaste
      * (EnumType.STRING) i tidsvinduet før admin-oppryddingen (POST /admin/utkast/rydd-slettede) har
-     * fysisk slettet dem i prod. Fjernes – sammen med DB-constraintet – i en oppfølgings-PR etter at
-     * oppryddingen er kjørt.
+     * fysisk slettet dem i prod. Fjernes – sammen med DB-constraintet – i oppfølgings-PR-en
+     * MELOSYS-8157 etter at oppryddingen er kjørt.
      */
     @Deprecated("Legacy soft-delete – fjernes etter at prod er ryddet via admin-endepunktet")
     SLETTET

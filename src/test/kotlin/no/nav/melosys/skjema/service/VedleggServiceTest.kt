@@ -20,6 +20,7 @@ import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
 
 class VedleggServiceTest : FunSpec({
@@ -222,6 +223,41 @@ class VedleggServiceTest : FunSpec({
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 vedleggService.slettAlleForSkjema(skjemaId)
+            }
+        }
+    }
+
+    context("slettBlobberForSkjemaEtterCommit") {
+        test("sletter blobs først etter commit") {
+            val ref = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
+            val vedlegg = mockk<Vedlegg> { every { storageReferanse } returns ref }
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg)
+            every { mockVedleggStorageClient.slett(any()) } just Runs
+
+            TransactionSynchronizationManager.initSynchronization()
+            try {
+                vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
+
+                verify(exactly = 0) { mockVedleggStorageClient.slett(any()) }
+
+                TransactionSynchronizationManager.getSynchronizations().forEach { it.afterCommit() }
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization()
+            }
+
+            verify(exactly = 1) { mockVedleggStorageClient.slett(ref) }
+        }
+
+        test("registrerer ingen synkronisering når ingen vedlegg finnes") {
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns emptyList()
+
+            TransactionSynchronizationManager.initSynchronization()
+            try {
+                vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
+
+                TransactionSynchronizationManager.getSynchronizations() shouldBe emptyList()
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization()
             }
         }
     }

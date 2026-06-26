@@ -30,7 +30,6 @@ import no.nav.melosys.skjema.validators.ValidationException
 import no.nav.melosys.skjema.validators.Violation
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Lazy
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -152,9 +151,9 @@ class UtsendtArbeidstakerService(
     /**
      * Sletter et skjema med status UTKAST permanent (hard delete).
      *
-     * Validerer skrivetilgang og at skjemaet er i utkast-status. Sletter både skjema-raden
-     * og tilhørende vedlegg — inkludert vedlegg-blobs i bucket (GDPR: ingen foreldreløse filer).
-     * DB-cascade fjerner vedlegg/innsending/fullmakt-rader, men blob-filene må slettes eksplisitt.
+     * DB-cascade fjerner tilhørende vedlegg-/innsending-/fullmakt-rader når skjema-raden slettes.
+     * Vedlegg-blobbene i bucket slettes FØRST etter at transaksjonen har committet (GDPR: ingen
+     * foreldreløse filer, og en rollback etterlater ikke vedlegg-rader uten blob).
      *
      * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
@@ -165,7 +164,7 @@ class UtsendtArbeidstakerService(
     fun slettUtkast(skjemaId: UUID) {
         val skjema = hentRedigerbartSkjema(skjemaId)
 
-        vedleggService.slettAlleForSkjema(skjemaId)
+        vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
         skjemaRepository.delete(skjema)
 
         log.info { "Utkast slettet: $skjemaId" }
@@ -380,7 +379,7 @@ class UtsendtArbeidstakerService(
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
 
     private fun findByIdOrThrow(skjemaId: UUID): Skjema =
-        skjemaRepository.findByIdOrNull(skjemaId)
+        skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
 
     fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {

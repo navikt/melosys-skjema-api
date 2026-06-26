@@ -616,8 +616,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `JPA skal kunne laste legacy SLETTET-rad uten å kaste i opprydding-vinduet`() {
             // Regresjon: SLETTET er fjernet som aktiv status, men beholdt i enumet slik at eksisterende
-            // rader kan mappes (EnumType.STRING) før admin-oppryddingen er kjørt i prod. Uten dette ville
-            // findById på en gammel soft-deletet rad kaste og gi 500 i klient-kodeløp.
+            // rader kan mappes (EnumType.STRING) før admin-oppryddingen er kjørt i prod (MELOSYS-8157).
+            // Uten dette ville findById på en gammel soft-deletet rad kaste og gi 500 i klient-kodeløp.
             val skjemaId = skjemaRepository.save(
                 skjemaMedDefaultVerdier(status = SkjemaStatus.SLETTET)
             ).id.shouldNotBeNull()

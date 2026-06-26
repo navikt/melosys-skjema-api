@@ -46,7 +46,7 @@ data class RetryResultatDto(
 )
 
 /**
- * Resultat av MIDLERTIDIG opprydding av soft-deletede (SLETTET) utkast.
+ * Resultat av MIDLERTIDIG opprydding av soft-deletede (SLETTET) utkast (MELOSYS-8157).
  *
  * @property antallSkjema antall skjema-rader som ble hard-slettet (cascade fjernet vedlegg/innsending)
  * @property antallVedleggSlettet antall vedlegg-blobs som ble slettet fra bucket

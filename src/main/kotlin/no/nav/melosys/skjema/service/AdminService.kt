@@ -322,7 +322,7 @@ class AdminService(
      * unngå lange transaksjoner / lock-holdetid ved nettverkslatens. Selve DELETE-en kjøres i sin egen
      * korte transaksjon ([SkjemaRepository.slettAlleSletteSkjema]).
      *
-     * Fjernes når prod er ryddet.
+     * Fjernes når prod er ryddet (MELOSYS-8157).
      */
     fun ryddSletteUtkast(): RyddUtkastResultatDto {
         val storageReferanser = skjemaRepository.finnVedleggStorageReferanserForSletteSkjema()
