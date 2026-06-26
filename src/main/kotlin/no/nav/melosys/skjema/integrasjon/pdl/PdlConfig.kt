@@ -25,7 +25,7 @@ class PdlConfig(
     }
 
     @Bean
-    fun pdlClient(
+    fun pdlRestClient(
         restClientBuilder: RestClient.Builder,
         correlationIdOutgoingInterceptor: CorrelationIdOutgoingInterceptor,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory

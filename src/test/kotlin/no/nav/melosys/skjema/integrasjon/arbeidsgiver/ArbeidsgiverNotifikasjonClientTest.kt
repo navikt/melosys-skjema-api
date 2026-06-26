@@ -19,7 +19,7 @@ import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFa
 import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import org.springframework.web.client.RestClient
 
-class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
+class ArbeidsgiverNotifikasjonClientTest : FunSpec({
 
     // HTTP/1.1 mot mocken – unngår flaky HTTP/2 (h2c) i test.
     val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true))

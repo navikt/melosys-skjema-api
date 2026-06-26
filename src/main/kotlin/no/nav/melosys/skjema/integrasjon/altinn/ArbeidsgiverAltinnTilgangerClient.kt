@@ -11,8 +11,8 @@ import org.springframework.web.client.body
 private val log = KotlinLogging.logger { }
 
 @Component
-class ArbeidsgiverAltinnTilgangerConsumer(
-    private val arbeidsgiverAltinnTilgangerClient: RestClient
+class ArbeidsgiverAltinnTilgangerClient(
+    private val arbeidsgiverAltinnTilgangerRestClient: RestClient
 ) {
 
     fun hentTilganger(altinnFilter: AltinnFilter? = null): AltinnTilgangerResponse {
@@ -20,7 +20,7 @@ class ArbeidsgiverAltinnTilgangerConsumer(
 
         val request = AltinnTilgangerRequest(altinnFilter)
 
-        return arbeidsgiverAltinnTilgangerClient.post()
+        return arbeidsgiverAltinnTilgangerRestClient.post()
             .uri("/altinn-tilganger")
             .body(request)
             .retrieve()

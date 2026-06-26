@@ -21,11 +21,11 @@ class ReprClientProducer(
     }
 
     @Bean
-    fun reprClientTokenX(
+    fun reprRestClient(
         restClientBuilder: RestClient.Builder,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
-        log.info { "Konfigurerer ReprConsumer med base URL: $reprBaseUrl" }
+        log.info { "Konfigurerer ReprClient med base URL: $reprBaseUrl" }
 
         return restClientBuilder
             .baseUrl(reprBaseUrl)

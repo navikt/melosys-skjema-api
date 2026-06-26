@@ -16,10 +16,10 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 
-class EregConsumerTest : ApiTestBase() {
+class EregClientTest : ApiTestBase() {
 
     @Autowired
-    private lateinit var eregConsumer: EregConsumer
+    private lateinit var eregClient: EregClient
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -43,7 +43,7 @@ class EregConsumerTest : ApiTestBase() {
             )
         )
 
-        eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = false)
+        eregClient.hentOrganisasjon(orgnummer, inkluderHierarki = false)
 
         wireMockServer.verify(getRequestedFor(urlPathEqualTo("/v2/organisasjon/$orgnummer"))
             .withQueryParam("inkluderHierarki", equalTo("false"))
@@ -63,7 +63,7 @@ class EregConsumerTest : ApiTestBase() {
         )
 
         assertThrows<OrganisasjonEksistererIkkeException> {
-            eregConsumer.hentOrganisasjon("999999999")
+            eregClient.hentOrganisasjon("999999999")
         }
     }
 }

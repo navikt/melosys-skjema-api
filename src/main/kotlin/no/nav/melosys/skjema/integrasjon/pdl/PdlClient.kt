@@ -20,8 +20,8 @@ import org.springframework.web.client.RestClient
 private val log = KotlinLogging.logger { }
 
 @Component
-class PdlConsumer(
-    private val pdlClient: RestClient
+class PdlClient(
+    private val pdlRestClient: RestClient
 ) {
 
     /**
@@ -46,7 +46,7 @@ class PdlConsumer(
             variables = mapOf("ident" to ident)
         )
 
-        val response = pdlClient.post()
+        val response = pdlRestClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
             .body(graphQLRequest)
             .retrieve()
@@ -98,7 +98,7 @@ class PdlConsumer(
             variables = mapOf("identer" to identer)
         )
 
-        val response = pdlClient.post()
+        val response = pdlRestClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
             .body(graphQLRequest)
             .retrieve()

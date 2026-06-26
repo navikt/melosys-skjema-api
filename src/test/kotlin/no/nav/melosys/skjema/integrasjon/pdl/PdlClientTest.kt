@@ -23,10 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.CacheManager
 import org.springframework.http.HttpHeaders
 
-class PdlConsumerTest : ApiTestBase() {
+class PdlClientTest : ApiTestBase() {
 
     @Autowired
-    private lateinit var pdlConsumer: PdlConsumer
+    private lateinit var pdlClient: PdlClient
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -103,7 +103,7 @@ class PdlConsumerTest : ApiTestBase() {
                 )
         )
 
-        val person = pdlConsumer.hentPerson("12345678901")
+        val person = pdlClient.hentPerson("12345678901")
 
         person.hentFulltNavn() shouldBe "Ola Nordmann"
         wireMockServer.verify(

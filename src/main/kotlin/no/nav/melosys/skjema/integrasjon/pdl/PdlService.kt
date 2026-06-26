@@ -11,7 +11,7 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class PdlService(
-    private val pdlConsumer: PdlConsumer,
+    private val pdlClient: PdlClient,
     @param:Value("\${validation.fodselsnummer.synthetic-mode}")
     private val validerSyntetiskFnr: Boolean
 ) {
@@ -34,7 +34,7 @@ class PdlService(
         }
 
         val person = try {
-            pdlConsumer.hentPerson(fodselsnummer)
+            pdlClient.hentPerson(fodselsnummer)
         } catch (e: IllegalArgumentException) {
             log.warn(e) { "Fant ikke person ved verifisering" }
             throw PersonVerifiseringException("Fødselsnummer og etternavn matcher ikke")
@@ -56,5 +56,5 @@ class PdlService(
      * @throws IllegalArgumentException hvis person mangler navn registrert i PDL.
      */
     fun hentNavn(fodselsnummer: String): String =
-        pdlConsumer.hentPerson(fodselsnummer).hentFulltNavn()
+        pdlClient.hentPerson(fodselsnummer).hentFulltNavn()
 }

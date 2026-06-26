@@ -21,11 +21,11 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
     }
 
     @Bean
-    fun arbeidsgiverAltinnTilgangerClient(
+    fun arbeidsgiverAltinnTilgangerRestClient(
         restClientBuilder: RestClient.Builder,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
-        log.info { "Konfigurerer ArbeidsgiverAltinnTilgangerConsumer med base URL: $arbeidsgiverAltinnTilgangerBaseUrl" }
+        log.info { "Konfigurerer ArbeidsgiverAltinnTilgangerClient med base URL: $arbeidsgiverAltinnTilgangerBaseUrl" }
 
         return restClientBuilder
             .baseUrl(arbeidsgiverAltinnTilgangerBaseUrl)

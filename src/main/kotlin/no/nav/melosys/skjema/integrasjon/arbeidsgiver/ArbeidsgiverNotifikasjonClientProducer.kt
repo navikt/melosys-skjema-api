@@ -25,7 +25,7 @@ class ArbeidsgiverNotifikasjonClientProducer(
         restClientBuilder: RestClient.Builder,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
-        log.info { "Konfigurerer ArbeidsgiverNotifikasjonConsumer med base URL: $arbeidsgiverNotifikasjonBaseUrl" }
+        log.info { "Konfigurerer ArbeidsgiverNotifikasjonClient med base URL: $arbeidsgiverNotifikasjonBaseUrl" }
 
         return restClientBuilder
             .baseUrl(arbeidsgiverNotifikasjonBaseUrl)

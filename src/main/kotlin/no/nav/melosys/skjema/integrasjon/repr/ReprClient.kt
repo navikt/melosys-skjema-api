@@ -10,15 +10,15 @@ import org.springframework.web.client.RestClient
 private val log = KotlinLogging.logger { }
 
 @Component
-class ReprConsumer(
-    private val reprClientTokenX: RestClient
+class ReprClient(
+    private val reprRestClient: RestClient
 ) {
 
     @Cacheable(value = ["fullmakter"], key = "@cacheKeyProvider.getUserId()", condition = "@cacheKeyProvider.getUserId() != null")
     fun hentKanRepresentere(): List<Fullmakt> {
         log.info { "Kaller repr-api /api/v2/eksternbruker/fullmakt/kan-representere" }
 
-        return reprClientTokenX.get()
+        return reprRestClient.get()
             .uri("/api/v2/eksternbruker/fullmakt/kan-representere")
             .retrieve()
             .body(object : ParameterizedTypeReference<List<Fullmakt>>() {})

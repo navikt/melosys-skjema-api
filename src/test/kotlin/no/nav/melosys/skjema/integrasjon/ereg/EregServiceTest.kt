@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test
 
 class EregServiceTest {
 
-    private val eregConsumer = mockk<EregConsumer>()
-    private val eregService = EregService(eregConsumer)
+    private val eregClient = mockk<EregClient>()
+    private val eregService = EregService(eregClient)
 
     @Test
     fun `hentOrganisasjonMedJuridiskEnhet henter organisasjon og beriker med juridisk enhet`() {
@@ -26,8 +26,8 @@ class EregServiceTest {
             )
         )
 
-        every { eregConsumer.hentOrganisasjon(virksomhet.organisasjonsnummer, inkluderHierarki = true) } returns virksomhet
-        every { eregConsumer.hentOrganisasjon(juridiskEnhet.organisasjonsnummer) } returns juridiskEnhet
+        every { eregClient.hentOrganisasjon(virksomhet.organisasjonsnummer, inkluderHierarki = true) } returns virksomhet
+        every { eregClient.hentOrganisasjon(juridiskEnhet.organisasjonsnummer) } returns juridiskEnhet
 
         val result = eregService.hentOrganisasjonMedJuridiskEnhet(virksomhet.organisasjonsnummer)
 
@@ -43,7 +43,7 @@ class EregServiceTest {
     fun `organisasjonsnummerEksisterer returnerer true når organisasjon eksisterer`() {
         val organisasjon = juridiskEnhetMedDefaultVerdier()
 
-        every { eregConsumer.hentOrganisasjon(organisasjon.organisasjonsnummer) } returns organisasjon
+        every { eregClient.hentOrganisasjon(organisasjon.organisasjonsnummer) } returns organisasjon
 
         val result = eregService.organisasjonsnummerEksisterer(organisasjon.organisasjonsnummer)
 
@@ -54,7 +54,7 @@ class EregServiceTest {
     fun `organisasjonsnummerEksisterer returnerer false når organisasjon ikke eksisterer`() {
         val orgnr = "999999999"
 
-        every { eregConsumer.hentOrganisasjon(orgnr) } throws OrganisasjonEksistererIkkeException(orgnr)
+        every { eregClient.hentOrganisasjon(orgnr) } throws OrganisasjonEksistererIkkeException(orgnr)
 
         val result = eregService.organisasjonsnummerEksisterer(orgnr)
 

@@ -6,7 +6,7 @@ import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.pdf.AktørInfo
 import no.nav.melosys.skjema.pdf.FullmektigInfo
 import no.nav.melosys.skjema.pdf.RadgiverInfo
@@ -37,7 +37,7 @@ class M2MSkjemaService(
     private val innsendingRepository: InnsendingRepository,
     private val vedleggService: VedleggService,
     private val skjemaDefinisjonService: SkjemaDefinisjonService,
-    private val pdlConsumer: PdlConsumer
+    private val pdlClient: PdlClient
 ) {
 
     fun hentUtsendtArbeidstakerSkjemaData(id: UUID): UtsendtArbeidstakerSkjemaM2MDto {
@@ -144,7 +144,7 @@ class M2MSkjemaService(
             språk = innsending.innsendtSprak
         )
 
-        val arbeidstakerNavn = pdlConsumer.hentPerson(skjema.fnr).hentFulltNavn()
+        val arbeidstakerNavn = pdlClient.hentPerson(skjema.fnr).hentFulltNavn()
 
         val aktørInfo = AktørInfo(
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
@@ -182,14 +182,14 @@ class M2MSkjemaService(
             else -> null
         } ?: return null
 
-        val fullmektig = pdlConsumer.hentPerson(fullmektigFnr)
+        val fullmektig = pdlClient.hentPerson(fullmektigFnr)
         return FullmektigInfo(navn = fullmektig.hentFulltNavn(), foedselsdato = fullmektig.hentFoedselsdato())
     }
 
     private fun hentKontaktpersonNavn(metadata: UtsendtArbeidstakerMetadata, innsending: Innsending): String? {
         return when (metadata) {
             is ArbeidsgiverMetadata, is ArbeidsgiverMedFullmaktMetadata ->
-                pdlConsumer.hentPerson(innsending.innsenderFnr).hentFulltNavn()
+                pdlClient.hentPerson(innsending.innsenderFnr).hentFulltNavn()
             else -> null
         }
     }
@@ -201,7 +201,7 @@ class M2MSkjemaService(
             else -> null
         } ?: return null
 
-        val personNavn = pdlConsumer.hentPerson(innsending.innsenderFnr).hentFulltNavn()
+        val personNavn = pdlClient.hentPerson(innsending.innsenderFnr).hentFulltNavn()
         return RadgiverInfo(
             firmaNavn = radgiverfirma.navn,
             personNavn = personNavn

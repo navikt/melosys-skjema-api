@@ -16,8 +16,8 @@ class EregConfig(
 ) {
 
     @Bean
-    fun eregClient(restClientBuilder: RestClient.Builder): RestClient {
-        log.info { "Konfigurerer EregConsumer med base URL: $eregBaseUrl" }
+    fun eregRestClient(restClientBuilder: RestClient.Builder): RestClient {
+        log.info { "Konfigurerer EregClient med base URL: $eregBaseUrl" }
 
         return restClientBuilder
             .baseUrl(eregBaseUrl)

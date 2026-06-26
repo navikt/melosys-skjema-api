@@ -15,8 +15,8 @@ import org.springframework.web.client.body
 private val log = KotlinLogging.logger { }
 
 @Component
-class EregConsumer(
-    private val eregClient: RestClient
+class EregClient(
+    private val eregRestClient: RestClient
 ) {
 
     @Retryable(
@@ -28,7 +28,7 @@ class EregConsumer(
     fun hentOrganisasjon(orgnummer: String, inkluderHierarki: Boolean = false): Organisasjon {
         log.info { "Henter organisasjon fra EREG: $orgnummer" }
 
-        return eregClient.get()
+        return eregRestClient.get()
             .uri { uriBuilder ->
                 uriBuilder
                     .path("/v2/organisasjon/{orgnummer}")

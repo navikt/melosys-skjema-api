@@ -19,8 +19,8 @@ import org.junit.jupiter.api.assertThrows
 
 class PdlServiceTest {
 
-    private val pdlConsumer = mockk<PdlConsumer>()
-    private val pdlService = PdlService(pdlConsumer, true)
+    private val pdlClient = mockk<PdlClient>()
+    private val pdlService = PdlService(pdlClient, true)
 
     @Test
     fun `verifiserOgHentPerson returnerer navn og fødselsdato når person finnes og etternavn matcher`() {
@@ -39,13 +39,13 @@ class PdlServiceTest {
             )
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val (navn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
 
         assertThat(navn).isEqualTo("Ola Nordmann")
         assertThat(fodselsdato).isEqualTo(LocalDate.of(1990, 1, 1))
-        verify { pdlConsumer.hentPerson(fodselsnummer) }
+        verify { pdlClient.hentPerson(fodselsnummer) }
     }
 
     @Test
@@ -65,7 +65,7 @@ class PdlServiceTest {
             )
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val (navn, fodselsdato) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
 
@@ -90,7 +90,7 @@ class PdlServiceTest {
             )
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
 
@@ -112,7 +112,7 @@ class PdlServiceTest {
         val fodselsnummer = korrektSyntetiskFnr
         val etternavn = "Nordmann"
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } throws IllegalArgumentException("Fant ikke ident i PDL")
+        every { pdlClient.hentPerson(fodselsnummer) } throws IllegalArgumentException("Fant ikke ident i PDL")
 
         val exception = assertThrows<PersonVerifiseringException> {
             pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
@@ -138,7 +138,7 @@ class PdlServiceTest {
             )
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<PersonVerifiseringException> {
             pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
@@ -158,7 +158,7 @@ class PdlServiceTest {
             )
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<PersonVerifiseringException> {
             pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
@@ -182,7 +182,7 @@ class PdlServiceTest {
             foedselsdato = emptyList() // Ingen fødselsdato registrert
         )
 
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<IllegalArgumentException> {
             pdlService.verifiserOgHentPerson(fodselsnummer, etternavn)
@@ -198,7 +198,7 @@ class PdlServiceTest {
             navn = listOf(PdlNavn(fornavn = "Kurt", mellomnavn = null, etternavn = "Sand")),
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
         )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Kurt Sand")
     }
@@ -206,7 +206,7 @@ class PdlServiceTest {
     @Test
     fun `hentNavn propagerer feil fra PDL-oppslag`() {
         val fodselsnummer = korrektSyntetiskFnr
-        every { pdlConsumer.hentPerson(fodselsnummer) } throws RuntimeException("PDL nede")
+        every { pdlClient.hentPerson(fodselsnummer) } throws RuntimeException("PDL nede")
 
         assertThrows<RuntimeException> { pdlService.hentNavn(fodselsnummer) }
     }
@@ -218,7 +218,7 @@ class PdlServiceTest {
             navn = emptyList(),
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1968-04-02"))
         )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         val exception = assertThrows<IllegalArgumentException> {
             pdlService.hentNavn(fodselsnummer)
@@ -236,7 +236,7 @@ class PdlServiceTest {
             ),
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         assertThat(pdlService.hentNavn(fodselsnummer)).isEqualTo("Hans Nordmann")
     }
@@ -251,7 +251,7 @@ class PdlServiceTest {
             ),
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         // Bruker oppgir det "gamle" etternavnet (FREG-master), men PDL-master har annet
         val (navn, _) = pdlService.verifiserOgHentPerson(fodselsnummer, "Nordmann")
@@ -286,7 +286,7 @@ class PdlServiceTest {
             ),
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
-        every { pdlConsumer.hentPerson(fodselsnummer) } returns person
+        every { pdlClient.hentPerson(fodselsnummer) } returns person
 
         // Historisk etternavn skal ikke matche
         val exception = assertThrows<PersonVerifiseringException> {
