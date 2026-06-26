@@ -5,6 +5,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.UUID
 import no.nav.melosys.skjema.kafka.exception.SendBrukervarselFeilet
+import no.nav.tms.varsel.action.EksternKanal
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Tekst
@@ -67,6 +68,9 @@ class BrukervarselProducerKafka(
             }
             brukervarselMelding.link?.let { this.link = it }
             aktivFremTil = ZonedDateTime.now(ZoneId.of("Z")).plusDays(14)
+            eksternVarsling {
+                preferertKanal = EksternKanal.SMS
+            }
         }
     }
 }
