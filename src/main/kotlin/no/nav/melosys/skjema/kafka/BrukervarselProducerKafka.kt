@@ -68,8 +68,10 @@ class BrukervarselProducerKafka(
             }
             brukervarselMelding.link?.let { this.link = it }
             aktivFremTil = ZonedDateTime.now(ZoneId.of("Z")).plusDays(14)
-            eksternVarsling {
-                preferertKanal = EksternKanal.SMS
+            if (brukervarselMelding.sms) {
+                eksternVarsling {
+                    preferertKanal = EksternKanal.SMS
+                }
             }
         }
     }

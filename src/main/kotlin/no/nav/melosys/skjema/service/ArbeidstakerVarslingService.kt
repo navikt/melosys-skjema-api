@@ -81,7 +81,8 @@ class ArbeidstakerVarslingService(
     private fun varsleOmFullmaktsInnsending(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
         val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
         val tekster = lagVarselteksterMedFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster))
+        // Mottaker trenger ikke foreta seg noe, så vi sender ikke SMS – kun varsel i innboks
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, sms = false))
         log.info { "Sendt informasjonsvarsel til arbeidstaker om fullmaktsinnsending" }
     }
 
