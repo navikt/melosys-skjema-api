@@ -48,7 +48,8 @@ class ArbeidstakerVarslingServiceTest {
                     melding.tekster.size == 2 &&
                     melding.tekster.any { it.språk == Språk.NORSK_BOKMAL && it.default } &&
                     melding.tekster.any { it.språk == Språk.ENGELSK } &&
-                    melding.link == forventetLenke
+                    melding.link == forventetLenke &&
+                    melding.sms
                 }
             )
         }
@@ -115,7 +116,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null })
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null && !it.sms })
         }
     }
 
@@ -134,7 +135,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null })
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == null && !it.sms })
         }
     }
 
