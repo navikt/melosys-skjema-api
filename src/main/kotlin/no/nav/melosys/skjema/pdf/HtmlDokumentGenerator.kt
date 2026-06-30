@@ -41,10 +41,6 @@ object HtmlDokumentGenerator {
             append(byggHeader(tittel, skjema.referanseId, skjema.innsendtDato, språk))
             append(byggAktørInfoSeksjon(skjema.aktørInfo, skjema.fullmektigInfo, skjema.radgiverInfo, språk))
             appendSkjemaData(skjema.skjemaData, skjema.definisjon, primaryRenderer, språk)
-            skjema.kobletSkjemaData?.let {
-                val kobletRenderer = SeksjonRenderer(feltRenderer, skjema.kobletVedlegg)
-                appendSkjemaData(it, skjema.definisjon, kobletRenderer, språk)
-            }
             append(byggHtmlSlutt())
         }
     }

@@ -50,8 +50,6 @@ data class SkjemaPdfData(
     val fullmektigInfo: FullmektigInfo? = null,
     val radgiverInfo: RadgiverInfo? = null,
     val skjemaData: UtsendtArbeidstakerSkjemaData,
-    val kobletSkjemaData: UtsendtArbeidstakerSkjemaData?,
     val vedlegg: List<VedleggDto>,
-    val kobletVedlegg: List<VedleggDto> = emptyList(),
     val definisjon: SkjemaDefinisjonDto
 )
