@@ -8,15 +8,15 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
+import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerClient
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgangerResponse
 
 class AltinnServiceTest : FunSpec({
     
-    val mockConsumer = mockk<ArbeidsgiverAltinnTilgangerConsumer>()
+    val mockClient = mockk<ArbeidsgiverAltinnTilgangerClient>()
     val altinnRessurs = "test-fager"
-    val service = AltinnService(mockConsumer, altinnRessurs)
+    val service = AltinnService(mockClient, altinnRessurs)
     
     test("hentBrukersTilganger skal returnere organisasjoner med riktig ressurs") {
         val response = AltinnTilgangerResponse(
@@ -42,7 +42,7 @@ class AltinnServiceTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { mockConsumer.hentTilganger(null) } returns response
+        every { mockClient.hentTilganger(null) } returns response
         
         val result = service.hentBrukersTilganger()
         
@@ -51,7 +51,7 @@ class AltinnServiceTest : FunSpec({
         result[0].navn shouldBe "Test AS"
         result[0].organisasjonsform shouldBe "AS"
         
-        verify(exactly = 1) { mockConsumer.hentTilganger(null) }
+        verify(exactly = 1) { mockClient.hentTilganger(null) }
     }
     
     test("hentBrukersTilganger skal returnere tom liste når isError = true") {
@@ -62,7 +62,7 @@ class AltinnServiceTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { mockConsumer.hentTilganger(null) } returns response
+        every { mockClient.hentTilganger(null) } returns response
         
         val result = service.hentBrukersTilganger()
         
@@ -71,7 +71,7 @@ class AltinnServiceTest : FunSpec({
     
     test("hentBrukersTilganger skal kaste videre ved exception") {
         every {
-            mockConsumer.hentTilganger(null) 
+            mockClient.hentTilganger(null) 
         } throws RuntimeException("Nettverksfeil")
         
         shouldThrow<RuntimeException> {
@@ -96,7 +96,7 @@ class AltinnServiceTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { mockConsumer.hentTilganger(null) } returns response
+        every { mockClient.hentTilganger(null) } returns response
         
         val result = service.harBrukerTilgang(orgnr)
         
@@ -120,7 +120,7 @@ class AltinnServiceTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { mockConsumer.hentTilganger(null) } returns response
+        every { mockClient.hentTilganger(null) } returns response
         
         val result = service.harBrukerTilgang(orgnr)
         
@@ -131,7 +131,7 @@ class AltinnServiceTest : FunSpec({
         val orgnr = "123456789"
         
         every { 
-            mockConsumer.hentTilganger(null) 
+            mockClient.hentTilganger(null) 
         } throws RuntimeException("Tilgangsfeil")
         
         shouldThrow<RuntimeException> {
@@ -162,7 +162,7 @@ class AltinnServiceTest : FunSpec({
             orgNrTilTilganger = emptyMap()
         )
         
-        every { mockConsumer.hentTilganger(null) } returns response
+        every { mockClient.hentTilganger(null) } returns response
         
         val result = service.hentBrukersTilganger()
         

@@ -21,10 +21,10 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
-class ArbeidsgiverAltinnTilgangerConsumerTest: ApiTestBase() {
+class ArbeidsgiverAltinnTilgangerClientTest: ApiTestBase() {
 
     @Autowired
-    private lateinit var arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer
+    private lateinit var arbeidsgiverAltinnTilgangerClient: ArbeidsgiverAltinnTilgangerClient
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -77,7 +77,7 @@ class ArbeidsgiverAltinnTilgangerConsumerTest: ApiTestBase() {
             )
         )
 
-        val altinnTilgangerResponse = arbeidsgiverAltinnTilgangerConsumer.hentTilganger(
+        val altinnTilgangerResponse = arbeidsgiverAltinnTilgangerClient.hentTilganger(
             AltinnFilter(
                 inkluderSlettede = false,
                 altinn2Tilganger = setOf("1234"),

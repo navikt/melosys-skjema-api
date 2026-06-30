@@ -1,14 +1,13 @@
 package no.nav.melosys.skjema.integrasjon.altinn
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction
-import org.springframework.web.reactive.function.client.ExchangeStrategies
-import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
@@ -18,35 +17,21 @@ class ArbeidsgiverAltinnTilgangerClientProducer(
 ) {
 
     companion object {
-        private const val MAX_IN_MEMORY_SIZE_BYTES = 16 * 1024 * 1024
+        private const val CLIENT_NAME = "arbeidsgiver-altinn-tilganger"
     }
 
     @Bean
-    fun arbeidsgiverAltinnTilgangerClient(
-        webClientBuilder: WebClient.Builder
-    ): WebClient {
-        log.info { "Konfigurerer ArbeidsgiverAltinnTilgangerConsumer med base URL: $arbeidsgiverAltinnTilgangerBaseUrl" }
+    fun arbeidsgiverAltinnTilgangerRestClient(
+        restClientBuilder: RestClient.Builder,
+        authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
+    ): RestClient {
+        log.info { "Konfigurerer ArbeidsgiverAltinnTilgangerClient med base URL: $arbeidsgiverAltinnTilgangerBaseUrl" }
 
-        return webClientBuilder
+        return restClientBuilder
             .baseUrl(arbeidsgiverAltinnTilgangerBaseUrl)
-            .exchangeStrategies(
-                ExchangeStrategies.builder()
-                    .codecs { it.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE_BYTES) }
-                    .build()
-            )
-            .filter(WebClientConfig.errorFilter("Kall mot arbeidsgiver-altinn-tilganger feilet"))
-            .filter(headerFilter())
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .requestInterceptor(authorizationHeaderInterceptorFactory.authorizationInterceptor(CLIENT_NAME))
             .build()
-    }
-
-    private fun headerFilter(): ExchangeFilterFunction {
-        return ExchangeFilterFunction.ofRequestProcessor { request ->
-            Mono.just(
-                org.springframework.web.reactive.function.client.ClientRequest.from(request)
-                    .header("Accept", "application/json")
-                    .header("Content-Type", "application/json")
-                    .build()
-            )
-        }
     }
 }

@@ -22,12 +22,11 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.CacheManager
 import org.springframework.http.HttpHeaders
-import reactor.core.scheduler.Schedulers
 
-class PdlConsumerTest : ApiTestBase() {
+class PdlClientTest : ApiTestBase() {
 
     @Autowired
-    private lateinit var pdlConsumer: PdlConsumer
+    private lateinit var pdlClient: PdlClient
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -54,14 +53,11 @@ class PdlConsumerTest : ApiTestBase() {
     }
 
     @Test
-    fun `hentPerson retryer PDL-kall uten å hente token på non-blocking tråd`() {
+    fun `hentPerson retryer PDL-kall og setter auth-headere via interceptor på hvert forsøk`() {
         val expectedAccessToken = "pdl-token"
         val tokenCalls = AtomicInteger(0)
 
         every { oAuth2AccessTokenService.getAccessToken(any()) } answers {
-            if (Schedulers.isInNonBlockingThread()) {
-                throw AssertionError("Token skal ikke hentes på Reactor non-blocking tråd")
-            }
             tokenCalls.incrementAndGet()
             OAuth2AccessTokenResponse(access_token = expectedAccessToken)
         }
@@ -107,7 +103,7 @@ class PdlConsumerTest : ApiTestBase() {
                 )
         )
 
-        val person = pdlConsumer.hentPerson("12345678901")
+        val person = pdlClient.hentPerson("12345678901")
 
         person.hentFulltNavn() shouldBe "Ola Nordmann"
         wireMockServer.verify(
@@ -116,7 +112,7 @@ class PdlConsumerTest : ApiTestBase() {
                 .withHeader(HttpHeaders.AUTHORIZATION, equalTo("Bearer $expectedAccessToken"))
                 .withHeader("Nav-Consumer-Token", equalTo("Bearer $expectedAccessToken"))
         )
-        tokenCalls.get() shouldBe 1
-        verify(exactly = 1) { oAuth2AccessTokenService.getAccessToken(any()) }
+        tokenCalls.get() shouldBe 2
+        verify(exactly = 2) { oAuth2AccessTokenService.getAccessToken(any()) }
     }
 }

@@ -15,12 +15,14 @@ import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.integrasjon.arbeidsgiver.dto.BeskjedRequest
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
 
-class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
+class ArbeidsgiverNotifikasjonClientTest : FunSpec({
 
-    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
+    // HTTP/1.1 mot mocken – unngår flaky HTTP/2 (h2c) i test.
+    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true))
     val merkelapp = "TestMerkelapp"
     val ressursId = "test-ressurs"
     val authorizationHeaderProvider = mockk<OAuth2AuthorizationHeaderProvider>()
@@ -29,11 +31,15 @@ class ArbeidsgiverNotifikasjonConsumerTest : FunSpec({
 
     beforeEach {
         wireMockServer.start()
-        val webClient = WebClient.builder()
-            .baseUrl("http://localhost:${wireMockServer.port()}")
-            .build()
         every { authorizationHeaderProvider.authorizationHeader("arbeidsgiver-notifikasjon") } returns "Bearer test-token"
-        consumer = ArbeidsgiverNotifikasjonClient(webClient, authorizationHeaderProvider, merkelapp, ressursId)
+        val restClient = RestClient.builder()
+            .baseUrl("http://localhost:${wireMockServer.port()}")
+            .requestInterceptor(
+                AuthorizationHeaderInterceptorFactory(authorizationHeaderProvider)
+                    .authorizationInterceptor("arbeidsgiver-notifikasjon")
+            )
+            .build()
+        consumer = ArbeidsgiverNotifikasjonClient(restClient, merkelapp, ressursId)
     }
 
     afterEach {

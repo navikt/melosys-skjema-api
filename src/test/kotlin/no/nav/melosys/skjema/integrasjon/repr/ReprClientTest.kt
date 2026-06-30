@@ -21,10 +21,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 
-class ReprConsumerTest : ApiTestBase() {
+class ReprClientTest : ApiTestBase() {
 
     @Autowired
-    private lateinit var reprConsumer: ReprConsumer
+    private lateinit var reprClient: ReprClient
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -73,7 +73,7 @@ class ReprConsumerTest : ApiTestBase() {
                 )
         )
 
-        val fullmakter = reprConsumer.hentKanRepresentere()
+        val fullmakter = reprClient.hentKanRepresentere()
 
         fullmakter.shouldHaveSize(2)
         fullmakter[0].shouldBeEqual(
@@ -115,7 +115,7 @@ class ReprConsumerTest : ApiTestBase() {
                 )
         )
 
-        val fullmakter = reprConsumer.hentKanRepresentere()
+        val fullmakter = reprClient.hentKanRepresentere()
 
         fullmakter.shouldBeEmpty()
     }
@@ -139,7 +139,7 @@ class ReprConsumerTest : ApiTestBase() {
         )
 
         assertThrows<RuntimeException> {
-            reprConsumer.hentKanRepresentere()
+            reprClient.hentKanRepresentere()
         }
     }
 
@@ -162,7 +162,7 @@ class ReprConsumerTest : ApiTestBase() {
         )
 
         assertThrows<RuntimeException> {
-            reprConsumer.hentKanRepresentere()
+            reprClient.hentKanRepresentere()
         }
     }
 
@@ -192,7 +192,7 @@ class ReprConsumerTest : ApiTestBase() {
         )
 
         assertThrows<RuntimeException> {
-            reprConsumer.hentKanRepresentere()
+            reprClient.hentKanRepresentere()
         }
     }
 }

@@ -14,7 +14,7 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class EregService(
-    private val eregConsumer: EregConsumer
+    private val eregClient: EregClient
 ) {
 
     /**
@@ -25,7 +25,7 @@ class EregService(
      */
     fun hentOrganisasjon(orgnummer: String): SimpleOrganisasjonDto {
         log.info { "Henter organisasjon fra EREG (uten hierarki): ${orgnummer.take(3)}***" }
-        return eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = false).toSimpleOrganisasjonDto()
+        return eregClient.hentOrganisasjon(orgnummer, inkluderHierarki = false).toSimpleOrganisasjonDto()
     }
 
     /**
@@ -37,7 +37,7 @@ class EregService(
     fun hentOrganisasjonMedJuridiskEnhet(orgnummer: String): OrganisasjonMedJuridiskEnhetDto {
         log.info { "Henter organisasjon fra EREG: ${orgnummer.take(3)}***" }
 
-        val organisasjon = eregConsumer.hentOrganisasjon(orgnummer, inkluderHierarki = true)
+        val organisasjon = eregClient.hentOrganisasjon(orgnummer, inkluderHierarki = true)
         val juridiskEnhet = hentJuridiskEnhetForOrganisasjon(organisasjon)
 
         return OrganisasjonMedJuridiskEnhetDto(
@@ -48,7 +48,7 @@ class EregService(
 
     fun organisasjonsnummerEksisterer(organisasjonsnummer: String): Boolean {
         return try {
-            eregConsumer.hentOrganisasjon(organisasjonsnummer)
+            eregClient.hentOrganisasjon(organisasjonsnummer)
             true
         } catch (_: OrganisasjonEksistererIkkeException) {
             false
@@ -63,6 +63,6 @@ class EregService(
         val juridiskEnhetOrganisasjonsnummer = organisasjon.finnJuridiskEnhetOrganisasjonsnummer()
             ?: error("Fant ikke juridisk enhet for organisasjon ${organisasjon.organisasjonsnummer}")
 
-        return eregConsumer.hentOrganisasjon(juridiskEnhetOrganisasjonsnummer) as JuridiskEnhet
+        return eregClient.hentOrganisasjon(juridiskEnhetOrganisasjonsnummer) as JuridiskEnhet
     }
 }
