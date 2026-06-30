@@ -34,6 +34,12 @@ import org.springframework.transaction.annotation.Transactional
 private val log = KotlinLogging.logger {}
 private val OSLO: ZoneId = ZoneId.of("Europe/Oslo")
 
+/** MELOSYS-8168: En resend-kandidat – skjema som skal få varsel på nytt, med saksnummer hvis det finnes. */
+data class ResendKandidat(
+    val skjemaId: UUID,
+    val saksnummer: String?
+)
+
 /**
  * Administrative operasjoner som eksponeres via [no.nav.melosys.skjema.controller.admin.AdminController]
  * og konsumeres av melosys-console. Gir innsyn i og mulighet til å reprosessere feilede innsendinger.
@@ -321,30 +327,31 @@ class AdminService(
      *
      * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
-     * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer kun
-     * totalt antall varsler som ble sendt.
+     * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
+     * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
      */
     fun resendVarsler(): ResendVarslerResultatDto {
-        val kandidatSkjemaIder = finnResendKandidatSkjemaIder()
-        log.info { "Admin: Resend – fant ${kandidatSkjemaIder.size} kandidat(er) (handlingspliktig AG-del før $SMS_AKTIVERT_TIDSPUNKT som venter på AT-del)" }
+        val kandidater = finnResendKandidater()
+        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $SMS_AKTIVERT_TIDSPUNKT som venter på AT-del)" }
 
-        var antallSendt = 0
-        kandidatSkjemaIder.forEach { skjemaId ->
+        val sendteSaksnumre = mutableListOf<String>()
+        kandidater.forEach { kandidat ->
             try {
-                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(skjemaId)) {
-                    antallSendt++
+                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId)) {
+                    // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
+                    sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
                 }
             } catch (e: Exception) {
-                log.error(e) { "Admin: Resend feilet for skjema $skjemaId" }
+                log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
             }
         }
-        log.info { "Admin: Resend ferdig – $antallSendt varsler sendt" }
-        return ResendVarslerResultatDto(antallSendt = antallSendt)
+        log.info { "Admin: Resend ferdig – ${sendteSaksnumre.size} varsler sendt" }
+        return ResendVarslerResultatDto(antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
     }
 
-    /** Finner skjema-id-ene til resend-kandidatene (se [resendVarsler] for kriteriene). */
+    /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */
     @Transactional(readOnly = true)
-    fun finnResendKandidatSkjemaIder(): List<UUID> {
+    fun finnResendKandidater(): List<ResendKandidat> {
         val alleInnsendte = innsendingRepository.finnAlleInnsendteMedSkjema()
         val arbeidstakerDeler = alleInnsendte.filter { erArbeidstakerDel(it) }
         return alleInnsendte
@@ -353,7 +360,7 @@ class AdminService(
                     innsending.opprettetDato.isBefore(SMS_AKTIVERT_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }
-            .map { it.skjema.id!! }
+            .map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
     }
 
     /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */

@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.controller.admin
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -523,7 +524,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             fnr: String = "10000000001",
             periode: PeriodeDto = periodeA,
             innsendtDato: Instant = foerCutoff,
-            juridiskEnhet: String = korrektSyntetiskOrgnr
+            juridiskEnhet: String = korrektSyntetiskOrgnr,
+            saksnummer: String? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -538,7 +540,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
         ).also { skjema ->
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato))
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer))
         }
 
         /** Handlingspliktig AG-del (arbeidsgiver uten fullmakt) – standard resend-kandidat. */
@@ -547,8 +549,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER,
             periode: PeriodeDto = periodeA,
             innsendtDato: Instant = foerCutoff,
-            juridiskEnhet: String = korrektSyntetiskOrgnr
-        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet)
+            juridiskEnhet: String = korrektSyntetiskOrgnr,
+            saksnummer: String? = null
+        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer)
 
         /** Innsendt arbeidstaker-del for samme person/enhet (markerer at saken ikke lenger venter på AT-del). */
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
@@ -565,11 +568,12 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal sende varsel med SMS og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
-            val skjema = lagAgDel()
+            val skjema = lagAgDel(saksnummer = "SAK-001")
 
             val body = resend()
 
             body.antallSendt shouldBe 1
+            body.saksnumre shouldBe listOf("SAK-001")
             verify(exactly = 1) {
                 brukervarselProducer.sendBrukervarsel(
                     match<BrukervarselMelding> { melding ->
@@ -579,6 +583,19 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     }
                 )
             }
+        }
+
+        @Test
+        fun `skal returnere saksnumrene som faktisk fikk varsel, og skjema-id naar saksnummer mangler`() {
+            lagAgDel(fnr = "10000000020", saksnummer = "SAK-100")
+            val utenSaksnummer = lagAgDel(fnr = "10000000021", saksnummer = null)
+            // Ikke-kandidat (etter cutoff) – skal ikke dukke opp i listen
+            lagAgDel(fnr = "10000000022", innsendtDato = etterCutoff, saksnummer = "SAK-999")
+
+            val body = resend()
+
+            body.antallSendt shouldBe 2
+            body.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-100", utenSaksnummer.id.toString())
         }
 
         @Test
@@ -642,13 +659,16 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal telle bare de faktiske kandidatene blant en blanding`() {
-            lagAgDel(fnr = "10000000010")                                   // kandidat
-            lagAgDel(fnr = "10000000011")                                   // kandidat
+            lagAgDel(fnr = "10000000010", saksnummer = "SAK-A")            // kandidat
+            lagAgDel(fnr = "10000000011", saksnummer = "SAK-B")            // kandidat
             lagAgDel(fnr = "10000000012", innsendtDato = etterCutoff)       // etter cutoff – nei
             lagAgDel(fnr = "10000000013", representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT) // med fullmakt – nei
             lagAgDel(fnr = "10000000014").also { lagAtDel(fnr = "10000000014") }   // AT-del sendt – nei
 
-            resend().antallSendt shouldBe 2
+            val body = resend()
+
+            body.antallSendt shouldBe 2
+            body.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-A", "SAK-B")
             verify(exactly = 2) { brukervarselProducer.sendBrukervarsel(any()) }
         }
 
