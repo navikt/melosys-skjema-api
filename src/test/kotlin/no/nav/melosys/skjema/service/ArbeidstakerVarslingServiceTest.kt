@@ -324,6 +324,24 @@ class ArbeidstakerVarslingServiceTest {
     }
 
     @Test
+    fun `resend - AG-metadata med arbeidstakers del skal hoppe over (guard mot feil skjemadel)`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+
+        val sendt = service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        sendt shouldBe false
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
     fun `resend - ikke-eksisterende skjemaId returnerer false uten exception`() {
         val skjemaId = UUID.randomUUID()
         every { skjemaRepository.findById(skjemaId) } returns Optional.empty()

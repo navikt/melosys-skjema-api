@@ -91,7 +91,7 @@ class ArbeidstakerVarslingService(
      * for et gitt skjema. Brukes av admin-endepunktet for å nå AT-brukere som ikke fikk SMS før
      * SMS-prodsettingen.
      *
-     * Sender KUN for handlingspliktige caser (arbeidsgiver/rådgiver uten fullmakt, skjemadel ≠ kombinert).
+     * Sender KUN for handlingspliktige caser (arbeidsgiver/rådgiver uten fullmakt, skjemadel = ARBEIDSGIVERS_DEL).
      * Bypasser [no.nav.melosys.skjema.entity.Innsending.brukervarselSendt]-sjekken (resend er eksplisitt)
      * og endrer ikke det feltet, men beholder utkast-guarden slik at de som har påbegynt sin del ikke purres.
      *
@@ -110,8 +110,8 @@ class ArbeidstakerVarslingService(
             return false
         }
 
-        if (metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) {
-            log.info { "Resend: kombinert skjemadel (skjema $skjemaId) er ikke handlingspliktig, hopper over" }
+        if (metadata.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL) {
+            log.info { "Resend: skjemadel=${metadata.skjemadel} (skjema $skjemaId) er ikke resend-kandidat, hopper over" }
             return false
         }
 
