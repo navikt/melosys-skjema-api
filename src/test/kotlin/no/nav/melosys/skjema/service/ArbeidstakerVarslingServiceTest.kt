@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -227,6 +228,109 @@ class ArbeidstakerVarslingServiceTest {
         // Skal ikke kaste exception
         service.varsleArbeidstakerHvisAktuelt(skjemaId)
 
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
+    fun `resend - AG uten fullmakt og ingen AT-utkast skal sende varsel med SMS og ignorer-tekst`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
+
+        val sendt = service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        sendt shouldBe true
+        verify {
+            brukervarselProducer.sendBrukervarsel(
+                match<BrukervarselMelding> { melding ->
+                    melding.ident == skjema.fnr &&
+                        melding.sms &&
+                        melding.link == forventetLenke &&
+                        melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst.contains("kan du se bort fra denne meldingen") &&
+                        melding.tekster.first { it.språk == Språk.ENGELSK }.tekst.contains("you can disregard this message")
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `resend - AG uten fullmakt med eksisterende AT-utkast skal hoppe over`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+            )
+        )
+        val eksisterendeUtkast = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.UTKAST,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns listOf(eksisterendeUtkast)
+
+        val sendt = service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        sendt shouldBe false
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
+    fun `resend - AG med fullmakt er ikke handlingspliktig og skal hoppe over`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+
+        val sendt = service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        sendt shouldBe false
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
+    fun `resend - kombinert skjemadel skal hoppe over`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+
+        val sendt = service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        sendt shouldBe false
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
+    fun `resend - ikke-eksisterende skjemaId returnerer false uten exception`() {
+        val skjemaId = UUID.randomUUID()
+        every { skjemaRepository.findById(skjemaId) } returns Optional.empty()
+
+        val sendt = service.resendVarselTilArbeidstaker(skjemaId)
+
+        sendt shouldBe false
         verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
 }

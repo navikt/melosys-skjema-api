@@ -46,6 +46,15 @@ data class RetryResultatDto(
 )
 
 /**
+ * MELOSYS-8168 (midlertidig): Resultat av resending – kun totalt antall varsler som faktisk ble sendt.
+ * Kandidatene finnes i koden (AG-del innsendt før SMS ble aktivert, som fortsatt venter på AT-del),
+ * så endepunktet trenger ingen request-body.
+ */
+data class ResendVarslerResultatDto(
+    val antallSendt: Int
+)
+
+/**
  * Bruksstatistikk for skjemaene – ment for overvåking av bruk via melosys-console.
  * Inneholder kun aggregerte tall, ingen personopplysninger.
  */

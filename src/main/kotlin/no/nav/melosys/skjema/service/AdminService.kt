@@ -10,6 +10,7 @@ import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
 import no.nav.melosys.skjema.controller.admin.DelStatusDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
+import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
@@ -42,7 +43,8 @@ class AdminService(
     private val innsendingRepository: InnsendingRepository,
     private val skjemaRepository: SkjemaRepository,
     private val adminStatistikkRepository: AdminStatistikkRepository,
-    private val innsendingService: InnsendingService
+    private val innsendingService: InnsendingService,
+    private val arbeidstakerVarslingService: ArbeidstakerVarslingService
 ) {
 
     @Transactional(readOnly = true)
@@ -308,6 +310,82 @@ class AdminService(
         return RetryResultatDto(antallForsoekt = skjemaIder.size, antallFeilet = feilet)
     }
 
+    /**
+     * MELOSYS-8168 (midlertidig): Resender brukervarsel (nå med SMS) til arbeidstakere som ikke fikk SMS
+     * før SMS-prodsettingen. Kandidatene finnes i koden – ingen kuratert liste – og er bevisst litt
+     * over-inkluderende (kan treffe et par ekstra), men ingen som faktisk trenger SMS skal utelates:
+     *
+     * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
+     * [SMS_AKTIVERT_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
+     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode).
+     *
+     * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
+     * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
+     * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer kun
+     * totalt antall varsler som ble sendt.
+     */
+    fun resendVarsler(): ResendVarslerResultatDto {
+        val kandidatSkjemaIder = finnResendKandidatSkjemaIder()
+        log.info { "Admin: Resend – fant ${kandidatSkjemaIder.size} kandidat(er) (handlingspliktig AG-del før $SMS_AKTIVERT_TIDSPUNKT som venter på AT-del)" }
+
+        var antallSendt = 0
+        kandidatSkjemaIder.forEach { skjemaId ->
+            try {
+                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(skjemaId)) {
+                    antallSendt++
+                }
+            } catch (e: Exception) {
+                log.error(e) { "Admin: Resend feilet for skjema $skjemaId" }
+            }
+        }
+        log.info { "Admin: Resend ferdig – $antallSendt varsler sendt" }
+        return ResendVarslerResultatDto(antallSendt = antallSendt)
+    }
+
+    /** Finner skjema-id-ene til resend-kandidatene (se [resendVarsler] for kriteriene). */
+    @Transactional(readOnly = true)
+    fun finnResendKandidatSkjemaIder(): List<UUID> {
+        val alleInnsendte = innsendingRepository.finnAlleInnsendteMedSkjema()
+        val arbeidstakerDeler = alleInnsendte.filter { erArbeidstakerDel(it) }
+        return alleInnsendte
+            .filter { innsending ->
+                erHandlingspliktigAgDel(innsending) &&
+                    innsending.opprettetDato.isBefore(SMS_AKTIVERT_TIDSPUNKT) &&
+                    venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
+            }
+            .map { it.skjema.id!! }
+    }
+
+    /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */
+    private fun erHandlingspliktigAgDel(innsending: Innsending): Boolean {
+        val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
+        return metadata.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL &&
+            metadata.representasjonstype in HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER
+    }
+
+    /** Innsendt arbeidstaker-del – enten egen del eller kombinert skjema som dekker arbeidstakers del. */
+    private fun erArbeidstakerDel(innsending: Innsending): Boolean {
+        val skjemadel = (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel
+        return skjemadel == Skjemadel.ARBEIDSTAKERS_DEL || skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+    }
+
+    /**
+     * AT-del mangler hvis ingen innsendt arbeidstaker-del matcher på samme fnr + juridisk enhet +
+     * overlappende periode (samme matching som mottak/saksdekning bruker). Mangler periode på AG-delen
+     * regnes som "venter" (vi sender da heller én ekstra enn å utelate noen som trenger SMS).
+     */
+    private fun venterPaaArbeidstakerDel(agDel: Innsending, arbeidstakerDeler: List<Innsending>): Boolean {
+        val agMeta = agDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
+        val agPeriode = agDel.skjema.utsendelsePeriode() ?: return true
+        return arbeidstakerDeler.none { atDel ->
+            val atMeta = atDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@none false
+            val atPeriode = atDel.skjema.utsendelsePeriode() ?: return@none false
+            agDel.skjema.fnr == atDel.skjema.fnr &&
+                agMeta.juridiskEnhetOrgnr == atMeta.juridiskEnhetOrgnr &&
+                agPeriode.overlapper(atPeriode)
+        }
+    }
+
     @Transactional(readOnly = true)
     fun hentFeiledeSkjemaIder(): List<UUID> =
         innsendingRepository.findByStatusMedSkjema(InnsendingStatus.KAFKA_FEILET).map { it.skjema.id!! }
@@ -332,4 +410,18 @@ class AdminService(
         opprettetDato = opprettetDato,
         saksnummer = saksnummer
     )
+
+    companion object {
+        /**
+         * MELOSYS-8168: Tidspunktet SMS ble aktivert for handlingspliktige varsler. Handlingspliktige
+         * AG-deler innsendt FØR dette fikk varsel på nav.no, men ingen SMS, og er kandidater for resend.
+         */
+        private val SMS_AKTIVERT_TIDSPUNKT: Instant = Instant.parse("2026-06-29T10:41:46Z")
+
+        /** Representasjonstyper der arbeidstaker selv må sende inn sin del (uten fullmakt). */
+        private val HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER = setOf(
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER
+        )
+    }
 }
