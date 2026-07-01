@@ -20,6 +20,8 @@ import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.ByteArrayOutputStream
+import java.util.zip.Deflater
 
 class ArbeidsgiverAltinnTilgangerClientTest: ApiTestBase() {
 
@@ -114,5 +116,41 @@ class ArbeidsgiverAltinnTilgangerClientTest: ApiTestBase() {
                 }
             """.trimIndent()))
         )
+    }
+
+    @Test
+    fun `hentTilganger skal dekomprimere deflate-komprimert respons`() {
+        // Apache HttpClient 5 må pakke ut rå deflate (RFC 1951); JDK-klienten feiler med ZipException.
+        every {
+            oAuth2AccessTokenService.getAccessToken(any())
+        } returns OAuth2AccessTokenResponse(access_token = "token")
+
+        wireMockServer.stubFor(post(urlPathMatching(".*"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withHeader("Content-Encoding", "deflate")
+                    .withBody(raaDeflate("""{"tilgangTilOrgNr":{"4936":["123456789"]}}"""))
+            )
+        )
+
+        val respons = arbeidsgiverAltinnTilgangerClient.hentTilganger()
+
+        respons.tilgangTilOrgNr shouldBeEqual mapOf("4936" to setOf("123456789"))
+    }
+
+    /** Komprimerer med rå DEFLATE (nowrap = true, RFC 1951) — uten zlib-header, slik enkelte tjenester svarer. */
+    private fun raaDeflate(data: String): ByteArray {
+        val deflater = Deflater(Deflater.DEFAULT_COMPRESSION, true)
+        deflater.setInput(data.toByteArray(Charsets.UTF_8))
+        deflater.finish()
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(1024)
+        while (!deflater.finished()) {
+            output.write(buffer, 0, deflater.deflate(buffer))
+        }
+        deflater.end()
+        return output.toByteArray()
     }
 }
