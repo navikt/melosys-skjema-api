@@ -12,12 +12,14 @@ import no.nav.melosys.skjema.controller.admin.DelStatusDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
+import no.nav.melosys.skjema.controller.admin.RyddUtkastResultatDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
 import no.nav.melosys.skjema.controller.admin.VirksomhetStatistikkDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.utsendelsePeriode
+import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -42,7 +44,8 @@ class AdminService(
     private val innsendingRepository: InnsendingRepository,
     private val skjemaRepository: SkjemaRepository,
     private val adminStatistikkRepository: AdminStatistikkRepository,
-    private val innsendingService: InnsendingService
+    private val innsendingService: InnsendingService,
+    private val vedleggStorageClient: VedleggStorageClient
 ) {
 
     @Transactional(readOnly = true)
@@ -306,6 +309,46 @@ class AdminService(
             }
         }
         return RetryResultatDto(antallForsoekt = skjemaIder.size, antallFeilet = feilet)
+    }
+
+    /**
+     * MIDLERTIDIG: hard-sletter alle gjenværende soft-deletede (SLETTET) utkast for GDPR-opprydding.
+     *
+     * Sletter både vedlegg-blobs i bucket (ingen foreldreløse filer) og selve skjema-radene
+     * (DB-cascade fjerner vedlegg-/innsending-/fullmakt-rader). Blob-sletting er best-effort:
+     * en feilet blob stopper ikke radslettingen, men telles og logges.
+     *
+     * Bevisst IKKE `@Transactional`: de eksterne bucket-kallene gjøres utenfor DB-transaksjon for å
+     * unngå lange transaksjoner / lock-holdetid ved nettverkslatens. Selve DELETE-en kjøres i sin egen
+     * korte transaksjon ([SkjemaRepository.slettAlleSletteSkjema]).
+     *
+     * Fjernes når prod er ryddet (MELOSYS-8157).
+     */
+    fun ryddSletteUtkast(): RyddUtkastResultatDto {
+        val storageReferanser = skjemaRepository.finnVedleggStorageReferanserForSletteSkjema()
+
+        var slettedeBlober = 0
+        var feiledeBlober = 0
+        storageReferanser.forEach { referanse ->
+            try {
+                vedleggStorageClient.slett(referanse)
+                slettedeBlober++
+            } catch (e: Exception) {
+                feiledeBlober++
+                log.error(e) { "Admin: Klarte ikke slette vedlegg-blob under opprydding av slettede utkast" }
+            }
+        }
+
+        val antallSkjema = skjemaRepository.slettAlleSletteSkjema()
+        log.info {
+            "Admin: Ryddet $antallSkjema soft-deletede utkast " +
+                "(vedlegg-blobs slettet=$slettedeBlober, feilet=$feiledeBlober)"
+        }
+        return RyddUtkastResultatDto(
+            antallSkjema = antallSkjema,
+            antallVedleggSlettet = slettedeBlober,
+            antallVedleggFeilet = feiledeBlober
+        )
     }
 
     @Transactional(readOnly = true)

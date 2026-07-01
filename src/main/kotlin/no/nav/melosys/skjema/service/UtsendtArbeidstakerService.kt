@@ -135,7 +135,7 @@ class UtsendtArbeidstakerService(
      * fullmakten men fortsatt har Altinn-tilgang får se skjemaet med arbeidstakers data strippet.
      */
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status != SkjemaStatus.SENDT) {
             return krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto()
         }
@@ -149,10 +149,11 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Soft-sletter et skjema med status UTKAST.
+     * Sletter et skjema med status UTKAST permanent (hard delete).
      *
-     * Validerer skrivetilgang og at skjemaet er i utkast-status.
-     * Setter status til SLETTET — skjemaet og tilhørende vedlegg beholdes i databasen.
+     * DB-cascade fjerner tilhørende vedlegg-/innsending-/fullmakt-rader når skjema-raden slettes.
+     * Vedlegg-blobbene i bucket slettes FØRST etter at transaksjonen har committet (GDPR: ingen
+     * foreldreløse filer, og en rollback etterlater ikke vedlegg-rader uten blob).
      *
      * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
@@ -163,9 +164,8 @@ class UtsendtArbeidstakerService(
     fun slettUtkast(skjemaId: UUID) {
         val skjema = hentRedigerbartSkjema(skjemaId)
 
-        skjema.status = SkjemaStatus.SLETTET
-        skjema.endretAv = subjectHandler.getUserID()
-        skjemaRepository.save(skjema)
+        vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
+        skjemaRepository.delete(skjema)
 
         log.info { "Utkast slettet: $skjemaId" }
     }
@@ -303,7 +303,7 @@ class UtsendtArbeidstakerService(
     }
 
     fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status == SkjemaStatus.SENDT) {
             validerLesetilgangForSendtSkjema(skjema)
         } else {
@@ -321,7 +321,7 @@ class UtsendtArbeidstakerService(
      * @throws IllegalStateException hvis skjema ikke er innsendt
      */
     fun hentInnsendtSkjema(skjemaId: UUID, sprak: Språk?): InnsendtSkjemaResponse {
-        val skjema = findAktivByIdOrThrow(skjemaId)
+        val skjema = findByIdOrThrow(skjemaId)
 
         if (skjema.status != SkjemaStatus.SENDT) {
             throw IllegalStateException("Skjema $skjemaId er ikke innsendt (status: ${skjema.status})")
@@ -372,13 +372,13 @@ class UtsendtArbeidstakerService(
      * @throws AccessDeniedException hvis tilgang nektes
      */
     fun hentSkjemaMedLesetilgang(skjemaId: UUID): Skjema =
-        krevLesetilgang(findAktivByIdOrThrow(skjemaId))
+        krevLesetilgang(findByIdOrThrow(skjemaId))
 
     private fun krevLesetilgang(skjema: Skjema): Skjema =
         skjema.takeIf { harInnloggetBrukerLesetilgangTilSkjema(it) }
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
 
-    private fun findAktivByIdOrThrow(skjemaId: UUID): Skjema =
+    private fun findByIdOrThrow(skjemaId: UUID): Skjema =
         skjemaRepository.findAktivById(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
 
@@ -724,7 +724,7 @@ class UtsendtArbeidstakerService(
      * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
     private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
-        krevSkrivetilgang(findAktivByIdOrThrow(skjemaId))
+        krevSkrivetilgang(findByIdOrThrow(skjemaId))
 
     private fun krevSkrivetilgang(skjema: Skjema): Skjema {
         val currentUser = subjectHandler.getUserID()

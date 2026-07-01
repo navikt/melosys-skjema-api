@@ -6,7 +6,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.Runs
 import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
@@ -613,6 +615,45 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = true))
 
             verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
+        }
+    }
+
+    context("slettUtkast") {
+        test("skal hard-slette utkast og planlegge sletting av vedlegg-blobs") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockSkjemaRepository.delete(skjema) } just Runs
+
+            service.slettUtkast(skjemaId)
+
+            verify(exactly = 1) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 1) { mockSkjemaRepository.delete(skjema) }
+        }
+
+        test("skal kaste SkjemaErIkkeRedigerbartException for innsendt skjema og ikke slette") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.SENDT, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+
+            shouldThrow<SkjemaErIkkeRedigerbartException> { service.slettUtkast(skjemaId) }
+
+            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
+        }
+
+        test("skal kaste AccessDeniedException ved manglende skrivetilgang og ikke slette") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns etAnnetKorrektSyntetiskFnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+
+            shouldThrow<AccessDeniedException> { service.slettUtkast(skjemaId) }
+
+            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
         }
     }
 })

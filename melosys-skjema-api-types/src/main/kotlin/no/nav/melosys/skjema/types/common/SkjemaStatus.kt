@@ -12,6 +12,14 @@ enum class SkjemaStatus {
     /** Bruker har sendt inn søknaden. Asynkron prosessering pågår eller er fullført. */
     SENDT,
 
-    /** Bruker har slettet utkastet. Soft delete - raden beholdes i databasen. */
+    /**
+     * LEGACY/MIDLERTIDIG: gammel soft-delete-status. Skrives ikke lenger – utkast hard-slettes nå.
+     *
+     * Beholdes kun så JPA fortsatt kan mappe eksisterende rader med `status='SLETTET'` uten å kaste
+     * (EnumType.STRING) i tidsvinduet før admin-oppryddingen (POST /admin/utkast/rydd-slettede) har
+     * fysisk slettet dem i prod. Fjernes – sammen med DB-constraintet – i oppfølgings-PR-en
+     * MELOSYS-8157 etter at oppryddingen er kjørt.
+     */
+    @Deprecated("Legacy soft-delete – fjernes etter at prod er ryddet via admin-endepunktet")
     SLETTET
 }
