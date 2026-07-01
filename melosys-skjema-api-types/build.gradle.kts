@@ -9,7 +9,7 @@ val jacksonVersion = "2.22"
 val jakartaValidationVersion = "3.1.1"
 val swaggerVersion = "2.2.50"
 val junitVersion = "6.1.0"
-val kotestVersion = "6.2.0"
+val kotestVersion = "6.2.1"
 
 repositories {
     mavenCentral()
