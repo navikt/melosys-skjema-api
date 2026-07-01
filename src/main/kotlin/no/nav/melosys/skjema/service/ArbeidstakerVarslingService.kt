@@ -117,7 +117,7 @@ class ArbeidstakerVarslingService(
         }
 
         return when (metadata) {
-            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, metadata)
+            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)
             else -> {
                 log.info { "Resend: ${metadata.representasjonstype} (skjema $skjemaId) er ikke handlingspliktig, hopper over" }
                 false
@@ -125,7 +125,7 @@ class ArbeidstakerVarslingService(
         }
     }
 
-    private fun resendUtenFullmakt(fnr: String, metadata: UtsendtArbeidstakerMetadata): Boolean {
+    private fun resendUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata): Boolean {
         if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
             log.info { "Resend: arbeidstaker har eksisterende utkast, sender ikke varsel" }
             return false
@@ -133,7 +133,7 @@ class ArbeidstakerVarslingService(
 
         val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
         val tekster = lagResendVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke()))
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
         log.info { "Resend: sendt varsel på nytt til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
         return true
     }
