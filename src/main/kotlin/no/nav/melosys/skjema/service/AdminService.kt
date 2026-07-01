@@ -354,9 +354,13 @@ class AdminService(
     fun finnResendKandidater(): List<ResendKandidat> {
         val alleInnsendte = innsendingRepository.finnAlleInnsendteMedSkjema()
         val arbeidstakerDeler = alleInnsendte.filter { erArbeidstakerDel(it) }
+        val erstattedeIder: Set<UUID> = alleInnsendte
+            .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
+            .toSet()
         return alleInnsendte
             .filter { innsending ->
-                erHandlingspliktigAgDel(innsending) &&
+                innsending.skjema.id !in erstattedeIder &&
+                    erHandlingspliktigAgDel(innsending) &&
                     innsending.opprettetDato.isBefore(SMS_AKTIVERT_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }

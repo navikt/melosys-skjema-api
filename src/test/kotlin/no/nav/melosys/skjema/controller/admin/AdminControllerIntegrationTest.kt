@@ -525,7 +525,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             periode: PeriodeDto = periodeA,
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
-            saksnummer: String? = null
+            saksnummer: String? = null,
+            erstatterSkjemaId: UUID? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -536,7 +537,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = representasjonstype,
                     skjemadel = skjemadel,
-                    juridiskEnhetOrgnr = juridiskEnhet
+                    juridiskEnhetOrgnr = juridiskEnhet,
+                    erstatterSkjemaId = erstatterSkjemaId
                 )
             )
         ).also { skjema ->
@@ -550,8 +552,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             periode: PeriodeDto = periodeA,
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
-            saksnummer: String? = null
-        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer)
+            saksnummer: String? = null,
+            erstatterSkjemaId: UUID? = null
+        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, erstatterSkjemaId)
 
         /** Innsendt arbeidstaker-del for samme person/enhet (markerer at saken ikke lenger venter på AT-del). */
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
@@ -658,8 +661,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal telle bare de faktiske kandidatene blant en blanding`() {
-            lagAgDel(fnr = "10000000010", saksnummer = "SAK-A")            // kandidat
+        fun `skal ikke sende dobbelt naar AG-del er erstattet av en nyere versjon`() {
+            // Arbeidsgiver sendte AG-delen, korrigerte og sendte inn på nytt før cutoff. Begge versjonene
+            // er SENDT, handlingspliktige og venter på AT-del, men den nye erstatter den gamle – kun ett varsel.
+            val gammel = lagAgDel(fnr = "10000000030", saksnummer = "SAK-ERST")
+            lagAgDel(fnr = "10000000030", saksnummer = "SAK-ERST", erstatterSkjemaId = gammel.id)
+
+            val body = resend()
+
+            body.antallSendt shouldBe 1
+            body.saksnumre shouldBe listOf("SAK-ERST")
+            verify(exactly = 1) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal telle bare de faktiske kandidatene blant en blanding`() {            lagAgDel(fnr = "10000000010", saksnummer = "SAK-A")            // kandidat
             lagAgDel(fnr = "10000000011", saksnummer = "SAK-B")            // kandidat
             lagAgDel(fnr = "10000000012", innsendtDato = etterCutoff)       // etter cutoff – nei
             lagAgDel(fnr = "10000000013", representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT) // med fullmakt – nei
