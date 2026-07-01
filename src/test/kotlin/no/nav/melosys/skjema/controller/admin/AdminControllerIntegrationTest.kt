@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.controller.admin
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -16,6 +17,8 @@ import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
+import no.nav.melosys.skjema.kafka.BrukervarselMelding
+import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -59,6 +62,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @MockkBean(relaxed = true)
     private lateinit var innsendingService: InnsendingService
+
+    @MockkBean(relaxed = true)
+    private lateinit var brukervarselProducer: BrukervarselProducer
 
     /** WebTestClient som sender gyldig admin-API-nøkkel på alle kall (jf. application-test.yml). */
     private val adminClient by lazy {
@@ -495,6 +501,196 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             adminClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /admin/varsler/resend")
+    inner class ResendVarsler {
+
+        private val periodeA = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-06-30"))
+        private val periodeOverlapp = PeriodeDto(LocalDate.parse("2026-03-01"), LocalDate.parse("2026-08-31"))
+        private val periodeIngenOverlapp = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-12-31"))
+        private val foerCutoff = Instant.parse("2026-06-01T00:00:00Z")
+        private val etterCutoff = Instant.parse("2026-06-29T12:00:00Z")
+
+        /** Lager en innsendt (SENDT) utsendt-arbeidstaker-del med kontroll på del, flyt, periode og innsendingsdato. */
+        private fun lagInnsendtDel(
+            skjemadel: Skjemadel,
+            representasjonstype: Representasjonstype,
+            fnr: String = "10000000001",
+            periode: PeriodeDto = periodeA,
+            innsendtDato: Instant = foerCutoff,
+            juridiskEnhet: String = korrektSyntetiskOrgnr,
+            saksnummer: String? = null,
+            erstatterSkjemaId: UUID? = null
+        ): Skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = fnr,
+                status = SkjemaStatus.SENDT,
+                data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = periode)
+                ),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = representasjonstype,
+                    skjemadel = skjemadel,
+                    juridiskEnhetOrgnr = juridiskEnhet,
+                    erstatterSkjemaId = erstatterSkjemaId
+                )
+            )
+        ).also { skjema ->
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer))
+        }
+
+        /** Handlingspliktig AG-del (arbeidsgiver uten fullmakt) – standard resend-kandidat. */
+        private fun lagAgDel(
+            fnr: String = "10000000001",
+            representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER,
+            periode: PeriodeDto = periodeA,
+            innsendtDato: Instant = foerCutoff,
+            juridiskEnhet: String = korrektSyntetiskOrgnr,
+            saksnummer: String? = null,
+            erstatterSkjemaId: UUID? = null
+        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, erstatterSkjemaId)
+
+        /** Innsendt arbeidstaker-del for samme person/enhet (markerer at saken ikke lenger venter på AT-del). */
+        private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
+            lagInnsendtDel(Skjemadel.ARBEIDSTAKERS_DEL, Representasjonstype.DEG_SELV, fnr, periode, foerCutoff, juridiskEnhet)
+
+        private fun resend(): ResendVarslerResultatDto =
+            adminClient.post().uri("/admin/varsler/resend")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<ResendVarslerResultatDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+        @Test
+        fun `skal sende varsel med SMS og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
+            val skjema = lagAgDel(saksnummer = "SAK-001")
+
+            val body = resend()
+
+            body.antallSendt shouldBe 1
+            body.saksnumre shouldBe listOf("SAK-001")
+            verify(exactly = 1) {
+                brukervarselProducer.sendBrukervarsel(
+                    match<BrukervarselMelding> { melding ->
+                        melding.ident == skjema.fnr &&
+                            melding.sms &&
+                            melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst.contains("kan du se bort fra denne meldingen")
+                    }
+                )
+            }
+        }
+
+        @Test
+        fun `skal returnere saksnumrene som faktisk fikk varsel, og skjema-id naar saksnummer mangler`() {
+            lagAgDel(fnr = "10000000020", saksnummer = "SAK-100")
+            val utenSaksnummer = lagAgDel(fnr = "10000000021", saksnummer = null)
+            // Ikke-kandidat (etter cutoff) – skal ikke dukke opp i listen
+            lagAgDel(fnr = "10000000022", innsendtDato = etterCutoff, saksnummer = "SAK-999")
+
+            val body = resend()
+
+            body.antallSendt shouldBe 2
+            body.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-100", utenSaksnummer.id.toString())
+        }
+
+        @Test
+        fun `skal sende for radgiver uten fullmakt`() {
+            lagAgDel(representasjonstype = Representasjonstype.RADGIVER)
+
+            resend().antallSendt shouldBe 1
+        }
+
+        @Test
+        fun `skal ikke sende naar arbeidstaker allerede har sendt sin del med overlappende periode`() {
+            lagAgDel(fnr = "10000000005", periode = periodeA)
+            lagAtDel(fnr = "10000000005", periode = periodeOverlapp)
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal fortsatt sende naar arbeidstakers del er for en ikke-overlappende periode`() {
+            lagAgDel(fnr = "10000000006", periode = periodeA)
+            lagAtDel(fnr = "10000000006", periode = periodeIngenOverlapp)
+
+            resend().antallSendt shouldBe 1
+        }
+
+        @Test
+        fun `skal ikke sende for AG-del innsendt etter cutoff`() {
+            lagAgDel(innsendtDato = etterCutoff)
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal ikke sende for med-fullmakt AG-del`() {
+            lagAgDel(representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT)
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal ikke sende naar arbeidstaker har paabegynt utkast`() {
+            val skjema = lagAgDel(fnr = "10000000007")
+            // Arbeidstaker har påbegynt sin del for samme juridiske enhet (utkast, ikke sendt)
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = skjema.fnr,
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        representasjonstype = Representasjonstype.DEG_SELV,
+                        skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                    )
+                )
+            )
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal ikke sende dobbelt naar AG-del er erstattet av en nyere versjon`() {
+            // Arbeidsgiver sendte AG-delen, korrigerte og sendte inn på nytt før cutoff. Begge versjonene
+            // er SENDT, handlingspliktige og venter på AT-del, men den nye erstatter den gamle – kun ett varsel.
+            val gammel = lagAgDel(fnr = "10000000030", saksnummer = "SAK-ERST")
+            lagAgDel(fnr = "10000000030", saksnummer = "SAK-ERST", erstatterSkjemaId = gammel.id)
+
+            val body = resend()
+
+            body.antallSendt shouldBe 1
+            body.saksnumre shouldBe listOf("SAK-ERST")
+            verify(exactly = 1) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal telle bare de faktiske kandidatene blant en blanding`() {            lagAgDel(fnr = "10000000010", saksnummer = "SAK-A")            // kandidat
+            lagAgDel(fnr = "10000000011", saksnummer = "SAK-B")            // kandidat
+            lagAgDel(fnr = "10000000012", innsendtDato = etterCutoff)       // etter cutoff – nei
+            lagAgDel(fnr = "10000000013", representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT) // med fullmakt – nei
+            lagAgDel(fnr = "10000000014").also { lagAtDel(fnr = "10000000014") }   // AT-del sendt – nei
+
+            val body = resend()
+
+            body.antallSendt shouldBe 2
+            body.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-A", "SAK-B")
+            verify(exactly = 2) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            adminClient.post().uri("/admin/varsler/resend")
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
                 .exchange()
                 .expectStatus().isForbidden

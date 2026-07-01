@@ -471,7 +471,8 @@ fun innsendingMedDefaultVerdier(
     referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
     skjemaDefinisjonVersjon: String = "1",
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
-    innsenderFnr: String = "12345678901"
+    innsenderFnr: String = "12345678901",
+    saksnummer: String? = null
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -484,4 +485,6 @@ fun innsendingMedDefaultVerdier(
     skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
     innsendtSprak = innsendtSprak,
     innsenderFnr = innsenderFnr
-)
+).apply {
+    this.saksnummer = saksnummer
+}

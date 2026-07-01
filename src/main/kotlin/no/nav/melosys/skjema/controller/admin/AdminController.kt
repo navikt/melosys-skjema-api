@@ -96,4 +96,19 @@ class AdminController(
         log.info { "Admin: Retry av alle feilede innsendinger" }
         return adminService.retryAlleFeilede()
     }
+
+    @PostMapping("/varsler/resend")
+    @Operation(
+        summary = "Midlertidig (MELOSYS-8168): Resend brukervarsel med SMS til arbeidstakere som mangler SMS-varsel",
+        description = "Resender det handlingspliktige varselet (nå med SMS) til arbeidstakere som ikke fikk SMS " +
+            "før SMS-prodsettingen. Kandidatene finnes i koden: alle handlingspliktige AG-deler (arbeidsgiver/" +
+            "rådgiver uten fullmakt) som ble sendt inn før 2026-06-29 10:41:46 UTC og fortsatt venter på " +
+            "arbeidstakers del. Tar ingen parametere. Returnerer antall sendte varsler og saksnumrene som " +
+            "faktisk fikk et nytt varsel."
+    )
+    @ApiResponse(responseCode = "200", description = "Resending utført")
+    fun resendVarsler(): ResendVarslerResultatDto {
+        log.info { "Admin: Resend varsler til arbeidstakere som mangler SMS-varsel" }
+        return adminService.resendVarsler()
+    }
 }
