@@ -15,7 +15,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
@@ -90,7 +90,7 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
     private lateinit var reprService: ReprService
 
     @MockkBean
-    private lateinit var pdlConsumer: PdlConsumer
+    private lateinit var pdlClient: PdlClient
 
     @BeforeEach
     fun setUp() {
@@ -101,7 +101,7 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
         every { reprService.harSkriverettigheterForMedlemskap(any()) } returns true
         every { eregService.organisasjonsnummerEksisterer(any()) } returns true
         every { notificationService.sendNotificationToArbeidsgiver(any(), any(), any(), any()) } returns "beskjed-id"
-        every { pdlConsumer.hentPerson(any()) } returns PdlPerson(
+        every { pdlClient.hentPerson(any()) } returns PdlPerson(
             navn = listOf(PdlNavn("Våken", null, "Elefant")),
             foedselsdato = listOf(PdlFoedselsdato("1980-01-01"))
         )
