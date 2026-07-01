@@ -8,6 +8,7 @@ import java.util.Optional
 import java.util.UUID
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
+import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
@@ -22,7 +23,8 @@ class ArbeidstakerVarslingServiceTest {
     private val brukervarselProducer: BrukervarselProducer = mockk(relaxed = true)
     private val skjemaRepository: SkjemaRepository = mockk()
     private val skjemaLenke = "https://test.nav.no"
-    private val forventetLenke = "https://test.nav.no/medlemskap-lovvalg/soknad"
+    private val forventetLenke =
+        "https://test.nav.no/medlemskap-lovvalg/soknad/oversikt?representasjonstype=DEG_SELV&arbeidsgiverOrgnr=$korrektSyntetiskOrgnr"
 
     private val service = ArbeidstakerVarslingService(brukervarselProducer, skjemaRepository, skjemaLenke)
 

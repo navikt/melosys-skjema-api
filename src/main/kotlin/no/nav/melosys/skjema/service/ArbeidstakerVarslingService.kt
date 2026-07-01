@@ -14,6 +14,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -74,7 +75,7 @@ class ArbeidstakerVarslingService(
 
         val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
         val tekster = lagVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke()))
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
         log.info { "Sendt varsel til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
     }
 
@@ -92,8 +93,9 @@ class ArbeidstakerVarslingService(
             m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
         }
 
-    private fun byggSkjemaLenke(): String =
-        skjemaLenke + ARBEIDSTAKER_SKJEMA_PATH
+    // Ruter arbeidstaker rett til DEG_SELV-forsiden med arbeidsgivers orgnr forhåndsutfylt
+    private fun byggSkjemaLenke(arbeidsgiverOrgnr: String): String =
+        "$skjemaLenke$ARBEIDSTAKER_SKJEMA_PATH?representasjonstype=${Representasjonstype.DEG_SELV}&arbeidsgiverOrgnr=$arbeidsgiverOrgnr"
 
     private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
@@ -127,6 +129,6 @@ class ArbeidstakerVarslingService(
 
     companion object {
         private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
-        private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad"
+        private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad/oversikt"
     }
 }
