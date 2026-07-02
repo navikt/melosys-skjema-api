@@ -2,6 +2,11 @@ spring:
   application:
     name: melosys-skjema-api
 
+  http:
+    clients:
+      connect-timeout: 10s
+      read-timeout: 30s
+
   datasource:
     url: ${DB_JDBC_URL}
     hikari:
@@ -116,26 +121,14 @@ altinn:
 
 ereg:
   url: ${EREG_URL}
-  timeout:
-    connect-seconds: 10
-    read-seconds: 30
-    write-seconds: 30
 
 repr:
   url: ${REPR_URL}
   cache:
     ttl-minutes: ${REPR_CACHE_TTL_MINUTES:5}
-  timeout:
-    connect-seconds: 10
-    read-seconds: 30
-    write-seconds: 30
 
 pdl:
   url: ${PDL_URL}
-  timeout:
-    connect-seconds: 10
-    read-seconds: 30
-    write-seconds: 30
 
 kafka:
   topic:
@@ -156,6 +149,7 @@ vedlegg:
 
 clamav:
   url: ${CLAMAV_URL}
+  read-timeout: 60s
 
 logging:
   level:

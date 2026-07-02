@@ -21,7 +21,7 @@ class NotificationService(
         eksternId: String? = null
     ): String {
         if (arbeidsgiverNotifikasjonClient == null) {
-            throw RuntimeException("ArbeidsgiverNotifikasjonConsumer ikke konfigurert")
+            throw RuntimeException("ArbeidsgiverNotifikasjonClient ikke konfigurert")
         }
 
         try {

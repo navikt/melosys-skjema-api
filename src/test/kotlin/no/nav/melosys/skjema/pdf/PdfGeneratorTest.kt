@@ -28,6 +28,7 @@ import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
@@ -60,6 +61,26 @@ class PdfGeneratorTest : FunSpec({
     val properties = SkjemaDefinisjonProperties()
     val skjemaDefinisjonService = SkjemaDefinisjonService(properties, jsonMapper)
 
+    fun kombinert(
+        at: UtsendtArbeidstakerArbeidstakersSkjemaDataDto,
+        ag: UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+    ): UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto =
+        UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(
+            arbeidsgiversData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidsgiversData(
+                arbeidsgiverensVirksomhetINorge = ag.arbeidsgiverensVirksomhetINorge,
+                utenlandsoppdraget = ag.utenlandsoppdraget,
+                arbeidstakerensLonn = ag.arbeidstakerensLonn,
+                arbeidsstedIUtlandet = ag.arbeidsstedIUtlandet
+            ),
+            arbeidstakersData = UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto.ArbeidstakersData(
+                arbeidssituasjon = at.arbeidssituasjon,
+                skatteforholdOgInntekt = at.skatteforholdOgInntekt,
+                familiemedlemmer = at.familiemedlemmer
+            ),
+            utsendingsperiodeOgLand = at.utsendingsperiodeOgLand ?: ag.utsendingsperiodeOgLand,
+            tilleggsopplysninger = at.tilleggsopplysninger ?: ag.tilleggsopplysninger,
+            vedlegg = at.vedlegg ?: ag.vedlegg
+        )
 
     fun lagSkjemaPdfData(
         referanseId: String,
@@ -76,9 +97,12 @@ class PdfGeneratorTest : FunSpec({
         radgiverInfo: RadgiverInfo? = null
     ): SkjemaPdfData {
         val definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, null, språk)
-        val skjemaData: UtsendtArbeidstakerSkjemaData = arbeidstakerData ?: arbeidsgiverData
-            ?: throw IllegalArgumentException("Minst en av arbeidstakerData eller arbeidsgiverData må oppgis")
-        val kobletSkjemaData: UtsendtArbeidstakerSkjemaData? = if (arbeidstakerData != null && arbeidsgiverData != null) arbeidsgiverData else null
+        val skjemaData: UtsendtArbeidstakerSkjemaData = when {
+            arbeidstakerData != null && arbeidsgiverData != null -> kombinert(arbeidstakerData, arbeidsgiverData)
+            arbeidstakerData != null -> arbeidstakerData
+            arbeidsgiverData != null -> arbeidsgiverData
+            else -> throw IllegalArgumentException("Minst en av arbeidstakerData eller arbeidsgiverData må oppgis")
+        }
         return SkjemaPdfData(
             skjemaId = UUID.randomUUID(),
             referanseId = referanseId,
@@ -88,7 +112,6 @@ class PdfGeneratorTest : FunSpec({
             fullmektigInfo = fullmektigInfo,
             radgiverInfo = radgiverInfo,
             skjemaData = skjemaData,
-            kobletSkjemaData = kobletSkjemaData,
             vedlegg = emptyList(),
             definisjon = definisjon
         )
@@ -991,7 +1014,6 @@ class PdfGeneratorTest : FunSpec({
                     arbeidstakerFnr = "12345678901"
                 ),
                 skjemaData = data,
-                kobletSkjemaData = null,
                 vedlegg = emptyList(),
                 definisjon = definisjon
             )

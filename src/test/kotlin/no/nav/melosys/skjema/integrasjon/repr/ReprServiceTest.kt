@@ -11,7 +11,7 @@ import io.mockk.verify
 import java.time.LocalDate
 import java.time.LocalDateTime
 import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndring
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlEndringstype
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
@@ -21,9 +21,9 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 
 class ReprServiceTest : FunSpec({
 
-    val mockConsumer = mockk<ReprConsumer>()
-    val mockPdlConsumer = mockk<PdlConsumer>()
-    val service = ReprService(mockConsumer, mockPdlConsumer)
+    val mockClient = mockk<ReprClient>()
+    val mockPdlClient = mockk<PdlClient>()
+    val service = ReprService(mockClient, mockPdlClient)
 
     beforeEach {
         io.mockk.clearAllMocks()
@@ -48,14 +48,14 @@ class ReprServiceTest : FunSpec({
             )
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.hentKanRepresentere()
 
         result.shouldHaveSize(2)
         result[0].fullmaktsgiver shouldBe "12345678901"
         result[1].fullmaktsgiver shouldBe "33333333333"
-        verify(exactly = 1) { mockConsumer.hentKanRepresentere() }
+        verify(exactly = 1) { mockClient.hentKanRepresentere() }
     }
 
     test("hentKanRepresentere skal returnere tom liste når ingen MED-fullmakter") {
@@ -71,7 +71,7 @@ class ReprServiceTest : FunSpec({
             )
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.hentKanRepresentere()
 
@@ -79,7 +79,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("hentKanRepresentere skal returnere tom liste når consumer returnerer tom liste") {
-        every { mockConsumer.hentKanRepresentere() } returns emptyList()
+        every { mockClient.hentKanRepresentere() } returns emptyList()
 
         val result = service.hentKanRepresentere()
 
@@ -87,7 +87,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("hentKanRepresentere skal kaste exception ved feil fra consumer") {
-        every { mockConsumer.hentKanRepresentere() } throws RuntimeException("API feil")
+        every { mockClient.hentKanRepresentere() } throws RuntimeException("API feil")
 
         val exception = runCatching { service.hentKanRepresentere() }.exceptionOrNull()
 
@@ -98,7 +98,7 @@ class ReprServiceTest : FunSpec({
     test("harSkriverettigheterForMedlemskap skal returnere true når fullmakt finnes") {
         val fullmakter = listOf(fullmaktMedDefaultVerdier())
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harSkriverettigheterForMedlemskap("12345678901")
 
@@ -110,7 +110,7 @@ class ReprServiceTest : FunSpec({
             fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harSkriverettigheterForMedlemskap("12345678901")
 
@@ -122,7 +122,7 @@ class ReprServiceTest : FunSpec({
             fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "11111111111")
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harSkriverettigheterForMedlemskap("99999999999")
 
@@ -130,7 +130,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harSkriverettigheterForMedlemskap skal kaste ved exception (ikke skjule systemfeil)") {
-        every { mockConsumer.hentKanRepresentere() } throws RuntimeException("Nettverksfeil")
+        every { mockClient.hentKanRepresentere() } throws RuntimeException("Nettverksfeil")
 
         shouldThrow<RuntimeException> {
             service.harSkriverettigheterForMedlemskap("12345678901")
@@ -142,7 +142,7 @@ class ReprServiceTest : FunSpec({
             fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harLeserettigheterForMedlemskap("12345678901")
 
@@ -152,7 +152,7 @@ class ReprServiceTest : FunSpec({
     test("harLeserettigheterForMedlemskap skal returnere true når skriverettigheter finnes") {
         val fullmakter = listOf(fullmaktMedDefaultVerdier())
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harLeserettigheterForMedlemskap("12345678901")
 
@@ -160,7 +160,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harLeserettigheterForMedlemskap skal returnere false når fullmakt ikke finnes") {
-        every { mockConsumer.hentKanRepresentere() } returns emptyList()
+        every { mockClient.hentKanRepresentere() } returns emptyList()
 
         val result = service.harLeserettigheterForMedlemskap("12345678901")
 
@@ -168,7 +168,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harLeserettigheterForMedlemskap skal kaste ved exception (ikke skjule systemfeil)") {
-        every { mockConsumer.hentKanRepresentere() } throws RuntimeException("Tilgangsfeil")
+        every { mockClient.hentKanRepresentere() } throws RuntimeException("Tilgangsfeil")
 
         shouldThrow<RuntimeException> {
             service.harLeserettigheterForMedlemskap("12345678901")
@@ -186,7 +186,7 @@ class ReprServiceTest : FunSpec({
             )
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         // Person A: skal ha skriverettigheter
         service.harSkriverettigheterForMedlemskap("11111111111") shouldBe true
@@ -206,7 +206,7 @@ class ReprServiceTest : FunSpec({
             )
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harSkriverettigheterForMedlemskap("12345678901")
 
@@ -221,7 +221,7 @@ class ReprServiceTest : FunSpec({
             )
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         val result = service.harLeserettigheterForMedlemskap("12345678901")
 
@@ -238,7 +238,7 @@ class ReprServiceTest : FunSpec({
             fullmaktMedDefaultVerdier()
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns fullmakter
+        every { mockClient.hentKanRepresentere() } returns fullmakter
 
         // Skal finne MED-fullmakten selv om det er flere fullmakter
         service.harSkriverettigheterForMedlemskap("12345678901") shouldBe true
@@ -254,8 +254,8 @@ class ReprServiceTest : FunSpec({
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
-        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to person)
+        every { mockClient.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlClient.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to person)
 
         val result = service.hentPersonerMedFullmakt()
 
@@ -276,8 +276,8 @@ class ReprServiceTest : FunSpec({
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1985-05-15"))
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt1, fullmakt2)
-        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901", "22222222222")) } returns mapOf(
+        every { mockClient.hentKanRepresentere() } returns listOf(fullmakt1, fullmakt2)
+        every { mockPdlClient.hentPersonerBolk(listOf("12345678901", "22222222222")) } returns mapOf(
             "12345678901" to person1,
             "22222222222" to person2
         )
@@ -294,8 +294,8 @@ class ReprServiceTest : FunSpec({
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
-        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenNavn)
+        every { mockClient.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlClient.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenNavn)
 
         shouldThrow<IllegalArgumentException> {
             service.hentPersonerMedFullmakt()
@@ -309,8 +309,8 @@ class ReprServiceTest : FunSpec({
             foedselsdato = emptyList()
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmakt)
-        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenFoedselsdato)
+        every { mockClient.hentKanRepresentere() } returns listOf(fullmakt)
+        every { mockPdlClient.hentPersonerBolk(listOf("12345678901")) } returns mapOf("12345678901" to personUtenFoedselsdato)
 
         shouldThrow<IllegalArgumentException> {
             service.hentPersonerMedFullmakt()
@@ -325,9 +325,9 @@ class ReprServiceTest : FunSpec({
             foedselsdato = listOf(PdlFoedselsdato(foedselsdato = "1990-01-01"))
         )
 
-        every { mockConsumer.hentKanRepresentere() } returns listOf(fullmaktPersonFinnesIPdl, fullmaktPersonManglerIPdl)
+        every { mockClient.hentKanRepresentere() } returns listOf(fullmaktPersonFinnesIPdl, fullmaktPersonManglerIPdl)
         // PDL svarer kun med én person selv om begge fnr ble spurt om
-        every { mockPdlConsumer.hentPersonerBolk(listOf("12345678901", "99999999999")) } returns mapOf("12345678901" to person)
+        every { mockPdlClient.hentPersonerBolk(listOf("12345678901", "99999999999")) } returns mapOf("12345678901" to person)
 
         val result = service.hentPersonerMedFullmakt()
 

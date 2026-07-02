@@ -1,12 +1,14 @@
 package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
+import no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingInterceptor
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
@@ -16,26 +18,32 @@ class PdlConfig(
 ) {
 
     companion object {
+        private const val CLIENT_NAME = "pdl"
+        private const val NAV_CONSUMER_TOKEN = "Nav-Consumer-Token"
         private const val BEHANDLINGSNUMMER = "behandlingsnummer"
         private const val MELOSYS_SKJEMA_BEHANDLINGSNUMMER = "B272"
     }
 
     @Bean
-    fun pdlClient(
-        webClientBuilder: WebClient.Builder,
-        correlationIdOutgoingFilter: no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingFilter
-    ): WebClient {
+    fun pdlRestClient(
+        restClientBuilder: RestClient.Builder,
+        correlationIdOutgoingInterceptor: CorrelationIdOutgoingInterceptor,
+        authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
+    ): RestClient {
         log.info { "Konfigurerer PDL-klient med base URL: $pdlUrl" }
 
-        return webClientBuilder
+        return restClientBuilder
             .baseUrl(pdlUrl)
-            .defaultHeaders { headers ->
-                headers.accept = listOf(MediaType.APPLICATION_JSON)
-                headers.contentType = MediaType.APPLICATION_JSON
-                headers.set(BEHANDLINGSNUMMER, MELOSYS_SKJEMA_BEHANDLINGSNUMMER)
-            }
-            .filter(correlationIdOutgoingFilter)
-            .filter(WebClientConfig.errorFilter("Kall mot PDL feilet"))
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(BEHANDLINGSNUMMER, MELOSYS_SKJEMA_BEHANDLINGSNUMMER)
+            .requestInterceptor(
+                authorizationHeaderInterceptorFactory.clientCredentialsInterceptor(
+                    clientName = CLIENT_NAME,
+                    ekstraTokenHeaders = listOf(NAV_CONSUMER_TOKEN)
+                )
+            )
+            .requestInterceptor(correlationIdOutgoingInterceptor)
             .build()
     }
 }

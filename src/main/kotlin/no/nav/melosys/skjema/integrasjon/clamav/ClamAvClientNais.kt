@@ -7,16 +7,16 @@ import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
 import org.springframework.web.multipart.MultipartFile
-import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.client.WebClient
 
 private val log = KotlinLogging.logger { }
 
 @Service
 @Profile("!local-q1 & !local-q2")
 class ClamAvClientNais(
-    private val clamAvWebClient: WebClient
+    private val clamAvRestClient: RestClient
 ) : ClamAvClient {
 
     override fun scan(fil: MultipartFile) {
@@ -27,12 +27,11 @@ class ClamAvClientNais(
             override fun getFilename(): String = fil.originalFilename ?: "file"
         }).contentType(MediaType.APPLICATION_OCTET_STREAM)
 
-        val response = clamAvWebClient.put()
+        val response = clamAvRestClient.put()
             .contentType(MediaType.MULTIPART_FORM_DATA)
-            .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+            .body(bodyBuilder.build())
             .retrieve()
-            .bodyToMono(Array<ClamAvScanResult>::class.java)
-            .block()
+            .body<Array<ClamAvScanResult>>()
 
         if (response.isNullOrEmpty()) {
             log.error { "ClamAV returnerte tomt svar for '${fil.originalFilename}'" }

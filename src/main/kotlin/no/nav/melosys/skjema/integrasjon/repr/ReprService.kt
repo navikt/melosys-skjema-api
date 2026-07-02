@@ -2,7 +2,7 @@ package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.controller.dto.PersonMedFullmaktDto
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import org.springframework.stereotype.Service
@@ -11,8 +11,8 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class ReprService(
-    private val reprConsumer: ReprConsumer,
-    private val pdlConsumer: PdlConsumer
+    private val reprClient: ReprClient,
+    private val pdlClient: PdlClient
 ) {
 
     /**
@@ -24,7 +24,7 @@ class ReprService(
         log.info { "Henter fullmakter for innlogget bruker fra repr-api" }
 
         return try {
-            reprConsumer.hentKanRepresentere()
+            reprClient.hentKanRepresentere()
                 .filter { fullmakt ->
                     fullmakt.leserettigheter.contains(FullmaktOmrade.MEDLEMSKAP) ||
                             fullmakt.skriverettigheter.contains(FullmaktOmrade.MEDLEMSKAP)
@@ -122,7 +122,7 @@ class ReprService(
             .distinct()
 
         // Hent alle personer fra PDL i én bulk-query
-        val personerMap = pdlConsumer.hentPersonerBolk(fnrListe)
+        val personerMap = pdlClient.hentPersonerBolk(fnrListe)
 
         // Map til PersonMedFullmaktDto, kun for personer vi fikk fra PDL
         return fullmakter

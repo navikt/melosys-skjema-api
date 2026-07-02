@@ -9,7 +9,7 @@ import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.altinnTilgangerResponseMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
-import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
+import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerClient
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.types.felles.OrganisasjonDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
@@ -33,11 +33,11 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     private lateinit var mockOAuth2Server: MockOAuth2Server
 
     @MockkBean
-    private lateinit var arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer
+    private lateinit var arbeidsgiverAltinnTilgangerClient: ArbeidsgiverAltinnTilgangerClient
     
     @Test
     fun `GET hentTilganger skal returnere liste over organisasjoner`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
 
         val orgnr1 = "123456789"
         val orgnr2 = "987654321"
@@ -61,7 +61,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             )
         )
         
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns altinnTilgangerResponse
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns altinnTilgangerResponse
         
         val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -83,13 +83,13 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Test
     fun `GET hentTilganger skal returnere tom liste når ingen tilganger`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
         
         val response = altinnTilgangerResponseMedDefaultVerdier().copy(
             tilgangTilOrgNr = emptyMap(),
         )
         
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -113,7 +113,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Test
     fun `GET hentTilganger skal returnere tilganger selv om isError er true`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
 
         val orgnr = "123456789"
         val response = altinnTilgangerResponseMedDefaultVerdier().copy(
@@ -130,7 +130,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns response
 
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -151,9 +151,9 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
 
     @Test
     fun `GET hentTilganger skal returnere 500 når kallet mot Altinn kaster`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
 
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } throws
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } throws
             RuntimeException("Altinn er nede")
 
         val token = mockOAuth2Server.getToken(
@@ -172,7 +172,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     @DisplayName("GET /api/harTilgang/{orgnr} skal returnere true når bruker har tilgang")
     fun `GET harTilgang skal returnere true når bruker har tilgang`() {
         // Clear any previous mocks on this bean
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
         
         val orgnr = "123456789"
         val response = altinnTilgangerResponseMedDefaultVerdier().copy(
@@ -190,7 +190,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             orgNrTilTilganger = emptyMap()
         )
         
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -209,7 +209,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Test
     fun `GET harTilgang skal returnere false når bruker ikke har tilgang`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
         
         val orgnr = "987654321"
         val response = altinnTilgangerResponseMedDefaultVerdier().copy(
@@ -227,7 +227,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
             orgNrTilTilganger = emptyMap()
         )
         
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } returns response
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns response
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")
@@ -245,9 +245,9 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     
     @Test
     fun `GET harTilgang skal returnere 500 når kallet mot Altinn kaster`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
 
-        every { arbeidsgiverAltinnTilgangerConsumer.hentTilganger() } throws
+        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } throws
             RuntimeException("Altinn er nede")
 
         val token = mockOAuth2Server.getToken(
@@ -264,7 +264,7 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
 
     @Test
     fun `GET harTilgang skal validere organisasjonsnummer format`() {
-        clearMocks(arbeidsgiverAltinnTilgangerConsumer)
+        clearMocks(arbeidsgiverAltinnTilgangerClient)
         
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "12345678901")

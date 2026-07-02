@@ -14,7 +14,7 @@ import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
@@ -51,14 +51,14 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
     private lateinit var innsendingRepository: InnsendingRepository
 
     @MockkBean
-    private lateinit var pdlConsumer: PdlConsumer
+    private lateinit var pdlClient: PdlClient
 
     @BeforeEach
     fun setUp() {
         skjemaRepository.deleteAll()
         innsendingRepository.deleteAll()
 
-        every { pdlConsumer.hentPerson(any()) } returns PdlPerson(
+        every { pdlClient.hentPerson(any()) } returns PdlPerson(
             navn = listOf(PdlNavn("Hans", null, "Hansen")),
             foedselsdato = listOf(PdlFoedselsdato("1980-01-01"))
         )

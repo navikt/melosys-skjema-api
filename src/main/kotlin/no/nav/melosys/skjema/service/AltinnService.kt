@@ -1,7 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerConsumer
+import no.nav.melosys.skjema.integrasjon.altinn.ArbeidsgiverAltinnTilgangerClient
 import no.nav.melosys.skjema.integrasjon.altinn.dto.AltinnTilgang
 import no.nav.melosys.skjema.integrasjon.altinn.dto.OrganisasjonMedTilgang
 import no.nav.melosys.skjema.types.felles.OrganisasjonDto
@@ -12,7 +12,7 @@ private val log = KotlinLogging.logger { }
 
 @Service
 class AltinnService(
-    private val arbeidsgiverAltinnTilgangerConsumer: ArbeidsgiverAltinnTilgangerConsumer,
+    private val arbeidsgiverAltinnTilgangerClient: ArbeidsgiverAltinnTilgangerClient,
     @param:Value("\${altinn.ressurs}") private val altinnRessurs: String
 ) {
 
@@ -20,7 +20,7 @@ class AltinnService(
         log.info { "Henter brukers tilganger fra Altinn" }
 
         return try {
-            val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
+            val response = arbeidsgiverAltinnTilgangerClient.hentTilganger()
 
             if (response.isError) {
                 // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
@@ -49,7 +49,7 @@ class AltinnService(
     }
     
     private fun hentOrganisasjonerMedTilgang(): List<OrganisasjonMedTilgang> {
-        val response = arbeidsgiverAltinnTilgangerConsumer.hentTilganger()
+        val response = arbeidsgiverAltinnTilgangerClient.hentTilganger()
         
         if (response.isError) {
             // isError kan være true selv med gyldige tilganger i responsen — behold dataene.

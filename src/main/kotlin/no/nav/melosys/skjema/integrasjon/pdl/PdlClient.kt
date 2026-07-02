@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
-import no.nav.melosys.skjema.integrasjon.felles.OAuth2AuthorizationHeaderProvider
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLError
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLRequest
 import no.nav.melosys.skjema.integrasjon.felles.graphql.GraphQLResponse
@@ -11,22 +10,19 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlHentPersonResponse
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpHeaders
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.HttpServerErrorException
+import org.springframework.web.client.ResourceAccessException
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
 @Component
-class PdlConsumer(
-    private val pdlClient: WebClient,
-    private val authorizationHeaderProvider: OAuth2AuthorizationHeaderProvider
+class PdlClient(
+    private val pdlRestClient: RestClient
 ) {
-
-    companion object {
-        private const val CLIENT_NAME = "pdl"
-        private const val NAV_CONSUMER_TOKEN = "Nav-Consumer-Token"
-    }
 
     /**
      * Henter person fra PDL med navn og fødselsdato.
@@ -36,6 +32,11 @@ class PdlConsumer(
      * @return PdlPerson med navn og fødselsdato
      * @throws IllegalArgumentException hvis person ikke finnes eller response er ugyldig
      */
+    @Retryable(
+        retryFor = [HttpServerErrorException::class, ResourceAccessException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000L, multiplier = 2.0, random = true)
+    )
     @Cacheable(value = ["pdl-person"], key = "#ident")
     fun hentPerson(ident: String): PdlPerson {
         log.debug { "Henter person fra PDL" }
@@ -44,17 +45,12 @@ class PdlConsumer(
             query = PdlQuery.HENT_PERSON_NAVN_FODSELSDATO,
             variables = mapOf("ident" to ident)
         )
-        val authorizationHeader = authorizationHeaderProvider.clientCredentialsAuthorizationHeader(CLIENT_NAME)
 
-        val response = pdlClient.post()
+        val response = pdlRestClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
-            .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
-            .header(NAV_CONSUMER_TOKEN, authorizationHeader)
-            .bodyValue(graphQLRequest)
+            .body(graphQLRequest)
             .retrieve()
-            .bodyToMono(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonResponse>>() {})
-            .retryWhen(no.nav.melosys.skjema.integrasjon.felles.WebClientConfig.defaultRetry(maxAttempts = 3, backoffDurationMillis = 1000))
-            .block()
+            .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonResponse>>() {})
 
         håndterFeil(response)
 
@@ -84,6 +80,11 @@ class PdlConsumer(
      * @param identer Liste med fødselsnummer/d-nummer
      * @return Map med fnr som key og PdlPerson som value (kun for personer som ble funnet)
      */
+    @Retryable(
+        retryFor = [HttpServerErrorException::class, ResourceAccessException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000L, multiplier = 2.0, random = true)
+    )
     @Cacheable(value = ["pdl-personer-bulk"], keyGenerator = "pdlBolkKeyGenerator")
     fun hentPersonerBolk(identer: List<String>): Map<String, PdlPerson> {
         if (identer.isEmpty()) {
@@ -96,17 +97,12 @@ class PdlConsumer(
             query = PdlQuery.HENT_PERSON_BOLK,
             variables = mapOf("identer" to identer)
         )
-        val authorizationHeader = authorizationHeaderProvider.clientCredentialsAuthorizationHeader(CLIENT_NAME)
 
-        val response = pdlClient.post()
+        val response = pdlRestClient.post()
             .header("Nav-Call-Id", UUID.randomUUID().toString())
-            .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
-            .header(NAV_CONSUMER_TOKEN, authorizationHeader)
-            .bodyValue(graphQLRequest)
+            .body(graphQLRequest)
             .retrieve()
-            .bodyToMono(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonBolkResponse>>() {})
-            .retryWhen(no.nav.melosys.skjema.integrasjon.felles.WebClientConfig.defaultRetry(maxAttempts = 3, backoffDurationMillis = 1000))
-            .block()
+            .body(object : ParameterizedTypeReference<GraphQLResponse<PdlHentPersonBolkResponse>>() {})
 
         if (response == null) {
             throw RuntimeException("Respons fra PDL bulk-query er null")

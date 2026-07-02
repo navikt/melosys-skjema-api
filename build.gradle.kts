@@ -26,17 +26,17 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "6.0.8"
+val tokenSupportVersion = "6.0.10"
 val mockOAuth2ServerVersion = "3.0.3"
 val kotlinLoggingVersion = "8.0.4"
-val kotestVersion = "6.1.11"
-val mockkVersion = "1.14.9"
+val kotestVersion = "6.2.0"
+val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
 val springdocVersion = "3.0.3"
 val shedlockVersion = "7.7.0"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.27.0-alpha"
+val opentelemetryLogbackVersion = "2.28.1-alpha"
 
 repositories {
     mavenCentral()
@@ -53,9 +53,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("org.springframework.boot:spring-boot-starter-webclient")
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-aspectj")
+    implementation("org.springframework.retry:spring-retry:2.0.13")
     implementation("no.nav.security:token-validation-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-client-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-validation-core:${tokenSupportVersion}")

@@ -10,11 +10,11 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.controller.dto.PersonMedFullmaktDto
 import no.nav.melosys.skjema.fullmaktMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
-import no.nav.melosys.skjema.integrasjon.pdl.PdlConsumer
+import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
-import no.nav.melosys.skjema.integrasjon.repr.ReprConsumer
+import no.nav.melosys.skjema.integrasjon.repr.ReprClient
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.DisplayName
@@ -37,15 +37,15 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     private lateinit var mockOAuth2Server: MockOAuth2Server
 
     @MockkBean
-    private lateinit var reprConsumer: ReprConsumer
+    private lateinit var reprClient: ReprClient
 
     @MockkBean
-    private lateinit var pdlConsumer: PdlConsumer
+    private lateinit var pdlClient: PdlClient
 
     @Test
     @DisplayName("GET /api/representasjon skal returnere fullmakter")
     fun `GET representasjon skal returnere fullmakter`() {
-        clearMocks(reprConsumer)
+        clearMocks(reprClient)
 
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(
@@ -57,7 +57,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        every { reprConsumer.hentKanRepresentere() } returns fullmakter
+        every { reprClient.hentKanRepresentere() } returns fullmakter
 
         val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -82,9 +82,9 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/representasjon skal returnere tom liste når ingen fullmakter")
     fun `GET representasjon skal returnere tom liste når ingen fullmakter`() {
-        clearMocks(reprConsumer)
+        clearMocks(reprClient)
 
-        every { reprConsumer.hentKanRepresentere() } returns emptyList()
+        every { reprClient.hentKanRepresentere() } returns emptyList()
 
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -117,7 +117,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("Skal filtrere bort fullmakter uten MED-området")
     fun `skal filtrere bort fullmakter uten MED-området`() {
-        clearMocks(reprConsumer)
+        clearMocks(reprClient)
 
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier(),
@@ -128,7 +128,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        every { reprConsumer.hentKanRepresentere() } returns fullmakter
+        every { reprClient.hentKanRepresentere() } returns fullmakter
 
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -152,7 +152,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/representasjon/personer skal returnere personer med fullmakt beriket med PDL-data")
     fun `GET personer skal returnere personer med fullmakt beriket med PDL-data`() {
-        clearMocks(reprConsumer, pdlConsumer)
+        clearMocks(reprClient, pdlClient)
 
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901"),
@@ -170,8 +170,8 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        every { reprConsumer.hentKanRepresentere() } returns fullmakter
-        every { pdlConsumer.hentPersonerBolk(listOf("12345678901", "11111111111")) } returns pdlPersoner
+        every { reprClient.hentKanRepresentere() } returns fullmakter
+        every { pdlClient.hentPersonerBolk(listOf("12345678901", "11111111111")) } returns pdlPersoner
 
         val accessToken = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -202,9 +202,9 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/representasjon/personer skal returnere tom liste når ingen fullmakter")
     fun `GET personer skal returnere tom liste når ingen fullmakter`() {
-        clearMocks(reprConsumer, pdlConsumer)
+        clearMocks(reprClient, pdlClient)
 
-        every { reprConsumer.hentKanRepresentere() } returns emptyList()
+        every { reprClient.hentKanRepresentere() } returns emptyList()
 
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")
@@ -236,7 +236,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
     @Test
     @DisplayName("GET /api/representasjon/personer skal filtrere bort personer som ikke finnes i PDL")
     fun `GET personer skal filtrere bort personer som ikke finnes i PDL`() {
-        clearMocks(reprConsumer, pdlConsumer)
+        clearMocks(reprClient, pdlClient)
 
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901"),
@@ -251,8 +251,8 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
             )
         )
 
-        every { reprConsumer.hentKanRepresentere() } returns fullmakter
-        every { pdlConsumer.hentPersonerBolk(listOf("12345678901", "11111111111")) } returns pdlPersoner
+        every { reprClient.hentKanRepresentere() } returns fullmakter
+        every { pdlClient.hentPersonerBolk(listOf("12345678901", "11111111111")) } returns pdlPersoner
 
         val token = mockOAuth2Server.getToken(
             claims = mapOf("pid" to "98765432109")

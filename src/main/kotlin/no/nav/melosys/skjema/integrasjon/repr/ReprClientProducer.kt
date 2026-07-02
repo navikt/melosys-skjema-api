@@ -1,61 +1,37 @@
 package no.nav.melosys.skjema.integrasjon.repr
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.netty.channel.ChannelOption
-import io.netty.handler.timeout.ReadTimeoutHandler
-import io.netty.handler.timeout.WriteTimeoutHandler
-import java.time.Duration
-import java.util.concurrent.TimeUnit
-import no.nav.melosys.skjema.integrasjon.felles.WebClientConfig
+import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction
-import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
-import reactor.netty.http.client.HttpClient
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.web.client.RestClient
 
 private val log = KotlinLogging.logger { }
 
 @Configuration
 class ReprClientProducer(
-    @param:Value("\${repr.url}") private val reprBaseUrl: String,
-    @param:Value("\${repr.timeout.connect-seconds:10}") private val connectTimeoutSeconds: Long,
-    @param:Value("\${repr.timeout.read-seconds:30}") private val readTimeoutSeconds: Long,
-    @param:Value("\${repr.timeout.write-seconds:30}") private val writeTimeoutSeconds: Long
+    @param:Value("\${repr.url}") private val reprBaseUrl: String
 ) {
 
-    @Bean
-    fun reprClientTokenX(
-        webClientBuilder: WebClient.Builder
-    ): WebClient {
-        log.info { "Konfigurerer ReprConsumer med base URL: $reprBaseUrl" }
-
-        val httpClient = HttpClient.create()
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (connectTimeoutSeconds * 1000).toInt())
-            .responseTimeout(Duration.ofSeconds(readTimeoutSeconds))
-            .doOnConnected { conn ->
-                conn.addHandlerLast(ReadTimeoutHandler(readTimeoutSeconds, TimeUnit.SECONDS))
-                conn.addHandlerLast(WriteTimeoutHandler(writeTimeoutSeconds, TimeUnit.SECONDS))
-            }
-
-        return webClientBuilder
-            .baseUrl(reprBaseUrl)
-            .clientConnector(ReactorClientHttpConnector(httpClient))
-            .filter(WebClientConfig.errorFilter("Kall mot repr-api feilet"))
-            .filter(headerFilter())
-            .build()
+    companion object {
+        private const val CLIENT_NAME = "repr-api"
     }
 
-    private fun headerFilter(): ExchangeFilterFunction {
-        return ExchangeFilterFunction.ofRequestProcessor { request ->
-            Mono.just(
-                org.springframework.web.reactive.function.client.ClientRequest.from(request)
-                    .header("Accept", "application/json")
-                    .header("Content-Type", "application/json")
-                    .build()
-            )
-        }
+    @Bean
+    fun reprRestClient(
+        restClientBuilder: RestClient.Builder,
+        authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
+    ): RestClient {
+        log.info { "Konfigurerer ReprClient med base URL: $reprBaseUrl" }
+
+        return restClientBuilder
+            .baseUrl(reprBaseUrl)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .requestInterceptor(authorizationHeaderInterceptorFactory.authorizationInterceptor(CLIENT_NAME))
+            .build()
     }
 }
