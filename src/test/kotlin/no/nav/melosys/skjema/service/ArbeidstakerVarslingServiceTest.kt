@@ -353,4 +353,56 @@ class ArbeidstakerVarslingServiceTest {
         sendt shouldBe false
         verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
     }
+
+    @Test
+    fun `resend - langt arbeidsgiverNavn skal erstattes med orgnr i varseltekst`() {
+        val langtNavn = "A".repeat(31)
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                arbeidsgiverNavn = langtNavn
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
+
+        service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        verify {
+            brukervarselProducer.sendBrukervarsel(
+                match<BrukervarselMelding> { melding ->
+                    melding.tekster.all { !it.tekst.contains(langtNavn) && it.tekst.contains(skjema.orgnr) }
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `resend - arbeidsgivernavn paa grensen skal beholdes i varseltekst`() {
+        val navnPaaGrensen = "A".repeat(30)
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                arbeidsgiverNavn = navnPaaGrensen
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
+
+        service.resendVarselTilArbeidstaker(skjema.id!!)
+
+        verify {
+            brukervarselProducer.sendBrukervarsel(
+                match<BrukervarselMelding> { melding ->
+                    melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst.contains(navnPaaGrensen)
+                }
+            )
+        }
+    }
 }

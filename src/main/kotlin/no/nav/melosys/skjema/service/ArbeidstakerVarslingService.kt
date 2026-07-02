@@ -131,12 +131,21 @@ class ArbeidstakerVarslingService(
             return false
         }
 
-        val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
+        val navn = arbeidsgiverVisningsnavnForResend(metadata, orgnr)
         val tekster = lagResendVarselteksterUtenFullmakt(navn)
         brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
         log.info { "Resend: sendt varsel på nytt til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
         return true
     }
+
+    /**
+     * MELOSYS-8168 (midlertidig): Returnerer navnet som skal vises i resend-varselteksten.
+     * Resend-teksten har en ekstra setning, og lange arbeidsgivernavn kan gjøre at teksten
+     * overstiger min-side sin maksgrense på 300 tegn. Navn over
+     * [RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE] tegn erstattes derfor med organisasjonsnummeret.
+     */
+    private fun arbeidsgiverVisningsnavnForResend(metadata: UtsendtArbeidstakerMetadata, orgnr: String): String =
+        if (metadata.arbeidsgiverNavn.length > RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE) orgnr else metadata.arbeidsgiverNavn
 
     private fun harEksisterendeArbeidstakerUtkast(fnr: String, juridiskEnhetOrgnr: String): Boolean =
         skjemaRepository.findByFnrAndTypeAndStatus(fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.UTKAST).any { utkast ->
@@ -195,6 +204,7 @@ class ArbeidstakerVarslingService(
 
     companion object {
         private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
+        private const val RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE = 30
         private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad/oversikt"
     }
 }
