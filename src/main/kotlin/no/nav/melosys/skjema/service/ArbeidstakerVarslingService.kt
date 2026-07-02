@@ -171,8 +171,8 @@ class ArbeidstakerVarslingService(
     private fun lagResendVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> =
         lagVarselteksterUtenFullmakt(arbeidsgiverNavn).map { varseltekst ->
             val tillegg = when (varseltekst.språk) {
-                Språk.NORSK_BOKMAL -> " Hvis du allerede har fylt ut og sendt inn din del nylig, kan du se bort fra denne meldingen."
-                Språk.ENGELSK -> " If you have already submitted your part recently, you can disregard this message."
+                Språk.NORSK_BOKMAL -> " Hvis du allerede har fylt ut og sendt inn din del, kan du se bort fra denne meldingen."
+                Språk.ENGELSK -> " If you have already submitted your part, you can disregard this message."
                 else -> ""
             }
             varseltekst.copy(tekst = varseltekst.tekst + tillegg)
