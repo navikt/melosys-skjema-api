@@ -424,7 +424,7 @@ class AdminService(
                 slettedeBlober++
             } catch (e: Exception) {
                 feiledeBlober++
-                log.error(e) { "Admin: Klarte ikke slette vedlegg-blob under opprydding av slettede utkast" }
+                log.error(e) { "Admin: Klarte ikke slette vedlegg-blob $referanse under opprydding av slettede utkast" }
             }
         }
 
