@@ -20,7 +20,6 @@ import no.nav.melosys.skjema.repository.VedleggRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
-import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
 
 class VedleggServiceTest : FunSpec({
@@ -227,38 +226,38 @@ class VedleggServiceTest : FunSpec({
         }
     }
 
-    context("slettBlobberForSkjemaEtterCommit") {
-        test("sletter blobs først etter commit") {
+    context("slettBlobberForSkjema") {
+        test("sletter alle blobs synkront") {
+            val ref1 = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
+            val ref2 = "skjemaer/$skjemaId/vedlegg/v2/b.pdf"
+            val vedlegg1 = mockk<Vedlegg> { every { storageReferanse } returns ref1 }
+            val vedlegg2 = mockk<Vedlegg> { every { storageReferanse } returns ref2 }
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg1, vedlegg2)
+            every { mockVedleggStorageClient.slett(any()) } just Runs
+
+            vedleggService.slettBlobberForSkjema(skjemaId)
+
+            verify(exactly = 1) { mockVedleggStorageClient.slett(ref1) }
+            verify(exactly = 1) { mockVedleggStorageClient.slett(ref2) }
+        }
+
+        test("kaster feilen videre når blob-sletting feiler") {
             val ref = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
             val vedlegg = mockk<Vedlegg> { every { storageReferanse } returns ref }
             every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg)
-            every { mockVedleggStorageClient.slett(any()) } just Runs
+            every { mockVedleggStorageClient.slett(ref) } throws RuntimeException("storage nede")
 
-            TransactionSynchronizationManager.initSynchronization()
-            try {
-                vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
-
-                verify(exactly = 0) { mockVedleggStorageClient.slett(any()) }
-
-                TransactionSynchronizationManager.getSynchronizations().forEach { it.afterCommit() }
-            } finally {
-                TransactionSynchronizationManager.clearSynchronization()
+            shouldThrow<RuntimeException> {
+                vedleggService.slettBlobberForSkjema(skjemaId)
             }
-
-            verify(exactly = 1) { mockVedleggStorageClient.slett(ref) }
         }
 
-        test("registrerer ingen synkronisering når ingen vedlegg finnes") {
+        test("gjør ingenting når ingen vedlegg finnes") {
             every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns emptyList()
 
-            TransactionSynchronizationManager.initSynchronization()
-            try {
-                vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
+            vedleggService.slettBlobberForSkjema(skjemaId)
 
-                TransactionSynchronizationManager.getSynchronizations() shouldBe emptyList()
-            } finally {
-                TransactionSynchronizationManager.clearSynchronization()
-            }
+            verify(exactly = 0) { mockVedleggStorageClient.slett(any()) }
         }
     }
 })

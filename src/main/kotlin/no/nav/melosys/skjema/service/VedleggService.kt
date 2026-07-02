@@ -13,8 +13,6 @@ import no.nav.melosys.skjema.vedlegg.FilValidator
 import no.nav.melosys.skjema.types.vedlegg.VedleggDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.support.TransactionSynchronization
-import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
 
 private val log = KotlinLogging.logger { }
@@ -126,21 +124,17 @@ class VedleggService(
     }
 
     /**
-     * Sletter vedlegg-blobbene for et skjema først ETTER commit, så en rollback ikke etterlater
-     * vedlegg-rader uten blob. Best-effort: en feilet blob stopper ikke de øvrige og kastes ikke videre.
+     * Sletter vedlegg-blobbene synkront. Kalles FØR skjema-raden slettes i samme transaksjon:
+     * feiler slettingen kastes den videre så kalleren ruller tilbake og skjema-raden består
+     * (ingen foreldreløse blob-filer på avveie, GDPR). Idempotent, så retry er trygt.
      */
-    fun slettBlobberForSkjemaEtterCommit(skjemaId: UUID) {
+    fun slettBlobberForSkjema(skjemaId: UUID) {
         val storageReferanser = vedleggRepository.findBySkjemaId(skjemaId).map { it.storageReferanse }
         if (storageReferanser.isEmpty()) return
 
-        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
-            override fun afterCommit() {
-                storageReferanser.forEach { referanse ->
-                    runCatching { vedleggStorageClient.slett(referanse) }
-                        .onFailure { log.warn(it) { "Kunne ikke slette vedlegg-blob $referanse for skjema $skjemaId" } }
-                }
-            }
-        })
+        storageReferanser.forEach { referanse ->
+            vedleggStorageClient.slett(referanse)
+        }
     }
 }
 

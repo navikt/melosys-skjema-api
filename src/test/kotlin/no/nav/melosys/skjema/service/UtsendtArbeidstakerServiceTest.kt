@@ -619,7 +619,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     }
 
     context("slettUtkast") {
-        test("skal hard-slette utkast og planlegge sletting av vedlegg-blobs") {
+        test("skal hard-slette utkast og slette vedlegg-blobs først") {
             val skjemaId = UUID.randomUUID()
             val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
@@ -628,8 +628,20 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             service.slettUtkast(skjemaId)
 
-            verify(exactly = 1) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 1) { mockVedleggService.slettBlobberForSkjema(skjemaId) }
             verify(exactly = 1) { mockSkjemaRepository.delete(skjema) }
+        }
+
+        test("skal ikke slette skjema når blob-sletting feiler") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(id = skjemaId, status = SkjemaStatus.UTKAST, fnr = korrektSyntetiskFnr)
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findAktivById(skjemaId) } returns skjema
+            every { mockVedleggService.slettBlobberForSkjema(skjemaId) } throws RuntimeException("blob-sletting feilet")
+
+            shouldThrow<RuntimeException> { service.slettUtkast(skjemaId) }
+
+            verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
         }
 
         test("skal kaste SkjemaErIkkeRedigerbartException for innsendt skjema og ikke slette") {
@@ -640,7 +652,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             shouldThrow<SkjemaErIkkeRedigerbartException> { service.slettUtkast(skjemaId) }
 
-            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjema(skjemaId) }
             verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
         }
 
@@ -652,7 +664,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             shouldThrow<AccessDeniedException> { service.slettUtkast(skjemaId) }
 
-            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjemaEtterCommit(skjemaId) }
+            verify(exactly = 0) { mockVedleggService.slettBlobberForSkjema(skjemaId) }
             verify(exactly = 0) { mockSkjemaRepository.delete(skjema) }
         }
     }

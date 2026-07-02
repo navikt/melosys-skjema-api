@@ -149,13 +149,12 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Sletter et skjema med status UTKAST permanent (hard delete).
+     * Sletter et UTKAST permanent (hard delete).
      *
-     * DB-cascade fjerner tilhørende vedlegg-/innsending-/fullmakt-rader når skjema-raden slettes.
-     * Vedlegg-blobbene i bucket slettes FØRST etter at transaksjonen har committet (GDPR: ingen
-     * foreldreløse filer, og en rollback etterlater ikke vedlegg-rader uten blob).
+     * Vedlegg-blobbene slettes FØRST, synkront i transaksjonen. Feiler blob-slettingen rulles
+     * transaksjonen tilbake og skjema-raden består — ingen foreldreløse blob-filer på avveie (GDPR).
+     * DB-cascade fjerner tilhørende vedlegg-/innsending-/fullmakt-rader.
      *
-     * @param skjemaId ID til skjemaet som skal slettes
      * @throws NoSuchElementException hvis skjema ikke finnes
      * @throws AccessDeniedException hvis bruker ikke har skrivetilgang
      * @throws SkjemaErIkkeRedigerbartException hvis skjema allerede er sendt inn
@@ -164,7 +163,7 @@ class UtsendtArbeidstakerService(
     fun slettUtkast(skjemaId: UUID) {
         val skjema = hentRedigerbartSkjema(skjemaId)
 
-        vedleggService.slettBlobberForSkjemaEtterCommit(skjemaId)
+        vedleggService.slettBlobberForSkjema(skjemaId)
         skjemaRepository.delete(skjema)
 
         log.info { "Utkast slettet: $skjemaId" }
