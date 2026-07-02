@@ -225,4 +225,39 @@ class VedleggServiceTest : FunSpec({
             }
         }
     }
+
+    context("slettBlobberForSkjema") {
+        test("sletter alle blobs synkront") {
+            val ref1 = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
+            val ref2 = "skjemaer/$skjemaId/vedlegg/v2/b.pdf"
+            val vedlegg1 = mockk<Vedlegg> { every { storageReferanse } returns ref1 }
+            val vedlegg2 = mockk<Vedlegg> { every { storageReferanse } returns ref2 }
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg1, vedlegg2)
+            every { mockVedleggStorageClient.slett(any()) } just Runs
+
+            vedleggService.slettBlobberForSkjema(skjemaId)
+
+            verify(exactly = 1) { mockVedleggStorageClient.slett(ref1) }
+            verify(exactly = 1) { mockVedleggStorageClient.slett(ref2) }
+        }
+
+        test("kaster feilen videre når blob-sletting feiler") {
+            val ref = "skjemaer/$skjemaId/vedlegg/v1/a.pdf"
+            val vedlegg = mockk<Vedlegg> { every { storageReferanse } returns ref }
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns listOf(vedlegg)
+            every { mockVedleggStorageClient.slett(ref) } throws RuntimeException("storage nede")
+
+            shouldThrow<RuntimeException> {
+                vedleggService.slettBlobberForSkjema(skjemaId)
+            }
+        }
+
+        test("gjør ingenting når ingen vedlegg finnes") {
+            every { mockVedleggRepository.findBySkjemaId(skjemaId) } returns emptyList()
+
+            vedleggService.slettBlobberForSkjema(skjemaId)
+
+            verify(exactly = 0) { mockVedleggStorageClient.slett(any()) }
+        }
+    }
 })
