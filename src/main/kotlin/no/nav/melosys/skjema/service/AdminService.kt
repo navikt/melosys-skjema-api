@@ -470,7 +470,7 @@ class AdminService(
          * MELOSYS-8168: Tidspunktet skjema-lenken i det handlingspliktige varselet ble fikset. Handlingspliktige
          * AG-deler innsendt FØR dette fikk et varsel med feil lenke, og er kandidater for resend med korrekt lenke.
          */
-        private val VARSEL_LENKE_FIKSET_TIDSPUNKT: Instant = Instant.parse("2026-07-03T12:50:10.504Z")
+        private val VARSEL_LENKE_FIKSET_TIDSPUNKT: Instant = Instant.parse("2026-07-03T12:11:38Z")
 
         /** Representasjonstyper der arbeidstaker selv må sende inn sin del (uten fullmakt). */
         private val HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER = setOf(
