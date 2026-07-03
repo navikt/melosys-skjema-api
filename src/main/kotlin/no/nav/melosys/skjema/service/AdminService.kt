@@ -320,12 +320,12 @@ class AdminService(
     }
 
     /**
-     * MELOSYS-8168 (midlertidig): Resender brukervarsel (nå med SMS) til arbeidstakere som ikke fikk SMS
-     * før SMS-prodsettingen. Kandidatene finnes i koden – ingen kuratert liste – og er bevisst litt
-     * over-inkluderende (kan treffe et par ekstra), men ingen som faktisk trenger SMS skal utelates:
+     * MELOSYS-8168 (midlertidig): Resender brukervarsel (nå med korrekt skjema-lenke) til arbeidstakere som
+     * fikk et varsel med feil lenke. Kandidatene finnes i koden – ingen kuratert liste – og er bevisst litt
+     * over-inkluderende (kan treffe et par ekstra), men ingen som faktisk fikk feil lenke skal utelates:
      *
      * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
-     * [SMS_AKTIVERT_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
+     * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
      * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode).
      *
      * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
@@ -335,7 +335,7 @@ class AdminService(
      */
     fun resendVarsler(): ResendVarslerResultatDto {
         val kandidater = finnResendKandidater()
-        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $SMS_AKTIVERT_TIDSPUNKT som venter på AT-del)" }
+        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
 
         val sendteSaksnumre = mutableListOf<String>()
         kandidater.forEach { kandidat ->
@@ -364,7 +364,7 @@ class AdminService(
             .filter { innsending ->
                 innsending.skjema.id !in erstattedeIder &&
                     erHandlingspliktigAgDel(innsending) &&
-                    innsending.opprettetDato.isBefore(SMS_AKTIVERT_TIDSPUNKT) &&
+                    innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }
             .map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
@@ -386,7 +386,7 @@ class AdminService(
     /**
      * AT-del mangler hvis ingen innsendt arbeidstaker-del matcher på samme fnr + juridisk enhet +
      * overlappende periode (samme matching som mottak/saksdekning bruker). Mangler periode på AG-delen
-     * regnes som "venter" (vi sender da heller én ekstra enn å utelate noen som trenger SMS).
+     * regnes som "venter" (vi sender da heller én ekstra enn å utelate noen som fikk feil lenke).
      */
     private fun venterPaaArbeidstakerDel(agDel: Innsending, arbeidstakerDeler: List<Innsending>): Boolean {
         val agMeta = agDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
@@ -467,10 +467,10 @@ class AdminService(
 
     companion object {
         /**
-         * MELOSYS-8168: Tidspunktet SMS ble aktivert for handlingspliktige varsler. Handlingspliktige
-         * AG-deler innsendt FØR dette fikk varsel på nav.no, men ingen SMS, og er kandidater for resend.
+         * MELOSYS-8168: Tidspunktet skjema-lenken i det handlingspliktige varselet ble fikset. Handlingspliktige
+         * AG-deler innsendt FØR dette fikk et varsel med feil lenke, og er kandidater for resend med korrekt lenke.
          */
-        private val SMS_AKTIVERT_TIDSPUNKT: Instant = Instant.parse("2026-06-29T10:41:46Z")
+        private val VARSEL_LENKE_FIKSET_TIDSPUNKT: Instant = Instant.parse("2026-07-03T12:50:10.504Z")
 
         /** Representasjonstyper der arbeidstaker selv må sende inn sin del (uten fullmakt). */
         private val HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER = setOf(
