@@ -57,16 +57,12 @@ jobs:
         uses: navikt/digihot-deploy/actions/pre-deploy@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Deploy Unleash ApiToken til dev-gcp
-        uses: nais/deploy/actions/deploy@v2
-        env:
-          CLUSTER: dev-gcp
-          RESOURCE: .nais/unleash-apitoken-dev.yaml
       - name: Deploy til dev-gcp
         uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: dev-gcp
-          RESOURCE: .nais/app-dev.yaml
+          # Unleash ApiToken-ressursen applyes før appen (rekkefølgen i listen bevares)
+          RESOURCE: .nais/unleash-apitoken-dev.yaml,.nais/app-dev.yaml
           WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
       - name: Get commit message
         run: echo "COMMIT_MSG=$(git log --format=%s -n 1)" >> $GITHUB_ENV

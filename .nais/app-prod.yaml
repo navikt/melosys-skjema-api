@@ -98,8 +98,6 @@ spec:
     # azp_name til melosys-console som har tilgang til /admin/**-endepunktene
     - name: MELOSYS_CONSOLE_AZP_NAMES
       value: prod-gcp:teammelosys:melosys-console
-    - name: UNLEASH_ENABLED
-      value: "true"
   envFrom:
     - secret: melosys-skjema-api
     - secret: melosys-skjema-api-unleash-api-token

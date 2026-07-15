@@ -76,22 +76,15 @@ jobs:
         if: github.event.inputs.environment != 'prod'
         run: |
           echo "CLUSTER=dev-gcp" >> $GITHUB_ENV
-          echo "RESOURCE=.nais/app-dev.yaml" >> $GITHUB_ENV
-          echo "UNLEASH_RESOURCE=.nais/unleash-apitoken-dev.yaml" >> $GITHUB_ENV
+          echo "RESOURCE=.nais/unleash-apitoken-dev.yaml,.nais/app-dev.yaml" >> $GITHUB_ENV
       - name: Set deploy target (prod)
         if: github.event.inputs.environment == 'prod'
         run: |
           echo "CLUSTER=prod-gcp" >> $GITHUB_ENV
-          echo "RESOURCE=.nais/app-prod.yaml" >> $GITHUB_ENV
-          echo "UNLEASH_RESOURCE=.nais/unleash-apitoken-prod.yaml" >> $GITHUB_ENV
+          echo "RESOURCE=.nais/unleash-apitoken-prod.yaml,.nais/app-prod.yaml" >> $GITHUB_ENV
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Deploy Unleash ApiToken til ${{ github.event.inputs.environment }}
-        uses: nais/deploy/actions/deploy@v2
-        env:
-          CLUSTER: ${{ env.CLUSTER }}
-          RESOURCE: ${{ env.UNLEASH_RESOURCE }}
       - name: Deploy til ${{ github.event.inputs.environment }}
         uses: nais/deploy/actions/deploy@v2
         env:
