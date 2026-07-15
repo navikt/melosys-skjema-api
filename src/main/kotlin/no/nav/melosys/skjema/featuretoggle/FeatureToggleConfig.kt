@@ -24,10 +24,11 @@ private const val DEPLOYEDE_PROFILER = "!local & !local-q1 & !local-q2 & !test"
 class FeatureToggleConfig {
 
     /**
-     * Bevisst ASYNKRON førstegangshenting (SDK-en henter umiddelbart ved oppstart, og
-     * readiness-proben med 20 s initialDelay dekker det korte vinduet der toggles ellers
-     * ville evaluert til false). Synkron henting ville gjort forbigående Unleash-nedetid
-     * til CrashLoopBackOff for hele appen.
+     * Bevisst ASYNKRON førstegangshenting: SDK-en henter umiddelbart ved oppstart, men i et
+     * kort vindu (normalt under et sekund) kan toggles evaluere til false. Det er akseptert
+     * for våre av/på-toggles – alternativene er verre: synkron henting gjør forbigående
+     * Unleash-nedetid til CrashLoopBackOff for hele appen, og en readiness-gate på første
+     * henting ville latt Unleash-nedetid blokkere deploys.
      */
     @Bean
     @Profile(DEPLOYEDE_PROFILER)

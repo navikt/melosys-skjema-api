@@ -1,5 +1,7 @@
 package no.nav.melosys.skjema.controller
 
+import io.getunleash.FakeUnleash
+import io.getunleash.Unleash
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.ApiTestBase
@@ -18,6 +20,9 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var mockOAuth2Server: MockOAuth2Server
+
+    @Autowired
+    private lateinit var unleash: Unleash
 
     @Test
     fun `skal returnere evaluerte toggles for angitte features`() {
@@ -51,6 +56,31 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
             .returnResult().responseBody.shouldNotBeNull()
 
         toggles shouldBe mapOf(ToggleNavn.MOTPART_CTA.navn to true)
+    }
+
+    @Test
+    fun `skal returnere false naar toggle er av`() {
+        val fakeUnleash = unleash as FakeUnleash
+        fakeUnleash.enableAllExcept(ToggleNavn.MOTPART_CTA.navn)
+        try {
+            val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
+
+            val toggles = webTestClient.get()
+                .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<Map<String, Boolean>>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            toggles shouldBe mapOf(
+                ToggleNavn.MOTPART_CTA.navn to false,
+                ToggleNavn.INNSENDT_SAMMENDRAG.navn to true
+            )
+        } finally {
+            // Unleash-bønnen er delt singleton i test-konteksten
+            fakeUnleash.enableAll()
+        }
     }
 
     @Test
