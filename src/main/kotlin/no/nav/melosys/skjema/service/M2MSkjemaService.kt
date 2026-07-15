@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
@@ -25,7 +26,10 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
+import no.nav.melosys.skjema.types.m2m.SaksstatusOppdatering
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
+import no.nav.melosys.skjema.types.common.Saksstatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -102,6 +106,62 @@ class M2MSkjemaService(
         innsending.saksnummer = saksnummer
         innsendingRepository.save(innsending)
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
+    }
+
+    /**
+     * Oppdaterer saksstatus for innsendingen med gitt skjema-id, og for alle andre innsendinger
+     * på samme saksnummer (motpart-deler og nye versjoner skal vise samme status).
+     * Setter også saksnummer på innsendingen hvis det mangler (backfill for historiske innsendinger).
+     */
+    @Transactional
+    fun oppdaterSaksstatus(skjemaId: UUID, saksnummer: String, saksstatus: Saksstatus) {
+        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
+
+        val antallOppdatert = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
+        log.info { "Oppdatert saksstatus til $saksstatus for sak $saksnummer ($antallOppdatert innsending(er))" }
+    }
+
+    /** Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i stedet for å feile. */
+    @Transactional
+    fun bulkOppdaterSaksstatus(oppdateringer: List<SaksstatusOppdatering>): BulkOppdaterSaksstatusResultat {
+        val ukjenteSkjemaIder = mutableListOf<UUID>()
+        var antallOppdatert = 0
+
+        oppdateringer.forEach { oppdatering ->
+            val innsending = innsendingRepository.findBySkjemaId(oppdatering.skjemaId)
+            if (innsending == null) {
+                ukjenteSkjemaIder += oppdatering.skjemaId
+            } else {
+                antallOppdatert += oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)
+            }
+        }
+
+        log.info {
+            "Bulk-oppdatert saksstatus: ${oppdateringer.size} rader, $antallOppdatert innsending(er) oppdatert, " +
+                "${ukjenteSkjemaIder.size} ukjente skjema-id-er"
+        }
+        return BulkOppdaterSaksstatusResultat(antallOppdatert = antallOppdatert, ukjenteSkjemaIder = ukjenteSkjemaIder)
+    }
+
+    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): Int {
+        if (innsending.saksnummer == null) {
+            innsending.saksnummer = saksnummer
+        } else if (innsending.saksnummer != saksnummer) {
+            log.warn {
+                "Saksstatus-oppdatering for skjema ${innsending.skjema.id} oppga saksnummer $saksnummer, " +
+                    "men innsendingen har allerede saksnummer ${innsending.saksnummer} - beholder eksisterende"
+            }
+        }
+
+        val oppdatertTidspunkt = Instant.now()
+        val skalOppdateres = (innsendingRepository.findBySaksnummer(saksnummer) + innsending).distinctBy { it.id }
+        skalOppdateres.forEach {
+            it.saksstatus = saksstatus
+            it.saksstatusOppdatert = oppdatertTidspunkt
+        }
+        innsendingRepository.saveAll(skalOppdateres)
+        return skalOppdateres.size
     }
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {

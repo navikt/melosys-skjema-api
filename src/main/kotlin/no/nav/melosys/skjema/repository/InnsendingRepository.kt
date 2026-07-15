@@ -39,6 +39,9 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
 
     fun existsByReferanseId(referanseId: String): Boolean
 
+    /** Alle innsendinger på samme sak i melosys-api (motpart-deler og nye versjoner deler saksnummer). */
+    fun findBySaksnummer(saksnummer: String): List<Innsending>
+
     /**
      * Henter innsendinger med gitt status og laster tilhørende skjema i samme spørring
      * (JOIN FETCH) for å unngå N+1 når admin-DTO-er mappes – viktig når mange innsendinger

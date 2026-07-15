@@ -24,6 +24,7 @@ import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.PeriodeDto
@@ -326,7 +327,9 @@ class AdminService(
      *
      * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
      * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
-     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode).
+     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode). Innsendinger der saken er
+     * AVSLUTTET i melosys-api ekskluderes – der er det ingenting å varsle om (motpart-delen kom typisk via
+     * en annen kanal).
      *
      * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
@@ -363,6 +366,7 @@ class AdminService(
         return alleInnsendte
             .filter { innsending ->
                 innsending.skjema.id !in erstattedeIder &&
+                    innsending.saksstatus != Saksstatus.AVSLUTTET &&
                     erHandlingspliktigAgDel(innsending) &&
                     innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
