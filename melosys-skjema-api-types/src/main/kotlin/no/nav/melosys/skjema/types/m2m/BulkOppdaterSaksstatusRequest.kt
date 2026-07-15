@@ -7,9 +7,10 @@ import jakarta.validation.constraints.Size
 import java.util.UUID
 import no.nav.melosys.skjema.types.common.Saksstatus
 
-/** Massesynk av saksstatus fra melosys-api (historiske og aktive saker). */
+/** Massesynk av saksstatus fra melosys-api (historiske og aktive saker). Kaller paginerer i batcher. */
 data class BulkOppdaterSaksstatusRequest(
     @field:NotEmpty(message = "Oppdateringer kan ikke være tom")
+    @field:Size(max = 1000, message = "Maks 1000 oppdateringer per batch")
     @field:Valid
     val oppdateringer: List<SaksstatusOppdatering>
 )

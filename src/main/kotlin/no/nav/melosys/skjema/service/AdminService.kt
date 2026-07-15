@@ -329,7 +329,8 @@ class AdminService(
      * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
      * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode). Innsendinger der saken er
      * AVSLUTTET i melosys-api ekskluderes – der er det ingenting å varsle om (motpart-delen kom typisk via
-     * en annen kanal).
+     * en annen kanal). NB: filteret forutsetter at saksstatus-massesynken fra melosys-api er kjørt først;
+     * innsendinger uten synket status (null) behandles som aktive og kan få varsel.
      *
      * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
@@ -466,7 +467,9 @@ class AdminService(
         feilmelding = feilmelding,
         sisteForsoekTidspunkt = sisteForsoekTidspunkt,
         opprettetDato = opprettetDato,
-        saksnummer = saksnummer
+        saksnummer = saksnummer,
+        saksstatus = saksstatus,
+        saksstatusOppdatert = saksstatusOppdatert
     )
 
     companion object {

@@ -38,3 +38,12 @@ MELOSYS_CONSOLE_AZP_NAMES: test-console-client-id
 MELOSYS_SKJEMA_ADMIN_APIKEY: test-admin-apikey
 VEDLEGG_BUCKET_NAME: test-vedlegg-bucket
 CLAMAV_URL: ${wiremock.server.url}
+
+# Read-only-klient i tillegg til test-melosys-client-id, slik at testene kan bevise at
+# write-endepunkter avviser klienter som kun har lesetilgang (write-lista arves fra
+# application.yml og inneholder bare test-melosys-client-id).
+m2m:
+  read-skjemadata:
+    clients:
+      - test-melosys-client-id
+      - test-read-only-client-id

@@ -99,7 +99,17 @@ class M2MSkjemaService(
 
     @Transactional
     fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
-        hentInnsending(skjemaId).saksnummer = saksnummer
+        val innsending = hentInnsending(skjemaId)
+        innsending.saksnummer = saksnummer
+
+        // Kobles innsendingen til en sak som allerede har synket status, arves den – ellers
+        // ville den stått som MOTTATT (null) mens søsknene viser noe annet, frem til neste synk.
+        innsendingRepository.findBySaksnummer(saksnummer)
+            .firstOrNull { it.id != innsending.id && it.saksstatus != null }
+            ?.let {
+                innsending.saksstatus = it.saksstatus
+                innsending.saksstatusOppdatert = it.saksstatusOppdatert
+            }
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
@@ -154,6 +164,9 @@ class M2MSkjemaService(
      * til innsendingens AVSTEMTE saksnummer. Ved avvik beholdes eksisterende saksnummer – en
      * statusoppdatering skal ikke overskrive en etablert sakskobling, og skal heller ikke røre
      * innsendinger på det oppgitte (avvikende) saksnummeret.
+     *
+     * NB: innsendinger på samme sak som selv mangler saksnummer fanges ikke av sweepen – de
+     * dekkes av massesynken fra melosys-api, som sender oppdatering per skjemaId.
      */
     private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): List<Innsending> {
         if (innsending.saksnummer == null) {

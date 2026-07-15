@@ -19,6 +19,7 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.m2mTokenWithOnlyReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -288,6 +289,26 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `skal arve saksstatus naar saken allerede er synket for andre innsendinger`() {
+            val sosken = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-600")
+            innsendingRepository.save(
+                innsendingRepository.findBySkjemaId(sosken.id!!)!!.apply { saksstatus = Saksstatus.AVSLUTTET }
+            )
+            val nyttSkjema = lagInnsendtSkjemaMedInnsending(saksnummer = null)
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${nyttSkjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-600"}""")
+                .exchange()
+                .expectStatus().isNoContent
+
+            innsendingRepository.findBySkjemaId(nyttSkjema.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+        }
+
+        @Test
         fun `skal returnere 400 naar saksnummer er tomt`() {
             val skjema = skjemaRepository.save(
                 skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
@@ -470,6 +491,27 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
             webTestClient.put()
                 .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksstatus")
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `skal returnere 403 for klient som kun har lesetilgang`() {
+            val token = mockOAuth2Server.m2mTokenWithOnlyReadSkjemaDataAccess()
+
+            // Klienten har lesetilgang (404 – slipper gjennom aspektet)...
+            webTestClient.get()
+                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${UUID.randomUUID()}/data")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isNotFound
+
+            // ...men avvises på write-endepunktet
+            webTestClient.put()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksstatus")
+                .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
                 .exchange()
