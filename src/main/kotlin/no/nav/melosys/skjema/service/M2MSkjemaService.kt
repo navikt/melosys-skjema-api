@@ -49,8 +49,7 @@ class M2MSkjemaService(
         val skjema = skjemaRepository.findByIdAndStatusSendt(id)
             ?: throw NoSuchElementException("Skjema med id $id ikke funnet")
 
-        val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
-            ?: throw NoSuchElementException("Innsending for skjema med id $id ikke funnet")
+        val innsending = hentInnsending(skjema.id!!)
 
         val skjemaDto = skjema.toUtsendtArbeidstakerDto()
 
@@ -100,11 +99,7 @@ class M2MSkjemaService(
 
     @Transactional
     fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
-        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
-            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
-
-        innsending.saksnummer = saksnummer
-        innsendingRepository.save(innsending)
+        hentInnsending(skjemaId).saksnummer = saksnummer
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
@@ -115,36 +110,52 @@ class M2MSkjemaService(
      */
     @Transactional
     fun oppdaterSaksstatus(skjemaId: UUID, saksnummer: String, saksstatus: Saksstatus) {
-        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
-            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
-
-        val antallOppdatert = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
-        log.info { "Oppdatert saksstatus til $saksstatus for sak $saksnummer ($antallOppdatert innsending(er))" }
+        val innsending = hentInnsending(skjemaId)
+        val oppdaterte = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
+        log.info { "Oppdatert saksstatus til $saksstatus for sak ${innsending.saksnummer} (${oppdaterte.size} innsending(er))" }
     }
 
-    /** Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i stedet for å feile. */
+    /**
+     * Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i stedet for å
+     * feile. Hele batchen kjører i én transaksjon: én uventet feil ruller tilbake alt, og
+     * melosys-api reprøver hele batchen (operasjonen er idempotent).
+     */
     @Transactional
     fun bulkOppdaterSaksstatus(oppdateringer: List<SaksstatusOppdatering>): BulkOppdaterSaksstatusResultat {
         val ukjenteSkjemaIder = mutableListOf<UUID>()
-        var antallOppdatert = 0
+        val oppdaterteInnsendingIder = mutableSetOf<UUID>()
 
         oppdateringer.forEach { oppdatering ->
             val innsending = innsendingRepository.findBySkjemaId(oppdatering.skjemaId)
             if (innsending == null) {
                 ukjenteSkjemaIder += oppdatering.skjemaId
-            } else {
-                antallOppdatert += oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)
+                return@forEach
             }
+            // Rader som deler saksnummer oppdaterer hverandre – hopp over de som allerede er dekket
+            if (innsending.id in oppdaterteInnsendingIder && innsending.saksstatus == oppdatering.saksstatus) {
+                return@forEach
+            }
+            oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)
+                .forEach { oppdaterteInnsendingIder += it.id!! }
         }
 
         log.info {
-            "Bulk-oppdatert saksstatus: ${oppdateringer.size} rader, $antallOppdatert innsending(er) oppdatert, " +
+            "Bulk-oppdatert saksstatus: ${oppdateringer.size} rader, ${oppdaterteInnsendingIder.size} innsending(er) oppdatert, " +
                 "${ukjenteSkjemaIder.size} ukjente skjema-id-er"
         }
-        return BulkOppdaterSaksstatusResultat(antallOppdatert = antallOppdatert, ukjenteSkjemaIder = ukjenteSkjemaIder)
+        return BulkOppdaterSaksstatusResultat(
+            antallOppdatert = oppdaterteInnsendingIder.size,
+            ukjenteSkjemaIder = ukjenteSkjemaIder
+        )
     }
 
-    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): Int {
+    /**
+     * Setter saksnummer hvis det mangler, og oppdaterer saksstatus på alle innsendinger som hører
+     * til innsendingens AVSTEMTE saksnummer. Ved avvik beholdes eksisterende saksnummer – en
+     * statusoppdatering skal ikke overskrive en etablert sakskobling, og skal heller ikke røre
+     * innsendinger på det oppgitte (avvikende) saksnummeret.
+     */
+    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): List<Innsending> {
         if (innsending.saksnummer == null) {
             innsending.saksnummer = saksnummer
         } else if (innsending.saksnummer != saksnummer) {
@@ -154,15 +165,19 @@ class M2MSkjemaService(
             }
         }
 
+        val gjeldendeSaksnummer = innsending.saksnummer!!
         val oppdatertTidspunkt = Instant.now()
-        val skalOppdateres = (innsendingRepository.findBySaksnummer(saksnummer) + innsending).distinctBy { it.id }
+        val skalOppdateres = (innsendingRepository.findBySaksnummer(gjeldendeSaksnummer) + innsending).distinctBy { it.id }
         skalOppdateres.forEach {
             it.saksstatus = saksstatus
             it.saksstatusOppdatert = oppdatertTidspunkt
         }
-        innsendingRepository.saveAll(skalOppdateres)
-        return skalOppdateres.size
+        return skalOppdateres
     }
+
+    private fun hentInnsending(skjemaId: UUID): Innsending =
+        innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         log.info { "M2M: Henter vedlegg $vedleggId for skjema $skjemaId" }
@@ -176,8 +191,7 @@ class M2MSkjemaService(
         val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId ikke funnet")
 
-        val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
-            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
+        val innsending = hentInnsending(skjema.id!!)
 
         return when (skjema.type) {
             SkjemaType.UTSENDT_ARBEIDSTAKER -> {
