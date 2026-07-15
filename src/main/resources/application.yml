@@ -185,10 +185,11 @@ rate-limit:
     max-requests: 15
     time-window-minutes: 1
 
-# Feature toggles. URL/token injiseres av nais Unleash-integrasjonen (ApiToken-ressursen).
-# Lokale profiler og test setter enabled=false og får FakeUnleash med alle toggles på.
+# Feature toggles. URL/token injiseres av nais Unleash-integrasjonen (ApiToken-ressursen);
+# UNLEASH_ENABLED settes eksplisitt til true i nais-manifestene. Alt annet (lokalt, test,
+# nye profiler) defaulter til false og får FakeUnleash med alle toggles på.
 unleash:
-  enabled: true
+  enabled: ${UNLEASH_ENABLED:false}
   url: ${UNLEASH_SERVER_API_URL}/api
   token: ${UNLEASH_SERVER_API_TOKEN}
 

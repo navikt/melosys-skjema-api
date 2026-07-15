@@ -39,10 +39,30 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    fun `skal returnere 401 naar token mangler`() {
-        webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA}")
+    fun `skal filtrere bort ukjente toggle-navn`() {
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
+
+        val toggles = webTestClient.get()
+            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA}&features=melosys.annet.system.toggle")
+            .header("Authorization", "Bearer $token")
             .exchange()
-            .expectStatus().isUnauthorized
+            .expectStatus().isOk
+            .expectBody<Map<String, Boolean>>()
+            .returnResult().responseBody.shouldNotBeNull()
+
+        toggles shouldBe mapOf(ToggleNavn.MOTPART_CTA to true)
+    }
+
+    @Test
+    fun `skal returnere tomt map naar features-param mangler`() {
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
+
+        webTestClient.get()
+            .uri("/api/featuretoggle")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<Map<String, Boolean>>()
+            .returnResult().responseBody shouldBe emptyMap()
     }
 }

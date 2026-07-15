@@ -19,11 +19,12 @@ class FeatureToggleConfig {
     @ConditionalOnProperty(name = ["unleash.enabled"], havingValue = "true")
     fun unleash(
         @Value("\${unleash.token}") token: String,
-        @Value("\${unleash.url}") url: String
+        @Value("\${unleash.url}") url: String,
+        @Value("\${spring.application.name}") appName: String
     ): Unleash = DefaultUnleash(
         UnleashConfig.builder()
             .apiKey(token)
-            .appName(APP_NAME)
+            .appName(appName)
             .unleashAPI(url)
             .build()
     ).also { log.info { "Unleash aktivert mot $url" } }
@@ -34,8 +35,4 @@ class FeatureToggleConfig {
     fun fakeUnleash(): Unleash = FakeUnleash()
         .apply { enableAll() }
         .also { log.info { "Unleash deaktivert – bruker FakeUnleash med alle toggles på" } }
-
-    companion object {
-        const val APP_NAME = "melosys-skjema-api"
-    }
 }

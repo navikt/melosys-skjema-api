@@ -11,4 +11,7 @@ object ToggleNavn {
 
     /** Sammendrag over innsendte søknader (antall innsendt / venter på motpart) på oversikten. */
     const val INNSENDT_SAMMENDRAG = "melosys.skjema.innsendt-sammendrag"
+
+    /** Allowlist for /api/featuretoggle – kun disse kan evalueres av frontend. */
+    val ALLE = setOf(MOTPART_CTA, INNSENDT_SAMMENDRAG)
 }

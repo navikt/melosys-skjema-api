@@ -39,5 +39,3 @@ MELOSYS_SKJEMA_ADMIN_APIKEY: test-admin-apikey
 VEDLEGG_BUCKET_NAME: test-vedlegg-bucket
 CLAMAV_URL: ${wiremock.server.url}
 
-unleash:
-  enabled: false

@@ -47,5 +47,3 @@ kubernetes:
     gcloud:
       path: ${GCLOUD_PATH}
 
-unleash:
-  enabled: false
