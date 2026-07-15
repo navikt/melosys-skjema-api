@@ -372,7 +372,8 @@ class AdminService(
                     innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }
-        kandidater.count { it.saksstatus == null }.takeIf { it > 0 }?.let { antallUtenStatus ->
+        val antallUtenStatus = kandidater.count { it.saksstatus == null }
+        if (antallUtenStatus > 0) {
             log.warn {
                 "Admin: Resend – $antallUtenStatus av ${kandidater.size} kandidat(er) mangler synket saksstatus " +
                     "og kan gjelde avsluttede saker. Er saksstatus-massesynken fra melosys-api kjørt?"

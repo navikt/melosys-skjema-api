@@ -455,7 +455,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal ved saksnummer-avvik beholde eksisterende saksnummer og oppdatere den saken - ikke den oppgitte`() {
+        fun `skal ved saksnummer-avvik kun oppdatere den identifiserte innsendingen`() {
             val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-300")
             val soskenPaaEgenSak = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-300")
             val innsendingPaaOppgittSak = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-301")
@@ -463,12 +463,12 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
             oppdaterSaksstatus(skjema.id!!, """{"saksnummer": "MEL-301", "saksstatus": "AVSLUTTET"}""")
                 .expectStatus().isNoContent
 
+            // Statusen gjelder skjemaet (per skjemaId i melosys-api) og settes på innsendingen...
             val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
             oppdatert.saksnummer shouldBe "MEL-300"
             oppdatert.saksstatus shouldBe Saksstatus.AVSLUTTET
-            // Søsken på innsendingens reelle sak oppdateres...
-            innsendingRepository.findBySkjemaId(soskenPaaEgenSak.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
-            // ...mens innsendinger på det oppgitte (avvikende) saksnummeret ikke røres
+            // ...men ingen av sak-kohortene sweepes - verken egen sak eller den oppgitte
+            innsendingRepository.findBySkjemaId(soskenPaaEgenSak.id!!)!!.saksstatus.shouldBeNull()
             innsendingRepository.findBySkjemaId(innsendingPaaOppgittSak.id!!)!!.saksstatus.shouldBeNull()
         }
 
