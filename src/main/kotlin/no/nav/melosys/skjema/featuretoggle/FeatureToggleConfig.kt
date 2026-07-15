@@ -1,0 +1,41 @@
+package no.nav.melosys.skjema.featuretoggle
+
+import io.getunleash.DefaultUnleash
+import io.getunleash.FakeUnleash
+import io.getunleash.Unleash
+import io.getunleash.util.UnleashConfig
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+private val log = KotlinLogging.logger { }
+
+@Configuration
+class FeatureToggleConfig {
+
+    @Bean
+    @ConditionalOnProperty(name = ["unleash.enabled"], havingValue = "true")
+    fun unleash(
+        @Value("\${unleash.token}") token: String,
+        @Value("\${unleash.url}") url: String
+    ): Unleash = DefaultUnleash(
+        UnleashConfig.builder()
+            .apiKey(token)
+            .appName(APP_NAME)
+            .unleashAPI(url)
+            .build()
+    ).also { log.info { "Unleash aktivert mot $url" } }
+
+    /** Lokal utvikling og tester kjører uten Unleash-server – alle toggles er på. */
+    @Bean
+    @ConditionalOnProperty(name = ["unleash.enabled"], havingValue = "false", matchIfMissing = true)
+    fun fakeUnleash(): Unleash = FakeUnleash()
+        .apply { enableAll() }
+        .also { log.info { "Unleash deaktivert – bruker FakeUnleash med alle toggles på" } }
+
+    companion object {
+        const val APP_NAME = "melosys-skjema-api"
+    }
+}

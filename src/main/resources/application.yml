@@ -185,6 +185,13 @@ rate-limit:
     max-requests: 15
     time-window-minutes: 1
 
+# Feature toggles. URL/token injiseres av nais Unleash-integrasjonen (ApiToken-ressursen).
+# Lokale profiler og test setter enabled=false og får FakeUnleash med alle toggles på.
+unleash:
+  enabled: true
+  url: ${UNLEASH_SERVER_API_URL}/api
+  token: ${UNLEASH_SERVER_API_TOKEN}
+
 # Machine-to-machine access control
 m2m:
   read-skjemadata:

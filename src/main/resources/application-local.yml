@@ -67,3 +67,5 @@ CLAMAV_URL: http://localhost:8083/clamav
                 client-auth-method: client_secret_basic
               token-exchange:
                 audience: local:fager:arbeidsgiver-altinn-tilganger
+unleash:
+  enabled: false

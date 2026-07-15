@@ -24,6 +24,11 @@ jobs:
         run: |
           docker pull ${{ env.IMAGE }}
           echo "✅ Image ${{ env.IMAGE }} eksisterer og kan hentes"
+      - name: Deploy Unleash ApiToken til prod-gcp
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: prod-gcp
+          RESOURCE: .nais/unleash-apitoken-prod.yaml
       - name: Deploy
         uses: nais/deploy/actions/deploy@v2
         env:

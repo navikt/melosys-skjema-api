@@ -57,6 +57,11 @@ jobs:
         uses: navikt/digihot-deploy/actions/pre-deploy@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy Unleash ApiToken til dev-gcp
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: dev-gcp
+          RESOURCE: .nais/unleash-apitoken-dev.yaml
       - name: Deploy til dev-gcp
         uses: nais/deploy/actions/deploy@v2
         env:

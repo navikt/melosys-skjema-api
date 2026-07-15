@@ -46,3 +46,6 @@ kubernetes:
       path: ${KUBELOGIN_PATH:/home/linuxbrew/.linuxbrew/bin}
     gcloud:
       path: ${GCLOUD_PATH}
+
+unleash:
+  enabled: false
