@@ -28,7 +28,8 @@ jobs:
         uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: prod-gcp
-          # Unleash ApiToken-ressursen applyes før appen (rekkefølgen i listen bevares)
+          # ApiToken-CR-en applyes før appen; secreten materialiseres asynkront av
+          # Unleash-operatoren (se kommentar i deploy-dev.yaml)
           RESOURCE: .nais/unleash-apitoken-prod.yaml,.nais/app-prod.yaml
           WORKLOAD_IMAGE: ${{ env.IMAGE }}
       - name: post-production

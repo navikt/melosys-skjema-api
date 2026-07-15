@@ -61,7 +61,9 @@ jobs:
         uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: dev-gcp
-          # Unleash ApiToken-ressursen applyes før appen (rekkefølgen i listen bevares)
+          # ApiToken-CR-en applyes før appen, men secreten materialiseres asynkront av
+          # Unleash-operatoren - aller første deploy kan trenge en retry hvis podden
+          # rekker å starte før secreten finnes (selvhelende via kubelet).
           RESOURCE: .nais/unleash-apitoken-dev.yaml,.nais/app-dev.yaml
           WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
       - name: Get commit message

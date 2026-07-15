@@ -24,7 +24,7 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA}&features=${ToggleNavn.INNSENDT_SAMMENDRAG}")
+            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
@@ -33,8 +33,8 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
 
         // Test-profilen bruker FakeUnleash med alle toggles på
         toggles shouldBe mapOf(
-            ToggleNavn.MOTPART_CTA to true,
-            ToggleNavn.INNSENDT_SAMMENDRAG to true
+            ToggleNavn.MOTPART_CTA.navn to true,
+            ToggleNavn.INNSENDT_SAMMENDRAG.navn to true
         )
     }
 
@@ -43,14 +43,14 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA}&features=melosys.annet.system.toggle")
+            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=melosys.annet.system.toggle")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
             .expectBody<Map<String, Boolean>>()
             .returnResult().responseBody.shouldNotBeNull()
 
-        toggles shouldBe mapOf(ToggleNavn.MOTPART_CTA to true)
+        toggles shouldBe mapOf(ToggleNavn.MOTPART_CTA.navn to true)
     }
 
     @Test

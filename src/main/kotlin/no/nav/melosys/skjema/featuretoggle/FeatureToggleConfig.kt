@@ -12,16 +12,25 @@ import org.springframework.context.annotation.Profile
 
 private val log = KotlinLogging.logger { }
 
+/**
+ * De to profil-uttrykkene under MÅ holdes som eksakte komplementer: en ny lokal profil som
+ * legges til bare ett sted gir enten to Unleash-bønner eller oppstartsfeil pga. manglende
+ * UNLEASH_SERVER_API_URL/TOKEN (sistnevnte er tilsiktet fail-fast i deployede miljøer).
+ */
+private const val LOKALE_PROFILER = "local | local-q1 | local-q2 | test"
+private const val DEPLOYEDE_PROFILER = "!local & !local-q1 & !local-q2 & !test"
+
 @Configuration
 class FeatureToggleConfig {
 
     /**
-     * Synkron førstegangshenting slik at toggles har riktig verdi fra første request etter
-     * pod-start – uten den evalueres alt til false frem til første bakgrunns-poll.
-     * Manglende UNLEASH_SERVER_API_URL/TOKEN gir bevisst oppstartsfeil (fail-fast).
+     * Bevisst ASYNKRON førstegangshenting (SDK-en henter umiddelbart ved oppstart, og
+     * readiness-proben med 20 s initialDelay dekker det korte vinduet der toggles ellers
+     * ville evaluert til false). Synkron henting ville gjort forbigående Unleash-nedetid
+     * til CrashLoopBackOff for hele appen.
      */
     @Bean
-    @Profile("!local & !local-q1 & !local-q2 & !test")
+    @Profile(DEPLOYEDE_PROFILER)
     fun unleash(
         @Value("\${unleash.token}") token: String,
         @Value("\${unleash.url}") url: String,
@@ -31,13 +40,12 @@ class FeatureToggleConfig {
             .apiKey(token)
             .appName(appName)
             .unleashAPI(url)
-            .synchronousFetchOnInitialisation(true)
             .build()
     ).also { log.info { "Unleash aktivert mot $url" } }
 
     /** Lokal utvikling og tester kjører uten Unleash-server – alle toggles er på. */
     @Bean
-    @Profile("local | local-q1 | local-q2 | test")
+    @Profile(LOKALE_PROFILER)
     fun fakeUnleash(): Unleash = FakeUnleash()
         .apply { enableAll() }
         .also { log.info { "Lokal/test-profil – bruker FakeUnleash med alle toggles på" } }
