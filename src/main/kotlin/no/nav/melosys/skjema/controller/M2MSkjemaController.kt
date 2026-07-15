@@ -83,7 +83,6 @@ class M2MSkjemaController(
         @PathVariable id: UUID,
         @Valid @RequestBody request: OppdaterSaksstatusRequest
     ): ResponseEntity<Void> {
-        log.info { "M2M: Oppdaterer saksstatus til ${request.saksstatus} for skjema $id (sak ${request.saksnummer})" }
         m2mSkjemaService.oppdaterSaksstatus(id, request.saksnummer, request.saksstatus)
         return ResponseEntity.noContent().build()
     }

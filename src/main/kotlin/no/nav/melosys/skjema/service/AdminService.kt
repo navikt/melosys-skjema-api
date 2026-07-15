@@ -364,7 +364,7 @@ class AdminService(
         val erstattedeIder: Set<UUID> = alleInnsendte
             .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
             .toSet()
-        return alleInnsendte
+        val kandidater = alleInnsendte
             .filter { innsending ->
                 innsending.skjema.id !in erstattedeIder &&
                     innsending.saksstatus != Saksstatus.AVSLUTTET &&
@@ -372,7 +372,13 @@ class AdminService(
                     innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }
-            .map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
+        kandidater.count { it.saksstatus == null }.takeIf { it > 0 }?.let { antallUtenStatus ->
+            log.warn {
+                "Admin: Resend – $antallUtenStatus av ${kandidater.size} kandidat(er) mangler synket saksstatus " +
+                    "og kan gjelde avsluttede saker. Er saksstatus-massesynken fra melosys-api kjørt?"
+            }
+        }
+        return kandidater.map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
     }
 
     /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */

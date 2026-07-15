@@ -141,10 +141,6 @@ class M2MSkjemaService(
                 ukjenteSkjemaIder += oppdatering.skjemaId
                 return@forEach
             }
-            // Rader som deler saksnummer oppdaterer hverandre – hopp over de som allerede er dekket
-            if (innsending.id in oppdaterteInnsendingIder && innsending.saksstatus == oppdatering.saksstatus) {
-                return@forEach
-            }
             oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)
                 .forEach { oppdaterteInnsendingIder += it.id!! }
         }
@@ -180,7 +176,8 @@ class M2MSkjemaService(
 
         val gjeldendeSaksnummer = innsending.saksnummer!!
         val oppdatertTidspunkt = Instant.now()
-        val skalOppdateres = (innsendingRepository.findBySaksnummer(gjeldendeSaksnummer) + innsending).distinctBy { it.id }
+        // Auto-flush før JPQL-spørringen gjør at innsendingen selv (med ev. nysatt saksnummer) er med i resultatet
+        val skalOppdateres = innsendingRepository.findBySaksnummer(gjeldendeSaksnummer)
         skalOppdateres.forEach {
             it.saksstatus = saksstatus
             it.saksstatusOppdatert = oppdatertTidspunkt
