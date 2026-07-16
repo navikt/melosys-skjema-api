@@ -116,7 +116,8 @@ class M2MSkjemaService(
     /**
      * Oppdaterer saksstatus for innsendingen med gitt skjema-id, og for alle andre innsendinger
      * på samme saksnummer (motpart-deler og nye versjoner skal vise samme status).
-     * Setter også saksnummer på innsendingen hvis det mangler (backfill for historiske innsendinger).
+     * Saksnummer settes/oppdateres alltid fra requesten (backfill for historiske innsendinger,
+     * re-kobling hvis melosys-api har flyttet skjemaet til en annen sak).
      */
     @Transactional
     fun oppdaterSaksstatus(skjemaId: UUID, saksnummer: String, saksstatus: Saksstatus) {
@@ -156,33 +157,26 @@ class M2MSkjemaService(
     }
 
     /**
-     * Setter saksnummer hvis det mangler, og oppdaterer saksstatus på alle innsendinger på samme
-     * saksnummer. Ved saksnummer-avvik (innsendingen er koblet til en annen sak enn requesten
-     * oppgir) oppdateres KUN den identifiserte innsendingen – statusen gjelder skjemaet
-     * (skjema_sak_mapping i melosys-api er per skjemaId), men å sweepe noen av sak-kohortene
-     * ville smittet status på tvers av saker.
+     * Setter saksnummer fra melosys-api (autoritativ for skjema→sak-koblingen, akkurat som i
+     * [registrerSaksnummer] – avvik betyr at skjemaet er re-koblet til en annen sak, og logges),
+     * og oppdaterer saksstatus på alle innsendinger på samme saksnummer. Kohorten holdes dermed
+     * alltid konsistent: statusen gjelder saken, og alle som peker på den får samme verdi.
      *
      * NB: innsendinger på samme sak som selv mangler saksnummer fanges ikke av sweepen – de
      * dekkes av massesynken fra melosys-api, som sender oppdatering per skjemaId.
      */
     private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): List<Innsending> {
-        val oppdatertTidspunkt = Instant.now()
-
-        if (innsending.saksnummer == null) {
-            innsending.saksnummer = saksnummer
-        } else if (innsending.saksnummer != saksnummer) {
+        if (innsending.saksnummer != null && innsending.saksnummer != saksnummer) {
             log.warn {
                 "Saksstatus-oppdatering for skjema ${innsending.skjema.id} oppga saksnummer $saksnummer, " +
-                    "men innsendingen har allerede saksnummer ${innsending.saksnummer} - beholder eksisterende " +
-                    "og oppdaterer kun denne innsendingen"
+                    "men innsendingen hadde saksnummer ${innsending.saksnummer} - skjemaet er re-koblet i melosys-api"
             }
-            innsending.saksstatus = saksstatus
-            innsending.saksstatusOppdatert = oppdatertTidspunkt
-            return listOf(innsending)
         }
+        innsending.saksnummer = saksnummer
 
+        val oppdatertTidspunkt = Instant.now()
         // Auto-flush før JPQL-spørringen gjør at innsendingen selv (med ev. nysatt saksnummer) er med i resultatet
-        val skalOppdateres = innsendingRepository.findBySaksnummer(innsending.saksnummer!!)
+        val skalOppdateres = innsendingRepository.findBySaksnummer(saksnummer)
         skalOppdateres.forEach {
             it.saksstatus = saksstatus
             it.saksstatusOppdatert = oppdatertTidspunkt
