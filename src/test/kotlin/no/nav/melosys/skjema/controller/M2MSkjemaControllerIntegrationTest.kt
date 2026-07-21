@@ -602,7 +602,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal telle unike innsendinger naar flere rader deler saksnummer`() {
+        fun `skal oppdatere hver rad uavhengig naar flere rader deler saksnummer`() {
             val agDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")
             val atDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")
 
