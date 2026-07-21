@@ -989,8 +989,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isNoContent
 
         val slettetSkjema = skjemaRepository.findByIdOrNull(savedSkjema.id!!)
-        slettetSkjema.shouldNotBeNull()
-        slettetSkjema.status shouldBe SkjemaStatus.SLETTET
+        slettetSkjema shouldBe null
     }
 
     @Test

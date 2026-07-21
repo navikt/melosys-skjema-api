@@ -96,4 +96,31 @@ class AdminController(
         log.info { "Admin: Retry av alle feilede innsendinger" }
         return adminService.retryAlleFeilede()
     }
+
+    @PostMapping("/varsler/resend")
+    @Operation(
+        summary = "Midlertidig (MELOSYS-8168): Resend handlingspliktig brukervarsel med korrekt skjema-lenke",
+        description = "Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til arbeidstakere " +
+            "som fikk et varsel med feil lenke før lenken ble fikset. Kandidatene finnes i koden: alle " +
+            "handlingspliktige AG-deler (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn før " +
+            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Tar ingen parametere. " +
+            "Returnerer antall sendte varsler og saksnumrene som faktisk fikk et nytt varsel."
+    )
+    @ApiResponse(responseCode = "200", description = "Resending utført")
+    fun resendVarsler(): ResendVarslerResultatDto {
+        log.info { "Admin: Resend varsler til arbeidstakere som fikk varsel med feil lenke" }
+        return adminService.resendVarsler()
+    }
+
+    @PostMapping("/utkast/rydd-slettede")
+    @Operation(
+        summary = "MIDLERTIDIG: hard-delete av soft-deletede (SLETTET) utkast",
+        description = "Engangs GDPR-opprydding av gamle soft-deletede utkast. Sletter skjema-rader " +
+            "(cascade) og tilhørende vedlegg-blobs i bucket. Fjernes når prod er ryddet (MELOSYS-8157)."
+    )
+    @ApiResponse(responseCode = "200", description = "Opprydding utført")
+    fun ryddSletteUtkast(): RyddUtkastResultatDto {
+        log.info { "Admin: Rydder soft-deletede utkast" }
+        return adminService.ryddSletteUtkast()
+    }
 }

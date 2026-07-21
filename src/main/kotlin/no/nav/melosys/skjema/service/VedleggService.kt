@@ -122,6 +122,20 @@ class VedleggService(
 
         log.info { "Slettet ${vedleggListe.size} vedlegg for skjema $skjemaId" }
     }
+
+    /**
+     * Sletter vedlegg-blobbene synkront. Kalles FØR skjema-raden slettes i samme transaksjon:
+     * feiler slettingen kastes den videre så kalleren ruller tilbake og skjema-raden består
+     * (ingen foreldreløse blob-filer på avveie, GDPR). Idempotent, så retry er trygt.
+     */
+    fun slettBlobberForSkjema(skjemaId: UUID) {
+        val storageReferanser = vedleggRepository.findBySkjemaId(skjemaId).map { it.storageReferanse }
+        if (storageReferanser.isEmpty()) return
+
+        storageReferanser.forEach { referanse ->
+            vedleggStorageClient.slett(referanse)
+        }
+    }
 }
 
 class VedleggInnhold(

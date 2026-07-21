@@ -10,14 +10,17 @@ import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
 import no.nav.melosys.skjema.controller.admin.DelStatusDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
+import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
+import no.nav.melosys.skjema.controller.admin.RyddUtkastResultatDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
 import no.nav.melosys.skjema.controller.admin.VirksomhetStatistikkDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.utsendelsePeriode
+import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -33,6 +36,12 @@ import org.springframework.transaction.annotation.Transactional
 private val log = KotlinLogging.logger {}
 private val OSLO: ZoneId = ZoneId.of("Europe/Oslo")
 
+/** MELOSYS-8168: En resend-kandidat – skjema som skal få varsel på nytt, med saksnummer hvis det finnes. */
+data class ResendKandidat(
+    val skjemaId: UUID,
+    val saksnummer: String?
+)
+
 /**
  * Administrative operasjoner som eksponeres via [no.nav.melosys.skjema.controller.admin.AdminController]
  * og konsumeres av melosys-console. Gir innsyn i og mulighet til å reprosessere feilede innsendinger.
@@ -42,7 +51,9 @@ class AdminService(
     private val innsendingRepository: InnsendingRepository,
     private val skjemaRepository: SkjemaRepository,
     private val adminStatistikkRepository: AdminStatistikkRepository,
-    private val innsendingService: InnsendingService
+    private val innsendingService: InnsendingService,
+    private val arbeidstakerVarslingService: ArbeidstakerVarslingService,
+    private val vedleggStorageClient: VedleggStorageClient
 ) {
 
     @Transactional(readOnly = true)
@@ -308,6 +319,127 @@ class AdminService(
         return RetryResultatDto(antallForsoekt = skjemaIder.size, antallFeilet = feilet)
     }
 
+    /**
+     * MELOSYS-8168 (midlertidig): Resender brukervarsel (nå med korrekt skjema-lenke) til arbeidstakere som
+     * fikk et varsel med feil lenke. Kandidatene finnes i koden – ingen kuratert liste – og er bevisst litt
+     * over-inkluderende (kan treffe et par ekstra), men ingen som faktisk fikk feil lenke skal utelates:
+     *
+     * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
+     * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
+     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode).
+     *
+     * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
+     * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
+     * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
+     * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
+     */
+    fun resendVarsler(): ResendVarslerResultatDto {
+        val kandidater = finnResendKandidater()
+        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
+
+        val sendteSaksnumre = mutableListOf<String>()
+        kandidater.forEach { kandidat ->
+            try {
+                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId)) {
+                    // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
+                    sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
+                }
+            } catch (e: Exception) {
+                log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
+            }
+        }
+        log.info { "Admin: Resend ferdig – ${sendteSaksnumre.size} varsler sendt" }
+        return ResendVarslerResultatDto(antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
+    }
+
+    /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */
+    @Transactional(readOnly = true)
+    fun finnResendKandidater(): List<ResendKandidat> {
+        val alleInnsendte = innsendingRepository.finnAlleInnsendteMedSkjema()
+        val arbeidstakerDeler = alleInnsendte.filter { erArbeidstakerDel(it) }
+        val erstattedeIder: Set<UUID> = alleInnsendte
+            .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
+            .toSet()
+        return alleInnsendte
+            .filter { innsending ->
+                innsending.skjema.id !in erstattedeIder &&
+                    erHandlingspliktigAgDel(innsending) &&
+                    innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
+                    venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
+            }
+            .map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
+    }
+
+    /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */
+    private fun erHandlingspliktigAgDel(innsending: Innsending): Boolean {
+        val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
+        return metadata.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL &&
+            metadata.representasjonstype in HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER
+    }
+
+    /** Innsendt arbeidstaker-del – enten egen del eller kombinert skjema som dekker arbeidstakers del. */
+    private fun erArbeidstakerDel(innsending: Innsending): Boolean {
+        val skjemadel = (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel
+        return skjemadel == Skjemadel.ARBEIDSTAKERS_DEL || skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+    }
+
+    /**
+     * AT-del mangler hvis ingen innsendt arbeidstaker-del matcher på samme fnr + juridisk enhet +
+     * overlappende periode (samme matching som mottak/saksdekning bruker). Mangler periode på AG-delen
+     * regnes som "venter" (vi sender da heller én ekstra enn å utelate noen som fikk feil lenke).
+     */
+    private fun venterPaaArbeidstakerDel(agDel: Innsending, arbeidstakerDeler: List<Innsending>): Boolean {
+        val agMeta = agDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
+        val agPeriode = agDel.skjema.utsendelsePeriode() ?: return true
+        return arbeidstakerDeler.none { atDel ->
+            val atMeta = atDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@none false
+            val atPeriode = atDel.skjema.utsendelsePeriode() ?: return@none false
+            agDel.skjema.fnr == atDel.skjema.fnr &&
+                agMeta.juridiskEnhetOrgnr == atMeta.juridiskEnhetOrgnr &&
+                agPeriode.overlapper(atPeriode)
+        }
+    }
+
+    /**
+     * MIDLERTIDIG: hard-sletter alle gjenværende soft-deletede (SLETTET) utkast for GDPR-opprydding.
+     *
+     * Sletter både vedlegg-blobs i bucket (ingen foreldreløse filer) og selve skjema-radene
+     * (DB-cascade fjerner vedlegg-/innsending-/fullmakt-rader). Blob-sletting er best-effort:
+     * en feilet blob stopper ikke radslettingen, men telles og logges.
+     *
+     * Bevisst IKKE `@Transactional`: de eksterne bucket-kallene gjøres utenfor DB-transaksjon for å
+     * unngå lange transaksjoner / lock-holdetid ved nettverkslatens. Selve DELETE-en kjøres i sin egen
+     * korte transaksjon ([SkjemaRepository.slettAlleSletteSkjema]).
+     *
+     * Fjernes når prod er ryddet (MELOSYS-8157).
+     */
+    fun ryddSletteUtkast(): RyddUtkastResultatDto {
+        val storageReferanser = skjemaRepository.finnVedleggStorageReferanserForSletteSkjema()
+
+        var slettedeBlober = 0
+        var feiledeBlober = 0
+        storageReferanser.forEach { referanse ->
+            try {
+                vedleggStorageClient.slett(referanse)
+                slettedeBlober++
+            } catch (e: Exception) {
+                feiledeBlober++
+                log.error(e) { "Admin: Klarte ikke slette vedlegg-blob $referanse under opprydding av slettede utkast" }
+            }
+        }
+
+        val antallSkjema = skjemaRepository.slettAlleSletteSkjema()
+        log.info {
+            "Admin: Ryddet $antallSkjema soft-deletede utkast " +
+                "(vedlegg-blobs slettet=$slettedeBlober, feilet=$feiledeBlober)"
+        }
+        return RyddUtkastResultatDto(
+            antallSkjema = antallSkjema,
+            antallVedleggSlettet = slettedeBlober,
+            antallVedleggFeilet = feiledeBlober
+        )
+    }
+
     @Transactional(readOnly = true)
     fun hentFeiledeSkjemaIder(): List<UUID> =
         innsendingRepository.findByStatusMedSkjema(InnsendingStatus.KAFKA_FEILET).map { it.skjema.id!! }
@@ -332,4 +464,18 @@ class AdminService(
         opprettetDato = opprettetDato,
         saksnummer = saksnummer
     )
+
+    companion object {
+        /**
+         * MELOSYS-8168: Tidspunktet skjema-lenken i det handlingspliktige varselet ble fikset. Handlingspliktige
+         * AG-deler innsendt FØR dette fikk et varsel med feil lenke, og er kandidater for resend med korrekt lenke.
+         */
+        private val VARSEL_LENKE_FIKSET_TIDSPUNKT: Instant = Instant.parse("2026-07-03T12:10:38Z")
+
+        /** Representasjonstyper der arbeidstaker selv må sende inn sin del (uten fullmakt). */
+        private val HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER = setOf(
+            Representasjonstype.ARBEIDSGIVER,
+            Representasjonstype.RADGIVER
+        )
+    }
 }

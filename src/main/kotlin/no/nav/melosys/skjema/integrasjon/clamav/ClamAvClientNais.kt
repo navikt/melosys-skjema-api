@@ -4,9 +4,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ByteArrayResource
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.stereotype.Service
+import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
 import org.springframework.web.multipart.MultipartFile
@@ -22,14 +24,17 @@ class ClamAvClientNais(
     override fun scan(fil: MultipartFile) {
         log.info { "Scanner fil '${fil.originalFilename}' for virus via ClamAV" }
 
-        val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("file1", object : ByteArrayResource(fil.bytes) {
+        val filDel = object : ByteArrayResource(fil.bytes) {
             override fun getFilename(): String = fil.originalFilename ?: "file"
-        }).contentType(MediaType.APPLICATION_OCTET_STREAM)
+        }
+        val delHeaders = HttpHeaders().apply { contentType = MediaType.APPLICATION_OCTET_STREAM }
+
+        val body = LinkedMultiValueMap<String, HttpEntity<*>>()
+        body.add("file1", HttpEntity(filDel, delHeaders))
 
         val response = clamAvRestClient.put()
             .contentType(MediaType.MULTIPART_FORM_DATA)
-            .body(bodyBuilder.build())
+            .body(body)
             .retrieve()
             .body<Array<ClamAvScanResult>>()
 
