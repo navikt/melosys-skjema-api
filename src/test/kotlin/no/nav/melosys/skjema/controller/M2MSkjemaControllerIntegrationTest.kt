@@ -534,6 +534,29 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
     inner class BulkOppdaterSaksstatus {
 
         @Test
+        fun `skal rapportere 0 oppdatert naar alt allerede er synket`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-700")
+            val body = """{"oppdateringer": [{"skjemaId": "${skjema.id}", "saksnummer": "MEL-700", "saksstatus": "AVSLUTTET"}]}"""
+
+            fun kjoerBulk() = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            kjoerBulk().antallOppdatert shouldBe 1
+            val foersteTidspunkt = innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksstatusOppdatert
+
+            kjoerBulk().antallOppdatert shouldBe 0
+            // saksstatusOppdatert betyr «sist endret» og skal ikke røres av no-op-synk
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksstatusOppdatert shouldBe foersteTidspunkt
+        }
+
+        @Test
         fun `skal telle unike innsendinger naar flere rader deler saksnummer`() {
             val agDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")
             val atDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")

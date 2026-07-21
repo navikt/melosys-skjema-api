@@ -162,6 +162,10 @@ class M2MSkjemaService(
      * og oppdaterer saksstatus på alle innsendinger på samme saksnummer. Kohorten holdes dermed
      * alltid konsistent: statusen gjelder saken, og alle som peker på den får samme verdi.
      *
+     * Innsendinger som allerede har riktig saksstatus røres ikke – returverdien teller kun
+     * faktiske endringer, slik at en gjentatt synk rapporterer 0 og [Innsending.saksstatusOppdatert]
+     * betyr «sist endret», ikke «sist skrevet».
+     *
      * NB: innsendinger på samme sak som selv mangler saksnummer fanges ikke av sweepen – de
      * dekkes av massesynken fra melosys-api, som sender oppdatering per skjemaId.
      */
@@ -176,12 +180,13 @@ class M2MSkjemaService(
 
         val oppdatertTidspunkt = Instant.now()
         // Auto-flush før JPQL-spørringen gjør at innsendingen selv (med ev. nysatt saksnummer) er med i resultatet
-        val skalOppdateres = innsendingRepository.findBySaksnummer(saksnummer)
-        skalOppdateres.forEach {
+        val endres = innsendingRepository.findBySaksnummer(saksnummer)
+            .filter { it.saksstatus != saksstatus }
+        endres.forEach {
             it.saksstatus = saksstatus
             it.saksstatusOppdatert = oppdatertTidspunkt
         }
-        return skalOppdateres
+        return endres
     }
 
     private fun hentInnsending(skjemaId: UUID): Innsending =
