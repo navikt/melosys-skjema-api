@@ -523,7 +523,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         private val periodeOverlapp = PeriodeDto(LocalDate.parse("2026-03-01"), LocalDate.parse("2026-08-31"))
         private val periodeIngenOverlapp = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-12-31"))
         private val foerCutoff = Instant.parse("2026-06-01T00:00:00Z")
-        private val etterCutoff = Instant.parse("2026-06-29T12:00:00Z")
+        private val etterCutoff = Instant.parse("2026-07-03T14:00:00Z")
 
         /** Lager en innsendt (SENDT) utsendt-arbeidstaker-del med kontroll på del, flyt, periode og innsendingsdato. */
         private fun lagInnsendtDel(
@@ -578,7 +578,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .returnResult().responseBody.shouldNotBeNull()
 
         @Test
-        fun `skal sende varsel med SMS og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
+        fun `skal sende varsel med korrekt lenke og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
             val skjema = lagAgDel(saksnummer = "SAK-001")
 
             val body = resend()
