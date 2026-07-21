@@ -62,9 +62,10 @@ class M2MSkjemaController(
 
     @PostMapping("/{id}/saksnummer")
     @M2MWriteSkjemadata
-    @Operation(summary = "Registrer saksnummer fra melosys-api på innsendt skjema (M2M)")
+    @Operation(summary = "Registrer saksnummer fra melosys-api på innsendt skjema. Saksnummer er immutabelt når først satt (M2M)")
     @ApiResponse(responseCode = "204", description = "Saksnummer registrert")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    @ApiResponse(responseCode = "409", description = "Innsendingen har allerede et annet saksnummer")
     fun registrerSaksnummer(
         @PathVariable id: UUID,
         @Valid @RequestBody request: RegistrerSaksnummerRequest
@@ -76,9 +77,10 @@ class M2MSkjemaController(
 
     @PutMapping("/{id}/saksstatus")
     @M2MWriteSkjemadata
-    @Operation(summary = "Oppdater saksstatus fra melosys-api. Oppdaterer alle innsendinger på samme saksnummer (M2M)")
+    @Operation(summary = "Oppdater saksstatus fra melosys-api. Oppdaterer kun innsendingen for gitt skjema-id (M2M)")
     @ApiResponse(responseCode = "204", description = "Saksstatus oppdatert")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    @ApiResponse(responseCode = "409", description = "Innsendingen har allerede et annet saksnummer")
     fun oppdaterSaksstatus(
         @PathVariable id: UUID,
         @Valid @RequestBody request: OppdaterSaksstatusRequest
@@ -89,7 +91,7 @@ class M2MSkjemaController(
 
     @PutMapping("/saksstatus/bulk")
     @M2MWriteSkjemadata
-    @Operation(summary = "Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i resultatet (M2M)")
+    @Operation(summary = "Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er og saksnummer-konflikter rapporteres i resultatet (M2M)")
     @ApiResponse(responseCode = "200", description = "Massesynk utført")
     fun bulkOppdaterSaksstatus(
         @Valid @RequestBody request: BulkOppdaterSaksstatusRequest

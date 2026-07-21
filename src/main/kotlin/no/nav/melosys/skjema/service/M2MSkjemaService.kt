@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.exception.SaksnummerKonfliktException
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
@@ -97,43 +98,46 @@ class M2MSkjemaService(
         }
     }
 
+    /**
+     * Registrerer saksnummer fra melosys-api på innsendingen. Saksnummer er immutabelt når det
+     * først er satt: samme verdi på nytt er idempotent OK, en annen verdi gir
+     * [SaksnummerKonfliktException] (409). Backfill (null → verdi) er alltid OK.
+     *
+     * Den nye innsendingen beholder `saksstatus = null` (vises som Mottatt) uavhengig av andre
+     * innsendinger på samme sak: Melosys oppretter ny behandling for den, så den er per
+     * definisjon under behandling.
+     */
     @Transactional
     fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
         val innsending = hentInnsending(skjemaId)
+        validerSaksnummerUendret(innsending, saksnummer)
         innsending.saksnummer = saksnummer
-
-        // Kobles innsendingen til en sak som allerede har synket status, arves den – ellers
-        // ville den stått som MOTTATT (null) mens søsknene viser noe annet, frem til neste synk.
-        innsendingRepository.findBySaksnummer(saksnummer)
-            .firstOrNull { it.id != innsending.id && it.saksstatus != null }
-            ?.let {
-                innsending.saksstatus = it.saksstatus
-                innsending.saksstatusOppdatert = it.saksstatusOppdatert
-            }
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
     /**
-     * Oppdaterer saksstatus for innsendingen med gitt skjema-id, og for alle andre innsendinger
-     * på samme saksnummer (motpart-deler og nye versjoner skal vise samme status).
-     * Saksnummer settes/oppdateres alltid fra requesten (backfill for historiske innsendinger,
-     * re-kobling hvis melosys-api har flyttet skjemaet til en annen sak).
+     * Oppdaterer saksstatus for innsendingen med gitt skjema-id. Kun den identifiserte
+     * innsendingen oppdateres – andre innsendinger på samme saksnummer røres ikke.
+     * Saksnummer-avvik mot allerede satt saksnummer gir [SaksnummerKonfliktException] (409).
      */
     @Transactional
     fun oppdaterSaksstatus(skjemaId: UUID, saksnummer: String, saksstatus: Saksstatus) {
         val innsending = hentInnsending(skjemaId)
-        val oppdaterte = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
-        log.info { "Oppdatert saksstatus til $saksstatus for sak ${innsending.saksnummer} (${oppdaterte.size} innsending(er))" }
+        val oppdatert = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
+        log.info { "Oppdatert saksstatus til $saksstatus for sak $saksnummer (endret: $oppdatert)" }
     }
 
     /**
      * Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i stedet for å
-     * feile. Hele batchen kjører i én transaksjon: én uventet feil ruller tilbake alt, og
-     * melosys-api reprøver hele batchen (operasjonen er idempotent).
+     * feile. Rader med saksnummer-konflikt (innsendingen har allerede et annet saksnummer)
+     * hoppes over og rapporteres i [BulkOppdaterSaksstatusResultat.konfliktSkjemaIder] uten å
+     * feile batchen. Hele batchen kjører i én transaksjon: én uventet feil ruller tilbake alt,
+     * og melosys-api reprøver hele batchen (operasjonen er idempotent).
      */
     @Transactional
     fun bulkOppdaterSaksstatus(oppdateringer: List<SaksstatusOppdatering>): BulkOppdaterSaksstatusResultat {
         val ukjenteSkjemaIder = mutableSetOf<UUID>()
+        val konfliktSkjemaIder = mutableSetOf<UUID>()
         val oppdaterteInnsendingIder = mutableSetOf<UUID>()
 
         oppdateringer.forEach { oppdatering ->
@@ -142,51 +146,62 @@ class M2MSkjemaService(
                 ukjenteSkjemaIder += oppdatering.skjemaId
                 return@forEach
             }
-            oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)
-                .forEach { oppdaterteInnsendingIder += it.id!! }
+            try {
+                if (oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)) {
+                    oppdaterteInnsendingIder += innsending.id!!
+                }
+            } catch (e: SaksnummerKonfliktException) {
+                log.warn(e) { "Hopper over rad med saksnummer-konflikt i massesynk" }
+                konfliktSkjemaIder += oppdatering.skjemaId
+            }
         }
 
         log.info {
             "Bulk-oppdatert saksstatus: ${oppdateringer.size} rader, ${oppdaterteInnsendingIder.size} innsending(er) oppdatert, " +
-                "${ukjenteSkjemaIder.size} ukjente skjema-id-er"
+                "${ukjenteSkjemaIder.size} ukjente skjema-id-er, ${konfliktSkjemaIder.size} saksnummer-konflikter"
         }
         return BulkOppdaterSaksstatusResultat(
             antallOppdatert = oppdaterteInnsendingIder.size,
-            ukjenteSkjemaIder = ukjenteSkjemaIder.toList()
+            ukjenteSkjemaIder = ukjenteSkjemaIder.toList(),
+            konfliktSkjemaIder = konfliktSkjemaIder.toList()
         )
     }
 
     /**
-     * Setter saksnummer fra melosys-api (autoritativ for skjema→sak-koblingen, akkurat som i
-     * [registrerSaksnummer] – avvik betyr at skjemaet er re-koblet til en annen sak, og logges),
-     * og oppdaterer saksstatus på alle innsendinger på samme saksnummer. Kohorten holdes dermed
-     * alltid konsistent: statusen gjelder saken, og alle som peker på den får samme verdi.
+     * Oppdaterer saksstatus for KUN denne innsendingen. Saksnummer er immutabelt når det først
+     * er satt ([validerSaksnummerUendret]); backfill (null → verdi) er OK.
      *
-     * Innsendinger som allerede har riktig saksstatus røres ikke – returverdien teller kun
-     * faktiske endringer, slik at en gjentatt synk rapporterer 0 og [Innsending.saksstatusOppdatert]
-     * betyr «sist endret», ikke «sist skrevet».
+     * Monotoni-guard: Avsluttet er terminal for en innsending; en revurdering i Melosys skal
+     * ikke resette ferdigbehandlede innsendinger (produkteierbeslutning 2026-07-21). Forsøk på
+     * nedgradering AVSLUTTET → MOTTATT hoppes derfor over med warn-logg og telles ikke som
+     * oppdatert.
      *
-     * NB: innsendinger på samme sak som selv mangler saksnummer fanges ikke av sweepen – de
-     * dekkes av massesynken fra melosys-api, som sender oppdatering per skjemaId.
+     * Skriver kun ved faktisk endring – returverdien er `false` når status er uendret, slik at
+     * en gjentatt synk rapporterer 0 og [Innsending.saksstatusOppdatert] betyr «sist endret»,
+     * ikke «sist skrevet».
      */
-    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): List<Innsending> {
-        if (innsending.saksnummer != null && innsending.saksnummer != saksnummer) {
-            log.warn {
-                "Saksstatus-oppdatering for skjema ${innsending.skjema.id} oppga saksnummer $saksnummer, " +
-                    "men innsendingen hadde saksnummer ${innsending.saksnummer} - skjemaet er re-koblet i melosys-api"
-            }
-        }
+    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): Boolean {
+        validerSaksnummerUendret(innsending, saksnummer)
         innsending.saksnummer = saksnummer
 
-        val oppdatertTidspunkt = Instant.now()
-        // Auto-flush før JPQL-spørringen gjør at innsendingen selv (med ev. nysatt saksnummer) er med i resultatet
-        val endres = innsendingRepository.findBySaksnummer(saksnummer)
-            .filter { it.saksstatus != saksstatus }
-        endres.forEach {
-            it.saksstatus = saksstatus
-            it.saksstatusOppdatert = oppdatertTidspunkt
+        if (innsending.saksstatus == saksstatus) {
+            return false
         }
-        return endres
+        if (innsending.saksstatus == Saksstatus.AVSLUTTET && saksstatus == Saksstatus.MOTTATT) {
+            log.warn { "Ignorerer nedgradering AVSLUTTET → MOTTATT for skjema ${innsending.skjema.id} på sak $saksnummer" }
+            return false
+        }
+
+        innsending.saksstatus = saksstatus
+        innsending.saksstatusOppdatert = Instant.now()
+        return true
+    }
+
+    private fun validerSaksnummerUendret(innsending: Innsending, saksnummer: String) {
+        val eksisterende = innsending.saksnummer ?: return
+        if (eksisterende != saksnummer) {
+            throw SaksnummerKonfliktException(innsending.skjema.id!!, eksisterende, saksnummer)
+        }
     }
 
     private fun hentInnsending(skjemaId: UUID): Innsending =
