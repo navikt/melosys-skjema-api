@@ -234,7 +234,7 @@ class ArbeidstakerVarslingServiceTest {
     }
 
     @Test
-    fun `resend - AG uten fullmakt og ingen AT-utkast skal sende varsel med SMS og ignorer-tekst`() {
+    fun `resend - AG uten fullmakt og ingen AT-utkast skal sende varsel med korrekt lenke og ignorer-tekst`() {
         val skjema = skjemaMedDefaultVerdier(
             id = UUID.randomUUID(),
             status = SkjemaStatus.SENDT,

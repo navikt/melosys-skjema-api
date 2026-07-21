@@ -88,9 +88,9 @@ class ArbeidstakerVarslingService(
     }
 
     /**
-     * MELOSYS-8168 (midlertidig): Resender det handlingspliktige varselet (med SMS) til arbeidstaker
-     * for et gitt skjema. Brukes av admin-endepunktet for å nå AT-brukere som ikke fikk SMS før
-     * SMS-prodsettingen.
+     * MELOSYS-8168 (midlertidig): Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til
+     * arbeidstaker for et gitt skjema. Brukes av admin-endepunktet for å nå AT-brukere som fikk et varsel
+     * med feil lenke før lenken ble fikset.
      *
      * Sender KUN for handlingspliktige caser (arbeidsgiver/rådgiver uten fullmakt, skjemadel = ARBEIDSGIVERS_DEL).
      * Bypasser [no.nav.melosys.skjema.entity.Innsending.brukervarselSendt]-sjekken (resend er eksplisitt)
