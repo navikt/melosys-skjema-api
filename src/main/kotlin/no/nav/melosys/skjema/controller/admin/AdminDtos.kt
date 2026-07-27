@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
@@ -24,7 +25,9 @@ data class InnsendingAdminDto(
     val feilmelding: String?,
     val sisteForsoekTidspunkt: Instant?,
     val opprettetDato: Instant,
-    val saksnummer: String?
+    val saksnummer: String?,
+    val saksstatus: Saksstatus?,
+    val saksstatusOppdatert: Instant?
 )
 
 /**

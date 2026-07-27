@@ -24,6 +24,7 @@ import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.PeriodeDto
@@ -326,7 +327,10 @@ class AdminService(
      *
      * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
      * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
-     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode).
+     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode). Innsendinger der saken er
+     * AVSLUTTET i melosys-api ekskluderes – der er det ingenting å varsle om (motpart-delen kom typisk via
+     * en annen kanal). NB: filteret forutsetter at saksstatus-massesynken fra melosys-api er kjørt først;
+     * innsendinger uten synket status (null) behandles som aktive og kan få varsel.
      *
      * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
@@ -360,14 +364,22 @@ class AdminService(
         val erstattedeIder: Set<UUID> = alleInnsendte
             .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
             .toSet()
-        return alleInnsendte
+        val kandidater = alleInnsendte
             .filter { innsending ->
                 innsending.skjema.id !in erstattedeIder &&
+                    innsending.saksstatus != Saksstatus.AVSLUTTET &&
                     erHandlingspliktigAgDel(innsending) &&
                     innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
                     venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
             }
-            .map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
+        val antallUtenStatus = kandidater.count { it.saksstatus == null }
+        if (antallUtenStatus > 0) {
+            log.warn {
+                "Admin: Resend – $antallUtenStatus av ${kandidater.size} kandidat(er) mangler synket saksstatus " +
+                    "og kan gjelde avsluttede saker. Er saksstatus-massesynken fra melosys-api kjørt?"
+            }
+        }
+        return kandidater.map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
     }
 
     /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */
@@ -462,7 +474,9 @@ class AdminService(
         feilmelding = feilmelding,
         sisteForsoekTidspunkt = sisteForsoekTidspunkt,
         opprettetDato = opprettetDato,
-        saksnummer = saksnummer
+        saksnummer = saksnummer,
+        saksstatus = saksstatus,
+        saksstatusOppdatert = saksstatusOppdatert
     )
 
     companion object {

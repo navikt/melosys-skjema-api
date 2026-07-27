@@ -53,6 +53,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.Ansettelsesform
@@ -472,7 +473,8 @@ fun innsendingMedDefaultVerdier(
     skjemaDefinisjonVersjon: String = "1",
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
     innsenderFnr: String = "12345678901",
-    saksnummer: String? = null
+    saksnummer: String? = null,
+    saksstatus: Saksstatus? = null
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -487,4 +489,5 @@ fun innsendingMedDefaultVerdier(
     innsenderFnr = innsenderFnr
 ).apply {
     this.saksnummer = saksnummer
+    this.saksstatus = saksstatus
 }

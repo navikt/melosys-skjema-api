@@ -13,6 +13,8 @@ data class M2mConfigProperties(
     @field:Valid
     val readSkjemadata: ClientConfig = ClientConfig(),
     @field:Valid
+    val writeSkjemadata: ClientConfig = ClientConfig(),
+    @field:Valid
     val admin: AdminConfig = AdminConfig()
 ) {
     data class ClientConfig(
@@ -33,7 +35,7 @@ data class M2mConfigProperties(
 
     @PostConstruct
     fun validateNoUnresolvedPlaceholders() {
-        (readSkjemadata.clients + admin.clients + admin.apikey).forEach { verdi ->
+        (readSkjemadata.clients + writeSkjemadata.clients + admin.clients + admin.apikey).forEach { verdi ->
             require(!verdi.contains("\${")) {
                 "Uoppløst placeholder i m2m-konfigurasjon: '$verdi'. Sjekk at miljøvariabelen er satt."
             }
