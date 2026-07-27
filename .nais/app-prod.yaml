@@ -11,6 +11,14 @@ spec:
   port: 8080
   ingresses:
     - https://melosys-skjema-api.intern.nav.no
+  # Startup-proben holder liveness/readiness tilbake til appen er oppe -
+  # oppstart tar 40-50s+ under CPU-throttling, og liveness (initialDelay 20 +
+  # 3x10s failureThreshold) drepte containeren midt i oppstarten.
+  startup:
+    path: /actuator/health
+    initialDelay: 10
+    periodSeconds: 5
+    failureThreshold: 60
   liveness:
     path: /actuator/health
     initialDelay: 20
