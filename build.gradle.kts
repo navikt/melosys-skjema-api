@@ -26,8 +26,8 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "6.0.10"
-val mockOAuth2ServerVersion = "3.0.3"
+val tokenSupportVersion = "6.0.11"
+val mockOAuth2ServerVersion = "5.0.2"
 val kotlinLoggingVersion = "8.0.4"
 val kotestVersion = "6.2.1"
 val mockkVersion = "1.14.11"
@@ -76,11 +76,11 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.37")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.37")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.40")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.40")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.69.0")
+    implementation("com.google.cloud:google-cloud-storage:2.70.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
