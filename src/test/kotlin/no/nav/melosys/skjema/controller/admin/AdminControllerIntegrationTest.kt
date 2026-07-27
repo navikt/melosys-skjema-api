@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
 import no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor.Companion.API_KEY_HEADER
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
@@ -534,6 +535,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
             saksnummer: String? = null,
+            saksstatus: Saksstatus? = null,
             erstatterSkjemaId: UUID? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
@@ -550,7 +552,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
         ).also { skjema ->
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer))
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer, saksstatus = saksstatus)
+            )
         }
 
         /** Handlingspliktig AG-del (arbeidsgiver uten fullmakt) – standard resend-kandidat. */
@@ -561,8 +565,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
             saksnummer: String? = null,
+            saksstatus: Saksstatus? = null,
             erstatterSkjemaId: UUID? = null
-        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, erstatterSkjemaId)
+        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, saksstatus, erstatterSkjemaId)
 
         /** Innsendt arbeidstaker-del for samme person/enhet (markerer at saken ikke lenger venter på AT-del). */
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
@@ -639,6 +644,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             resend().antallSendt shouldBe 0
             verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal ikke sende naar saken er avsluttet i melosys-api`() {
+            lagAgDel(saksnummer = "SAK-200", saksstatus = Saksstatus.AVSLUTTET)
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal fortsatt sende naar saken er mottatt i melosys-api`() {
+            lagAgDel(saksnummer = "SAK-201", saksstatus = Saksstatus.MOTTATT)
+
+            resend().antallSendt shouldBe 1
         }
 
         @Test
