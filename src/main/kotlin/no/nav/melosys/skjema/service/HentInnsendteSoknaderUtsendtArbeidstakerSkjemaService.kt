@@ -11,6 +11,8 @@ import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.InnsendtSoknadOversiktDto
 import no.nav.melosys.skjema.types.InnsendteSoknaderResponse
+import no.nav.melosys.skjema.types.MotpartStatus
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SorteringsFelt
 import no.nav.melosys.skjema.types.Sorteringsretning
@@ -82,7 +84,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             else -> reprService.hentFullmaktsgiverFnr()
         }
 
-        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt) }
+        val sendteKobledeSkjemaIder = hentSendteKobledeSkjemaIder(page.content)
+
+        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt, sendteKobledeSkjemaIder) }
 
         log.debug { "Fant ${page.totalElements} innsendte søknader, returnerer side ${request.side} med ${soknader.size} resultater" }
 
@@ -209,12 +213,51 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
+     * Batch-henter id-ene til koblede skjemaer (motpartens del) med status SENDT for sidens rader.
+     *
+     * Ett findAllById-kall per side i stedet for ett oppslag per rad — unngår N+1
+     * selv om sidestørrelsen er lav (typisk 5 rader).
+     */
+    private fun hentSendteKobledeSkjemaIder(skjemaer: List<Skjema>): Set<UUID> {
+        val kobletIder = skjemaer
+            .mapNotNull { (it.metadata as? UtsendtArbeidstakerMetadata)?.kobletSkjemaId }
+            .distinct()
+
+        if (kobletIder.isEmpty()) {
+            return emptySet()
+        }
+
+        return utsendtArbeidstakerSkjemaRepository.findAllById(kobletIder)
+            .filter { it.status == SkjemaStatus.SENDT }
+            .mapNotNull { it.id }
+            .toSet()
+    }
+
+    /**
+     * Utleder motpart-status for en skjemadel:
+     * - Kombinert del (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har aldri motpart → IKKE_RELEVANT
+     * - Koblet skjema med status SENDT → HAR_SENDT
+     * - Ellers → VENTER (inkluderer koblet skjema som kun er utkast, og motpart via annen kanal)
+     */
+    private fun utledMotpartStatus(
+        metadata: UtsendtArbeidstakerMetadata,
+        sendteKobledeSkjemaIder: Set<UUID>
+    ): MotpartStatus {
+        return when {
+            metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> MotpartStatus.IKKE_RELEVANT
+            metadata.kobletSkjemaId in sendteKobledeSkjemaIder -> MotpartStatus.HAR_SENDT
+            else -> MotpartStatus.VENTER
+        }
+    }
+
+    /**
      * Konverterer Skjema til InnsendtSoknadOversiktDto.
      * Maskerer fnr og henter nødvendige metadata-verdier.
      */
     private fun konverterTilInnsendtSoknadDto(
         skjema: Skjema,
-        personerMedAktivFullmakt: Set<String>
+        personerMedAktivFullmakt: Set<String>,
+        sendteKobledeSkjemaIder: Set<UUID>
     ): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
@@ -222,6 +265,10 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         return InnsendtSoknadOversiktDto(
             id = skjema.id ?: throw IllegalStateException("Skjema ID er null"),
             referanseId = innsending?.referanseId,
+            saksnummer = innsending?.saksnummer,
+            saksstatus = innsending?.saksstatus,
+            motpartStatus = utledMotpartStatus(metadata, sendteKobledeSkjemaIder),
+            skjemadel = metadata.skjemadel,
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
             arbeidstakerNavn = metadata.arbeidstakerNavn,

@@ -21,8 +21,11 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
+import no.nav.melosys.skjema.types.MotpartStatus
 import no.nav.melosys.skjema.types.felles.OrganisasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import org.junit.jupiter.api.BeforeEach
@@ -933,6 +936,277 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         } catch (e: IllegalArgumentException) {
             e.message shouldBe "radgiverfirmaOrgnr er påkrevd for RADGIVER"
         }
+    }
+
+    // ========================================
+    // Saksnummer, saksstatus, skjemadel og motpart-status
+    // ========================================
+
+    private fun standardRequestDegSelv() = HentInnsendteSoknaderRequest(
+        side = 1,
+        antall = 10,
+        representasjonstype = Representasjonstype.DEG_SELV
+    )
+
+    @Test
+    @DisplayName("Saksinfo: Skal populere saksnummer og saksstatus fra innsendingen")
+    fun `skal populere saksnummer og saksstatus fra innsendingen`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+            )
+        )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(skjema = skjema, saksnummer = "MEL-123456", saksstatus = Saksstatus.MOTTATT)
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].saksnummer shouldBe "MEL-123456"
+        response.soknader[0].saksstatus shouldBe Saksstatus.MOTTATT
+    }
+
+    @Test
+    @DisplayName("Saksinfo: saksnummer og saksstatus skal være null når innsendingen mangler dem")
+    fun `saksnummer og saksstatus skal være null når innsendingen mangler dem`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(representasjonstype = Representasjonstype.DEG_SELV)
+            )
+        )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(skjema = skjema, saksnummer = null, saksstatus = null)
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].saksnummer shouldBe null
+        response.soknader[0].saksstatus shouldBe null
+    }
+
+    @Test
+    @DisplayName("Saksinfo: Skal populere skjemadel fra metadata")
+    fun `skal populere skjemadel fra metadata`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].skjemadel shouldBe Skjemadel.ARBEIDSTAKERS_DEL
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: VENTER når skjemadel har motpart uten kobling")
+    fun `motpartStatus skal være VENTER uten kobling`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    kobletSkjemaId = null
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.VENTER
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: VENTER når koblet skjema kun er utkast")
+    fun `motpartStatus skal være VENTER når koblet skjema kun er utkast`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        // Motpartens del (AG-del) er kun UTKAST
+        val motpartSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                ),
+                opprettetAv = etAnnetKorrektSyntetiskFnr
+            )
+        )
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    kobletSkjemaId = motpartSkjema.id
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.VENTER
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: HAR_SENDT når koblet skjema er sendt inn")
+    fun `motpartStatus skal være HAR_SENDT når koblet skjema er sendt inn`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        // Motpartens del (AG-del) er SENDT
+        val motpartSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                ),
+                opprettetAv = etAnnetKorrektSyntetiskFnr
+            )
+        )
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    kobletSkjemaId = motpartSkjema.id
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.HAR_SENDT
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: IKKE_RELEVANT for kombinert del")
+    fun `motpartStatus skal være IKKE_RELEVANT for kombinert del`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.IKKE_RELEVANT
+    }
+
+    @Test
+    @DisplayName("Saksinfo: AVSLUTTET sak uten kobling returnerer både saksstatus og motpartStatus (avsluttet-vinner håndteres i visning)")
+    fun `avsluttet sak uten kobling skal returnere både saksstatus og motpartStatus`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        // Motpart sendte via annen kanal (ingen kobling), saken er avsluttet i melosys-api.
+        // Backend returnerer VENTER + AVSLUTTET; frontend lar AVSLUTTET vinne i visningen.
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                )
+            )
+        )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(skjema = skjema, saksnummer = "MEL-654321", saksstatus = Saksstatus.AVSLUTTET)
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].saksstatus shouldBe Saksstatus.AVSLUTTET
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.VENTER
+    }
+
+    @Test
+    @DisplayName("Saksinfo: AVSLUTTET sak med sendt kobling returnerer HAR_SENDT og AVSLUTTET")
+    fun `avsluttet sak med sendt kobling skal returnere HAR_SENDT og AVSLUTTET`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        val motpartSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                ),
+                opprettetAv = etAnnetKorrektSyntetiskFnr
+            )
+        )
+
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    kobletSkjemaId = motpartSkjema.id
+                )
+            )
+        )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(skjema = skjema, saksnummer = "MEL-654321", saksstatus = Saksstatus.AVSLUTTET)
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].saksstatus shouldBe Saksstatus.AVSLUTTET
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.HAR_SENDT
     }
 
     // ========================================
