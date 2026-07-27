@@ -86,6 +86,7 @@ spec:
           cluster: dev-gcp
     outbound:
       external:
+        - host: teammelosys-unleash-api.nav.cloud.nais.io
         - host: pdl-api.dev-fss-pub.nais.io
         - host: aareg-services.prod-fss-pub.nais.io
         - host: ereg-services.dev-fss-pub.nais.io
@@ -110,5 +111,6 @@ spec:
       value: dev-gcp:teammelosys:melosys-console-q2
   envFrom:
     - secret: melosys-skjema-api
+    - secret: melosys-skjema-api-unleash-api-token
   kafka:
     pool: nav-dev

@@ -59,6 +59,9 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         // RepresentasjonController
         Arguments.of(HttpMethod.GET, "/api/representasjon"),
 
+        // FeatureToggleController
+        Arguments.of(HttpMethod.GET, "/api/featuretoggle"),
+
         // AltinnController
         Arguments.of(HttpMethod.GET, "/api/hentTilganger"),
         Arguments.of(HttpMethod.GET, "/api/harTilgang/123456789"),
