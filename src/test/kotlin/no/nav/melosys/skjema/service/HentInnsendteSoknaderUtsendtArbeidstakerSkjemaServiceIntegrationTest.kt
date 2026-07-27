@@ -9,6 +9,9 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.integrasjon.repr.dto.Fullmakt
@@ -16,6 +19,7 @@ import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.radgiverfirmaInfoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -25,6 +29,7 @@ import no.nav.melosys.skjema.types.MotpartStatus
 import no.nav.melosys.skjema.types.felles.OrganisasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
@@ -50,6 +55,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
 
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
+
+    @Autowired
+    private lateinit var koblingService: UtsendtArbeidstakerSkjemaKoblingService
 
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
@@ -1207,6 +1215,119 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
         response.soknader shouldHaveSize 1
         response.soknader[0].saksstatus shouldBe Saksstatus.AVSLUTTET
         response.soknader[0].motpartStatus shouldBe MotpartStatus.HAR_SENDT
+    }
+
+    // ========================================
+    // MotpartStatus ved resubmisjon — erstatter-kjeden følges
+    // (produkteier-beslutning 2026-07-27, se utledMotpartStatus)
+    // ========================================
+
+    /**
+     * Sender inn et skjema slik produksjonsflyten gjør det: lagres med status SENDT og kobles
+     * via [UtsendtArbeidstakerSkjemaKoblingService.finnOgKobl] — ingen håndsatt kobling-metadata.
+     */
+    private fun sendInnOgKobl(representasjonstype: Representasjonstype, skjemadel: Skjemadel): Skjema {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = representasjonstype,
+                    skjemadel = skjemadel
+                ),
+                data = when (skjemadel) {
+                    Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                    else -> arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                        utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()
+                    )
+                }
+            )
+        )
+        koblingService.finnOgKobl(skjema)
+        return skjema
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: HAR_SENDT beholdes når motparten sender ny versjon av sin del")
+    fun `motpartStatus skal forbli HAR_SENDT når motparten sender ny versjon`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+        every { altinnService.hentBrukersTilganger() } returns listOf(
+            OrganisasjonDto(korrektSyntetiskOrgnr, "Test Arbeidsgiver AS", "AS")
+        )
+
+        // 1) Arbeidstakeren (A) sender sin del
+        sendInnOgKobl(Representasjonstype.DEG_SELV, Skjemadel.ARBEIDSTAKERS_DEL)
+
+        // 2) Motparten (B) sender arbeidsgivers del v1 → motpart-kobles til A
+        sendInnOgKobl(Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL)
+        service.hentInnsendteSoknader(standardRequestDegSelv()).soknader.single().motpartStatus shouldBe MotpartStatus.HAR_SENDT
+
+        // 3) Motparten (B) sender NY VERSJON (v2) — erstatter v1 og overtar koblingen til A,
+        //    og koblingsservicen NULLER kobletSkjemaId på v1
+        sendInnOgKobl(Representasjonstype.ARBEIDSGIVER, Skjemadel.ARBEIDSGIVERS_DEL)
+
+        // A skal FORTSATT vise HAR_SENDT — motparten har faktisk sendt (v2)
+        service.hentInnsendteSoknader(standardRequestDegSelv()).soknader.single().motpartStatus shouldBe MotpartStatus.HAR_SENDT
+
+        // Begge arbeidsgiver-radene viser HAR_SENDT: motparten (A) har sendt, selv om v1
+        // mistet koblingen sin da v2 overtok den — erstatter-kjeden følges
+        val arbeidsgiverRespons = service.hentInnsendteSoknader(
+            HentInnsendteSoknaderRequest(side = 1, antall = 10, representasjonstype = Representasjonstype.ARBEIDSGIVER)
+        )
+        arbeidsgiverRespons.soknader shouldHaveSize 2
+        arbeidsgiverRespons.soknader.forEach { it.motpartStatus shouldBe MotpartStatus.HAR_SENDT }
+    }
+
+    @Test
+    @DisplayName("MotpartStatus: Sirkulær erstatter-referanse terminerer og gir korrekt status")
+    fun `sirkulær erstatter-referanse skal ikke gi evig løkke`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        // Håndsatt korrupt data: to arbeidstaker-versjoner som erstatter hverandre sirkulært.
+        // v2 holder koblingen til en SENDT arbeidsgiver-del; v1 har mistet sin.
+        val motpartSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                ),
+                opprettetAv = etAnnetKorrektSyntetiskFnr
+            )
+        )
+        val v2 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    kobletSkjemaId = motpartSkjema.id
+                )
+            )
+        )
+        val v1 = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    erstatterSkjemaId = v2.id
+                )
+            )
+        )
+        // Lukk sirkelen: v2 erstatter v1 som erstatter v2
+        v2.metadata = (v2.metadata as UtsendtArbeidstakerMetadata).medErstatterSkjemaId(v1.id)
+        skjemaRepository.save(v2)
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 2
+        response.soknader.forEach { it.motpartStatus shouldBe MotpartStatus.HAR_SENDT }
     }
 
     // ========================================

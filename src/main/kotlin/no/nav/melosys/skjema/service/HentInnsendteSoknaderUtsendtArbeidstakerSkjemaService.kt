@@ -84,9 +84,9 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             else -> reprService.hentFullmaktsgiverFnr()
         }
 
-        val sendteKobledeSkjemaIder = hentSendteKobledeSkjemaIder(page.content)
+        val sendteVersjonerPerFnr = hentSendteVersjonerPerFnr(page.content)
 
-        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt, sendteKobledeSkjemaIder) }
+        val soknader = page.content.map { konverterTilInnsendtSoknadDto(it, personerMedAktivFullmakt, sendteVersjonerPerFnr) }
 
         log.debug { "Fant ${page.totalElements} innsendte søknader, returnerer side ${request.side} med ${soknader.size} resultater" }
 
@@ -213,41 +213,96 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     }
 
     /**
-     * Batch-henter id-ene til koblede skjemaer (motpartens del) med status SENDT for sidens rader.
+     * Batch-henter metadata for alle SENDT-e utsendt arbeidstaker-skjemaer som tilhører personene
+     * på siden, gruppert per fnr.
      *
-     * Ett findAllById-kall per side i stedet for ett oppslag per rad — unngår N+1
-     * selv om sidestørrelsen er lav (typisk 5 rader).
+     * Ett spørringskall per side (fnr IN) i stedet for ett oppslag per rad eller per ledd i
+     * erstatter-kjeden — unngår N+1 selv om sidestørrelsen er lav (typisk 5 rader).
+     * Motpart-koblinger og erstatter-referanser settes kun mellom skjemaer med samme fnr
+     * (se [UtsendtArbeidstakerSkjemaKoblingService]), så settet dekker hele kjeden for hver rad.
      */
-    private fun hentSendteKobledeSkjemaIder(skjemaer: List<Skjema>): Set<UUID> {
-        val kobletIder = skjemaer
-            .mapNotNull { (it.metadata as? UtsendtArbeidstakerMetadata)?.kobletSkjemaId }
+    private fun hentSendteVersjonerPerFnr(skjemaer: List<Skjema>): Map<String, SendteVersjoner> {
+        val fnrs = skjemaer
+            .filter { (it.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .map { it.fnr }
             .distinct()
 
-        if (kobletIder.isEmpty()) {
-            return emptySet()
+        if (fnrs.isEmpty()) {
+            return emptyMap()
         }
 
-        return utsendtArbeidstakerSkjemaRepository.findAllById(kobletIder)
-            .filter { it.status == SkjemaStatus.SENDT }
-            .mapNotNull { it.id }
-            .toSet()
+        return utsendtArbeidstakerSkjemaRepository.findByFnrInAndStatus(fnrs, INNSENDT_STATUS)
+            .groupBy { it.fnr }
+            .mapValues { (_, sendte) -> SendteVersjoner(sendte) }
     }
 
     /**
      * Utleder motpart-status for en skjemadel:
      * - Kombinert del (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har aldri motpart → IKKE_RELEVANT
-     * - Koblet skjema med status SENDT → HAR_SENDT
+     * - Motpartens del finnes i noen SENDT versjon → HAR_SENDT
      * - Ellers → VENTER (inkluderer koblet skjema som kun er utkast, og motpart via annen kanal)
+     *
+     * Resubmisjonstilfellet (produkteier-beslutning 2026-07-27): når en part sender NY VERSJON av
+     * sin del, flytter [UtsendtArbeidstakerSkjemaKoblingService] koblingen til den nye versjonen og
+     * NULLER `kobletSkjemaId` på den gamle. Et rent `kobletSkjemaId`-oppslag ville derfor vist
+     * VENTER for rader hvis kobling er flyttet — selv om motparten faktisk har sendt. Derfor følges
+     * erstatter-kjeden for radens egen del (transitivt, begge retninger), og raden viser HAR_SENDT
+     * når noen versjon i kjeden er koblet til en motpart-del som finnes i en SENDT versjon — den
+     * koblede selv eller en versjon i dens erstatter-kjede (nyere som har overtatt koblingen).
+     *
+     * Traverseringen skjer i minne over batch-oppslaget fra [hentSendteVersjonerPerFnr] og er
+     * sirkel-sikker via besøkt-sett (samme mønster som M2MSkjemaService.hentTidligereInnsendteSkjema).
      */
     private fun utledMotpartStatus(
+        skjema: Skjema,
         metadata: UtsendtArbeidstakerMetadata,
-        sendteKobledeSkjemaIder: Set<UUID>
+        sendteVersjonerPerFnr: Map<String, SendteVersjoner>
     ): MotpartStatus {
-        return when {
-            metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> MotpartStatus.IKKE_RELEVANT
-            metadata.kobletSkjemaId in sendteKobledeSkjemaIder -> MotpartStatus.HAR_SENDT
-            else -> MotpartStatus.VENTER
+        val motpartsDel = when (metadata.skjemadel) {
+            Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> return MotpartStatus.IKKE_RELEVANT
+            Skjemadel.ARBEIDSTAKERS_DEL -> Skjemadel.ARBEIDSGIVERS_DEL
+            Skjemadel.ARBEIDSGIVERS_DEL -> Skjemadel.ARBEIDSTAKERS_DEL
         }
+        val sendte = sendteVersjonerPerFnr[skjema.fnr] ?: return MotpartStatus.VENTER
+
+        // Motpart-kandidater: radens egen kobling + koblingene til alle versjoner i radens erstatter-kjede
+        // (koblingen kan være flyttet til en nyere versjon av radens egen del).
+        val motpartKandidater = buildSet {
+            metadata.kobletSkjemaId?.let(::add)
+            finnErstatterKjede(skjema.id, metadata, sendte).forEach { versjonId ->
+                sendte.metadataPerId[versjonId]?.kobletSkjemaId?.let(::add)
+            }
+        }
+
+        val motpartHarSendt = motpartKandidater.any { kandidatId ->
+            finnErstatterKjede(kandidatId, sendte.metadataPerId[kandidatId], sendte)
+                .any { sendte.metadataPerId[it]?.skjemadel == motpartsDel }
+        }
+        return if (motpartHarSendt) MotpartStatus.HAR_SENDT else MotpartStatus.VENTER
+    }
+
+    /**
+     * Finner alle versjoner i erstatter-kjeden til [startId] (inkludert startId selv) blant
+     * personens SENDT-e skjemaer — transitivt i begge retninger: eldre versjoner via
+     * `erstatterSkjemaId` og nyere versjoner via den reverserte relasjonen.
+     *
+     * Sirkel-sikker: besøkt-settet garanterer terminering selv ved sirkulære erstatter-referanser.
+     */
+    private fun finnErstatterKjede(
+        startId: UUID?,
+        startMetadata: UtsendtArbeidstakerMetadata?,
+        sendte: SendteVersjoner
+    ): Set<UUID> {
+        startId ?: return emptySet()
+        val besokt = mutableSetOf(startId)
+        val ko = ArrayDeque(listOf(startId))
+        while (ko.isNotEmpty()) {
+            val id = ko.removeFirst()
+            val metadata = if (id == startId) startMetadata else sendte.metadataPerId[id]
+            val naboer = listOfNotNull(metadata?.erstatterSkjemaId) + sendte.erstattetAvPerId[id].orEmpty()
+            naboer.forEach { if (besokt.add(it)) ko.add(it) }
+        }
+        return besokt
     }
 
     /**
@@ -257,7 +312,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     private fun konverterTilInnsendtSoknadDto(
         skjema: Skjema,
         personerMedAktivFullmakt: Set<String>,
-        sendteKobledeSkjemaIder: Set<UUID>
+        sendteVersjonerPerFnr: Map<String, SendteVersjoner>
     ): InnsendtSoknadOversiktDto {
         val metadata = skjema.metadata as UtsendtArbeidstakerMetadata
         val innsending = skjema.id?.let { innsendingRepository.findBySkjemaId(it) }
@@ -267,7 +322,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
             referanseId = innsending?.referanseId,
             saksnummer = innsending?.saksnummer,
             saksstatus = innsending?.saksstatus,
-            motpartStatus = utledMotpartStatus(metadata, sendteKobledeSkjemaIder),
+            motpartStatus = utledMotpartStatus(skjema, metadata, sendteVersjonerPerFnr),
             skjemadel = metadata.skjemadel,
             arbeidsgiverNavn = metadata.arbeidsgiverNavn,
             arbeidsgiverOrgnr = skjema.orgnr,
@@ -315,6 +370,25 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         }
     }
 
+}
+
+/**
+ * Oppslagsstruktur over én persons SENDT-e utsendt arbeidstaker-skjemaer:
+ * metadata per skjema-id og den reverserte erstatter-relasjonen
+ * (hvilke skjemaer som oppgir å erstatte en gitt id).
+ */
+private class SendteVersjoner(sendte: List<Skjema>) {
+    val metadataPerId: Map<UUID, UtsendtArbeidstakerMetadata> = sendte
+        .mapNotNull { skjema ->
+            val id = skjema.id ?: return@mapNotNull null
+            val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+            id to metadata
+        }
+        .toMap()
+
+    val erstattetAvPerId: Map<UUID, List<UUID>> = metadataPerId.entries
+        .mapNotNull { (id, metadata) -> metadata.erstatterSkjemaId?.let { it to id } }
+        .groupBy({ it.first }, { it.second })
 }
 
 /**
