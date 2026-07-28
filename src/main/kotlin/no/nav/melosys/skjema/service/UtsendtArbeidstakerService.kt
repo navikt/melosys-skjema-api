@@ -353,7 +353,9 @@ class UtsendtArbeidstakerService(
             skjemaDefinisjonVersjon = innsending.skjemaDefinisjonVersjon,
             skjemaData = if (fullmaktAktiv == false) stripArbeidstakersData(skjemaData) else skjemaData,
             definisjon = definisjon,
-            fullmaktAktiv = fullmaktAktiv
+            fullmaktAktiv = fullmaktAktiv,
+            saksnummer = innsending.saksnummer,
+            saksstatus = innsending.saksstatus
         )
     }
 
