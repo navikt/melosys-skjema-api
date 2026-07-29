@@ -6,9 +6,7 @@ import no.nav.melosys.skjema.types.felles.PeriodeDto
 
 /**
  * En innsendt arbeidsgiver-del som venter på at innlogget bruker sender inn arbeidstakers del.
- *
- * Inneholder kun det arbeidstaker trenger for å starte sin del — samme opplysninger som
- * allerede gis i brukervarselet ved arbeidsgivers innsending (ingen ny eksponering).
+ * Skal kun inneholde det arbeidstaker trenger for å starte sin del.
  */
 data class VentendeMotpartSoknadDto(
     val skjemaId: UUID,

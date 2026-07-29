@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.service
 
 import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.UUID
 import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -60,20 +61,23 @@ class VentendeMotpartSoknadService(
             }
             .toSet()
 
-        val ventende = sendte
-            .mapNotNull { skjema ->
-                val id = skjema.id ?: return@mapNotNull null
-                val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+        val kandidater = sendte.filter { skjema ->
+            val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@filter false
+            skjema.id != null
+                && metadata.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL
+                && metadata.kobletSkjemaId == null
+                && skjema.id !in erstattedeIder
+                && metadata.juridiskEnhetOrgnr !in juridiskeEnheterMedArbeidstakerUtkast
+        }
 
-                if (metadata.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL) return@mapNotNull null
-                if (metadata.kobletSkjemaId != null) return@mapNotNull null
-                if (id in erstattedeIder) return@mapNotNull null
-                if (metadata.juridiskEnhetOrgnr in juridiskeEnheterMedArbeidstakerUtkast) return@mapNotNull null
-                if (innsendingRepository.findBySkjemaId(id)?.saksstatus == Saksstatus.AVSLUTTET) return@mapNotNull null
+        val avsluttedeSkjemaIder = hentAvsluttedeSkjemaIder(kandidater.mapNotNull { it.id })
 
+        val ventende = kandidater
+            .filter { it.id !in avsluttedeSkjemaIder }
+            .map { skjema ->
                 VentendeMotpartSoknadDto(
-                    skjemaId = id,
-                    arbeidsgiverNavn = metadata.arbeidsgiverNavn,
+                    skjemaId = skjema.id!!,
+                    arbeidsgiverNavn = (skjema.metadata as UtsendtArbeidstakerMetadata).arbeidsgiverNavn,
                     arbeidsgiverOrgnr = skjema.orgnr,
                     utsendingsperiode = skjema.utsendelsePeriode(),
                     innsendtDato = skjema.endretDato
@@ -83,5 +87,15 @@ class VentendeMotpartSoknadService(
 
         log.debug { "Fant ${ventende.size} ventende motpart-søknader for innlogget bruker" }
         return VentendeMotpartSoknaderResponse(ventende)
+    }
+
+    private fun hentAvsluttedeSkjemaIder(skjemaIder: List<UUID>): Set<UUID> {
+        if (skjemaIder.isEmpty()) {
+            return emptySet()
+        }
+        return innsendingRepository.findBySkjemaIdIn(skjemaIder)
+            .filter { it.saksstatus == Saksstatus.AVSLUTTET }
+            .mapNotNull { it.skjema.id }
+            .toSet()
     }
 }

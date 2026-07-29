@@ -8,7 +8,6 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
@@ -84,7 +83,7 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
             arbeidsgiverNavn shouldBe "Test Arbeidsgiver AS"
             arbeidsgiverOrgnr shouldBe korrektSyntetiskOrgnr
             utsendingsperiode shouldBe periodeDtoMedDefaultVerdier()
-            innsendtDato shouldBe skjema.endretDato.truncatedTo(ChronoUnit.MICROS)
+            innsendtDato shouldBe skjemaRepository.findById(skjema.id!!).orElseThrow().endretDato
         }
     }
 
@@ -115,6 +114,52 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
 
         response.soknader shouldHaveSize 1
         response.soknader.single().skjemaId shouldBe ny.id
+    }
+
+    @Test
+    @DisplayName("Erstatter-kjede over flere ledd gir kun treff for nyeste versjon")
+    fun `erstatter-kjede over flere ledd gir kun treff for nyeste`() {
+        val a = lagreSendtArbeidsgiverDel()
+        val b = lagreSendtArbeidsgiverDel(erstatterSkjemaId = a.id)
+        val c = lagreSendtArbeidsgiverDel(erstatterSkjemaId = b.id)
+
+        val response = service.hentVentendeMotpartSoknader()
+
+        response.soknader shouldHaveSize 1
+        response.soknader.single().skjemaId shouldBe c.id
+    }
+
+    @Test
+    @DisplayName("Arbeidsgiver-del uten utsendingsperiode gir treff uten periode")
+    fun `arbeidsgiver-del uten utsendingsperiode gir treff uten periode`() {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = arbeidstakerFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
+            )
+        )
+
+        val response = service.hentVentendeMotpartSoknader()
+
+        response.soknader shouldHaveSize 1
+        with(response.soknader.single()) {
+            skjemaId shouldBe skjema.id
+            utsendingsperiode shouldBe null
+        }
+    }
+
+    @Test
+    @DisplayName("Innsending uten synket saksstatus gir treff")
+    fun `innsending uten synket saksstatus gir treff`() {
+        val skjema = lagreSendtArbeidsgiverDel()
+        innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, saksstatus = null))
+
+        service.hentVentendeMotpartSoknader().soknader shouldHaveSize 1
     }
 
     @Test
