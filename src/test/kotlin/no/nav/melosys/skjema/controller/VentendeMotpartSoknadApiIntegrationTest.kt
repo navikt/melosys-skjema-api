@@ -94,6 +94,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             .jsonPath("$.soknader[0].arbeidsgiverOrgnr").isEqualTo(korrektSyntetiskOrgnr)
             .jsonPath("$.soknader[0].utsendingsperiode.fraDato").isEqualTo("2024-01-01")
             .jsonPath("$.soknader[0].utsendingsperiode.tilDato").isEqualTo("2024-12-31")
+            .jsonPath("$.soknader[0].utsendelseLand").isEqualTo("SE")
             .jsonPath("$.soknader[0].innsendtDato").isNotEmpty
     }
 
