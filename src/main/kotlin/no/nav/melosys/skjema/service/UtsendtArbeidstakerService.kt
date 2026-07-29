@@ -162,6 +162,19 @@ class UtsendtArbeidstakerService(
         }
 
         skjema.data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(utsendingsperiodeOgLand = utsendingsperiodeOgLand)
+        skjema.prefyltFraSkjemaId = kilde.id
+    }
+
+    /**
+     * Legger ved motpartens oppgitte land og periode fra arbeidsgiver-delen utkastet ble
+     * forhåndsutfylt fra, slik at frontend kan vise dem selv etter at bruker har endret verdiene.
+     */
+    private fun medMotpartensOppgitteVerdier(dto: UtsendtArbeidstakerSkjemaDto, skjema: Skjema): UtsendtArbeidstakerSkjemaDto {
+        val kildeId = skjema.prefyltFraSkjemaId ?: return dto
+        val motpartensVerdier = skjemaRepository.findById(kildeId).orElse(null)
+            ?.let { (it.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand }
+            ?: return dto
+        return dto.copy(motpartensUtsendingsperiodeOgLand = motpartensVerdier)
     }
 
     /**
@@ -174,7 +187,7 @@ class UtsendtArbeidstakerService(
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
         val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status != SkjemaStatus.SENDT) {
-            return krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto()
+            return medMotpartensOppgitteVerdier(krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto(), skjema)
         }
 
         val dto = skjema.toUtsendtArbeidstakerDto()

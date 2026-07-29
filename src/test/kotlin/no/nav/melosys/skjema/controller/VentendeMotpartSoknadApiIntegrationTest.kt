@@ -169,6 +169,47 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             .jsonPath("$.opprettetVia").isEqualTo("MOTPART_CTA")
             .jsonPath("$.data.utsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
             .jsonPath("$.data.utsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
+            .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
+            .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
+    }
+
+    @Test
+    @DisplayName("Motpartens oppgitte verdier består etter at bruker har overskrevet sine egne")
+    fun `motpartens verdier bestaar etter overskriving`() {
+        mockOpprettAvhengigheter()
+        val agDel = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+                    .copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
+            )
+        )
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+        val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${agDel.id}"""")
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${response.id}/utsendingsperiode-og-land")
+            .headers { it.setBearerAuth(token) }
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"utsendelseLand": "DE", "utsendelsePeriode": {"fraDato": "2025-03-01", "tilDato": "2025-09-30"}}""")
+            .exchange()
+            .expectStatus().isOk
+
+        webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
+            .headers { it.setBearerAuth(token) }
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.data.utsendingsperiodeOgLand.utsendelseLand").isEqualTo("DE")
+            .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
+            .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
     }
 
     @Test
