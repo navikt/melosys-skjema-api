@@ -150,8 +150,9 @@ class UtsendtArbeidstakerService(
             || kilde.fnr != innloggetBrukerFnr
             || kilde.status != SkjemaStatus.SENDT
             || kildeMetadata?.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL
+            || kildeMetadata.juridiskEnhetOrgnr != skjema.utsendtArbeidstakerMetadataOrThrow().juridiskEnhetOrgnr
         ) {
-            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: ikke en innsendt arbeidsgiver-del for innlogget bruker" }
+            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: ikke en innsendt arbeidsgiver-del for innlogget bruker og samme arbeidsgiver" }
             return
         }
 

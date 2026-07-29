@@ -7,6 +7,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
@@ -216,25 +217,43 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
     @DisplayName("prefyllFraSkjemaId som ikke er egen innsendt arbeidsgiver-del ignoreres")
     fun `prefyll ignoreres for ugyldige kilder`() {
         mockOpprettAvhengigheter()
-        val annenPersonsAgDel = skjemaRepository.save(
-            skjemaMedDefaultVerdier(
-                fnr = etAnnetKorrektSyntetiskFnr,
-                orgnr = korrektSyntetiskOrgnr,
-                status = SkjemaStatus.SENDT,
-                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
-                    .copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
-                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
-                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
-                )
-            )
-        )
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
 
-        val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${annenPersonsAgDel.id}"""")
+        val ugyldigeKilder = listOf(
+            lagreKilde(fnr = etAnnetKorrektSyntetiskFnr),
+            lagreKilde(status = SkjemaStatus.UTKAST),
+            lagreKilde(skjemadel = Skjemadel.ARBEIDSTAKERS_DEL, representasjonstype = Representasjonstype.DEG_SELV),
+            lagreKilde(juridiskEnhetOrgnr = "974761076")
+        )
 
-        skjemaRepository.findById(response.id).orElseThrow().data shouldBe null
+        ugyldigeKilder.forEach { kilde ->
+            val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${kilde.id}"""")
+            val lagret = skjemaRepository.findById(response.id).orElseThrow()
+            lagret.data shouldBe null
+            lagret.prefyltFraSkjemaId shouldBe null
+        }
     }
+
+    private fun lagreKilde(
+        fnr: String = korrektSyntetiskFnr,
+        status: SkjemaStatus = SkjemaStatus.SENDT,
+        skjemadel: Skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+        representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER,
+        juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr
+    ): Skjema = skjemaRepository.save(
+        skjemaMedDefaultVerdier(
+            fnr = fnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = status,
+            data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+                .copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = representasjonstype,
+                skjemadel = skjemadel,
+                juridiskEnhetOrgnr = juridiskEnhetOrgnr
+            )
+        )
+    )
 
     private fun opprettSoknad(token: String, ekstraFelter: String): OpprettUtsendtArbeidstakerSoknadResponse {
         val response = webTestClient.post()
