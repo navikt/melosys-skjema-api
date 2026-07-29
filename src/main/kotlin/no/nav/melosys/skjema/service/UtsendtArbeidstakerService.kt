@@ -85,6 +85,7 @@ class UtsendtArbeidstakerService(
                     fnr = innloggetBrukerFnr,
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -100,6 +101,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     fnr = request.arbeidstaker.fnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -112,6 +114,7 @@ class UtsendtArbeidstakerService(
                     fnr = request.arbeidstaker.fnr,
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )

@@ -37,6 +37,7 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
     fun endepunkterSomKreverGyldigToken(): List<Arguments> = listOf(
         // SkjemaController - new opprett-med-kontekst endpoints
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/opprett-med-kontekst"),
+        Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/ventende-motpart-soknader"),
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/send-inn"),
         Arguments.of(HttpMethod.GET, "/api/skjema/utsendt-arbeidstaker/123/innsendt-kvittering"),

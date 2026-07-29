@@ -15,6 +15,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.SkjemaMetadata
 import no.nav.melosys.skjema.types.SkjemaType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -50,6 +51,10 @@ class Skjema(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", nullable = false)
     var metadata: SkjemaMetadata,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "opprettet_via", length = 50)
+    val opprettetVia: OpprettetVia? = null,
 
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),

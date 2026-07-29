@@ -18,6 +18,8 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
 
     fun findBySkjemaId(skjemaId: UUID): Innsending?
 
+    fun findBySkjemaIdIn(skjemaIder: Collection<UUID>): List<Innsending>
+
     /**
      * Finner innsendinger som er kandidater for retry.
      *
