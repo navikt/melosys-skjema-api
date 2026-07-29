@@ -7,5 +7,6 @@ data class OpprettUtsendtArbeidstakerSoknadRequest(
     val representasjonstype: Representasjonstype,
     val radgiverfirma: SimpleOrganisasjonDto?,
     val arbeidsgiver: SimpleOrganisasjonDto,
-    val arbeidstaker: PersonDto
+    val arbeidstaker: PersonDto,
+    val opprettetVia: OpprettetVia? = null
 )
