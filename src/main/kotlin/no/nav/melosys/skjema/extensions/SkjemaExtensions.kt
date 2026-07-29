@@ -34,7 +34,8 @@ fun Skjema.toUtsendtArbeidstakerDto(): UtsendtArbeidstakerSkjemaDto {
         opprettetDato = this.opprettetDato.toOsloLocalDateTime(),
         endretDato = this.endretDato.toOsloLocalDateTime(),
         metadata = metadata,
-        data = this.utsendtArbeidstakerSkjemaDataOrEmpty()
+        data = this.utsendtArbeidstakerSkjemaDataOrEmpty(),
+        opprettetVia = this.opprettetVia
     )
 }
 

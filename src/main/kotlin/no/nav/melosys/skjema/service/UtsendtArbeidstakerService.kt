@@ -121,6 +121,8 @@ class UtsendtArbeidstakerService(
             }
         }
 
+        request.prefyllFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, innloggetBrukerFnr) }
+
         val savedSkjema = skjemaRepository.save(skjema)
         log.info { "Opprettet Utsendt Arbeidstaker søknad med id: ${savedSkjema.id}, representasjonstype: ${request.representasjonstype}" }
 
@@ -128,6 +130,38 @@ class UtsendtArbeidstakerService(
             id = savedSkjema.id ?: throw IllegalStateException("Skjema ID var null etter lagring"),
             status = savedSkjema.status
         )
+    }
+
+    /**
+     * Forhåndsutfyller land og utsendingsperiode i et nytt arbeidstaker-utkast fra en innsendt
+     * arbeidsgiver-del (motpart-CTA). Kilden må være innlogget brukers egen ventende
+     * arbeidsgiver-del; alt annet ignoreres slik at opprettelsen aldri feiler på prefyll.
+     * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen.
+     */
+    private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
+        if (skjema.utsendtArbeidstakerMetadataOrThrow().skjemadel != Skjemadel.ARBEIDSTAKERS_DEL) {
+            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: gjelder kun arbeidstakers del" }
+            return
+        }
+
+        val kilde = skjemaRepository.findById(prefyllFraSkjemaId).orElse(null)
+        val kildeMetadata = kilde?.metadata as? UtsendtArbeidstakerMetadata
+        if (kilde == null
+            || kilde.fnr != innloggetBrukerFnr
+            || kilde.status != SkjemaStatus.SENDT
+            || kildeMetadata?.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL
+        ) {
+            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: ikke en innsendt arbeidsgiver-del for innlogget bruker" }
+            return
+        }
+
+        val utsendingsperiodeOgLand = (kilde.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand
+        if (utsendingsperiodeOgLand == null) {
+            log.info { "Prefyll fra skjema $prefyllFraSkjemaId hoppet over: kilden mangler utsendingsperiode og land" }
+            return
+        }
+
+        skjema.data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(utsendingsperiodeOgLand = utsendingsperiodeOgLand)
     }
 
     /**

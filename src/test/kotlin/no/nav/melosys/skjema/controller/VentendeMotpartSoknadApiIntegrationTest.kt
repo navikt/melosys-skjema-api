@@ -7,6 +7,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
@@ -21,6 +22,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettUtsendtArbeidstake
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
@@ -130,6 +132,101 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         response.shouldNotBeNull()
         val lagret = skjemaRepository.findById(response.id).orElseThrow()
         lagret.opprettetVia shouldBe OpprettetVia.MOTPART_CTA
+    }
+
+    @Test
+    @DisplayName("prefyllFraSkjemaId kopierer land og periode fra egen innsendt arbeidsgiver-del")
+    fun `prefyller land og periode fra arbeidsgiver-delen`() {
+        mockOpprettAvhengigheter()
+        val agDel = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+                    .copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
+            )
+        )
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+
+        val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${agDel.id}", "opprettetVia": "MOTPART_CTA"""")
+
+        val lagret = skjemaRepository.findById(response.id).orElseThrow()
+        val data = lagret.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+        data.utsendingsperiodeOgLand shouldBe utsendingsperiodeOgLandDtoMedDefaultVerdier()
+
+        webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
+            .headers { it.setBearerAuth(token) }
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.opprettetVia").isEqualTo("MOTPART_CTA")
+            .jsonPath("$.data.utsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
+            .jsonPath("$.data.utsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
+    }
+
+    @Test
+    @DisplayName("prefyllFraSkjemaId som ikke er egen innsendt arbeidsgiver-del ignoreres")
+    fun `prefyll ignoreres for ugyldige kilder`() {
+        mockOpprettAvhengigheter()
+        val annenPersonsAgDel = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = etAnnetKorrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+                    .copy(utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL
+                )
+            )
+        )
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+
+        val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${annenPersonsAgDel.id}"""")
+
+        skjemaRepository.findById(response.id).orElseThrow().data shouldBe null
+    }
+
+    private fun opprettSoknad(token: String, ekstraFelter: String): OpprettUtsendtArbeidstakerSoknadResponse {
+        val response = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/opprett-med-kontekst")
+            .headers { it.setBearerAuth(token) }
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "representasjonstype": "DEG_SELV",
+                  "radgiverfirma": null,
+                  "arbeidsgiver": {"orgnr": "$korrektSyntetiskOrgnr", "navn": "Test Arbeidsgiver AS"},
+                  "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"},
+                  $ekstraFelter
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody(OpprettUtsendtArbeidstakerSoknadResponse::class.java)
+            .returnResult()
+            .responseBody
+
+        response.shouldNotBeNull()
+        return response
+    }
+
+    private fun mockOpprettAvhengigheter() {
+        every { eregService.organisasjonsnummerEksisterer(korrektSyntetiskOrgnr) } returns true
+        every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
+            organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
+            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS")
+        )
+        every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
     }
 
     @Test

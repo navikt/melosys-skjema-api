@@ -15,5 +15,6 @@ data class UtsendtArbeidstakerSkjemaDto(
     override val opprettetDato: LocalDateTime,
     override val endretDato: LocalDateTime,
     override val metadata: UtsendtArbeidstakerMetadata,
-    override val data: UtsendtArbeidstakerSkjemaData
+    override val data: UtsendtArbeidstakerSkjemaData,
+    val opprettetVia: OpprettetVia? = null
 ) : SkjemaDto
