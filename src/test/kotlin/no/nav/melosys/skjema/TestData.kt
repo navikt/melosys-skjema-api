@@ -28,6 +28,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.types.SkjemaType
@@ -386,6 +387,7 @@ fun skjemaMedDefaultVerdier(
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
     data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
+    opprettetVia: OpprettetVia? = null,
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,
@@ -399,6 +401,7 @@ fun skjemaMedDefaultVerdier(
         orgnr = orgnr,
         data = data,
         metadata = metadata,
+        opprettetVia = opprettetVia,
         opprettetDato = opprettetDato,
         endretDato = endretDato,
         opprettetAv = opprettetAv,

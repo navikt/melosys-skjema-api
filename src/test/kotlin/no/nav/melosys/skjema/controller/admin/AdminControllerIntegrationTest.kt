@@ -5,6 +5,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import io.mockk.every
 import io.mockk.verify
 import java.time.Instant
@@ -31,6 +32,7 @@ import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
@@ -300,7 +302,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             sprak: Språk = Språk.NORSK_BOKMAL,
             erstatterSkjemaId: UUID? = null,
             innsendtDato: Instant = Instant.now(),
-            innsenderFnr: String = "12345678901"
+            innsenderFnr: String = "12345678901",
+            saksstatus: Saksstatus? = null,
+            opprettetVia: OpprettetVia? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -314,11 +318,18 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     skjemadel = skjemadel,
                     juridiskEnhetOrgnr = juridiskEnhet,
                     erstatterSkjemaId = erstatterSkjemaId
-                )
+                ),
+                opprettetVia = opprettetVia
             )
         ).also { skjema ->
             innsendingRepository.save(
-                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato, innsenderFnr = innsenderFnr)
+                innsendingMedDefaultVerdier(
+                    skjema = skjema,
+                    innsendtSprak = sprak,
+                    opprettetDato = innsendtDato,
+                    innsenderFnr = innsenderFnr,
+                    saksstatus = saksstatus
+                )
             )
         }
 
@@ -463,6 +474,94 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             s.antallSakerMedBeggeDeler shouldBe 0
             s.arbeidstakerDeler.venterIngenMotpart shouldBe 1
             s.arbeidsgiverDeler.venterIngenMotpart shouldBe 1
+        }
+
+        @Test
+        fun `saksstatus-uttrekk returnerer synk-feltene uten personopplysninger`() {
+            val fnr = "63000000001"
+            val skjema = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, saksstatus = Saksstatus.MOTTATT)
+            val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            innsending.saksnummer = "MEL-123456"
+            innsendingRepository.save(innsending)
+
+            val json = adminClient.get().uri("/admin/saksstatus/uttrekk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody!!
+            json shouldNotContain fnr
+            json shouldNotContain "Test Testesen"
+
+            val uttrekk = adminClient.get().uri("/admin/saksstatus/uttrekk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<SaksstatusUttrekkDto>()
+                .returnResult()
+                .responseBody!!
+            uttrekk.antall shouldBe 1
+            with(uttrekk.rader.single()) {
+                skjemaId shouldBe skjema.id
+                saksnummer shouldBe "MEL-123456"
+                saksstatus shouldBe Saksstatus.MOTTATT
+                referanseId shouldBe innsending.referanseId
+            }
+        }
+
+        @Test
+        fun `saksstatusfordeling teller mottatt, avsluttet og ukjent`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000001", saksstatus = Saksstatus.MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "60000000002", saksstatus = Saksstatus.AVSLUTTET)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "60000000003")
+
+            val fordeling = hentBruk().saksstatusFordeling
+            fordeling.mottatt shouldBe 1
+            fordeling.avsluttet shouldBe 1
+            fordeling.ukjent shouldBe 1
+        }
+
+        @Test
+        fun `venter-tall splittes paa aktiv og avsluttet sak, og skinnventende telles`() {
+            // Venter uten motpart, aktiv sak (MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000001", saksstatus = Saksstatus.MOTTATT)
+            // Venter uten motpart, avsluttet sak (skinnventende — motpart kom via annen kanal)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000002", saksstatus = Saksstatus.AVSLUTTET)
+            // Venter uten motpart, ikke synket (regnes som aktiv)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000003")
+            // Venter med motpart-utkast, avsluttet sak
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000004", saksstatus = Saksstatus.AVSLUTTET)
+            lagUtkast(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "61000000004")
+
+            val s = hentBruk().saksdekning
+            with(s.arbeidsgiverDeler) {
+                venterIngenMotpart shouldBe 3
+                venterIngenMotpartAktivSak shouldBe 2
+                venterIngenMotpartAvsluttetSak shouldBe 1
+                venterMotpartHarUtkast shouldBe 1
+                venterMotpartHarUtkastAktivSak shouldBe 0
+                venterMotpartHarUtkastAvsluttetSak shouldBe 1
+            }
+            s.antallSkinnventende shouldBe 2
+        }
+
+        @Test
+        fun `motpart-cta telles for innsendte i perioden`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000001", opprettetVia = OpprettetVia.MOTPART_CTA)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000002")
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = "62000000003",
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = Skjemadel.ARBEIDSTAKERS_DEL),
+                    opprettetVia = OpprettetVia.MOTPART_CTA
+                )
+            )
+
+            val cta = hentBruk().motpartCta
+            cta.antallInnsendtViaCta shouldBe 1
+            cta.antallUtkastViaCta shouldBe 1
         }
 
         @Test
