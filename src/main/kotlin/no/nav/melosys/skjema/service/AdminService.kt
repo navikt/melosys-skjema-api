@@ -152,14 +152,15 @@ class AdminService(
      * Backup-uttrekk av synk-tilstanden før massesynk: feltene synken kan endre, per skjema-id.
      * Ingen personopplysninger — se [SaksstatusUttrekkDto].
      */
+    @Transactional(readOnly = true)
     fun hentSaksstatusUttrekk(): SaksstatusUttrekkDto {
-        val rader = innsendingRepository.finnAlleInnsendteMedSkjema().map { innsending ->
+        val rader = innsendingRepository.finnSaksstatusUttrekk().map { rad ->
             SaksstatusUttrekkRadDto(
-                skjemaId = innsending.skjema.id!!,
-                referanseId = innsending.referanseId,
-                saksnummer = innsending.saksnummer,
-                saksstatus = innsending.saksstatus,
-                saksstatusOppdatert = innsending.saksstatusOppdatert
+                skjemaId = rad.skjemaId,
+                referanseId = rad.referanseId,
+                saksnummer = rad.saksnummer,
+                saksstatus = rad.saksstatus,
+                saksstatusOppdatert = rad.saksstatusOppdatert
             )
         }
         return SaksstatusUttrekkDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)

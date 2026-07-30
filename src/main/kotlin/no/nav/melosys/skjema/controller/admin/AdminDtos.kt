@@ -167,7 +167,7 @@ data class SaksstatusUttrekkDto(
 
 data class SaksstatusUttrekkRadDto(
     val skjemaId: UUID,
-    val referanseId: String?,
+    val referanseId: String,
     val saksnummer: String?,
     val saksstatus: Saksstatus?,
     val saksstatusOppdatert: Instant?

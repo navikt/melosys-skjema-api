@@ -492,6 +492,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .returnResult()
                 .responseBody!!
             json shouldNotContain fnr
+            json shouldNotContain innsending.innsenderFnr
             json shouldNotContain "Test Testesen"
 
             val uttrekk = adminClient.get().uri("/admin/saksstatus/uttrekk")
@@ -550,6 +551,12 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         fun `motpart-cta telles for innsendte i perioden`() {
             lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000001", opprettetVia = OpprettetVia.MOTPART_CTA)
             lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000002")
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL,
+                fnr = "62000000004",
+                opprettetVia = OpprettetVia.MOTPART_CTA,
+                innsendtDato = Instant.parse("2020-01-15T12:00:00Z")
+            )
             skjemaRepository.save(
                 skjemaMedDefaultVerdier(
                     fnr = "62000000003",
@@ -559,9 +566,14 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
 
-            val cta = hentBruk().motpartCta
-            cta.antallInnsendtViaCta shouldBe 1
-            cta.antallUtkastViaCta shouldBe 1
+            val alt = hentBruk().motpartCta
+            alt.antallInnsendtViaCta shouldBe 2
+            alt.antallUtkastViaCta shouldBe 1
+
+            // Innsendt følger periodefilteret; utkast er nåtilstand og påvirkes ikke
+            val iPerioden = hentBruk(fraOgMed = "2026-01-01").motpartCta
+            iPerioden.antallInnsendtViaCta shouldBe 1
+            iPerioden.antallUtkastViaCta shouldBe 1
         }
 
         @Test
