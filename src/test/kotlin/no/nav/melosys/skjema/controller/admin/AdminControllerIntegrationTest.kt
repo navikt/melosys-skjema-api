@@ -524,10 +524,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `venter-tall splittes paa aktiv og avsluttet sak, og skinnventende telles`() {
+        fun `venter-tall splittes paa aktiv og avsluttet sak, og ventende med avsluttet sak telles`() {
             // Venter uten motpart, aktiv sak (MOTTATT)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000001", saksstatus = Saksstatus.MOTTATT)
-            // Venter uten motpart, avsluttet sak (skinnventende — motpart kom via annen kanal)
+            // Venter uten motpart, avsluttet sak (motpart kom via annen kanal)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000002", saksstatus = Saksstatus.AVSLUTTET)
             // Venter uten motpart, ikke synket (regnes som aktiv)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000003")
@@ -544,7 +544,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 venterMotpartHarUtkastAktivSak shouldBe 0
                 venterMotpartHarUtkastAvsluttetSak shouldBe 1
             }
-            s.antallSkinnventende shouldBe 2
+            s.antallVentendeMedAvsluttetSak shouldBe 2
         }
 
         @Test

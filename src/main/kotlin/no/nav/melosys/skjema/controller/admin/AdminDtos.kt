@@ -148,10 +148,10 @@ data class SaksdekningDto(
      */
     val antallSakerMedFlereVersjoner: Long,
     /**
-     * Skinnventende: deler som står som ventende hos oss (mangler innsendt motpart), men der saken
-     * er AVSLUTTET i Melosys – motpartens del kom trolig via en annen kanal. Disse skal ikke purres.
+     * Deler som står som ventende hos oss (mangler innsendt motpart), men der saken er AVSLUTTET
+     * i Melosys – motpartens del kom trolig via en annen kanal. Disse skal ikke purres.
      */
-    val antallSkinnventende: Long
+    val antallVentendeMedAvsluttetSak: Long
 )
 
 /**
@@ -211,11 +211,11 @@ data class DelStatusDto(
     val venterIngenMotpart: Long,
     /** Del av [venterMotpartHarUtkast] der saken IKKE er avsluttet i Melosys (inkl. ikke synket). */
     val venterMotpartHarUtkastAktivSak: Long,
-    /** Del av [venterMotpartHarUtkast] der saken er AVSLUTTET i Melosys (skinnventende). */
+    /** Del av [venterMotpartHarUtkast] der saken er AVSLUTTET i Melosys. */
     val venterMotpartHarUtkastAvsluttetSak: Long,
     /** Del av [venterIngenMotpart] der saken IKKE er avsluttet i Melosys (inkl. ikke synket) – reelt ventende. */
     val venterIngenMotpartAktivSak: Long,
-    /** Del av [venterIngenMotpart] der saken er AVSLUTTET i Melosys (skinnventende). */
+    /** Del av [venterIngenMotpart] der saken er AVSLUTTET i Melosys. */
     val venterIngenMotpartAvsluttetSak: Long
 )
 

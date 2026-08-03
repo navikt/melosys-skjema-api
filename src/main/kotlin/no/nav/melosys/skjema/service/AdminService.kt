@@ -191,7 +191,7 @@ class AdminService(
             arbeidsgiverDeler = arbeidsgiverStatus,
             antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler),
             antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(innsendt),
-            antallSkinnventende = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
+            antallVentendeMedAvsluttetSak = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
                 it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
             }
         )
