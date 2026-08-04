@@ -10,6 +10,7 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
@@ -210,6 +211,21 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             .jsonPath("$.data.utsendingsperiodeOgLand.utsendelseLand").isEqualTo("DE")
             .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
             .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
+    }
+
+    @Test
+    @DisplayName("prefyll ignoreres når motpart-CTA-toggelen er av")
+    fun `prefyll ignoreres naar toggle er av`() {
+        mockOpprettAvhengigheter()
+        val agDel = lagreKilde()
+        (unleash as FakeUnleash).enableAllExcept(ToggleNavn.MOTPART_CTA.navn)
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+
+        val response = opprettSoknad(token, """"prefyllFraSkjemaId": "${agDel.id}"""")
+
+        val lagret = skjemaRepository.findById(response.id).orElseThrow()
+        lagret.data shouldBe null
+        lagret.prefyltFraSkjemaId shouldBe null
     }
 
     @Test

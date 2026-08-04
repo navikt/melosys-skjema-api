@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
@@ -11,6 +12,7 @@ import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -56,6 +58,7 @@ class UtsendtArbeidstakerService(
     private val referanseIdGenerator: ReferanseIdGenerator,
     private val skjemaDefinisjonService: SkjemaDefinisjonService,
     @Lazy private val vedleggService: VedleggService,
+    private val unleash: Unleash,
 ) {
 
     /**
@@ -139,6 +142,10 @@ class UtsendtArbeidstakerService(
      * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen.
      */
     private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
+        if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
+            log.info { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: motpart-CTA-toggle er av" }
+            return
+        }
         if (skjema.utsendtArbeidstakerMetadataOrThrow().skjemadel != Skjemadel.ARBEIDSTAKERS_DEL) {
             log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: gjelder kun arbeidstakers del" }
             return
