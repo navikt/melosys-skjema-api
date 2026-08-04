@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.getunleash.FakeUnleash
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -75,7 +76,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         eventPublisher,
         referanseIdGenerator,
         mockSkjemaDefinisjonService,
-        mockVedleggService
+        mockVedleggService,
+        FakeUnleash().apply { enableAll() }
     )
 
     val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")

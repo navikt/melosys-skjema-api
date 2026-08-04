@@ -3,7 +3,6 @@ package no.nav.melosys.skjema.service
 import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
-import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -13,6 +12,7 @@ import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.VentendeMotpartSoknadDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.VentendeMotpartSoknaderResponse
 import org.springframework.stereotype.Service
@@ -75,11 +75,13 @@ class VentendeMotpartSoknadService(
         val ventende = kandidater
             .filter { it.id !in avsluttedeSkjemaIder }
             .map { skjema ->
+                val utsendingsperiodeOgLand = (skjema.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand
                 VentendeMotpartSoknadDto(
                     skjemaId = skjema.id!!,
                     arbeidsgiverNavn = (skjema.metadata as UtsendtArbeidstakerMetadata).arbeidsgiverNavn,
                     arbeidsgiverOrgnr = skjema.orgnr,
-                    utsendingsperiode = skjema.utsendelsePeriode(),
+                    utsendingsperiode = utsendingsperiodeOgLand?.utsendelsePeriode,
+                    utsendelseLand = utsendingsperiodeOgLand?.utsendelseLand,
                     innsendtDato = skjema.endretDato
                 )
             }

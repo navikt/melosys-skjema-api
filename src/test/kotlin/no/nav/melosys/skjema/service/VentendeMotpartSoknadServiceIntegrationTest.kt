@@ -83,6 +83,7 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
             arbeidsgiverNavn shouldBe "Test Arbeidsgiver AS"
             arbeidsgiverOrgnr shouldBe korrektSyntetiskOrgnr
             utsendingsperiode shouldBe periodeDtoMedDefaultVerdier()
+            utsendelseLand shouldBe LandKode.SE
             innsendtDato shouldBe skjemaRepository.findById(skjema.id!!).orElseThrow().endretDato
         }
     }

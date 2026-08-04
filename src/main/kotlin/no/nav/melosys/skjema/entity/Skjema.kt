@@ -56,6 +56,9 @@ class Skjema(
     @Column(name = "opprettet_via", length = 50)
     val opprettetVia: OpprettetVia? = null,
 
+    @Column(name = "prefylt_fra_skjema_id", columnDefinition = "UUID")
+    var prefyltFraSkjemaId: UUID? = null,
+
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 

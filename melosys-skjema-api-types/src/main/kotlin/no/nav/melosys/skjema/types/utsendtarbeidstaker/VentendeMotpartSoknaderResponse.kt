@@ -2,6 +2,7 @@ package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 
 /**
@@ -13,6 +14,7 @@ data class VentendeMotpartSoknadDto(
     val arbeidsgiverNavn: String,
     val arbeidsgiverOrgnr: String,
     val utsendingsperiode: PeriodeDto?,
+    val utsendelseLand: LandKode?,
     val innsendtDato: Instant
 )
 
