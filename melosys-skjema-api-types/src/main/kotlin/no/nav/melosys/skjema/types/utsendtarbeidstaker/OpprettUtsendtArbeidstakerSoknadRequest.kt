@@ -9,7 +9,7 @@ data class OpprettUtsendtArbeidstakerSoknadRequest(
     val radgiverfirma: SimpleOrganisasjonDto?,
     val arbeidsgiver: SimpleOrganisasjonDto,
     val arbeidstaker: PersonDto,
-    val opprettetVia: OpprettetVia? = null,
+    val opprettetVia: OpprettetVia = OpprettetVia.ORDINAER,
     /**
      * Innsendt arbeidsgiver-del å forhåndsutfylle land og utsendingsperiode fra
      * (motpart-CTA). Må være innlogget brukers egen ventende arbeidsgiver-del —

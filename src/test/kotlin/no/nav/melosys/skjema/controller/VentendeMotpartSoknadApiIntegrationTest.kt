@@ -290,8 +290,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    @DisplayName("Uten opprettetVia i requesten forblir feltet null")
-    fun `opprettetVia er null ved ordinaer opprettelse`() {
+    @DisplayName("Uten opprettetVia i requesten lagres ORDINAER")
+    fun `opprettetVia er ordinaer ved vanlig opprettelse`() {
         every { eregService.organisasjonsnummerEksisterer(korrektSyntetiskOrgnr) } returns true
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
@@ -321,6 +321,6 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             .responseBody
 
         response.shouldNotBeNull()
-        skjemaRepository.findById(response.id).orElseThrow().opprettetVia shouldBe null
+        skjemaRepository.findById(response.id).orElseThrow().opprettetVia shouldBe OpprettetVia.ORDINAER
     }
 }
