@@ -167,7 +167,6 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.opprettetVia").isEqualTo("MOTPART_CTA")
             .jsonPath("$.data.utsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
             .jsonPath("$.data.utsendingsperiodeOgLand.utsendelsePeriode.fraDato").isEqualTo("2024-01-01")
             .jsonPath("$.motpartensUtsendingsperiodeOgLand.utsendelseLand").isEqualTo("SE")
