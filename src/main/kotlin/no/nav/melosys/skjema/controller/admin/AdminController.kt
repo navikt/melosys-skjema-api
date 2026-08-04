@@ -124,15 +124,4 @@ class AdminController(
         return adminService.resendVarsler()
     }
 
-    @PostMapping("/utkast/rydd-slettede")
-    @Operation(
-        summary = "MIDLERTIDIG: hard-delete av soft-deletede (SLETTET) utkast",
-        description = "Engangs GDPR-opprydding av gamle soft-deletede utkast. Sletter skjema-rader " +
-            "(cascade) og tilhørende vedlegg-blobs i bucket. Fjernes når prod er ryddet (MELOSYS-8157)."
-    )
-    @ApiResponse(responseCode = "200", description = "Opprydding utført")
-    fun ryddSletteUtkast(): RyddUtkastResultatDto {
-        log.info { "Admin: Rydder soft-deletede utkast" }
-        return adminService.ryddSletteUtkast()
-    }
 }

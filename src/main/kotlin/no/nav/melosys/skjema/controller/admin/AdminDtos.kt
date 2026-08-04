@@ -61,19 +61,6 @@ data class ResendVarslerResultatDto(
 )
 
 /**
- * Resultat av MIDLERTIDIG opprydding av soft-deletede (SLETTET) utkast (MELOSYS-8157).
- *
- * @property antallSkjema antall skjema-rader som ble hard-slettet (cascade fjernet vedlegg/innsending)
- * @property antallVedleggSlettet antall vedlegg-blobs som ble slettet fra bucket
- * @property antallVedleggFeilet antall vedlegg-blobs som ikke lot seg slette (rad er likevel borte)
- */
-data class RyddUtkastResultatDto(
-    val antallSkjema: Int,
-    val antallVedleggSlettet: Int,
-    val antallVedleggFeilet: Int
-)
-
-/**
  * Bruksstatistikk for skjemaene – ment for overvåking av bruk via melosys-console.
  * Inneholder kun aggregerte tall, ingen personopplysninger.
  */
