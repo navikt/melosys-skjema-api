@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.repository
 import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.domain.InnsendingStatus
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
 import org.springframework.data.jpa.repository.JpaRepository
@@ -61,4 +62,25 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
             "AND s.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
     )
     fun finnAlleInnsendteMedSkjema(): List<Innsending>
+
+    /**
+     * Synk-feltene per innsendt skjema, uten å materialisere skjemaets JSONB-data —
+     * uttrekket trenger kun radene på innsending-tabellen pluss skjema-id-en (FK).
+     */
+    @Query(
+        "SELECT i.skjema.id AS skjemaId, i.referanseId AS referanseId, i.saksnummer AS saksnummer, " +
+            "i.saksstatus AS saksstatus, i.saksstatusOppdatert AS saksstatusOppdatert " +
+            "FROM Innsending i " +
+            "WHERE i.skjema.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT " +
+            "AND i.skjema.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
+    )
+    fun finnSaksstatusUttrekk(): List<SaksstatusUttrekkProjeksjon>
+}
+
+interface SaksstatusUttrekkProjeksjon {
+    val skjemaId: UUID
+    val referanseId: String
+    val saksnummer: String?
+    val saksstatus: Saksstatus?
+    val saksstatusOppdatert: Instant?
 }
