@@ -40,16 +40,16 @@ class AdminController(
         return adminService.hentStatistikk()
     }
 
-    @GetMapping("/saksstatus/uttrekk")
+    @GetMapping("/saksstatus/eksport")
     @Operation(
-        summary = "Backup-uttrekk av saksnummer/saksstatus per skjema-id",
-        description = "Feltene massesynken kan endre, uten personopplysninger. Ta uttrekket FØR " +
-            "massesynk kjøres, som gjenopprettings- og diff-grunnlag."
+        summary = "Eksporter saksnummer og saksstatus per skjema-id",
+        description = "Synk-tilstanden per skjema, uten personopplysninger – til avstemming mot " +
+            "Melosys, feilsøking av synken, eller som diff-grunnlag før en eventuell migrering."
     )
-    @ApiResponse(responseCode = "200", description = "Uttrekk hentet")
-    fun hentSaksstatusUttrekk(): SaksstatusUttrekkDto {
-        log.info { "Admin: Henter saksstatus-uttrekk" }
-        return adminService.hentSaksstatusUttrekk()
+    @ApiResponse(responseCode = "200", description = "Eksport hentet")
+    fun hentSaksstatusEksport(): SaksstatusEksportDto {
+        log.info { "Admin: Henter saksstatus-eksport" }
+        return adminService.hentSaksstatusEksport()
     }
 
     @GetMapping("/statistikk/bruk")

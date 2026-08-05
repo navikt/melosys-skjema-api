@@ -289,9 +289,9 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal ikke arve saksstatus fra soesken - ny innsending forblir null (Mottatt)`() {
+        fun `skal ikke arve saksstatus fra soesken - ny innsending blir MOTTATT`() {
             // Søsken på samme sak er AVSLUTTET, men Melosys oppretter ny behandling for den nye
-            // innsendingen – den skal derfor stå som null (Mottatt), ikke arve søskenens status.
+            // innsendingen – den skal derfor bli MOTTATT, ikke arve søskenens status.
             lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-600", saksstatus = Saksstatus.AVSLUTTET)
             val nyttSkjema = lagInnsendtSkjemaMedInnsending(saksnummer = null)
 
@@ -306,7 +306,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
 
             val oppdatert = innsendingRepository.findBySkjemaId(nyttSkjema.id!!)!!
             oppdatert.saksnummer shouldBe "MEL-600"
-            oppdatert.saksstatus.shouldBeNull()
+            oppdatert.saksstatus shouldBe Saksstatus.MOTTATT
         }
 
         @Test
