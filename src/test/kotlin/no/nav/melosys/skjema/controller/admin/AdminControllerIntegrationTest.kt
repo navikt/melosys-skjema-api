@@ -680,14 +680,47 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
             lagInnsendtDel(Skjemadel.ARBEIDSTAKERS_DEL, Representasjonstype.DEG_SELV, fnr, periode, foerCutoff, juridiskEnhet)
 
-        private fun resend(): ResendVarslerResultatDto =
-            adminClient.post().uri("/admin/varsler/resend")
+        private fun resend(dryRun: Boolean = false): ResendVarslerResultatDto =
+            adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk
                 .expectBody<ResendVarslerResultatDto>()
                 .returnResult().responseBody.shouldNotBeNull()
+
+        @Test
+        fun `dry-run teller kandidatene uten aa sende noe, og er default`() {
+            lagAgDel(fnr = "10000000030", saksnummer = "SAK-DRY")
+            // Utkast-guarden skal telle med i dry-run også: denne ville ikke fått varsel
+            lagAgDel(fnr = "10000000031", saksnummer = "SAK-UTKAST")
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = "10000000031",
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        representasjonstype = Representasjonstype.DEG_SELV,
+                        skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                    )
+                )
+            )
+
+            val eksplisitt = resend(dryRun = true)
+            eksplisitt.dryRun shouldBe true
+            eksplisitt.antallSendt shouldBe 1
+            eksplisitt.saksnumre shouldBe listOf("SAK-DRY")
+
+            val defaultKall = adminClient.post().uri("/admin/varsler/resend")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<ResendVarslerResultatDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+            defaultKall.dryRun shouldBe true
+
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
 
         @Test
         fun `skal sende varsel med korrekt lenke og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
