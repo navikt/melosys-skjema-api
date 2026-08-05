@@ -710,7 +710,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag1Periode,
                 utkastStartet = Instant.parse("2026-01-04T08:00:00Z"), innsendtDato = Instant.parse("2026-01-05T08:00:00Z")
             )
-            // Utsendelse 2: arbeidsgiverens utkast ble startet tidlig, men sendt inn sist
+            // Utsendelse 2: arbeidsgiverens utkast ble startet tidlig, men sendt inn sist. Erstatterens
+            // utkast-start kan godt ligge før originalens – koblingen settes ved innsending, ikke ved
+            // utkast-opprettelse.
             val gammelAg = lagInnsendt(
                 Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = feilPeriode,
                 utkastStartet = Instant.parse("2026-01-06T08:00:00Z"), innsendtDato = Instant.parse("2026-01-07T08:00:00Z")
@@ -727,6 +729,49 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             val s = hentBruk().saksdekning
             s.antallSakerMedMatchendeSeparateDeler shouldBe 1
             // Utsendelse 1 er den tidligste gjeldende utsendelsen, og der startet arbeidstakeren
+            s.parInitiertAvArbeidstaker shouldBe 1
+            s.parInitiertAvArbeidsgiver shouldBe 0
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
+        fun `initiativ - erstattet versjon fra en annen utsendelse forgifter ikke tidsstemplene`() {
+            val fnr = "49000000001"
+            val at1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
+            val ag1Periode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-03-31"))
+            val ag2Periode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val at2Periode = PeriodeDto(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-12-31"))
+            val feilPeriode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-12-31"))
+
+            // Utsendelse 2 sin ERSTATTEDE AG-versjon bærer de tidligste tidsstemplene, og perioden dekker
+            // hele året – den overlapper dermed utsendelse 1 sin AT-del uten å høre til den utsendelsen
+            val gammelAg = lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = feilPeriode,
+                utkastStartet = Instant.parse("2026-01-01T08:00:00Z"), innsendtDato = Instant.parse("2026-01-02T08:00:00Z")
+            )
+            // Utsendelse 1 (innsendt først av de gjeldende): arbeidstaker sendte inn før arbeidsgiver startet
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at1Periode,
+                utkastStartet = Instant.parse("2026-01-05T08:00:00Z"), innsendtDato = Instant.parse("2026-01-06T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag1Periode,
+                utkastStartet = Instant.parse("2026-01-07T08:00:00Z"), innsendtDato = Instant.parse("2026-01-08T08:00:00Z")
+            )
+            // Utsendelse 2, gjeldende versjoner
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag2Periode, erstatterSkjemaId = gammelAg.id,
+                utkastStartet = Instant.parse("2026-01-03T08:00:00Z"), innsendtDato = Instant.parse("2026-01-09T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at2Periode,
+                utkastStartet = Instant.parse("2026-01-10T08:00:00Z"), innsendtDato = Instant.parse("2026-01-11T08:00:00Z")
+            )
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+            // Den erstattede versjonen følger sin etterfølger til utsendelse 2, og trekker ikke
+            // arbeidsgiversiden i utsendelse 1 bakover i tid
             s.parInitiertAvArbeidstaker shouldBe 1
             s.parInitiertAvArbeidsgiver shouldBe 0
             s.parUavhengigStartet shouldBe 0

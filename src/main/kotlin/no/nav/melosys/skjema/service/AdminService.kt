@@ -150,12 +150,16 @@ class AdminService(
         )
     }
 
-    /** Alle innsendte utsendt-arbeidstaker-deler med erstattet-markering satt fra hele populasjonen. */
+    /** Alle innsendte utsendt-arbeidstaker-deler med versjonslenken satt fra hele populasjonen. */
     private fun hentInnsendtPopulasjon(): List<InnsendtSkjema> {
         val alle = innsendingRepository.finnAlleInnsendteMedSkjema()
-        val erstattedeIder: Set<UUID> = alle
-            .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
-            .toSet()
+        // Versjonslenken snus: erstattet skjema -> versjonen som erstattet det.
+        val erstattetAv: Map<UUID, UUID> = alle
+            .mapNotNull { innsending ->
+                val erstatter = (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId
+                erstatter?.let { it to innsending.skjema.id!! }
+            }
+            .toMap()
         return alle.mapNotNull { innsending ->
             val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
             InnsendtSkjema(
@@ -168,7 +172,7 @@ class AdminService(
                 flyt = metadata.representasjonstype,
                 sprak = innsending.innsendtSprak,
                 periode = innsending.skjema.utsendelsePeriode(),
-                erstattet = innsending.skjema.id in erstattedeIder,
+                erstattetAv = erstattetAv[innsending.skjema.id],
                 saksstatus = innsending.saksstatus,
                 saksnummer = innsending.saksnummer,
                 opprettetVia = innsending.skjema.opprettetVia,
@@ -365,35 +369,67 @@ class AdminService(
      * initiativet regnes på den tidligste klyngen som har et faktisk par. Dermed blandes ikke tidspunkter
      * på tvers av to ulike utsendelser for samme person + enhet. Hver sak klassifiseres kun én gang.
      *
-     * Se [initiativPar] for hvilke deler i klyngen som utgjør tidspunkt-grunnlaget.
+     * Se [initiativPar] for hvilke deler i klyngen som utgjør tidspunkt-grunnlaget, og hvordan tidligere
+     * versjoner knyttes til klyngen via versjonslenken.
      */
     private fun beregnInitiativ(saker: Set<Pair<String, String>>, populasjon: List<InnsendtSkjema>): InitiativFordeling {
         val separateDelerPerSak = populasjon
             .filter { it.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
             .groupBy { it.sakNokkel() }
+        val gjeldendeVersjon = gjeldendeVersjonPerErstattetDel(populasjon)
         var arbeidsgiver = 0L
         var arbeidstaker = 0L
         var uavhengig = 0L
+        var utenPar = 0
         for (sak in saker) {
             val (gjeldende, erstattede) = separateDelerPerSak[sak].orEmpty().partition { !it.erstattet }
             // Klyngegrensene forankres i gjeldende data: en erstattet versjon med feil periode skal ikke
             // kunne lime to reelle utsendelser sammen. Erstattede deler knyttes til klyngen i [initiativPar].
             val par = overlappendeGrupper(gjeldende)
-                .mapNotNull { klynge -> initiativPar(klynge, erstattede) }
+                .mapNotNull { klynge -> initiativPar(klynge, erstattede, gjeldendeVersjon) }
                 // Tidligste utsendelse vinner; id-en bryter likhet, siden innsendingene ikke har noen annen
                 // deterministisk rekkefølge.
                 .minWithOrNull(compareBy({ it.valgtEtterInnsending }, { it.valgtEtterId }))
-                // Uoppnåelig i dag: nøkkelen er i medSeparate, altså finnes det en direkte AT↔AG-kant
-                // mellom to gjeldende deler, og de to havner alltid i samme klynge. Brytes invarianten,
-                // forsvinner saken stille ut av kontrollsummen mot antallSakerMedMatchendeSeparateDeler.
-                ?: continue
+            if (par == null) {
+                // Uoppnåelig så lenge [saker] og [populasjon] er utledet av samme datasett: nøkkelen er i
+                // medSeparate, altså finnes det en direkte AT↔AG-kant mellom to gjeldende deler, og de to
+                // havner alltid i samme klynge. Telles og logges, så saken ikke forsvinner stille ut av
+                // kontrollsummen mot antallSakerMedMatchendeSeparateDeler.
+                utenPar++
+                continue
+            }
             when {
                 par.atStartet.isAfter(par.agInnsendt) -> arbeidsgiver++
                 par.agStartet.isAfter(par.atInnsendt) -> arbeidstaker++
                 else -> uavhengig++
             }
         }
+        if (utenPar > 0) {
+            log.warn {
+                "Bruksstatistikk: $utenPar sak(er) med matchende separate deler manglet en klynge med " +
+                    "faktisk par – initiativ-tallene summerer ikke til antallSakerMedMatchendeSeparateDeler"
+            }
+        }
         return InitiativFordeling(arbeidsgiver, arbeidstaker, uavhengig)
+    }
+
+    /**
+     * Kobler hver erstattede del til den gjeldende versjonen den til slutt ble erstattet av, ved å følge
+     * versjonslenken (erstatterSkjemaId) transitivt gjennom mellomliggende versjoner. Lenken er eksakt og
+     * uavhengig av hvilke perioder versjonene er utfylt med. En sykel i lenken stopper gjennomgangen.
+     */
+    private fun gjeldendeVersjonPerErstattetDel(populasjon: List<InnsendtSkjema>): Map<UUID, UUID> {
+        val nesteVersjon = populasjon.mapNotNull { del -> del.erstattetAv?.let { del.id to it } }.toMap()
+        return nesteVersjon.keys.associateWith { erstattetId ->
+            var versjon = nesteVersjon.getValue(erstattetId)
+            val besokt = mutableSetOf(erstattetId, versjon)
+            while (true) {
+                val neste = nesteVersjon[versjon] ?: break
+                if (!besokt.add(neste)) break
+                versjon = neste
+            }
+            versjon
+        }
     }
 
     /** Tidspunktene ett par klassifiseres på, og nøkkelen paret velges på når saken har flere utsendelser. */
@@ -403,7 +439,7 @@ class AdminService(
         val atInnsendt: Instant,
         val agInnsendt: Instant,
         val valgtEtterInnsending: Instant,
-        val valgtEtterId: String
+        val valgtEtterId: UUID
     )
 
     /**
@@ -411,30 +447,36 @@ class AdminService(
      *
      * Kun deler som matcher minst én del på MOTSATT side teller: en del kan være transitivt koblet inn i
      * klyngen via en del på samme side uten selv å ha en motpart, og skal da ikke dra tidspunktene med seg.
+     *
      * [erstattede] versjoner tas med i tidspunktene (den tidligste versjonen sier når siden faktisk startet),
-     * med samme match-krav, men påvirker ikke hvilken klynge som velges.
+     * men kobles via VERSJONSLENKEN [gjeldendeVersjon] – ikke via periodeoverlapp – slik at en erstattet
+     * versjon med feil periode ikke kan forgifte tidsstemplene til en annen utsendelse. En erstattet del
+     * teller kun når versjonskjeden ender i en av klyngens matchende deler. Erstattede deler påvirker ikke
+     * hvilken klynge som velges.
      */
-    private fun initiativPar(klynge: List<InnsendtSkjema>, erstattede: List<InnsendtSkjema>): InitiativPar? {
+    private fun initiativPar(
+        klynge: List<InnsendtSkjema>,
+        erstattede: List<InnsendtSkjema>,
+        gjeldendeVersjon: Map<UUID, UUID>
+    ): InitiativPar? {
         val atIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
         val agIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
         val atMatchende = atIKlynge.filter { at -> agIKlynge.any { at.matcher(it) } }
         val agMatchende = agIKlynge.filter { ag -> atIKlynge.any { ag.matcher(it) } }
         if (atMatchende.isEmpty() || agMatchende.isEmpty()) return null
 
-        val atDeler = atMatchende + erstattede.filter { erstattet ->
-            erstattet.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL && agIKlynge.any { erstattet.matcher(it) }
-        }
-        val agDeler = agMatchende + erstattede.filter { erstattet ->
-            erstattet.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL && atIKlynge.any { erstattet.matcher(it) }
-        }
-        val matchendeGjeldende = atMatchende + agMatchende
+        val matchendeIder = (atMatchende + agMatchende).mapTo(mutableSetOf()) { it.id }
+        val tidligereVersjoner = erstattede.filter { gjeldendeVersjon[it.id] in matchendeIder }
+        val atDeler = atMatchende + tidligereVersjoner.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+        val agDeler = agMatchende + tidligereVersjoner.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+        val tidligsteMatchende = (atMatchende + agMatchende).minWith(compareBy({ it.innsendtDato }, { it.id }))
         return InitiativPar(
             atStartet = atDeler.minOf { it.skjemaOpprettetDato },
             agStartet = agDeler.minOf { it.skjemaOpprettetDato },
             atInnsendt = atDeler.minOf { it.innsendtDato },
             agInnsendt = agDeler.minOf { it.innsendtDato },
-            valgtEtterInnsending = matchendeGjeldende.minOf { it.innsendtDato },
-            valgtEtterId = matchendeGjeldende.minOf { it.id.toString() }
+            valgtEtterInnsending = tidligsteMatchende.innsendtDato,
+            valgtEtterId = tidligsteMatchende.id
         )
     }
 
@@ -558,7 +600,8 @@ class AdminService(
         val flyt: Representasjonstype,
         val sprak: Språk,
         override val periode: PeriodeDto?,
-        val erstattet: Boolean,
+        /** Skjema-id-en til versjonen som erstattet denne, eller null hvis denne er gjeldende. */
+        val erstattetAv: UUID?,
         val saksstatus: Saksstatus?,
         val saksnummer: String?,
         val opprettetVia: OpprettetVia?,
@@ -566,7 +609,9 @@ class AdminService(
         val skjemaOpprettetDato: Instant,
         /** Da skjemaet ble sendt inn – styrer periodefilteret. */
         val innsendtDato: Instant
-    ) : SakDel
+    ) : SakDel {
+        val erstattet: Boolean get() = erstattetAv != null
+    }
 
     private data class UtkastSkjema(
         override val fnr: String,

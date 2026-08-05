@@ -220,9 +220,14 @@ data class SaksdekningDto(
      * per unik sak (ikke per rad), og kun på delene som faktisk inngår i et match – deler på samme sak
      * som aldri matchet en motpart påvirker ikke tallet. Har samme person + enhet flere separate
      * utsendelser (ikke-overlappende perioder), måles initiativet på den TIDLIGSTE utsendelsen som har
-     * et matchende par. Ved flere versjoner av en matchende del brukes tidligste utkast-start og
-     * tidligste innsending på hver side. [parInitiertAvArbeidsgiver] +
-     * [parInitiertAvArbeidstaker] + [parUavhengigStartet] = [antallSakerMedMatchendeSeparateDeler].
+     * et matchende par. Valget ser kun på GJELDENDE deler, så en sak der den første utsendelsen ble
+     * korrigert sent, klassifiseres på den gjeldende tilstanden.
+     *
+     * Erstattede versjoner teller med i tidspunktene når de ligger i samme VERSJONSKJEDE som en av
+     * utsendelsens matchende deler (koblet via erstatterSkjemaId, ikke via periode) – da brukes tidligste
+     * utkast-start og tidligste innsending i kjeden på hver side, siden den tidligste versjonen sier når
+     * siden faktisk startet. [parInitiertAvArbeidsgiver] + [parInitiertAvArbeidstaker] +
+     * [parUavhengigStartet] = [antallSakerMedMatchendeSeparateDeler].
      */
     val parInitiertAvArbeidsgiver: Long = 0,
     /** Par der arbeidsgiverens skjema ble påbegynt etter at arbeidstakerens del var sendt inn – se [parInitiertAvArbeidsgiver]. */
