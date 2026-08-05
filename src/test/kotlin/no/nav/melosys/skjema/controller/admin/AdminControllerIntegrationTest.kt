@@ -5,6 +5,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import io.mockk.every
 import io.mockk.verify
 import java.time.Instant
@@ -27,9 +28,11 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
 import no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor.Companion.API_KEY_HEADER
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
@@ -299,7 +302,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             sprak: Språk = Språk.NORSK_BOKMAL,
             erstatterSkjemaId: UUID? = null,
             innsendtDato: Instant = Instant.now(),
-            innsenderFnr: String = "12345678901"
+            innsenderFnr: String = "12345678901",
+            saksstatus: Saksstatus? = null,
+            opprettetVia: OpprettetVia? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -313,11 +318,18 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     skjemadel = skjemadel,
                     juridiskEnhetOrgnr = juridiskEnhet,
                     erstatterSkjemaId = erstatterSkjemaId
-                )
+                ),
+                opprettetVia = opprettetVia
             )
         ).also { skjema ->
             innsendingRepository.save(
-                innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = sprak, opprettetDato = innsendtDato, innsenderFnr = innsenderFnr)
+                innsendingMedDefaultVerdier(
+                    skjema = skjema,
+                    innsendtSprak = sprak,
+                    opprettetDato = innsendtDato,
+                    innsenderFnr = innsenderFnr,
+                    saksstatus = saksstatus
+                )
             )
         }
 
@@ -465,6 +477,106 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `saksstatus-uttrekk returnerer synk-feltene uten personopplysninger`() {
+            val fnr = "63000000001"
+            val skjema = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, saksstatus = Saksstatus.MOTTATT)
+            val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            innsending.saksnummer = "MEL-123456"
+            innsendingRepository.save(innsending)
+
+            val json = adminClient.get().uri("/admin/saksstatus/uttrekk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody!!
+            json shouldNotContain fnr
+            json shouldNotContain innsending.innsenderFnr
+            json shouldNotContain "Test Testesen"
+
+            val uttrekk = adminClient.get().uri("/admin/saksstatus/uttrekk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<SaksstatusUttrekkDto>()
+                .returnResult()
+                .responseBody!!
+            uttrekk.antall shouldBe 1
+            with(uttrekk.rader.single()) {
+                skjemaId shouldBe skjema.id
+                saksnummer shouldBe "MEL-123456"
+                saksstatus shouldBe Saksstatus.MOTTATT
+                referanseId shouldBe innsending.referanseId
+            }
+        }
+
+        @Test
+        fun `saksstatusfordeling teller mottatt, avsluttet og ukjent`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "60000000001", saksstatus = Saksstatus.MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "60000000002", saksstatus = Saksstatus.AVSLUTTET)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "60000000003")
+
+            val fordeling = hentBruk().saksstatusFordeling
+            fordeling.mottatt shouldBe 1
+            fordeling.avsluttet shouldBe 1
+            fordeling.ukjent shouldBe 1
+        }
+
+        @Test
+        fun `venter-tall splittes paa aktiv og avsluttet sak, og ventende med avsluttet sak telles`() {
+            // Venter uten motpart, aktiv sak (MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000001", saksstatus = Saksstatus.MOTTATT)
+            // Venter uten motpart, avsluttet sak (motpart kom via annen kanal)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000002", saksstatus = Saksstatus.AVSLUTTET)
+            // Venter uten motpart, ikke synket (regnes som aktiv)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000003")
+            // Venter med motpart-utkast, avsluttet sak
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "61000000004", saksstatus = Saksstatus.AVSLUTTET)
+            lagUtkast(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "61000000004")
+
+            val s = hentBruk().saksdekning
+            with(s.arbeidsgiverDeler) {
+                venterIngenMotpart shouldBe 3
+                venterIngenMotpartAktivSak shouldBe 2
+                venterIngenMotpartAvsluttetSak shouldBe 1
+                venterMotpartHarUtkast shouldBe 1
+                venterMotpartHarUtkastAktivSak shouldBe 0
+                venterMotpartHarUtkastAvsluttetSak shouldBe 1
+            }
+            s.antallVentendeMedAvsluttetSak shouldBe 2
+        }
+
+        @Test
+        fun `motpart-cta telles for innsendte i perioden`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000001", opprettetVia = OpprettetVia.MOTPART_CTA)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "62000000002")
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL,
+                fnr = "62000000004",
+                opprettetVia = OpprettetVia.MOTPART_CTA,
+                innsendtDato = Instant.parse("2020-01-15T12:00:00Z")
+            )
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = "62000000003",
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = Skjemadel.ARBEIDSTAKERS_DEL),
+                    opprettetVia = OpprettetVia.MOTPART_CTA
+                )
+            )
+
+            val alt = hentBruk().motpartCta
+            alt.antallInnsendtViaCta shouldBe 2
+            alt.antallUtkastViaCta shouldBe 1
+
+            // Innsendt følger periodefilteret; utkast er nåtilstand og påvirkes ikke
+            val iPerioden = hentBruk(fraOgMed = "2026-01-01").motpartCta
+            iPerioden.antallInnsendtViaCta shouldBe 1
+            iPerioden.antallUtkastViaCta shouldBe 1
+        }
+
+        @Test
         fun `skal returnere nuller naar ingen data`() {
             val body = hentBruk()
 
@@ -534,6 +646,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
             saksnummer: String? = null,
+            saksstatus: Saksstatus? = null,
             erstatterSkjemaId: UUID? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
@@ -550,7 +663,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 )
             )
         ).also { skjema ->
-            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer))
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer, saksstatus = saksstatus)
+            )
         }
 
         /** Handlingspliktig AG-del (arbeidsgiver uten fullmakt) – standard resend-kandidat. */
@@ -561,21 +676,55 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             innsendtDato: Instant = foerCutoff,
             juridiskEnhet: String = korrektSyntetiskOrgnr,
             saksnummer: String? = null,
+            saksstatus: Saksstatus? = null,
             erstatterSkjemaId: UUID? = null
-        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, erstatterSkjemaId)
+        ): Skjema = lagInnsendtDel(Skjemadel.ARBEIDSGIVERS_DEL, representasjonstype, fnr, periode, innsendtDato, juridiskEnhet, saksnummer, saksstatus, erstatterSkjemaId)
 
         /** Innsendt arbeidstaker-del for samme person/enhet (markerer at saken ikke lenger venter på AT-del). */
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
             lagInnsendtDel(Skjemadel.ARBEIDSTAKERS_DEL, Representasjonstype.DEG_SELV, fnr, periode, foerCutoff, juridiskEnhet)
 
-        private fun resend(): ResendVarslerResultatDto =
-            adminClient.post().uri("/admin/varsler/resend")
+        private fun resend(dryRun: Boolean = false): ResendVarslerResultatDto =
+            adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk
                 .expectBody<ResendVarslerResultatDto>()
                 .returnResult().responseBody.shouldNotBeNull()
+
+        @Test
+        fun `dry-run teller kandidatene uten aa sende noe, og er default`() {
+            lagAgDel(fnr = "10000000030", saksnummer = "SAK-DRY")
+            // Utkast-guarden skal telle med i dry-run også: denne ville ikke fått varsel
+            lagAgDel(fnr = "10000000031", saksnummer = "SAK-UTKAST")
+            skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    fnr = "10000000031",
+                    status = SkjemaStatus.UTKAST,
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        representasjonstype = Representasjonstype.DEG_SELV,
+                        skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                    )
+                )
+            )
+
+            val eksplisitt = resend(dryRun = true)
+            eksplisitt.dryRun shouldBe true
+            eksplisitt.antallSendt shouldBe 1
+            eksplisitt.saksnumre shouldBe listOf("SAK-DRY")
+
+            val defaultKall = adminClient.post().uri("/admin/varsler/resend")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<ResendVarslerResultatDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+            defaultKall.dryRun shouldBe true
+
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
 
         @Test
         fun `skal sende varsel med korrekt lenke og ignorer-tekst for handlingspliktig AG-del foer cutoff som venter paa AT-del`() {
@@ -639,6 +788,21 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             resend().antallSendt shouldBe 0
             verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal ikke sende naar saken er avsluttet i melosys-api`() {
+            lagAgDel(saksnummer = "SAK-200", saksstatus = Saksstatus.AVSLUTTET)
+
+            resend().antallSendt shouldBe 0
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal fortsatt sende naar saken er mottatt i melosys-api`() {
+            lagAgDel(saksnummer = "SAK-201", saksstatus = Saksstatus.MOTTATT)
+
+            resend().antallSendt shouldBe 1
         }
 
         @Test

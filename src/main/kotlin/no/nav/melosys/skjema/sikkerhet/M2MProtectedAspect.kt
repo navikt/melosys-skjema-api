@@ -28,7 +28,7 @@ class M2MProtectedAspect(
 
     @Before("@annotation(no.nav.melosys.skjema.sikkerhet.M2MWriteSkjemadata)")
     fun validateWriteSkjemadataAccess() {
-        validateClientAccess(m2mConfigProperties.readSkjemadata.clients)
+        validateClientAccess(m2mConfigProperties.writeSkjemadata.clients)
     }
 
     @Before(

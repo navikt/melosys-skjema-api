@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.RateLimitConfig
 import no.nav.melosys.skjema.controller.dto.ErrorResponse
 import no.nav.melosys.skjema.exception.AccessDeniedException
+import no.nav.melosys.skjema.exception.SaksnummerKonfliktException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
@@ -83,6 +84,15 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
             .body(ErrorResponse(message = e.message ?: ""))
+    }
+
+    @ExceptionHandler(SaksnummerKonfliktException::class)
+    fun handleSaksnummerKonflikt(e: SaksnummerKonfliktException): ResponseEntity<ErrorResponse> {
+        log.warn(e) { "Saksnummer-konflikt: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(ErrorResponse(message = e.message ?: "Saksnummer-konflikt"))
     }
 
     @ExceptionHandler(PersonVerifiseringException::class)

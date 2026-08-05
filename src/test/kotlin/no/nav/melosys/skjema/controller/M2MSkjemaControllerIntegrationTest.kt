@@ -19,12 +19,16 @@ import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlFoedselsdato
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlNavn
 import no.nav.melosys.skjema.integrasjon.pdl.dto.PdlPerson
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.m2mTokenWithOnlyReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
+import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
@@ -285,6 +289,60 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `skal ikke arve saksstatus fra soesken - ny innsending forblir null (Mottatt)`() {
+            // Søsken på samme sak er AVSLUTTET, men Melosys oppretter ny behandling for den nye
+            // innsendingen – den skal derfor stå som null (Mottatt), ikke arve søskenens status.
+            lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-600", saksstatus = Saksstatus.AVSLUTTET)
+            val nyttSkjema = lagInnsendtSkjemaMedInnsending(saksnummer = null)
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${nyttSkjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-600"}""")
+                .exchange()
+                .expectStatus().isNoContent
+
+            val oppdatert = innsendingRepository.findBySkjemaId(nyttSkjema.id!!)!!
+            oppdatert.saksnummer shouldBe "MEL-600"
+            oppdatert.saksstatus.shouldBeNull()
+        }
+
+        @Test
+        fun `skal vaere idempotent naar samme saksnummer registreres paa nytt`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-601")
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-601"}""")
+                .exchange()
+                .expectStatus().isNoContent
+
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksnummer shouldBe "MEL-601"
+        }
+
+        @Test
+        fun `skal returnere 409 naar innsendingen allerede har et annet saksnummer`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-602")
+
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+            webTestClient.post()
+                .uri("/m2m/api/skjema/${skjema.id}/saksnummer")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-603"}""")
+                .exchange()
+                .expectStatus().isEqualTo(409)
+
+            // Saksnummer er immutabelt – eksisterende verdi skal stå urørt
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksnummer shouldBe "MEL-602"
+        }
+
+        @Test
         fun `skal returnere 400 naar saksnummer er tomt`() {
             val skjema = skjemaRepository.save(
                 skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
@@ -379,6 +437,302 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 .bodyValue("""{"saksnummer": "SAK123"}""")
                 .exchange()
                 .expectStatus().isUnauthorized
+        }
+    }
+
+    private fun lagInnsendtSkjemaMedInnsending(saksnummer: String? = null, saksstatus: Saksstatus? = null): Skjema {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
+        )
+        innsendingRepository.save(
+            innsendingMedDefaultVerdier(skjema = skjema, status = InnsendingStatus.FERDIG, saksnummer = saksnummer, saksstatus = saksstatus)
+        )
+        return skjema
+    }
+
+    @Nested
+    @DisplayName("PUT /m2m/api/skjema/{id}/saksstatus")
+    inner class OppdaterSaksstatus {
+
+        private fun oppdaterSaksstatus(skjemaId: UUID, body: String) = webTestClient.put()
+            .uri("/m2m/api/skjema/$skjemaId/saksstatus")
+            .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+
+        @Test
+        fun `skal oppdatere saksstatus og backfille saksnummer naar det mangler`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = null)
+
+            oppdaterSaksstatus(skjema.id!!, """{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .expectStatus().isNoContent
+
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            oppdatert.saksstatus shouldBe Saksstatus.AVSLUTTET
+            oppdatert.saksnummer shouldBe "MEL-100"
+            oppdatert.saksstatusOppdatert.shouldNotBeNull()
+        }
+
+        @Test
+        fun `skal kun oppdatere innsendingen for gitt skjema-id`() {
+            val agDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-200")
+            val atDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-200")
+            val annenSak = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-999")
+
+            oppdaterSaksstatus(agDel.id!!, """{"saksnummer": "MEL-200", "saksstatus": "AVSLUTTET"}""")
+                .expectStatus().isNoContent
+
+            innsendingRepository.findBySkjemaId(agDel.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+            // Andre innsendinger røres ikke – heller ikke de på samme saksnummer
+            innsendingRepository.findBySkjemaId(atDel.id!!)!!.saksstatus.shouldBeNull()
+            innsendingRepository.findBySkjemaId(annenSak.id!!)!!.saksstatus.shouldBeNull()
+        }
+
+        @Test
+        fun `skal returnere 409 ved saksnummer-avvik uten aa endre noe`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-300")
+
+            oppdaterSaksstatus(skjema.id!!, """{"saksnummer": "MEL-301", "saksstatus": "AVSLUTTET"}""")
+                .expectStatus().isEqualTo(409)
+
+            // Saksnummer er immutabelt – hverken saksnummer eller saksstatus skal endres
+            val uendret = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            uendret.saksnummer shouldBe "MEL-300"
+            uendret.saksstatus.shouldBeNull()
+            uendret.saksstatusOppdatert.shouldBeNull()
+        }
+
+        @Test
+        fun `skal ikke nedgradere AVSLUTTET til MOTTATT`() {
+            // Avsluttet er terminal for en innsending; en revurdering i Melosys skal ikke
+            // resette ferdigbehandlede innsendinger (produkteierbeslutning 2026-07-21).
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-310", saksstatus = Saksstatus.AVSLUTTET)
+
+            oppdaterSaksstatus(skjema.id!!, """{"saksnummer": "MEL-310", "saksstatus": "MOTTATT"}""")
+                .expectStatus().isNoContent
+
+            val uendret = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            uendret.saksstatus shouldBe Saksstatus.AVSLUTTET
+            uendret.saksstatusOppdatert.shouldBeNull()
+        }
+
+        @Test
+        fun `skal returnere 400 naar saksnummer er tomt`() {
+            val skjema = lagInnsendtSkjemaMedInnsending()
+
+            oppdaterSaksstatus(skjema.id!!, """{"saksnummer": "", "saksstatus": "AVSLUTTET"}""")
+                .expectStatus().isBadRequest
+        }
+
+        @Test
+        fun `skal returnere 404 naar skjema ikke finnes`() {
+            oppdaterSaksstatus(UUID.randomUUID(), """{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            webTestClient.put()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksstatus")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `skal returnere 403 for klient som kun har lesetilgang`() {
+            val token = mockOAuth2Server.m2mTokenWithOnlyReadSkjemaDataAccess()
+
+            // Klienten har lesetilgang (404 – slipper gjennom aspektet)...
+            webTestClient.get()
+                .uri("/m2m/api/skjema/utsendt-arbeidstaker/${UUID.randomUUID()}/data")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isNotFound
+
+            // ...men avvises på write-endepunktet
+            webTestClient.put()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksstatus")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `skal returnere 401 naar token mangler`() {
+            webTestClient.put()
+                .uri("/m2m/api/skjema/${UUID.randomUUID()}/saksstatus")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"saksnummer": "MEL-100", "saksstatus": "AVSLUTTET"}""")
+                .exchange()
+                .expectStatus().isUnauthorized
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /m2m/api/skjema/saksstatus/bulk")
+    inner class BulkOppdaterSaksstatus {
+
+        @Test
+        fun `skal rapportere 0 oppdatert naar alt allerede er synket`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-700")
+            val body = """{"oppdateringer": [{"skjemaId": "${skjema.id}", "saksnummer": "MEL-700", "saksstatus": "AVSLUTTET"}]}"""
+
+            fun kjoerBulk() = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            kjoerBulk().antallOppdatert shouldBe 1
+            val foersteTidspunkt = innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksstatusOppdatert
+
+            kjoerBulk().antallOppdatert shouldBe 0
+            // saksstatusOppdatert betyr «sist endret» og skal ikke røres av no-op-synk
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.saksstatusOppdatert shouldBe foersteTidspunkt
+        }
+
+        @Test
+        fun `skal oppdatere hver rad uavhengig naar flere rader deler saksnummer`() {
+            val agDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")
+            val atDel = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-500")
+
+            val resultat = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {"oppdateringer": [
+                        {"skjemaId": "${agDel.id}", "saksnummer": "MEL-500", "saksstatus": "AVSLUTTET"},
+                        {"skjemaId": "${atDel.id}", "saksnummer": "MEL-500", "saksstatus": "AVSLUTTET"}
+                    ]}
+                    """.trimIndent()
+                )
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            resultat.antallOppdatert shouldBe 2
+            innsendingRepository.findBySkjemaId(agDel.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+            innsendingRepository.findBySkjemaId(atDel.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+        }
+
+        @Test
+        fun `skal oppdatere flere innsendinger og rapportere ukjente skjema-id-er`() {
+            val medSaksnummer = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-400")
+            val utenSaksnummer = lagInnsendtSkjemaMedInnsending(saksnummer = null)
+            val ukjentSkjemaId = UUID.randomUUID()
+
+            val resultat = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {"oppdateringer": [
+                        {"skjemaId": "${medSaksnummer.id}", "saksnummer": "MEL-400", "saksstatus": "AVSLUTTET"},
+                        {"skjemaId": "${utenSaksnummer.id}", "saksnummer": "MEL-401", "saksstatus": "MOTTATT"},
+                        {"skjemaId": "$ukjentSkjemaId", "saksnummer": "MEL-402", "saksstatus": "AVSLUTTET"}
+                    ]}
+                    """.trimIndent()
+                )
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            resultat.antallOppdatert shouldBe 2
+            resultat.ukjenteSkjemaIder shouldBe listOf(ukjentSkjemaId)
+            resultat.konfliktSkjemaIder shouldBe emptyList()
+            innsendingRepository.findBySkjemaId(medSaksnummer.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+            val backfillet = innsendingRepository.findBySkjemaId(utenSaksnummer.id!!)!!
+            backfillet.saksstatus shouldBe Saksstatus.MOTTATT
+            backfillet.saksnummer shouldBe "MEL-401"
+        }
+
+        @Test
+        fun `skal rapportere konfliktrad uten aa feile batchen`() {
+            val medKonflikt = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-800")
+            val utenKonflikt = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-801")
+
+            val resultat = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {"oppdateringer": [
+                        {"skjemaId": "${medKonflikt.id}", "saksnummer": "MEL-899", "saksstatus": "AVSLUTTET"},
+                        {"skjemaId": "${utenKonflikt.id}", "saksnummer": "MEL-801", "saksstatus": "AVSLUTTET"}
+                    ]}
+                    """.trimIndent()
+                )
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            resultat.antallOppdatert shouldBe 1
+            resultat.konfliktSkjemaIder shouldBe listOf(medKonflikt.id)
+            // Konfliktraden skal stå urørt (immutabelt saksnummer, ingen statusendring)
+            val uendret = innsendingRepository.findBySkjemaId(medKonflikt.id!!)!!
+            uendret.saksnummer shouldBe "MEL-800"
+            uendret.saksstatus.shouldBeNull()
+            innsendingRepository.findBySkjemaId(utenKonflikt.id!!)!!.saksstatus shouldBe Saksstatus.AVSLUTTET
+        }
+
+        @Test
+        fun `skal ikke nedgradere AVSLUTTET til MOTTATT i bulk`() {
+            val skjema = lagInnsendtSkjemaMedInnsending(saksnummer = "MEL-810", saksstatus = Saksstatus.AVSLUTTET)
+
+            val resultat = webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"oppdateringer": [{"skjemaId": "${skjema.id}", "saksnummer": "MEL-810", "saksstatus": "MOTTATT"}]}""")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BulkOppdaterSaksstatusResultat>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            resultat.antallOppdatert shouldBe 0
+            resultat.konfliktSkjemaIder shouldBe emptyList()
+            val uendret = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            uendret.saksstatus shouldBe Saksstatus.AVSLUTTET
+            uendret.saksstatusOppdatert.shouldBeNull()
+        }
+
+        @Test
+        fun `skal returnere 400 naar oppdateringer er tom`() {
+            webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"oppdateringer": []}""")
+                .exchange()
+                .expectStatus().isBadRequest
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            webTestClient.put()
+                .uri("/m2m/api/skjema/saksstatus/bulk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"oppdateringer": [{"skjemaId": "${UUID.randomUUID()}", "saksnummer": "MEL-1", "saksstatus": "AVSLUTTET"}]}""")
+                .exchange()
+                .expectStatus().isForbidden
         }
     }
 }

@@ -26,7 +26,7 @@ gradle.beforeProject {
     }
 }
 
-val tokenSupportVersion = "6.0.10"
+val tokenSupportVersion = "6.0.11"
 val mockOAuth2ServerVersion = "5.0.2"
 val kotlinLoggingVersion = "8.0.4"
 val kotestVersion = "6.2.2"
@@ -62,6 +62,7 @@ dependencies {
     implementation("no.nav.security:token-client-spring:${tokenSupportVersion}")
     implementation("no.nav.security:token-validation-core:${tokenSupportVersion}")
     implementation("no.nav.tms.varsel:kotlin-builder:2.2.0")
+    implementation("io.getunleash:unleash-client-java:12.2.2")
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -76,8 +77,8 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.37")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.37")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.40")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.40")
 
     // GCP Cloud Storage for vedlegg
     implementation("com.google.cloud:google-cloud-storage:2.70.0")

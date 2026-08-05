@@ -7,6 +7,7 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 const val ACCEPTED_AUDIENCE = "test-client-id"
 const val ACCEPTED_AZURE_AUDIENCE = "test-azure-client-id"
 const val MELOSYS_CLIENT_ID = "test-melosys-client-id"
+const val READ_ONLY_CLIENT_ID = "test-read-only-client-id"
 const val MELOSYS_CONSOLE_CLIENT_ID = "test-console-client-id"
 const val ISSUER_ID = "tokenx"
 const val AZURE_ISSUER_ID = "azure"
@@ -37,6 +38,9 @@ fun MockOAuth2Server.tokenWithAzpClaim(azpName: String): String = getToken(
 )
 
 fun MockOAuth2Server.m2mTokenWithReadSkjemaDataAccess(): String = tokenWithAzpClaim(MELOSYS_CLIENT_ID)
+
+/** Klient som kun står i read-allowlisten (se application-test.yml) – for å teste read/write-skillet. */
+fun MockOAuth2Server.m2mTokenWithOnlyReadSkjemaDataAccess(): String = tokenWithAzpClaim(READ_ONLY_CLIENT_ID)
 
 fun MockOAuth2Server.m2mTokenWithoutAccess(): String = tokenWithAzpClaim("ukjent-klient-id")
 
