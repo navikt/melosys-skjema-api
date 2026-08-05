@@ -118,7 +118,8 @@ data class BrukStatistikkDto(
      * Unike juridiske enheter blant innsendte skjema – samme grunnlag som [antallUnikeVirksomheter]
      * (inkl. erstattede versjoner), men talt på juridisk enhet. Normalt ≤ [antallUnikeVirksomheter]
      * (kan avvike hvis en underenhet har byttet juridisk enhet i perioden, siden juridisk enhet
-     * snapshottes ved opprettelse). Dette er nøkkelen [topplisteVirksomheter] grupperer på.
+     * snapshottes ved opprettelse). Dette er nøkkelen [topplisteVirksomheter] grupperer på, men tallet
+     * kan være høyere enn `topplisteVirksomheter.size`, som kun teller gjeldende deler.
      */
     val antallUnikeJuridiskeEnheter: Long = 0,
     /**
@@ -201,9 +202,10 @@ data class SaksdekningDto(
      * Antall saker i perioden der minst én deltype er sendt mer enn én gang med overlappende periode
      * (samme person + juridisk enhet). Dekker BÅDE versjons-erstatninger og mulige dobbeltinnsendinger.
      *
-     * Som for de andre sak-tallene telles kun saker som berøres av kohorten, mens selve egenskapen
-     * «flere versjoner» måles mot HELE den innsendte populasjonen (også erstattede versjoner og
-     * versjoner sendt utenfor periodevinduet). Versjoner med ikke-overlappende perioder telles ikke.
+     * Selve egenskapen «flere versjoner» måles mot HELE den innsendte populasjonen (også erstattede
+     * versjoner og versjoner sendt utenfor periodevinduet). I motsetning til de andre sak-tallene teller
+     * en sak også når kun den erstattede versjonen ligger i vinduet – ellers ville feltet vist 0 samtidig
+     * som `antallErstattedeVersjoner` viste 1. Versjoner med ikke-overlappende perioder telles ikke.
      */
     val antallSakerMedFlereVersjoner: Long,
     /**

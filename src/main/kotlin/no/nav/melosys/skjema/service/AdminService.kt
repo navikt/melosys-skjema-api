@@ -360,12 +360,12 @@ class AdminService(
      * (innsending.opprettetDato) – da fikk den siden trolig beskjed om at motparten hadde levert.
      * Startet begge sider før noen av delene var innsendt, er de uavhengige initiativ.
      *
-     * Tidspunktene måles innenfor ÉN utsendelse: de separate delene på nøkkelen grupperes i klynger av
-     * overlappende perioder (samme transitive lukning som duplikat-grupperingen), og initiativet regnes
-     * på den tidligste klyngen som har begge sider. Dermed blandes ikke tidspunkter på tvers av to ulike
-     * utsendelser for samme person + enhet. Innenfor klyngen brukes tidligste utkast-start og tidligste
-     * innsending på hver side – erstattede versjoner teller med, siden den tidligste versjonen sier når
-     * siden faktisk startet. Hver sak klassifiseres kun én gang.
+     * Tidspunktene måles innenfor ÉN utsendelse: de GJELDENDE separate delene på nøkkelen grupperes i
+     * klynger av overlappende perioder (samme transitive lukning som duplikat-grupperingen), og
+     * initiativet regnes på den tidligste klyngen som har et faktisk par. Dermed blandes ikke tidspunkter
+     * på tvers av to ulike utsendelser for samme person + enhet. Hver sak klassifiseres kun én gang.
+     *
+     * Se [initiativPar] for hvilke deler i klyngen som utgjør tidspunkt-grunnlaget.
      */
     private fun beregnInitiativ(saker: Set<Pair<String, String>>, populasjon: List<InnsendtSkjema>): InitiativFordeling {
         val separateDelerPerSak = populasjon
@@ -375,26 +375,67 @@ class AdminService(
         var arbeidstaker = 0L
         var uavhengig = 0L
         for (sak in saker) {
-            val klynge = overlappendeGrupper(separateDelerPerSak[sak].orEmpty())
-                .filter { gruppe ->
-                    gruppe.any { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL } &&
-                        gruppe.any { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
-                }
-                .minByOrNull { gruppe -> gruppe.minOf { it.innsendtDato } }
+            val (gjeldende, erstattede) = separateDelerPerSak[sak].orEmpty().partition { !it.erstattet }
+            // Klyngegrensene forankres i gjeldende data: en erstattet versjon med feil periode skal ikke
+            // kunne lime to reelle utsendelser sammen. Erstattede deler knyttes til klyngen i [initiativPar].
+            val par = overlappendeGrupper(gjeldende)
+                .mapNotNull { klynge -> initiativPar(klynge, erstattede) }
+                // Tidligste utsendelse vinner; id-en bryter likhet, siden innsendingene ikke har noen annen
+                // deterministisk rekkefølge.
+                .minWithOrNull(compareBy({ it.valgtEtterInnsending }, { it.valgtEtterId }))
+                // Uoppnåelig i dag: nøkkelen er i medSeparate, altså finnes det en direkte AT↔AG-kant
+                // mellom to gjeldende deler, og de to havner alltid i samme klynge. Brytes invarianten,
+                // forsvinner saken stille ut av kontrollsummen mot antallSakerMedMatchendeSeparateDeler.
                 ?: continue
-            val atDeler = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
-            val agDeler = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
-            val atStartet = atDeler.minOf { it.skjemaOpprettetDato }
-            val agStartet = agDeler.minOf { it.skjemaOpprettetDato }
-            val atInnsendt = atDeler.minOf { it.innsendtDato }
-            val agInnsendt = agDeler.minOf { it.innsendtDato }
             when {
-                atStartet.isAfter(agInnsendt) -> arbeidsgiver++
-                agStartet.isAfter(atInnsendt) -> arbeidstaker++
+                par.atStartet.isAfter(par.agInnsendt) -> arbeidsgiver++
+                par.agStartet.isAfter(par.atInnsendt) -> arbeidstaker++
                 else -> uavhengig++
             }
         }
         return InitiativFordeling(arbeidsgiver, arbeidstaker, uavhengig)
+    }
+
+    /** Tidspunktene ett par klassifiseres på, og nøkkelen paret velges på når saken har flere utsendelser. */
+    private data class InitiativPar(
+        val atStartet: Instant,
+        val agStartet: Instant,
+        val atInnsendt: Instant,
+        val agInnsendt: Instant,
+        val valgtEtterInnsending: Instant,
+        val valgtEtterId: String
+    )
+
+    /**
+     * Tidspunkt-grunnlaget for én klynge av gjeldende deler, eller null hvis klyngen ikke har et faktisk par.
+     *
+     * Kun deler som matcher minst én del på MOTSATT side teller: en del kan være transitivt koblet inn i
+     * klyngen via en del på samme side uten selv å ha en motpart, og skal da ikke dra tidspunktene med seg.
+     * [erstattede] versjoner tas med i tidspunktene (den tidligste versjonen sier når siden faktisk startet),
+     * med samme match-krav, men påvirker ikke hvilken klynge som velges.
+     */
+    private fun initiativPar(klynge: List<InnsendtSkjema>, erstattede: List<InnsendtSkjema>): InitiativPar? {
+        val atIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+        val agIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+        val atMatchende = atIKlynge.filter { at -> agIKlynge.any { at.matcher(it) } }
+        val agMatchende = agIKlynge.filter { ag -> atIKlynge.any { ag.matcher(it) } }
+        if (atMatchende.isEmpty() || agMatchende.isEmpty()) return null
+
+        val atDeler = atMatchende + erstattede.filter { erstattet ->
+            erstattet.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL && agIKlynge.any { erstattet.matcher(it) }
+        }
+        val agDeler = agMatchende + erstattede.filter { erstattet ->
+            erstattet.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL && atIKlynge.any { erstattet.matcher(it) }
+        }
+        val matchendeGjeldende = atMatchende + agMatchende
+        return InitiativPar(
+            atStartet = atDeler.minOf { it.skjemaOpprettetDato },
+            agStartet = agDeler.minOf { it.skjemaOpprettetDato },
+            atInnsendt = atDeler.minOf { it.innsendtDato },
+            agInnsendt = agDeler.minOf { it.innsendtDato },
+            valgtEtterInnsending = matchendeGjeldende.minOf { it.innsendtDato },
+            valgtEtterId = matchendeGjeldende.minOf { it.id.toString() }
+        )
     }
 
     /**

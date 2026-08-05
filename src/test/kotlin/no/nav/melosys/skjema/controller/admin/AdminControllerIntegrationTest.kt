@@ -635,12 +635,14 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `initiativ - flere utsendelser paa samme sak klassifiseres etter den tidligste klyngen`() {
             val fnr = "45000000001"
-            // Utsendelse 1 (tidligst innsendt): arbeidsgiver sendte inn før arbeidstaker startet utkastet
-            val ag1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
-            val at1Periode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-03-31"))
-            // Utsendelse 2: eget par, med et arbeidstaker-utkast som ble startet lenge før alt annet
-            val at2Periode = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-10-31"))
-            val ag2Periode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            // Utsendelse 1 (tidligst INNSENDT, men senest i periode): arbeidsgiver sendte inn før
+            // arbeidstaker startet utkastet
+            val ag1Periode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val at1Periode = PeriodeDto(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-12-31"))
+            // Utsendelse 2 (tidligst i periode, men sist innsendt): eget par, med et arbeidstaker-utkast
+            // som ble startet lenge før alt annet
+            val at2Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
+            val ag2Periode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-03-31"))
             val t0 = Instant.parse("2026-01-01T08:00:00Z")
             val t1 = Instant.parse("2026-01-02T08:00:00Z")
             val t2 = Instant.parse("2026-01-03T08:00:00Z")
@@ -657,8 +659,76 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             val s = hentBruk().saksdekning
             s.antallSakerMedMatchendeSeparateDeler shouldBe 1
-            s.parInitiertAvArbeidsgiver shouldBe 1 // fra utsendelse 1, ikke blandet med utsendelse 2
+            // Utsendelse 1 vinner fordi den ble innsendt først – ikke fordi perioden starter først
+            s.parInitiertAvArbeidsgiver shouldBe 1
             s.parInitiertAvArbeidstaker shouldBe 0
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
+        fun `initiativ - del uten motpart som henger paa klyngen paavirker ikke klassifiseringen`() {
+            val fnr = "47000000001"
+            // AT0 overlapper AT1, men ikke AG1 – den kobles transitivt inn i klyngen uten å ha en motpart
+            val at0Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-03-31"))
+            val at1Periode = PeriodeDto(LocalDate.parse("2026-03-01"), LocalDate.parse("2026-04-30"))
+            val ag1Periode = PeriodeDto(LocalDate.parse("2026-04-01"), LocalDate.parse("2026-05-31"))
+            val t0 = Instant.parse("2026-01-01T08:00:00Z")
+            val t1 = Instant.parse("2026-01-02T08:00:00Z")
+            val t2 = Instant.parse("2026-01-03T08:00:00Z")
+            val t3 = Instant.parse("2026-01-04T08:00:00Z")
+            val t4 = Instant.parse("2026-01-05T08:00:00Z")
+            val t5 = Instant.parse("2026-01-06T08:00:00Z")
+
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at0Periode, utkastStartet = t0, innsendtDato = t1)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag1Periode, utkastStartet = t2, innsendtDato = t3)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at1Periode, utkastStartet = t4, innsendtDato = t5)
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+            // Kun AT1/AG1 utgjør paret: AT1 ble startet etter at AG1 var innsendt
+            s.parInitiertAvArbeidsgiver shouldBe 1
+            s.parInitiertAvArbeidstaker shouldBe 0
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
+        fun `initiativ - erstattet versjon med bred periode limer ikke sammen to utsendelser`() {
+            val fnr = "48000000001"
+            val at1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
+            val ag1Periode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-03-31"))
+            val ag2Periode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val at2Periode = PeriodeDto(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-12-31"))
+            // Erstattet versjon av utsendelse 2 sin AG-del, med tastefeil-periode som dekker hele året
+            val feilPeriode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-12-31"))
+
+            // Utsendelse 1 (innsendt først): arbeidstaker sendte inn før arbeidsgiver startet utkastet
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at1Periode,
+                utkastStartet = Instant.parse("2026-01-01T08:00:00Z"), innsendtDato = Instant.parse("2026-01-03T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag1Periode,
+                utkastStartet = Instant.parse("2026-01-04T08:00:00Z"), innsendtDato = Instant.parse("2026-01-05T08:00:00Z")
+            )
+            // Utsendelse 2: arbeidsgiverens utkast ble startet tidlig, men sendt inn sist
+            val gammelAg = lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = feilPeriode,
+                utkastStartet = Instant.parse("2026-01-06T08:00:00Z"), innsendtDato = Instant.parse("2026-01-07T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag2Periode, erstatterSkjemaId = gammelAg.id,
+                utkastStartet = Instant.parse("2026-01-02T08:00:00Z"), innsendtDato = Instant.parse("2026-01-08T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at2Periode,
+                utkastStartet = Instant.parse("2026-01-09T08:00:00Z"), innsendtDato = Instant.parse("2026-01-10T08:00:00Z")
+            )
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+            // Utsendelse 1 er den tidligste gjeldende utsendelsen, og der startet arbeidstakeren
+            s.parInitiertAvArbeidstaker shouldBe 1
+            s.parInitiertAvArbeidsgiver shouldBe 0
             s.parUavhengigStartet shouldBe 0
         }
 
