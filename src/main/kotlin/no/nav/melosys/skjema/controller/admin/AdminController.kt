@@ -68,6 +68,25 @@ class AdminController(
         return adminService.hentBruksstatistikk(fraOgMed, tilOgMed)
     }
 
+    @GetMapping("/statistikk/bruk/virksomheter/{rang}/saksnumre")
+    @Operation(
+        summary = "Hent saksnumrene bak én rad i virksomhets-topplisten",
+        description = "Slår opp virksomheten på plass {rang} (1-basert) i topplisten fra " +
+            "/admin/statistikk/bruk – samme gruppering (juridisk enhet), sortering og periodefilter – " +
+            "og returnerer saksnumrene til innsendingene dens. Innsendinger uten saksnummer " +
+            "representeres med skjema-id. Svaret inneholder bevisst ingen orgnr, navn eller fnr."
+    )
+    @ApiResponse(responseCode = "200", description = "Saksnumre hentet")
+    @ApiResponse(responseCode = "404", description = "Ingen virksomhet på oppgitt rang i perioden")
+    fun hentVirksomhetSaksnumre(
+        @PathVariable rang: Int,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fraOgMed: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) tilOgMed: LocalDate?
+    ): VirksomhetSaksnumreDto {
+        log.info { "Admin: Henter saksnumre for toppliste-virksomhet rang=$rang (fraOgMed=$fraOgMed, tilOgMed=$tilOgMed)" }
+        return adminService.hentVirksomhetSaksnumre(rang, fraOgMed, tilOgMed)
+    }
+
     @GetMapping("/innsendinger/feilede")
     @Operation(summary = "List innsendinger som har feilet Kafka-sending (KAFKA_FEILET)")
     @ApiResponse(responseCode = "200", description = "Feilede innsendinger hentet")
