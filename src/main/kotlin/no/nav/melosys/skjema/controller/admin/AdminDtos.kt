@@ -52,10 +52,12 @@ data class RetryResultatDto(
  * MELOSYS-8168 (midlertidig): Resultat av resending. Kandidatene finnes i koden (AG-del innsendt før
  * SMS ble aktivert, som fortsatt venter på AT-del), så endepunktet trenger ingen request-body.
  *
- * [saksnumre] lister sakene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden), og
- * [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med skjema-id-en sin.
+ * [saksnumre] lister sakene som fikk et nytt varsel — eller ved [dryRun] ville fått, uten at noe
+ * sendes. [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med
+ * skjema-id-en sin.
  */
 data class ResendVarslerResultatDto(
+    val dryRun: Boolean,
     val antallSendt: Int,
     val saksnumre: List<String>
 )
@@ -101,6 +103,10 @@ data class BrukStatistikkDto(
     val innsendtPerSprak: Map<Språk, Long>,
     /** Saksdekning – om begge deler (arbeidstaker + arbeidsgiver) er dekket, regnet fra faktiske verdier. */
     val saksdekning: SaksdekningDto,
+    /** Innsendte fordelt på synket saksstatus fra melosys-api. */
+    val saksstatusFordeling: SaksstatusFordelingDto,
+    /** Søknader startet fra motpart-CTA-en («arbeidsgiveren din har sendt inn sin del»). */
+    val motpartCta: MotpartCtaStatistikkDto,
     /** Unike personer (fnr) blant innsendte skjema. */
     val antallUnikePersoner: Long,
     /** Unike virksomheter (orgnr) blant innsendte skjema. */
@@ -142,7 +148,54 @@ data class SaksdekningDto(
      * Antall saker der minst én del er sendt i flere versjoner (samme person + juridisk enhet + del
      * sendt mer enn én gang). Inkluderer versjons-erstatninger – altså saker med «mer enn to deler».
      */
-    val antallSakerMedFlereVersjoner: Long
+    val antallSakerMedFlereVersjoner: Long,
+    /**
+     * Deler som står som ventende hos oss (mangler innsendt motpart), men der saken er AVSLUTTET
+     * i Melosys – motpartens del kom trolig via en annen kanal. Disse skal ikke purres.
+     */
+    val antallVentendeMedAvsluttetSak: Long
+)
+
+/**
+ * Backup-uttrekk av synk-tilstanden FØR massesynk/migrering: nøyaktig feltene synken kan endre,
+ * per skjema-id. Inneholder bevisst ingen personopplysninger (ingen fnr, navn eller skjemadata) —
+ * kan lastes ned fra melosys-console og brukes til gjenoppretting eller diff.
+ */
+data class SaksstatusUttrekkDto(
+    val tidspunkt: Instant,
+    val antall: Int,
+    val rader: List<SaksstatusUttrekkRadDto>
+)
+
+data class SaksstatusUttrekkRadDto(
+    val skjemaId: UUID,
+    val referanseId: String,
+    val saksnummer: String?,
+    val saksstatus: Saksstatus?,
+    val saksstatusOppdatert: Instant?
+)
+
+/**
+ * Innsendte fordelt på saksstatus synket fra melosys-api.
+ * [ukjent] = ikke synket ennå – skal gå mot 0 etter at massesynken er kjørt, og er dermed
+ * også et mål på synk-dekningen.
+ */
+data class SaksstatusFordelingDto(
+    val mottatt: Long,
+    val avsluttet: Long,
+    val ukjent: Long
+)
+
+/**
+ * Effektmåling for motpart-CTA-en. Utkast er nåtilstand; innsendt følger periodefilteret.
+ * Nevneren (antall ventende motpart-søknader totalt) finnes ikke her – konvertering leses
+ * indirekte mot venter-tallene i [SaksdekningDto].
+ */
+data class MotpartCtaStatistikkDto(
+    /** Påbegynte utkast startet fra CTA-en. */
+    val antallUtkastViaCta: Long,
+    /** Innsendte søknader startet fra CTA-en. */
+    val antallInnsendtViaCta: Long
 )
 
 /**
@@ -157,7 +210,15 @@ data class DelStatusDto(
     /** Mangler innsendt motpart, men motparten har påbegynt et utkast (under arbeid). */
     val venterMotpartHarUtkast: Long,
     /** Mangler motpart helt – verken innsendt eller påbegynt utkast. */
-    val venterIngenMotpart: Long
+    val venterIngenMotpart: Long,
+    /** Del av [venterMotpartHarUtkast] der saken IKKE er avsluttet i Melosys (inkl. ikke synket). */
+    val venterMotpartHarUtkastAktivSak: Long,
+    /** Del av [venterMotpartHarUtkast] der saken er AVSLUTTET i Melosys. */
+    val venterMotpartHarUtkastAvsluttetSak: Long,
+    /** Del av [venterIngenMotpart] der saken IKKE er avsluttet i Melosys (inkl. ikke synket) – reelt ventende. */
+    val venterIngenMotpartAktivSak: Long,
+    /** Del av [venterIngenMotpart] der saken er AVSLUTTET i Melosys. */
+    val venterIngenMotpartAvsluttetSak: Long
 )
 
 /**

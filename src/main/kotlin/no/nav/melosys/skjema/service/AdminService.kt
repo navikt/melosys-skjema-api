@@ -9,6 +9,10 @@ import java.util.UUID
 import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
 import no.nav.melosys.skjema.controller.admin.DelStatusDto
+import no.nav.melosys.skjema.controller.admin.MotpartCtaStatistikkDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusFordelingDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkRadDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
@@ -28,6 +32,7 @@ import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
@@ -97,11 +102,14 @@ class AdminService(
                 flyt = metadata.representasjonstype,
                 sprak = innsending.innsendtSprak,
                 periode = innsending.skjema.utsendelsePeriode(),
-                erstattet = innsending.skjema.id in erstattedeIder
+                erstattet = innsending.skjema.id in erstattedeIder,
+                saksstatus = innsending.saksstatus,
+                opprettetVia = innsending.skjema.opprettetVia
             )
         }
 
-        val utkast = adminStatistikkRepository.finnAlleUtkast().mapNotNull { skjema ->
+        val utkastSkjemaer = adminStatistikkRepository.finnAlleUtkast()
+        val utkast = utkastSkjemaer.mapNotNull { skjema ->
             val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
             UtkastSkjema(skjema.fnr, metadata.juridiskEnhetOrgnr, metadata.skjemadel, skjema.utsendelsePeriode())
         }
@@ -125,10 +133,37 @@ class AdminService(
             innsendtPerFlyt = Representasjonstype.entries.associateWith { f -> innsendt.count { it.flyt == f }.toLong() },
             innsendtPerSprak = Språk.entries.associateWith { sp -> innsendt.count { it.sprak == sp }.toLong() },
             saksdekning = beregnSaksdekning(innsendt, utkast),
+            saksstatusFordeling = SaksstatusFordelingDto(
+                mottatt = innsendt.count { it.saksstatus == Saksstatus.MOTTATT }.toLong(),
+                avsluttet = innsendt.count { it.saksstatus == Saksstatus.AVSLUTTET }.toLong(),
+                ukjent = innsendt.count { it.saksstatus == null }.toLong()
+            ),
+            motpartCta = MotpartCtaStatistikkDto(
+                antallUtkastViaCta = utkastSkjemaer.count { it.opprettetVia == OpprettetVia.MOTPART_CTA }.toLong(),
+                antallInnsendtViaCta = innsendt.count { it.opprettetVia == OpprettetVia.MOTPART_CTA }.toLong()
+            ),
             antallUnikePersoner = innsendt.mapTo(mutableSetOf()) { it.fnr }.size.toLong(),
             antallUnikeVirksomheter = innsendt.mapTo(mutableSetOf()) { it.orgnr }.size.toLong(),
             topplisteVirksomheter = beregnToppliste(innsendt)
         )
+    }
+
+    /**
+     * Backup-uttrekk av synk-tilstanden før massesynk: feltene synken kan endre, per skjema-id.
+     * Ingen personopplysninger — se [SaksstatusUttrekkDto].
+     */
+    @Transactional(readOnly = true)
+    fun hentSaksstatusUttrekk(): SaksstatusUttrekkDto {
+        val rader = innsendingRepository.finnSaksstatusUttrekk().map { rad ->
+            SaksstatusUttrekkRadDto(
+                skjemaId = rad.skjemaId,
+                referanseId = rad.referanseId,
+                saksnummer = rad.saksnummer,
+                saksstatus = rad.saksstatus,
+                saksstatusOppdatert = rad.saksstatusOppdatert
+            )
+        }
+        return SaksstatusUttrekkDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)
     }
 
     private fun innenfor(tidspunkt: Instant, fra: Instant?, tilEksklusiv: Instant?): Boolean =
@@ -147,13 +182,18 @@ class AdminService(
         val utkastArbeidstakerPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
         val utkastArbeidsgiverPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
 
+        val arbeidstakerStatus = delStatus(arbeidstakerDeler, arbeidsgiverePerSak, utkastArbeidsgiverPerSak)
+        val arbeidsgiverStatus = delStatus(arbeidsgiverDeler, arbeidstakerePerSak, utkastArbeidstakerPerSak)
         return SaksdekningDto(
             antallKomplette = innsendt.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
             antallSakerMedBeggeDeler = antallSakerMedBeggeDeler(innsendt),
-            arbeidstakerDeler = delStatus(arbeidstakerDeler, arbeidsgiverePerSak, utkastArbeidsgiverPerSak),
-            arbeidsgiverDeler = delStatus(arbeidsgiverDeler, arbeidstakerePerSak, utkastArbeidstakerPerSak),
+            arbeidstakerDeler = arbeidstakerStatus,
+            arbeidsgiverDeler = arbeidsgiverStatus,
             antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler),
-            antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(innsendt)
+            antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(innsendt),
+            antallVentendeMedAvsluttetSak = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
+                it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
+            }
         )
     }
 
@@ -173,16 +213,34 @@ class AdminService(
     ): DelStatusDto {
         var medMotpart = 0L
         var venterMotpartHarUtkast = 0L
+        var venterMotpartHarUtkastAvsluttet = 0L
         var venterIngenMotpart = 0L
+        var venterIngenMotpartAvsluttet = 0L
         for (del in deler) {
+            val avsluttet = del.saksstatus == Saksstatus.AVSLUTTET
             when {
                 motpartSendtPerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> medMotpart++
                 // Bevisst kun person + juridisk enhet (ikke periode): se kommentar over.
-                motpartUtkastPerSak[del.sakNokkel()]?.isNotEmpty() == true -> venterMotpartHarUtkast++
-                else -> venterIngenMotpart++
+                motpartUtkastPerSak[del.sakNokkel()]?.isNotEmpty() == true -> {
+                    venterMotpartHarUtkast++
+                    if (avsluttet) venterMotpartHarUtkastAvsluttet++
+                }
+                else -> {
+                    venterIngenMotpart++
+                    if (avsluttet) venterIngenMotpartAvsluttet++
+                }
             }
         }
-        return DelStatusDto(deler.size.toLong(), medMotpart, venterMotpartHarUtkast, venterIngenMotpart)
+        return DelStatusDto(
+            totalt = deler.size.toLong(),
+            medMotpart = medMotpart,
+            venterMotpartHarUtkast = venterMotpartHarUtkast,
+            venterIngenMotpart = venterIngenMotpart,
+            venterMotpartHarUtkastAktivSak = venterMotpartHarUtkast - venterMotpartHarUtkastAvsluttet,
+            venterMotpartHarUtkastAvsluttetSak = venterMotpartHarUtkastAvsluttet,
+            venterIngenMotpartAktivSak = venterIngenMotpart - venterIngenMotpartAvsluttet,
+            venterIngenMotpartAvsluttetSak = venterIngenMotpartAvsluttet
+        )
     }
 
     /** Saker (person + juridisk enhet) der begge deler er dekket – komplett eller matchende separate deler. */
@@ -250,7 +308,9 @@ class AdminService(
         val flyt: Representasjonstype,
         val sprak: Språk,
         override val periode: PeriodeDto?,
-        val erstattet: Boolean
+        val erstattet: Boolean,
+        val saksstatus: Saksstatus?,
+        val opprettetVia: OpprettetVia?
     ) : SakDel
 
     private data class UtkastSkjema(
@@ -337,14 +397,14 @@ class AdminService(
      * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
      * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
      */
-    fun resendVarsler(): ResendVarslerResultatDto {
+    fun resendVarsler(dryRun: Boolean): ResendVarslerResultatDto {
         val kandidater = finnResendKandidater()
-        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
+        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
 
         val sendteSaksnumre = mutableListOf<String>()
         kandidater.forEach { kandidat ->
             try {
-                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId)) {
+                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId, dryRun)) {
                     // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
                     sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
                 }
@@ -352,8 +412,8 @@ class AdminService(
                 log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
             }
         }
-        log.info { "Admin: Resend ferdig – ${sendteSaksnumre.size} varsler sendt" }
-        return ResendVarslerResultatDto(antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
+        log.info { "Admin: Resend ferdig (dryRun=$dryRun) – ${sendteSaksnumre.size} varsler ${if (dryRun) "ville blitt sendt" else "sendt"}" }
+        return ResendVarslerResultatDto(dryRun = dryRun, antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
     }
 
     /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */

@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.service
 
+import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
@@ -11,6 +12,7 @@ import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -56,6 +58,7 @@ class UtsendtArbeidstakerService(
     private val referanseIdGenerator: ReferanseIdGenerator,
     private val skjemaDefinisjonService: SkjemaDefinisjonService,
     @Lazy private val vedleggService: VedleggService,
+    private val unleash: Unleash,
 ) {
 
     /**
@@ -85,6 +88,7 @@ class UtsendtArbeidstakerService(
                     fnr = innloggetBrukerFnr,
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -100,6 +104,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     fnr = request.arbeidstaker.fnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -112,11 +117,14 @@ class UtsendtArbeidstakerService(
                     fnr = request.arbeidstaker.fnr,
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
+                    opprettetVia = request.opprettetVia,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
             }
         }
+
+        request.prefyllFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, innloggetBrukerFnr) }
 
         val savedSkjema = skjemaRepository.save(skjema)
         log.info { "Opprettet Utsendt Arbeidstaker søknad med id: ${savedSkjema.id}, representasjonstype: ${request.representasjonstype}" }
@@ -125,6 +133,56 @@ class UtsendtArbeidstakerService(
             id = savedSkjema.id ?: throw IllegalStateException("Skjema ID var null etter lagring"),
             status = savedSkjema.status
         )
+    }
+
+    /**
+     * Forhåndsutfyller land og utsendingsperiode i et nytt arbeidstaker-utkast fra en innsendt
+     * arbeidsgiver-del (motpart-CTA). Kilden må være innlogget brukers egen ventende
+     * arbeidsgiver-del; alt annet ignoreres slik at opprettelsen aldri feiler på prefyll.
+     * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen.
+     */
+    private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
+        if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
+            log.info { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: motpart-CTA-toggle er av" }
+            return
+        }
+        if (skjema.utsendtArbeidstakerMetadataOrThrow().skjemadel != Skjemadel.ARBEIDSTAKERS_DEL) {
+            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: gjelder kun arbeidstakers del" }
+            return
+        }
+
+        val kilde = skjemaRepository.findById(prefyllFraSkjemaId).orElse(null)
+        val kildeMetadata = kilde?.metadata as? UtsendtArbeidstakerMetadata
+        if (kilde == null
+            || kilde.fnr != innloggetBrukerFnr
+            || kilde.status != SkjemaStatus.SENDT
+            || kildeMetadata?.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL
+            || kildeMetadata.juridiskEnhetOrgnr != skjema.utsendtArbeidstakerMetadataOrThrow().juridiskEnhetOrgnr
+        ) {
+            log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: ikke en innsendt arbeidsgiver-del for innlogget bruker og samme arbeidsgiver" }
+            return
+        }
+
+        val utsendingsperiodeOgLand = (kilde.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand
+        if (utsendingsperiodeOgLand == null) {
+            log.info { "Prefyll fra skjema $prefyllFraSkjemaId hoppet over: kilden mangler utsendingsperiode og land" }
+            return
+        }
+
+        skjema.data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(utsendingsperiodeOgLand = utsendingsperiodeOgLand)
+        skjema.prefyltFraSkjemaId = kilde.id
+    }
+
+    /**
+     * Legger ved motpartens oppgitte land og periode fra arbeidsgiver-delen utkastet ble
+     * forhåndsutfylt fra, slik at frontend kan vise dem selv etter at bruker har endret verdiene.
+     */
+    private fun medMotpartensOppgitteVerdier(dto: UtsendtArbeidstakerSkjemaDto, skjema: Skjema): UtsendtArbeidstakerSkjemaDto {
+        val kildeId = skjema.prefyltFraSkjemaId ?: return dto
+        val motpartensVerdier = skjemaRepository.findById(kildeId).orElse(null)
+            ?.let { (it.data as? UtsendtArbeidstakerSkjemaData)?.utsendingsperiodeOgLand }
+            ?: return dto
+        return dto.copy(motpartensUtsendingsperiodeOgLand = motpartensVerdier)
     }
 
     /**
@@ -137,7 +195,7 @@ class UtsendtArbeidstakerService(
     fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
         val skjema = findByIdOrThrow(skjemaId)
         if (skjema.status != SkjemaStatus.SENDT) {
-            return krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto()
+            return medMotpartensOppgitteVerdier(krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto(), skjema)
         }
 
         val dto = skjema.toUtsendtArbeidstakerDto()
