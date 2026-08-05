@@ -153,13 +153,7 @@ class AdminService(
     /** Alle innsendte utsendt-arbeidstaker-deler med versjonslenken satt fra hele populasjonen. */
     private fun hentInnsendtPopulasjon(): List<InnsendtSkjema> {
         val alle = innsendingRepository.finnAlleInnsendteMedSkjema()
-        // Versjonslenken snus: erstattet skjema -> versjonen som erstattet det.
-        val erstattetAv: Map<UUID, UUID> = alle
-            .mapNotNull { innsending ->
-                val erstatter = (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId
-                erstatter?.let { it to innsending.skjema.id!! }
-            }
-            .toMap()
+        val erstattetAv = snuVersjonslenken(alle)
         return alle.mapNotNull { innsending ->
             val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
             InnsendtSkjema(
@@ -180,6 +174,34 @@ class AdminService(
                 innsendtDato = innsending.opprettetDato
             )
         }
+    }
+
+    /** Én kobling i versjonslenken: skjemaet som ble erstattet, og versjonen som erstattet det. */
+    private data class Erstatterkobling(val erstattet: UUID, val erstatter: UUID, val erstatterInnsendt: Instant)
+
+    /**
+     * Snur versjonslenken til oppslaget «erstattet skjema -> versjonen som erstattet det».
+     *
+     * `erstatterSkjemaId` er ikke garantert unik, så et skjema kan ha flere erstattere. Koblingene
+     * sorteres derfor deterministisk før de slås sammen, slik at nyeste erstatter vinner og to identiske
+     * kall gir samme svar uavhengig av radenes rekkefølge fra databasen.
+     */
+    private fun snuVersjonslenken(alle: List<Innsending>): Map<UUID, UUID> {
+        val koblinger = alle.mapNotNull { innsending ->
+            (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId?.let { erstattet ->
+                Erstatterkobling(erstattet, innsending.skjema.id!!, innsending.opprettetDato)
+            }
+        }
+        val forgrenede = koblinger.groupingBy { it.erstattet }.eachCount().count { it.value > 1 }
+        if (forgrenede > 0) {
+            log.warn {
+                "Bruksstatistikk: $forgrenede skjema har mer enn én erstatter-versjon – nyeste innsending " +
+                    "brukes som gjeldende versjon i statistikken"
+            }
+        }
+        return koblinger
+            .sortedWith(compareBy({ it.erstatterInnsendt }, { it.erstatter }))
+            .associate { it.erstattet to it.erstatter }
     }
 
     private fun filtrerPaaPeriode(
@@ -416,7 +438,8 @@ class AdminService(
     /**
      * Kobler hver erstattede del til den gjeldende versjonen den til slutt ble erstattet av, ved å følge
      * versjonslenken (erstatterSkjemaId) transitivt gjennom mellomliggende versjoner. Lenken er eksakt og
-     * uavhengig av hvilke perioder versjonene er utfylt med. En sykel i lenken stopper gjennomgangen.
+     * uavhengig av hvilke perioder versjonene er utfylt med. En sykel i lenken stopper gjennomgangen, og
+     * delen ender da på en id som selv er erstattet – den faller dermed utenfor klyngens matchende deler.
      */
     private fun gjeldendeVersjonPerErstattetDel(populasjon: List<InnsendtSkjema>): Map<UUID, UUID> {
         val nesteVersjon = populasjon.mapNotNull { del -> del.erstattetAv?.let { del.id to it } }.toMap()
@@ -425,7 +448,10 @@ class AdminService(
             val besokt = mutableSetOf(erstattetId, versjon)
             while (true) {
                 val neste = nesteVersjon[versjon] ?: break
-                if (!besokt.add(neste)) break
+                if (!besokt.add(neste)) {
+                    log.warn { "Sirkulær erstatter-referanse oppdaget ved skjema $neste" }
+                    break
+                }
                 versjon = neste
             }
             versjon
@@ -451,8 +477,10 @@ class AdminService(
      * [erstattede] versjoner tas med i tidspunktene (den tidligste versjonen sier når siden faktisk startet),
      * men kobles via VERSJONSLENKEN [gjeldendeVersjon] – ikke via periodeoverlapp – slik at en erstattet
      * versjon med feil periode ikke kan forgifte tidsstemplene til en annen utsendelse. En erstattet del
-     * teller kun når versjonskjeden ender i en av klyngens matchende deler. Erstattede deler påvirker ikke
-     * hvilken klynge som velges.
+     * teller kun når versjonskjeden ender i en av klyngens matchende deler. Merk at det er ETTERFØLGEREN
+     * som må være en av klyngens matchende deler, ikke den erstattede delen selv: en gammel versjon som i
+     * sin tid matchet motparten, men som ble korrigert inn i en annen utsendelse, følger etterfølgeren sin
+     * og teller ikke her. Erstattede deler påvirker ikke hvilken klynge som velges.
      */
     private fun initiativPar(
         klynge: List<InnsendtSkjema>,

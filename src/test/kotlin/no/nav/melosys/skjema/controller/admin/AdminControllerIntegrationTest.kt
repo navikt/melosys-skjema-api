@@ -735,6 +735,61 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `initiativ - tidligere versjon av en matchende del teller med, men bare i sin egen utsendelse`() {
+            // Sak A: arbeidsgiveren sendte inn tidlig, korrigerte senere. Uten versjonskjeden ville den
+            // korrigerte versjonens tidspunkter gjort arbeidstakeren til initiativtaker.
+            val aFnr = "50000000001"
+            val aV1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-03-31"))
+            val aParPeriode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-04-30"))
+            val aV1 = lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = aFnr, periode = aV1Periode,
+                utkastStartet = Instant.parse("2026-01-01T08:00:00Z"), innsendtDato = Instant.parse("2026-01-02T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = aFnr, periode = aParPeriode,
+                utkastStartet = Instant.parse("2026-01-03T08:00:00Z"), innsendtDato = Instant.parse("2026-01-04T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = aFnr, periode = aParPeriode, erstatterSkjemaId = aV1.id,
+                utkastStartet = Instant.parse("2026-01-05T08:00:00Z"), innsendtDato = Instant.parse("2026-01-06T08:00:00Z")
+            )
+
+            // Sak B: samme tidsbilde, men den erstattede AG-versjonen ble korrigert inn i en ANNEN
+            // utsendelse – da skal den ikke telle i den valgte klyngen
+            val bFnr = "50000000002"
+            val bGammelPeriode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-03-31"))
+            val bParPeriode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-04-30"))
+            val bSenAgPeriode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val bSenAtPeriode = PeriodeDto(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-12-31"))
+            val bGammel = lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = bFnr, periode = bGammelPeriode,
+                utkastStartet = Instant.parse("2026-01-01T08:00:00Z"), innsendtDato = Instant.parse("2026-01-02T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = bFnr, periode = bParPeriode,
+                utkastStartet = Instant.parse("2026-01-03T08:00:00Z"), innsendtDato = Instant.parse("2026-01-04T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = bFnr, periode = bParPeriode,
+                utkastStartet = Instant.parse("2026-01-05T08:00:00Z"), innsendtDato = Instant.parse("2026-01-06T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL, fnr = bFnr, periode = bSenAgPeriode, erstatterSkjemaId = bGammel.id,
+                utkastStartet = Instant.parse("2026-01-07T08:00:00Z"), innsendtDato = Instant.parse("2026-01-08T08:00:00Z")
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSTAKERS_DEL, fnr = bFnr, periode = bSenAtPeriode,
+                utkastStartet = Instant.parse("2026-01-09T08:00:00Z"), innsendtDato = Instant.parse("2026-01-10T08:00:00Z")
+            )
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 2
+            s.parInitiertAvArbeidsgiver shouldBe 1 // sak A: den erstattede versjonen hører til paret
+            s.parInitiertAvArbeidstaker shouldBe 1 // sak B: den erstattede versjonen hører til en annen utsendelse
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
         fun `initiativ - erstattet versjon fra en annen utsendelse forgifter ikke tidsstemplene`() {
             val fnr = "49000000001"
             val at1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
