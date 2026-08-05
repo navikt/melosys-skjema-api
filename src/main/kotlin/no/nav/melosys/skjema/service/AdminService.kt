@@ -140,8 +140,10 @@ class AdminService(
     fun hentVirksomhetSaksnumre(rang: Int, fraOgMed: LocalDate?, tilOgMed: LocalDate?): VirksomhetSaksnumreDto {
         val kohort = filtrerPaaPeriode(hentInnsendtPopulasjon(), fraOgMed, tilOgMed)
         val virksomheter = grupperVirksomheter(kohort)
-        val gruppe = virksomheter.getOrNull(rang - 1)
-            ?: throw NoSuchElementException("Ingen virksomhet med rang $rang i topplisten (${virksomheter.size} virksomheter i perioden)")
+        if (rang < 1 || rang > virksomheter.size) {
+            throw NoSuchElementException("Ingen virksomhet med rang $rang i topplisten (${virksomheter.size} virksomheter i perioden)")
+        }
+        val gruppe = virksomheter[rang - 1]
         return VirksomhetSaksnumreDto(
             rang = rang,
             antallInnsendinger = gruppe.deler.size.toLong(),
