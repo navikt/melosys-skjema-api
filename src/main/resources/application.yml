@@ -185,9 +185,19 @@ rate-limit:
     max-requests: 15
     time-window-minutes: 1
 
+# Feature toggles. URL/token injiseres av nais Unleash-integrasjonen (ApiToken-ressursen).
+# Kun brukt utenfor local-/test-profilene (se FeatureToggleConfig) - lokale profiler og test
+# får FakeUnleash med alle toggles på, og manglende env-varer her gir bevisst oppstartsfeil.
+unleash:
+  url: ${UNLEASH_SERVER_API_URL}/api
+  token: ${UNLEASH_SERVER_API_TOKEN}
+
 # Machine-to-machine access control
 m2m:
   read-skjemadata:
+    clients:
+      - ${MELOSYS_CLIENT_ID}
+  write-skjemadata:
     clients:
       - ${MELOSYS_CLIENT_ID}
   # Tilgang til admin-endepunktene (/admin/**): både azp_name-allowlist og delt

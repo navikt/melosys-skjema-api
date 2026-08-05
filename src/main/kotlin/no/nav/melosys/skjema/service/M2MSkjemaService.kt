@@ -1,9 +1,11 @@
 package no.nav.melosys.skjema.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.exception.SaksnummerKonfliktException
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.integrasjon.pdl.PdlClient
@@ -25,7 +27,10 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
+import no.nav.melosys.skjema.types.m2m.SaksstatusOppdatering
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
+import no.nav.melosys.skjema.types.common.Saksstatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -45,8 +50,7 @@ class M2MSkjemaService(
         val skjema = skjemaRepository.findByIdAndStatusSendt(id)
             ?: throw NoSuchElementException("Skjema med id $id ikke funnet")
 
-        val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
-            ?: throw NoSuchElementException("Innsending for skjema med id $id ikke funnet")
+        val innsending = hentInnsending(skjema.id!!)
 
         val skjemaDto = skjema.toUtsendtArbeidstakerDto()
 
@@ -94,15 +98,115 @@ class M2MSkjemaService(
         }
     }
 
+    /**
+     * Registrerer saksnummer fra melosys-api på innsendingen. Saksnummer er immutabelt når det
+     * først er satt: samme verdi på nytt er idempotent OK, en annen verdi gir
+     * [SaksnummerKonfliktException] (409). Backfill (null → verdi) er alltid OK.
+     *
+     * Den nye innsendingen beholder `saksstatus = null` (vises som Mottatt) uavhengig av andre
+     * innsendinger på samme sak: Melosys oppretter ny behandling for den, så den er per
+     * definisjon under behandling.
+     */
     @Transactional
     fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
-        val innsending = innsendingRepository.findBySkjemaId(skjemaId)
-            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
-
+        val innsending = hentInnsending(skjemaId)
+        validerSaksnummerUendret(innsending, saksnummer)
         innsending.saksnummer = saksnummer
-        innsendingRepository.save(innsending)
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
+
+    /**
+     * Oppdaterer saksstatus for innsendingen med gitt skjema-id. Kun den identifiserte
+     * innsendingen oppdateres – andre innsendinger på samme saksnummer røres ikke.
+     * Saksnummer-avvik mot allerede satt saksnummer gir [SaksnummerKonfliktException] (409).
+     */
+    @Transactional
+    fun oppdaterSaksstatus(skjemaId: UUID, saksnummer: String, saksstatus: Saksstatus) {
+        val innsending = hentInnsending(skjemaId)
+        val oppdatert = oppdaterSaksstatusForInnsending(innsending, saksnummer, saksstatus)
+        log.info { "Oppdatert saksstatus til $saksstatus for sak $saksnummer (endret: $oppdatert)" }
+    }
+
+    /**
+     * Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er rapporteres i stedet for å
+     * feile. Rader med saksnummer-konflikt (innsendingen har allerede et annet saksnummer)
+     * hoppes over og rapporteres i [BulkOppdaterSaksstatusResultat.konfliktSkjemaIder] uten å
+     * feile batchen. Hele batchen kjører i én transaksjon: én uventet feil ruller tilbake alt,
+     * og melosys-api reprøver hele batchen (operasjonen er idempotent).
+     */
+    @Transactional
+    fun bulkOppdaterSaksstatus(oppdateringer: List<SaksstatusOppdatering>): BulkOppdaterSaksstatusResultat {
+        val ukjenteSkjemaIder = mutableSetOf<UUID>()
+        val konfliktSkjemaIder = mutableSetOf<UUID>()
+        val oppdaterteInnsendingIder = mutableSetOf<UUID>()
+
+        oppdateringer.forEach { oppdatering ->
+            val innsending = innsendingRepository.findBySkjemaId(oppdatering.skjemaId)
+            if (innsending == null) {
+                ukjenteSkjemaIder += oppdatering.skjemaId
+                return@forEach
+            }
+            try {
+                if (oppdaterSaksstatusForInnsending(innsending, oppdatering.saksnummer, oppdatering.saksstatus)) {
+                    oppdaterteInnsendingIder += innsending.id!!
+                }
+            } catch (e: SaksnummerKonfliktException) {
+                log.warn(e) { "Hopper over rad med saksnummer-konflikt i massesynk" }
+                konfliktSkjemaIder += oppdatering.skjemaId
+            }
+        }
+
+        log.info {
+            "Bulk-oppdatert saksstatus: ${oppdateringer.size} rader, ${oppdaterteInnsendingIder.size} innsending(er) oppdatert, " +
+                "${ukjenteSkjemaIder.size} ukjente skjema-id-er, ${konfliktSkjemaIder.size} saksnummer-konflikter"
+        }
+        return BulkOppdaterSaksstatusResultat(
+            antallOppdatert = oppdaterteInnsendingIder.size,
+            ukjenteSkjemaIder = ukjenteSkjemaIder.toList(),
+            konfliktSkjemaIder = konfliktSkjemaIder.toList()
+        )
+    }
+
+    /**
+     * Oppdaterer saksstatus for KUN denne innsendingen. Saksnummer er immutabelt når det først
+     * er satt ([validerSaksnummerUendret]); backfill (null → verdi) er OK.
+     *
+     * Monotoni-guard: Avsluttet er terminal for en innsending; en revurdering i Melosys skal
+     * ikke resette ferdigbehandlede innsendinger (produkteierbeslutning 2026-07-21). Forsøk på
+     * nedgradering AVSLUTTET → MOTTATT hoppes derfor over med warn-logg og telles ikke som
+     * oppdatert.
+     *
+     * Skriver kun ved faktisk endring – returverdien er `false` når status er uendret, slik at
+     * en gjentatt synk rapporterer 0 og [Innsending.saksstatusOppdatert] betyr «sist endret»,
+     * ikke «sist skrevet».
+     */
+    private fun oppdaterSaksstatusForInnsending(innsending: Innsending, saksnummer: String, saksstatus: Saksstatus): Boolean {
+        validerSaksnummerUendret(innsending, saksnummer)
+        innsending.saksnummer = saksnummer
+
+        if (innsending.saksstatus == saksstatus) {
+            return false
+        }
+        if (innsending.saksstatus == Saksstatus.AVSLUTTET && saksstatus == Saksstatus.MOTTATT) {
+            log.warn { "Ignorerer nedgradering AVSLUTTET → MOTTATT for skjema ${innsending.skjema.id} på sak $saksnummer" }
+            return false
+        }
+
+        innsending.saksstatus = saksstatus
+        innsending.saksstatusOppdatert = Instant.now()
+        return true
+    }
+
+    private fun validerSaksnummerUendret(innsending: Innsending, saksnummer: String) {
+        val eksisterende = innsending.saksnummer ?: return
+        if (eksisterende != saksnummer) {
+            throw SaksnummerKonfliktException(innsending.skjema.id!!, eksisterende, saksnummer)
+        }
+    }
+
+    private fun hentInnsending(skjemaId: UUID): Innsending =
+        innsendingRepository.findBySkjemaId(skjemaId)
+            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
 
     fun hentVedleggInnhold(skjemaId: UUID, vedleggId: UUID): VedleggInnhold {
         log.info { "M2M: Henter vedlegg $vedleggId for skjema $skjemaId" }
@@ -116,8 +220,7 @@ class M2MSkjemaService(
         val skjema = skjemaRepository.findByIdAndStatusSendt(skjemaId)
             ?: throw NoSuchElementException("Skjema med id $skjemaId ikke funnet")
 
-        val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)
-            ?: throw NoSuchElementException("Innsending for skjema med id $skjemaId ikke funnet")
+        val innsending = hentInnsending(skjema.id!!)
 
         return when (skjema.type) {
             SkjemaType.UTSENDT_ARBEIDSTAKER -> {
