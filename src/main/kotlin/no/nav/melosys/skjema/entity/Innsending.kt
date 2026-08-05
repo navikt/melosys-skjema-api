@@ -17,6 +17,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 
 /**
@@ -81,5 +82,13 @@ class Innsending(
 
     /** Saksnummer i melosys-api, satt via M2M-kall etter sak er opprettet */
     @Column(name = "saksnummer")
-    var saksnummer: String? = null
+    var saksnummer: String? = null,
+
+    /** Saksstatus i melosys-api, synkronisert via M2M-kall. Null = ikke synket ennå (behandles som MOTTATT). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "saksstatus")
+    var saksstatus: Saksstatus? = null,
+
+    @Column(name = "saksstatus_oppdatert")
+    var saksstatusOppdatert: Instant? = null
 )

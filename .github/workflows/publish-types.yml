@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5.4.0
+        uses: actions/setup-java@v5.6.0
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -35,6 +35,14 @@ jobs:
           VERSION="$(date +%Y.%m.%d)-$(git rev-parse --short=12 HEAD)"
           echo "Publishing melosys-skjema-api-types version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # GitHub Packages nekter overskriving (409), så re-runs av en allerede
+          # (helt eller delvis) publisert versjon må hoppe over publiseringen
+          POM_URL="https://maven.pkg.github.com/${{ github.repository }}/no/nav/melosys/melosys-skjema-api-types/$VERSION/melosys-skjema-api-types-$VERSION.pom"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $GITHUB_TOKEN" "$POM_URL")
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "302" ]; then
+            echo "Versjon $VERSION er allerede publisert (pom finnes) – hopper over"
+            exit 0
+          fi
           ./gradlew :melosys-skjema-api-types:clean :melosys-skjema-api-types:publish -Pversion=$VERSION --no-build-cache
         env:
           GITHUB_ACTOR: ${{ github.actor }}

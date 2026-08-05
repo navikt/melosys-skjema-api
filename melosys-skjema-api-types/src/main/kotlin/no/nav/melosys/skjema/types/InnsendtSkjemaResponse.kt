@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.types
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.UUID
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaData
@@ -38,5 +39,11 @@ data class InnsendtSkjemaResponse(
     val definisjon: SkjemaDefinisjonDto,
 
     @param:Schema(description = "Indikerer om fullmakt er aktiv. null=ikke relevant, true=aktiv, false=tapt (arbeidstaker-data strippet).")
-    val fullmaktAktiv: Boolean? = null
+    val fullmaktAktiv: Boolean? = null,
+
+    @param:Schema(description = "Melosys-saksnummer, null hvis ikke mottatt fra melosys-api ennå", example = "MEL-123456")
+    val saksnummer: String? = null,
+
+    @param:Schema(description = "Saksstatus i melosys-api, null = ikke synket ennå (behandles som MOTTATT)")
+    val saksstatus: Saksstatus? = null
 )
