@@ -603,6 +603,57 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `initiativ - maales paa det matchende paret, ikke paa et tidligere par som aldri matchet`() {
+            val fnr = "43000000001"
+            // Første utsendelse: AT og AG har perioder som verken overlapper hverandre eller den senere utsendelsen
+            val tidligAtPeriode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
+            val tidligAgPeriode = PeriodeDto(LocalDate.parse("2026-04-01"), LocalDate.parse("2026-05-31"))
+            // Andre utsendelse: AT og AG overlapper hverandre – det eneste faktiske paret
+            val senAgPeriode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val senAtPeriode = PeriodeDto(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-12-31"))
+            val t0 = Instant.parse("2026-02-01T08:00:00Z")
+            val t1 = Instant.parse("2026-02-02T08:00:00Z")
+            val t2 = Instant.parse("2026-02-03T08:00:00Z")
+            val t3 = Instant.parse("2026-02-04T08:00:00Z")
+            val t4 = Instant.parse("2026-02-05T08:00:00Z")
+            val t5 = Instant.parse("2026-02-06T08:00:00Z")
+
+            // Ikke-matchende par, tidligst i tid: begge startet før noen innsending (ville gitt "uavhengig")
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = tidligAtPeriode, utkastStartet = t0, innsendtDato = t1)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = tidligAgPeriode, utkastStartet = t0, innsendtDato = t1)
+            // Matchende par, senere: arbeidsgiver sendte inn før arbeidstakers utkast ble startet
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = senAgPeriode, utkastStartet = t2, innsendtDato = t3)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = senAtPeriode, utkastStartet = t4, innsendtDato = t5)
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+            s.parInitiertAvArbeidsgiver shouldBe 1
+            s.parInitiertAvArbeidstaker shouldBe 0
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
+        fun `erstattet komplett holdes utenfor antallKomplette og kan avstemmes`() {
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "44000000001", periode = periodeA)
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                fnr = "44000000001",
+                periode = periodeOverlapp,
+                erstatterSkjemaId = gammel.id
+            )
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "44000000002", periode = periodeA)
+
+            val body = hentBruk()
+            body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] shouldBe 3
+            with(body.saksdekning) {
+                antallKomplette shouldBe 2
+                antallErstattedeKomplette shouldBe 1
+                antallKomplette + antallErstattedeKomplette shouldBe
+                    body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL]
+            }
+        }
+
+        @Test
         fun `komplette fordeles paa fullmaktstype`() {
             lagInnsendt(
                 Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
@@ -647,7 +698,12 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "41000000002", orgnr = "910000012", juridiskEnhet = juridiskEnhet)
             lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "41000000003", orgnr = "910000020", juridiskEnhet = "910000020")
 
-            val topp = hentBruk().topplisteVirksomheter
+            val body = hentBruk()
+            // Underenheter telles hver for seg på topp-nivå, mens topplisten grupperer på juridisk enhet
+            body.antallUnikeVirksomheter shouldBe 3
+            body.antallUnikeJuridiskeEnheter shouldBe 2
+
+            val topp = body.topplisteVirksomheter
             topp shouldHaveSize 2
             with(topp[0]) {
                 antallInnsendinger shouldBe 3 // begge underenhetene slått sammen
@@ -707,11 +763,9 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 s.antallSakerMedKomplett + s.antallSakerMedMatchendeSeparateDeler - s.antallSakerMedBaadeKomplettOgSeparate
             s.parInitiertAvArbeidsgiver + s.parInitiertAvArbeidstaker + s.parUavhengigStartet shouldBe
                 s.antallSakerMedMatchendeSeparateDeler
-            s.antallMuligeDobbeltinnsendinger shouldBe s.muligeDobbeltinnsendinger.size.toLong()
             s.komplettPerFlyt.values.sum() shouldBe s.antallKomplette
-            s.antallVentendeMedAvsluttetSak shouldBe listOf(s.arbeidstakerDeler, s.arbeidsgiverDeler).sumOf {
-                it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
-            }
+            // Kun AG-delen uten periode (42000000005) venter med avsluttet sak
+            s.antallVentendeMedAvsluttetSak shouldBe 1
             body.topplisteVirksomheter.sumOf { it.antallInnsendinger } shouldBe
                 s.antallKomplette + s.arbeidstakerDeler.totalt + s.arbeidsgiverDeler.totalt
 
@@ -719,6 +773,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             s.antallKomplette shouldBe 1
             s.antallDelerUtenPeriode shouldBe 1
             s.antallMuligeDobbeltinnsendinger shouldBe 1
+            s.muligeDobbeltinnsendinger shouldHaveSize 1
             s.arbeidsgiverDeler.antallErstattedeVersjoner shouldBe 1
             s.arbeidsgiverDeler.dekketAvKomplettSkjema shouldBe 1
             s.arbeidsgiverDeler.venterMotpartHarUtkast shouldBe 1
@@ -918,11 +973,37 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             )
         }
 
-        private fun hentSaksnumre(rang: Int) =
-            adminClient.get().uri("/admin/statistikk/bruk/virksomheter/$rang/saksnumre")
+        private fun hentSaksnumre(rang: Int, fraOgMed: String? = null, tilOgMed: String? = null) =
+            adminClient.get().uri { b ->
+                b.path("/admin/statistikk/bruk/virksomheter/$rang/saksnumre")
+                fraOgMed?.let { b.queryParam("fraOgMed", it) }
+                tilOgMed?.let { b.queryParam("tilOgMed", it) }
+                b.build()
+            }
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
+
+        private fun hentSaksnumreDto(rang: Int, fraOgMed: String? = null, tilOgMed: String? = null): VirksomhetSaksnumreDto =
+            hentSaksnumre(rang, fraOgMed, tilOgMed)
+                .expectStatus().isOk
+                .expectBody<VirksomhetSaksnumreDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+        private fun hentToppliste(fraOgMed: String? = null, tilOgMed: String? = null): List<VirksomhetStatistikkDto> =
+            adminClient.get().uri { b ->
+                b.path("/admin/statistikk/bruk")
+                fraOgMed?.let { b.queryParam("fraOgMed", it) }
+                tilOgMed?.let { b.queryParam("tilOgMed", it) }
+                b.build()
+            }
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BrukStatistikkDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+                .topplisteVirksomheter
 
         @Test
         fun `skal returnere saksnumrene for virksomheten paa oppgitt rang, uten personopplysninger`() {
@@ -959,23 +1040,44 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             lagInnsendt(fnr = "81000000002", juridiskEnhet = "921000010")
             lagInnsendt(fnr = "81000000003", juridiskEnhet = "921000020")
 
-            val toppliste = adminClient.get().uri("/admin/statistikk/bruk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<BrukStatistikkDto>()
-                .returnResult().responseBody.shouldNotBeNull()
-                .topplisteVirksomheter
-
-            toppliste.forEachIndexed { indeks, virksomhet ->
-                val saksnumre = hentSaksnumre(indeks + 1)
-                    .expectStatus().isOk
-                    .expectBody<VirksomhetSaksnumreDto>()
-                    .returnResult().responseBody.shouldNotBeNull()
+            hentToppliste().forEachIndexed { indeks, virksomhet ->
+                val saksnumre = hentSaksnumreDto(indeks + 1)
                 saksnumre.antallInnsendinger shouldBe virksomhet.antallInnsendinger
                 saksnumre.saksnumre shouldHaveSize virksomhet.antallInnsendinger.toInt()
             }
+        }
+
+        @Test
+        fun `skal bruke samme periodevindu som topplisten`() {
+            val iVinduet = Instant.parse("2026-03-15T10:00:00Z")
+            val utenforVinduet = Instant.parse("2026-06-15T10:00:00Z")
+            lagInnsendt(fnr = "83000000001", juridiskEnhet = "923000010", saksnummer = "SAK-V1", innsendtDato = iVinduet)
+            lagInnsendt(fnr = "83000000002", juridiskEnhet = "923000010", saksnummer = "SAK-V2", innsendtDato = iVinduet)
+            lagInnsendt(fnr = "83000000003", juridiskEnhet = "923000010", saksnummer = "SAK-UTENFOR", innsendtDato = utenforVinduet)
+            lagInnsendt(fnr = "83000000004", juridiskEnhet = "923000020", saksnummer = "SAK-W1", innsendtDato = iVinduet)
+
+            val toppRad1 = hentToppliste(fraOgMed = "2026-03-01", tilOgMed = "2026-03-31").first()
+            val saksnumre = hentSaksnumreDto(1, fraOgMed = "2026-03-01", tilOgMed = "2026-03-31")
+
+            saksnumre.antallInnsendinger shouldBe toppRad1.antallInnsendinger
+            saksnumre.antallInnsendinger shouldBe 2
+            saksnumre.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-V1", "SAK-V2")
+
+            // Uten periodefilter er den tredje innsendingen med igjen
+            hentSaksnumreDto(1).saksnumre shouldContainExactlyInAnyOrder listOf("SAK-V1", "SAK-V2", "SAK-UTENFOR")
+        }
+
+        @Test
+        fun `skal skille virksomheter med likt antall innsendinger paa juridisk enhet`() {
+            lagInnsendt(fnr = "84000000001", juridiskEnhet = "924000020", saksnummer = "SAK-B1")
+            lagInnsendt(fnr = "84000000002", juridiskEnhet = "924000020", saksnummer = "SAK-B2")
+            lagInnsendt(fnr = "84000000003", juridiskEnhet = "924000010", saksnummer = "SAK-A1")
+            lagInnsendt(fnr = "84000000004", juridiskEnhet = "924000010", saksnummer = "SAK-A2")
+
+            hentToppliste().map { it.antallInnsendinger } shouldBe listOf(2L, 2L)
+            // Ved likt antall sorteres laveste juridiske enhet først
+            hentSaksnumreDto(1).saksnumre shouldContainExactlyInAnyOrder listOf("SAK-A1", "SAK-A2")
+            hentSaksnumreDto(2).saksnumre shouldContainExactlyInAnyOrder listOf("SAK-B1", "SAK-B2")
         }
 
         @Test

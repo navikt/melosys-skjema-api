@@ -125,13 +125,14 @@ class AdminService(
             ),
             antallUnikePersoner = kohort.mapTo(mutableSetOf()) { it.fnr }.size.toLong(),
             antallUnikeVirksomheter = kohort.mapTo(mutableSetOf()) { it.orgnr }.size.toLong(),
+            antallUnikeJuridiskeEnheter = kohort.mapTo(mutableSetOf()) { it.juridiskEnhet }.size.toLong(),
             topplisteVirksomheter = grupperVirksomheter(kohort).map { gruppe -> gruppe.tilDto(indeks) }
         )
     }
 
     /**
      * Saksnumrene bak én rad i topplisten (1-basert [rang], samme gruppering/sortering/periode som
-     * `topplisteVirksomheter`). Returnerer kun saksnumre – ingen orgnr, navn eller personopplysninger.
+     * `topplisteVirksomheter`). Returnerer kun saksnumre – ingen direkte identifikatorer (fnr/orgnr/navn).
      *
      * @throws NoSuchElementException hvis [rang] er utenfor topplisten for perioden
      */
@@ -261,6 +262,9 @@ class AdminService(
 
         return SaksdekningDto(
             antallKomplette = komplette.size.toLong(),
+            antallErstattedeKomplette = kohort.count {
+                it.erstattet && it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+            }.toLong(),
             antallSakerMedBeggeDeler = (medKomplett + medSeparate).size.toLong(),
             antallSakerMedKomplett = medKomplett.size.toLong(),
             antallSakerMedMatchendeSeparateDeler = medSeparate.size.toLong(),
@@ -269,7 +273,7 @@ class AdminService(
             arbeidsgiverDeler = arbeidsgiverStatus,
             antallMuligeDobbeltinnsendinger = dobbeltinnsendinger.size.toLong(),
             muligeDobbeltinnsendinger = dobbeltinnsendinger,
-            antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(populasjon),
+            antallSakerMedFlereVersjoner = kohortNokler.count { indeks.harFlereVersjoner(it) }.toLong(),
             antallVentendeMedAvsluttetSak = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
                 it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
             },
@@ -354,8 +358,10 @@ class AdminService(
      * (innsending.opprettetDato) – da fikk den siden trolig beskjed om at motparten hadde levert.
      * Startet begge sider før noen av delene var innsendt, er de uavhengige initiativ.
      *
-     * Tidspunktene tas per side av paret over ALLE versjoner av den siden (tidligste utkast-start og
-     * tidligste innsending), slik at en senere korreksjon ikke endrer hvem som startet.
+     * Tidspunktene måles kun over delene som faktisk inngår i et par (en del som matcher minst én del
+     * på motsatt side), slik at et ikke-matchende par på samme nøkkel ikke stjeler initiativet. Innenfor
+     * de matchende delene brukes tidligste utkast-start og tidligste innsending på hver side – erstattede
+     * versjoner teller med, siden den tidligste versjonen sier når siden faktisk startet.
      */
     private fun beregnInitiativ(saker: Set<Pair<String, String>>, populasjon: List<InnsendtSkjema>): InitiativFordeling {
         val perSakOgDel = populasjon.groupBy { it.sakNokkel() to it.skjemadel }
@@ -363,8 +369,10 @@ class AdminService(
         var arbeidstaker = 0L
         var uavhengig = 0L
         for (sak in saker) {
-            val atDeler = perSakOgDel[sak to Skjemadel.ARBEIDSTAKERS_DEL].orEmpty()
-            val agDeler = perSakOgDel[sak to Skjemadel.ARBEIDSGIVERS_DEL].orEmpty()
+            val alleAtDeler = perSakOgDel[sak to Skjemadel.ARBEIDSTAKERS_DEL].orEmpty()
+            val alleAgDeler = perSakOgDel[sak to Skjemadel.ARBEIDSGIVERS_DEL].orEmpty()
+            val atDeler = alleAtDeler.filter { at -> alleAgDeler.any { at.matcher(it) } }
+            val agDeler = alleAgDeler.filter { ag -> alleAtDeler.any { ag.matcher(it) } }
             if (atDeler.isEmpty() || agDeler.isEmpty()) continue
             val atStartet = atDeler.minOf { it.skjemaOpprettetDato }
             val agStartet = agDeler.minOf { it.skjemaOpprettetDato }
@@ -378,14 +386,6 @@ class AdminService(
         }
         return InitiativFordeling(arbeidsgiver, arbeidstaker, uavhengig)
     }
-
-    /** Saker der minst én deltype er sendt i flere overlappende versjoner (inkl. erstatninger). */
-    private fun antallSakerMedFlereVersjoner(innsendt: List<InnsendtSkjema>): Long =
-        innsendt.groupBy { it.sakNokkel() }.count { (_, saksdeler) ->
-            saksdeler.groupBy { it.skjemadel }.values.any { sammeDel ->
-                sammeDel.any { del -> sammeDel.any { it.id != del.id && del.matcher(it) } }
-            }
-        }.toLong()
 
     /**
      * Grupperer deler som overlapper hverandre i tid til sammenhengende grupper (transitiv lukning av
@@ -446,6 +446,10 @@ class AdminService(
      */
     private inner class SaksIndeks(populasjon: List<InnsendtSkjema>) {
         private val gjeldende = populasjon.filter { !it.erstattet }
+
+        /** Alle versjoner per sak, også de erstattede – grunnlaget for [harFlereVersjoner]. */
+        private val alleDelerPerSak = populasjon.groupBy { it.sakNokkel() }
+
         val komplettePerSak = gjeldende.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
             .groupBy { it.sakNokkel() }
         val arbeidstakerePerSak = gjeldende.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
@@ -466,6 +470,15 @@ class AdminService(
         }
 
         fun erDekket(nokkel: Pair<String, String>): Boolean = harKomplett(nokkel) || harMatchendeSeparateDeler(nokkel)
+
+        /**
+         * Minst én deltype på saken er sendt i flere versjoner med overlappende periode – både
+         * erstatninger og mulige dobbeltinnsendinger. Måles over hele populasjonen, inkl. erstattede.
+         */
+        fun harFlereVersjoner(nokkel: Pair<String, String>): Boolean =
+            alleDelerPerSak[nokkel].orEmpty().groupBy { it.skjemadel }.values.any { sammeDel ->
+                sammeDel.any { del -> sammeDel.any { it.id != del.id && del.matcher(it) } }
+            }
     }
 
     private interface SakDel {

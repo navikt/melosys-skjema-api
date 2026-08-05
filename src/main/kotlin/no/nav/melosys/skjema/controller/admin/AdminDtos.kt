@@ -109,12 +109,26 @@ data class BrukStatistikkDto(
     val motpartCta: MotpartCtaStatistikkDto,
     /** Unike personer (fnr) blant innsendte skjema. */
     val antallUnikePersoner: Long,
-    /** Unike virksomheter (orgnr) blant innsendte skjema. */
+    /**
+     * Unike virksomheter blant innsendte skjema, talt på skjemaets orgnr – altså UNDERENHETER, der
+     * flere underenheter av samme juridiske enhet telles hver for seg. Erstattede versjoner er med.
+     */
     val antallUnikeVirksomheter: Long,
+    /**
+     * Unike juridiske enheter blant innsendte skjema – samme grunnlag som [antallUnikeVirksomheter]
+     * (inkl. erstattede versjoner), men talt på juridisk enhet. Er alltid ≤ [antallUnikeVirksomheter],
+     * og er nøkkelen [topplisteVirksomheter] grupperer på.
+     */
+    val antallUnikeJuridiskeEnheter: Long = 0,
     /**
      * Anonym toppliste over de mest aktive virksomhetene (juridiske enheter), sortert synkende på
      * antall innsendinger. Inneholder bevisst kun tall (rang 1, 2, 3 ...), ikke orgnr eller navn.
      * Saksnumrene bak en rad kan hentes via `/admin/statistikk/bruk/virksomheter/{rang}/saksnumre`.
+     *
+     * NB – annet grunnlag enn tallene over: topplisten grupperer på JURIDISK ENHET (underenheter slås
+     * sammen) og teller kun GJELDENDE innsendinger (erstattede versjoner er holdt utenfor). Antall rader
+     * kan derfor avvike fra både [antallUnikeVirksomheter] og [antallUnikeJuridiskeEnheter], og summen
+     * av `antallInnsendinger` fra [totaltInnsendt].
      */
     val topplisteVirksomheter: List<VirksomhetStatistikkDto>
 )
@@ -136,9 +150,19 @@ data class SaksdekningDto(
     /** Gjeldende skjema sendt som ett samlet skjema (begge deler i én innsending). */
     val antallKomplette: Long,
     /**
-     * Antall unike saker (person + juridisk enhet) der begge deler er dekket – enten via et komplett
-     * skjema, eller via en separat arbeidstaker-del og arbeidsgiver-del som matcher (overlappende
-     * periode). Samme sak telles kun én gang selv om den har både komplett skjema og separate deler.
+     * Komplette skjema i perioden som er erstattet av en nyere versjon. Holdt utenfor [antallKomplette],
+     * men tatt med her slik at tallene kan avstemmes mot fordelingen:
+     * `innsendtPerSkjemadel[ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL] = antallKomplette + antallErstattedeKomplette`.
+     */
+    val antallErstattedeKomplette: Long = 0,
+    /**
+     * Antall unike saker der begge deler er dekket – enten via et komplett skjema, eller via en separat
+     * arbeidstaker-del og arbeidsgiver-del som matcher (overlappende periode). Samme sak telles kun én
+     * gang selv om den har både komplett skjema og separate deler.
+     *
+     * NB – «sak» er her PERSON + JURIDISK ENHET, uansett periode. Er saken først dekket, telles den som
+     * dekket for alle periodene til den personen i den enheten. Se [antallSakerMedKomplett] for hva det
+     * betyr mot del-nivå-tallene.
      *
      * Dekomponeres av [antallSakerMedKomplett], [antallSakerMedMatchendeSeparateDeler] og
      * [antallSakerMedBaadeKomplettOgSeparate]:
@@ -146,7 +170,14 @@ data class SaksdekningDto(
      * - antallSakerMedBaadeKomplettOgSeparate`.
      */
     val antallSakerMedBeggeDeler: Long,
-    /** Del av [antallSakerMedBeggeDeler]: saker som er dekket av et gjeldende komplett skjema. */
+    /**
+     * Del av [antallSakerMedBeggeDeler]: saker som er dekket av et gjeldende komplett skjema.
+     *
+     * Nøkkelen er PERSON + JURIDISK ENHET uten periode: finnes det ett komplett skjema for personen i
+     * enheten, teller saken som dekket uavhengig av om periodene overlapper. Del-nivå-tallet
+     * [DelStatusDto.dekketAvKomplettSkjema] krever derimot periodeoverlapp, så en enkelt del kan stå
+     * som ventende samtidig som saken telles her.
+     */
     val antallSakerMedKomplett: Long = 0,
     /** Del av [antallSakerMedBeggeDeler]: saker som er dekket av to matchende separate deler. */
     val antallSakerMedMatchendeSeparateDeler: Long = 0,
@@ -166,10 +197,12 @@ data class SaksdekningDto(
     /** Ett element per tilfelle i [antallMuligeDobbeltinnsendinger], med saksnummer-kontekst for oppfølging. */
     val muligeDobbeltinnsendinger: List<DobbeltinnsendingDto> = emptyList(),
     /**
-     * Antall saker der minst én deltype er sendt mer enn én gang med overlappende periode (samme
-     * person + juridisk enhet). Dekker BÅDE versjons-erstatninger og mulige dobbeltinnsendinger, og
-     * regnes over hele den innsendte populasjonen (ikke bare periodevinduet, ikke bare gjeldende
-     * deler). Versjoner med ikke-overlappende perioder telles ikke.
+     * Antall saker i perioden der minst én deltype er sendt mer enn én gang med overlappende periode
+     * (samme person + juridisk enhet). Dekker BÅDE versjons-erstatninger og mulige dobbeltinnsendinger.
+     *
+     * Som for de andre sak-tallene telles kun saker som berøres av kohorten, mens selve egenskapen
+     * «flere versjoner» måles mot HELE den innsendte populasjonen (også erstattede versjoner og
+     * versjoner sendt utenfor periodevinduet). Versjoner med ikke-overlappende perioder telles ikke.
      */
     val antallSakerMedFlereVersjoner: Long,
     /**
@@ -181,9 +214,10 @@ data class SaksdekningDto(
     /**
      * Par der arbeidsgiversiden tok initiativet: arbeidstakerens skjema ble PÅBEGYNT (utkast startet)
      * etter at arbeidsgiverens del var SENDT INN. Måles kun for saker med matchende separate deler,
-     * per unik sak (ikke per rad); ved flere versjoner brukes tidligste utkast-start og tidligste
-     * innsending på hver side. [parInitiertAvArbeidsgiver] + [parInitiertAvArbeidstaker] +
-     * [parUavhengigStartet] = [antallSakerMedMatchendeSeparateDeler].
+     * per unik sak (ikke per rad), og kun på delene som faktisk inngår i et match – deler på samme sak
+     * som aldri matchet en motpart påvirker ikke tallet. Ved flere versjoner av en matchende del brukes
+     * tidligste utkast-start og tidligste innsending på hver side. [parInitiertAvArbeidsgiver] +
+     * [parInitiertAvArbeidstaker] + [parUavhengigStartet] = [antallSakerMedMatchendeSeparateDeler].
      */
     val parInitiertAvArbeidsgiver: Long = 0,
     /** Par der arbeidsgiverens skjema ble påbegynt etter at arbeidstakerens del var sendt inn – se [parInitiertAvArbeidsgiver]. */
@@ -204,7 +238,8 @@ data class SaksdekningDto(
 
 /**
  * Ett tilfelle av mulig dobbeltinnsending: en gruppe gjeldende deler av samme type for samme person
- * og juridiske enhet med overlappende perioder. Inneholder bevisst ingen personopplysninger.
+ * og juridiske enhet med overlappende perioder. Inneholder bevisst ingen direkte identifikatorer
+ * (fnr/orgnr/navn); saksnumrene kan slås opp i Melosys av autorisert personell.
  */
 data class DobbeltinnsendingDto(
     /** Antall innsendinger i gruppen (alltid minst 2). */
@@ -330,7 +365,8 @@ data class VirksomhetStatistikkDto(
 
 /**
  * Saksnumrene bak én rad i topplisten, slik at en aktiv virksomhet kan følges opp i Melosys.
- * Inneholder bevisst KUN saksnumre – ingen orgnr, virksomhetsnavn eller personopplysninger.
+ * Inneholder bevisst KUN saksnumre – ingen direkte identifikatorer (fnr/orgnr/navn); saksnumrene kan
+ * slås opp i Melosys av autorisert personell.
  */
 data class VirksomhetSaksnumreDto(
     /** Plasseringen i topplisten som ble slått opp (1-basert, samme sortering som `topplisteVirksomheter`). */
