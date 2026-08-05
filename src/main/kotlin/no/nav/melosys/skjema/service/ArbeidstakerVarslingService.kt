@@ -96,9 +96,11 @@ class ArbeidstakerVarslingService(
      * Bypasser [no.nav.melosys.skjema.entity.Innsending.brukervarselSendt]-sjekken (resend er eksplisitt)
      * og endrer ikke det feltet, men beholder utkast-guarden slik at de som har påbegynt sin del ikke purres.
      *
-     * @return true hvis varsel ble sendt på nytt, false hvis caset ble hoppet over.
+     * Med [dryRun] evalueres alle kriteriene uten at noe sendes — for trygg opptelling på forhånd.
+     *
+     * @return true hvis varsel ble sendt på nytt (eller ville blitt sendt ved dry-run), false ellers.
      */
-    fun resendVarselTilArbeidstaker(skjemaId: UUID): Boolean {
+    fun resendVarselTilArbeidstaker(skjemaId: UUID, dryRun: Boolean = false): Boolean {
         val skjema = skjemaRepository.findById(skjemaId).orElse(null)
         if (skjema == null) {
             log.warn { "Resend: fant ikke skjema $skjemaId, hopper over" }
@@ -117,7 +119,7 @@ class ArbeidstakerVarslingService(
         }
 
         return when (metadata) {
-            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)
+            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, skjema.orgnr, metadata, dryRun)
             else -> {
                 log.info { "Resend: ${metadata.representasjonstype} (skjema $skjemaId) er ikke handlingspliktig, hopper over" }
                 false
@@ -125,10 +127,14 @@ class ArbeidstakerVarslingService(
         }
     }
 
-    private fun resendUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata): Boolean {
+    private fun resendUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata, dryRun: Boolean): Boolean {
         if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
             log.info { "Resend: arbeidstaker har eksisterende utkast, sender ikke varsel" }
             return false
+        }
+
+        if (dryRun) {
+            return true
         }
 
         val navn = arbeidsgiverVisningsnavnForResend(metadata, orgnr)

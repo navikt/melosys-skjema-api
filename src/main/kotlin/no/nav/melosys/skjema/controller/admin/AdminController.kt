@@ -115,13 +115,13 @@ class AdminController(
         description = "Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til arbeidstakere " +
             "som fikk et varsel med feil lenke før lenken ble fikset. Kandidatene finnes i koden: alle " +
             "handlingspliktige AG-deler (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn før " +
-            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Tar ingen parametere. " +
-            "Returnerer antall sendte varsler og saksnumrene som faktisk fikk et nytt varsel."
+            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Med dryRun=true (default) " +
+            "sendes ingenting — responsen viser hvem som VILLE fått varsel. Kjør med dryRun=false for å sende."
     )
-    @ApiResponse(responseCode = "200", description = "Resending utført")
-    fun resendVarsler(): ResendVarslerResultatDto {
-        log.info { "Admin: Resend varsler til arbeidstakere som fikk varsel med feil lenke" }
-        return adminService.resendVarsler()
+    @ApiResponse(responseCode = "200", description = "Resending utført (eller opptalt ved dry-run)")
+    fun resendVarsler(@RequestParam(defaultValue = "true") dryRun: Boolean): ResendVarslerResultatDto {
+        log.info { "Admin: Resend varsler (dryRun=$dryRun) til arbeidstakere som fikk varsel med feil lenke" }
+        return adminService.resendVarsler(dryRun)
     }
 
     @PostMapping("/utkast/rydd-slettede")

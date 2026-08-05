@@ -397,14 +397,14 @@ class AdminService(
      * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
      * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
      */
-    fun resendVarsler(): ResendVarslerResultatDto {
+    fun resendVarsler(dryRun: Boolean): ResendVarslerResultatDto {
         val kandidater = finnResendKandidater()
-        log.info { "Admin: Resend – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
+        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
 
         val sendteSaksnumre = mutableListOf<String>()
         kandidater.forEach { kandidat ->
             try {
-                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId)) {
+                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId, dryRun)) {
                     // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
                     sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
                 }
@@ -412,8 +412,8 @@ class AdminService(
                 log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
             }
         }
-        log.info { "Admin: Resend ferdig – ${sendteSaksnumre.size} varsler sendt" }
-        return ResendVarslerResultatDto(antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
+        log.info { "Admin: Resend ferdig (dryRun=$dryRun) – ${sendteSaksnumre.size} varsler ${if (dryRun) "ville blitt sendt" else "sendt"}" }
+        return ResendVarslerResultatDto(dryRun = dryRun, antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
     }
 
     /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */

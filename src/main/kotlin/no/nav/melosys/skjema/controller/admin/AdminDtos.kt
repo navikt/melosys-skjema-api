@@ -52,10 +52,12 @@ data class RetryResultatDto(
  * MELOSYS-8168 (midlertidig): Resultat av resending. Kandidatene finnes i koden (AG-del innsendt før
  * SMS ble aktivert, som fortsatt venter på AT-del), så endepunktet trenger ingen request-body.
  *
- * [saksnumre] lister sakene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden), og
- * [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med skjema-id-en sin.
+ * [saksnumre] lister sakene som fikk et nytt varsel — eller ved [dryRun] ville fått, uten at noe
+ * sendes. [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med
+ * skjema-id-en sin.
  */
 data class ResendVarslerResultatDto(
+    val dryRun: Boolean,
     val antallSendt: Int,
     val saksnumre: List<String>
 )
