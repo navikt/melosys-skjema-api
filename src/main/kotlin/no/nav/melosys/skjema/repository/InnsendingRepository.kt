@@ -65,7 +65,7 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
 
     /**
      * Synk-feltene per innsendt skjema, uten å materialisere skjemaets JSONB-data —
-     * uttrekket trenger kun radene på innsending-tabellen pluss skjema-id-en (FK).
+     * eksporten trenger kun radene på innsending-tabellen pluss skjema-id-en (FK).
      */
     @Query(
         "SELECT i.skjema.id AS skjemaId, i.referanseId AS referanseId, i.saksnummer AS saksnummer, " +
@@ -74,10 +74,10 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
             "WHERE i.skjema.status = no.nav.melosys.skjema.types.common.SkjemaStatus.SENDT " +
             "AND i.skjema.type = no.nav.melosys.skjema.types.SkjemaType.UTSENDT_ARBEIDSTAKER"
     )
-    fun finnSaksstatusUttrekk(): List<SaksstatusUttrekkProjeksjon>
+    fun finnSaksstatusEksport(): List<SaksstatusEksportProjeksjon>
 }
 
-interface SaksstatusUttrekkProjeksjon {
+interface SaksstatusEksportProjeksjon {
     val skjemaId: UUID
     val referanseId: String
     val saksnummer: String?

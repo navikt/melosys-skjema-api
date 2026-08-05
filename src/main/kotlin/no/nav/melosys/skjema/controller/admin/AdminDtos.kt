@@ -249,17 +249,17 @@ data class DobbeltinnsendingDto(
 )
 
 /**
- * Backup-uttrekk av synk-tilstanden FØR massesynk/migrering: nøyaktig feltene synken kan endre,
- * per skjema-id. Inneholder bevisst ingen personopplysninger (ingen fnr, navn eller skjemadata) —
- * kan lastes ned fra melosys-console og brukes til gjenoppretting eller diff.
+ * Synk-tilstanden per skjema-id: nøyaktig feltene saksstatus-synken kan endre. Brukes til
+ * avstemming mot Melosys, feilsøking av synken, og som diff-grunnlag før en eventuell migrering.
+ * Inneholder bevisst ingen personopplysninger (ingen fnr, navn eller skjemadata).
  */
-data class SaksstatusUttrekkDto(
+data class SaksstatusEksportDto(
     val tidspunkt: Instant,
     val antall: Int,
-    val rader: List<SaksstatusUttrekkRadDto>
+    val rader: List<SaksstatusEksportRadDto>
 )
 
-data class SaksstatusUttrekkRadDto(
+data class SaksstatusEksportRadDto(
     val skjemaId: UUID,
     val referanseId: String,
     val saksnummer: String?,

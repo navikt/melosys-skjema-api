@@ -1010,14 +1010,14 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `saksstatus-uttrekk returnerer synk-feltene uten personopplysninger`() {
+        fun `saksstatus-eksport returnerer synk-feltene uten personopplysninger`() {
             val fnr = "63000000001"
             val skjema = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, saksstatus = Saksstatus.MOTTATT)
             val innsending = innsendingRepository.findBySkjemaId(skjema.id!!)!!
             innsending.saksnummer = "MEL-123456"
             innsendingRepository.save(innsending)
 
-            val json = adminClient.get().uri("/admin/saksstatus/uttrekk")
+            val json = adminClient.get().uri("/admin/saksstatus/eksport")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
                 .expectStatus().isOk
@@ -1028,15 +1028,15 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             json shouldNotContain innsending.innsenderFnr
             json shouldNotContain "Test Testesen"
 
-            val uttrekk = adminClient.get().uri("/admin/saksstatus/uttrekk")
+            val eksport = adminClient.get().uri("/admin/saksstatus/eksport")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
                 .expectStatus().isOk
-                .expectBody<SaksstatusUttrekkDto>()
+                .expectBody<SaksstatusEksportDto>()
                 .returnResult()
                 .responseBody!!
-            uttrekk.antall shouldBe 1
-            with(uttrekk.rader.single()) {
+            eksport.antall shouldBe 1
+            with(eksport.rader.single()) {
                 skjemaId shouldBe skjema.id
                 saksnummer shouldBe "MEL-123456"
                 saksstatus shouldBe Saksstatus.MOTTATT

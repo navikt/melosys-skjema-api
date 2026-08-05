@@ -12,8 +12,8 @@ import no.nav.melosys.skjema.controller.admin.DelStatusDto
 import no.nav.melosys.skjema.controller.admin.DobbeltinnsendingDto
 import no.nav.melosys.skjema.controller.admin.MotpartCtaStatistikkDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusFordelingDto
-import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkDto
-import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkRadDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusEksportDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusEksportRadDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
@@ -214,13 +214,13 @@ class AdminService(
     }
 
     /**
-     * Backup-uttrekk av synk-tilstanden før massesynk: feltene synken kan endre, per skjema-id.
-     * Ingen personopplysninger — se [SaksstatusUttrekkDto].
+     * Synk-tilstanden per skjema-id: feltene saksstatus-synken kan endre.
+     * Ingen personopplysninger — se [SaksstatusEksportDto].
      */
     @Transactional(readOnly = true)
-    fun hentSaksstatusUttrekk(): SaksstatusUttrekkDto {
-        val rader = innsendingRepository.finnSaksstatusUttrekk().map { rad ->
-            SaksstatusUttrekkRadDto(
+    fun hentSaksstatusEksport(): SaksstatusEksportDto {
+        val rader = innsendingRepository.finnSaksstatusEksport().map { rad ->
+            SaksstatusEksportRadDto(
                 skjemaId = rad.skjemaId,
                 referanseId = rad.referanseId,
                 saksnummer = rad.saksnummer,
@@ -228,7 +228,7 @@ class AdminService(
                 saksstatusOppdatert = rad.saksstatusOppdatert
             )
         }
-        return SaksstatusUttrekkDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)
+        return SaksstatusEksportDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)
     }
 
     private fun innenfor(tidspunkt: Instant, fra: Instant?, tilEksklusiv: Instant?): Boolean =

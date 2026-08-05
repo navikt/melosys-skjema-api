@@ -103,15 +103,21 @@ class M2MSkjemaService(
      * først er satt: samme verdi på nytt er idempotent OK, en annen verdi gir
      * [SaksnummerKonfliktException] (409). Backfill (null → verdi) er alltid OK.
      *
-     * Den nye innsendingen beholder `saksstatus = null` (vises som Mottatt) uavhengig av andre
-     * innsendinger på samme sak: Melosys oppretter ny behandling for den, så den er per
-     * definisjon under behandling.
+     * Saksnummeret er beviset på at Melosys har opprettet sak og behandling for innsendingen, så
+     * statusen settes samtidig til [Saksstatus.MOTTATT]. Melosys publiserer bare status*endringer*,
+     * og en nyopprettet sak har ingen – uten dette ville innsendingen stått uten status til saken
+     * en gang ble avsluttet. En innsending som allerede har status beholder den (ingen nedgradering
+     * av avsluttede saker, og [Innsending.saksstatusOppdatert] bevares ved gjentatte kall).
      */
     @Transactional
     fun registrerSaksnummer(skjemaId: UUID, saksnummer: String) {
         val innsending = hentInnsending(skjemaId)
         validerSaksnummerUendret(innsending, saksnummer)
         innsending.saksnummer = saksnummer
+        if (innsending.saksstatus == null) {
+            innsending.saksstatus = Saksstatus.MOTTATT
+            innsending.saksstatusOppdatert = Instant.now()
+        }
         log.info { "Registrert saksnummer $saksnummer for skjema $skjemaId" }
     }
 
