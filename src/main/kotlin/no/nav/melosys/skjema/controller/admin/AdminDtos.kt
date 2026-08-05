@@ -116,8 +116,9 @@ data class BrukStatistikkDto(
     val antallUnikeVirksomheter: Long,
     /**
      * Unike juridiske enheter blant innsendte skjema – samme grunnlag som [antallUnikeVirksomheter]
-     * (inkl. erstattede versjoner), men talt på juridisk enhet. Er alltid ≤ [antallUnikeVirksomheter],
-     * og er nøkkelen [topplisteVirksomheter] grupperer på.
+     * (inkl. erstattede versjoner), men talt på juridisk enhet. Normalt ≤ [antallUnikeVirksomheter]
+     * (kan avvike hvis en underenhet har byttet juridisk enhet i perioden, siden juridisk enhet
+     * snapshottes ved opprettelse). Dette er nøkkelen [topplisteVirksomheter] grupperer på.
      */
     val antallUnikeJuridiskeEnheter: Long = 0,
     /**
@@ -215,8 +216,10 @@ data class SaksdekningDto(
      * Par der arbeidsgiversiden tok initiativet: arbeidstakerens skjema ble PÅBEGYNT (utkast startet)
      * etter at arbeidsgiverens del var SENDT INN. Måles kun for saker med matchende separate deler,
      * per unik sak (ikke per rad), og kun på delene som faktisk inngår i et match – deler på samme sak
-     * som aldri matchet en motpart påvirker ikke tallet. Ved flere versjoner av en matchende del brukes
-     * tidligste utkast-start og tidligste innsending på hver side. [parInitiertAvArbeidsgiver] +
+     * som aldri matchet en motpart påvirker ikke tallet. Har samme person + enhet flere separate
+     * utsendelser (ikke-overlappende perioder), måles initiativet på den TIDLIGSTE utsendelsen som har
+     * et matchende par. Ved flere versjoner av en matchende del brukes tidligste utkast-start og
+     * tidligste innsending på hver side. [parInitiertAvArbeidsgiver] +
      * [parInitiertAvArbeidstaker] + [parUavhengigStartet] = [antallSakerMedMatchendeSeparateDeler].
      */
     val parInitiertAvArbeidsgiver: Long = 0,

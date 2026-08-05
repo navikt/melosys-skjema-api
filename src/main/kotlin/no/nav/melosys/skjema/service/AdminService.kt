@@ -273,7 +273,9 @@ class AdminService(
             arbeidsgiverDeler = arbeidsgiverStatus,
             antallMuligeDobbeltinnsendinger = dobbeltinnsendinger.size.toLong(),
             muligeDobbeltinnsendinger = dobbeltinnsendinger,
-            antallSakerMedFlereVersjoner = kohortNokler.count { indeks.harFlereVersjoner(it) }.toLong(),
+            // Egen nøkkelmengde: en sak kan ha bare den erstattede versjonen i vinduet, og skal likevel telles.
+            antallSakerMedFlereVersjoner = kohort.mapTo(mutableSetOf()) { it.sakNokkel() }
+                .count { indeks.harFlereVersjoner(it) }.toLong(),
             antallVentendeMedAvsluttetSak = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
                 it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
             },
@@ -358,22 +360,30 @@ class AdminService(
      * (innsending.opprettetDato) – da fikk den siden trolig beskjed om at motparten hadde levert.
      * Startet begge sider før noen av delene var innsendt, er de uavhengige initiativ.
      *
-     * Tidspunktene måles kun over delene som faktisk inngår i et par (en del som matcher minst én del
-     * på motsatt side), slik at et ikke-matchende par på samme nøkkel ikke stjeler initiativet. Innenfor
-     * de matchende delene brukes tidligste utkast-start og tidligste innsending på hver side – erstattede
-     * versjoner teller med, siden den tidligste versjonen sier når siden faktisk startet.
+     * Tidspunktene måles innenfor ÉN utsendelse: de separate delene på nøkkelen grupperes i klynger av
+     * overlappende perioder (samme transitive lukning som duplikat-grupperingen), og initiativet regnes
+     * på den tidligste klyngen som har begge sider. Dermed blandes ikke tidspunkter på tvers av to ulike
+     * utsendelser for samme person + enhet. Innenfor klyngen brukes tidligste utkast-start og tidligste
+     * innsending på hver side – erstattede versjoner teller med, siden den tidligste versjonen sier når
+     * siden faktisk startet. Hver sak klassifiseres kun én gang.
      */
     private fun beregnInitiativ(saker: Set<Pair<String, String>>, populasjon: List<InnsendtSkjema>): InitiativFordeling {
-        val perSakOgDel = populasjon.groupBy { it.sakNokkel() to it.skjemadel }
+        val separateDelerPerSak = populasjon
+            .filter { it.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .groupBy { it.sakNokkel() }
         var arbeidsgiver = 0L
         var arbeidstaker = 0L
         var uavhengig = 0L
         for (sak in saker) {
-            val alleAtDeler = perSakOgDel[sak to Skjemadel.ARBEIDSTAKERS_DEL].orEmpty()
-            val alleAgDeler = perSakOgDel[sak to Skjemadel.ARBEIDSGIVERS_DEL].orEmpty()
-            val atDeler = alleAtDeler.filter { at -> alleAgDeler.any { at.matcher(it) } }
-            val agDeler = alleAgDeler.filter { ag -> alleAtDeler.any { ag.matcher(it) } }
-            if (atDeler.isEmpty() || agDeler.isEmpty()) continue
+            val klynge = overlappendeGrupper(separateDelerPerSak[sak].orEmpty())
+                .filter { gruppe ->
+                    gruppe.any { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL } &&
+                        gruppe.any { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+                }
+                .minByOrNull { gruppe -> gruppe.minOf { it.innsendtDato } }
+                ?: continue
+            val atDeler = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+            val agDeler = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
             val atStartet = atDeler.minOf { it.skjemaOpprettetDato }
             val agStartet = agDeler.minOf { it.skjemaOpprettetDato }
             val atInnsendt = atDeler.minOf { it.innsendtDato }
@@ -441,8 +451,11 @@ class AdminService(
     )
 
     /**
-     * Oppslag på hele den innsendte populasjonen, bygget av gjeldende (ikke erstattede) deler. Alle
-     * egenskaps-spørsmål i statistikken stilles hit, slik at et periodefilter aldri bryter et par.
+     * Oppslag på hele den innsendte populasjonen. Alle egenskaps-spørsmål i statistikken stilles hit,
+     * slik at et periodefilter aldri bryter et par. Indeksen har to grunnlag:
+     * - gjeldende (ikke erstattede) deler for dekning og motpart-match ([harKomplett],
+     *   [harMatchendeSeparateDeler], [dobbeltinnsendinger])
+     * - hele populasjonen, inkl. erstattede versjoner, for versjonstellingen ([harFlereVersjoner])
      */
     private inner class SaksIndeks(populasjon: List<InnsendtSkjema>) {
         private val gjeldende = populasjon.filter { !it.erstattet }

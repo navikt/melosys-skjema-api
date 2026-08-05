@@ -633,6 +633,58 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
+        fun `initiativ - flere utsendelser paa samme sak klassifiseres etter den tidligste klyngen`() {
+            val fnr = "45000000001"
+            // Utsendelse 1 (tidligst innsendt): arbeidsgiver sendte inn før arbeidstaker startet utkastet
+            val ag1Periode = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-02-28"))
+            val at1Periode = PeriodeDto(LocalDate.parse("2026-02-01"), LocalDate.parse("2026-03-31"))
+            // Utsendelse 2: eget par, med et arbeidstaker-utkast som ble startet lenge før alt annet
+            val at2Periode = PeriodeDto(LocalDate.parse("2026-09-01"), LocalDate.parse("2026-10-31"))
+            val ag2Periode = PeriodeDto(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-12-31"))
+            val t0 = Instant.parse("2026-01-01T08:00:00Z")
+            val t1 = Instant.parse("2026-01-02T08:00:00Z")
+            val t2 = Instant.parse("2026-01-03T08:00:00Z")
+            val t3 = Instant.parse("2026-01-04T08:00:00Z")
+            val t4 = Instant.parse("2026-01-05T08:00:00Z")
+            val t5 = Instant.parse("2026-01-06T08:00:00Z")
+            val t6 = Instant.parse("2026-01-07T08:00:00Z")
+            val t7 = Instant.parse("2026-01-08T08:00:00Z")
+
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag1Periode, utkastStartet = t2, innsendtDato = t3)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at1Periode, utkastStartet = t4, innsendtDato = t5)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = fnr, periode = at2Periode, utkastStartet = t0, innsendtDato = t6)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = fnr, periode = ag2Periode, utkastStartet = t1, innsendtDato = t7)
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+            s.parInitiertAvArbeidsgiver shouldBe 1 // fra utsendelse 1, ikke blandet med utsendelse 2
+            s.parInitiertAvArbeidstaker shouldBe 0
+            s.parUavhengigStartet shouldBe 0
+        }
+
+        @Test
+        fun `flere versjoner telles selv om bare den erstattede raden er i vinduet`() {
+            val iVinduet = Instant.parse("2026-03-15T10:00:00Z")
+            val utenforVinduet = Instant.parse("2026-06-15T10:00:00Z")
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "46000000001", periode = periodeA, innsendtDato = iVinduet)
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVERS_DEL,
+                fnr = "46000000001",
+                periode = periodeOverlapp,
+                innsendtDato = utenforVinduet,
+                erstatterSkjemaId = gammel.id
+            )
+
+            val body = hentBruk(fraOgMed = "2026-03-01", tilOgMed = "2026-03-31")
+            body.saksdekning.antallSakerMedFlereVersjoner shouldBe 1
+            with(body.saksdekning.arbeidsgiverDeler) {
+                totalt shouldBe 0
+                antallErstattedeVersjoner shouldBe 1
+                totalt + antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVERS_DEL]
+            }
+        }
+
+        @Test
         fun `erstattet komplett holdes utenfor antallKomplette og kan avstemmes`() {
             val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "44000000001", periode = periodeA)
             lagInnsendt(
