@@ -297,13 +297,15 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             fnr: String = "10000000001",
             orgnr: String = korrektSyntetiskOrgnr,
             juridiskEnhet: String = orgnr,
-            periode: PeriodeDto = periodeA,
+            periode: PeriodeDto? = periodeA,
             representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
             sprak: Språk = Språk.NORSK_BOKMAL,
             erstatterSkjemaId: UUID? = null,
             innsendtDato: Instant = Instant.now(),
+            utkastStartet: Instant = innsendtDato,
             innsenderFnr: String = "12345678901",
             saksstatus: Saksstatus? = null,
+            saksnummer: String? = null,
             opprettetVia: OpprettetVia? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
@@ -311,7 +313,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 orgnr = orgnr,
                 status = SkjemaStatus.SENDT,
                 data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
-                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = periode)
+                    utsendingsperiodeOgLand = periode?.let { utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = it) }
                 ),
                 metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = representasjonstype,
@@ -319,7 +321,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     juridiskEnhetOrgnr = juridiskEnhet,
                     erstatterSkjemaId = erstatterSkjemaId
                 ),
-                opprettetVia = opprettetVia
+                opprettetVia = opprettetVia,
+                opprettetDato = utkastStartet
             )
         ).also { skjema ->
             innsendingRepository.save(
@@ -328,7 +331,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     innsendtSprak = sprak,
                     opprettetDato = innsendtDato,
                     innsenderFnr = innsenderFnr,
-                    saksstatus = saksstatus
+                    saksstatus = saksstatus,
+                    saksnummer = saksnummer
                 )
             )
         }
@@ -453,7 +457,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `saksdekning - mulige dobbeltinnsendinger, men ikke versjon-erstatninger`() {
+        fun `saksdekning - mulige dobbeltinnsendinger telles per tilfelle, ikke per rad`() {
             // Ekte dobbeltinnsending: samme person sender arbeidsgivers del to ganger, overlappende periode
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "30000000001", periode = periodeA)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "30000000001", periode = periodeOverlapp)
@@ -462,7 +466,263 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             val gammel = lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "30000000002", periode = periodeA)
             lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "30000000002", periode = periodeOverlapp, erstatterSkjemaId = gammel.id)
 
-            hentBruk().saksdekning.antallMuligeDobbeltinnsendinger shouldBe 2
+            val s = hentBruk().saksdekning
+            s.antallMuligeDobbeltinnsendinger shouldBe 1 // ett tilfelle (to rader)
+            s.muligeDobbeltinnsendinger.single().antallInnsendinger shouldBe 2
+        }
+
+        @Test
+        fun `duplikat-tilfeller lister saksnumre, og skjema-id naar saksnummer mangler`() {
+            // Tre overlappende arbeidsgiver-deler for samme sak = ETT tilfelle med tre innsendinger
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "31000000001", periode = periodeA, saksnummer = "SAK-D1")
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "31000000001", periode = periodeOverlapp, saksnummer = "SAK-D2")
+            val utenSaksnummer = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "31000000001", periode = periodeA)
+            // Et eget tilfelle for en annen sak – to arbeidstaker-deler
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "31000000002", periode = periodeA, saksnummer = "SAK-E1")
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "31000000002", periode = periodeOverlapp, saksnummer = "SAK-E2")
+
+            val s = hentBruk().saksdekning
+            s.antallMuligeDobbeltinnsendinger shouldBe 2
+            s.muligeDobbeltinnsendinger shouldHaveSize 2
+            val treer = s.muligeDobbeltinnsendinger.single { it.antallInnsendinger == 3 }
+            treer.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-D1", "SAK-D2", utenSaksnummer.id.toString())
+            s.muligeDobbeltinnsendinger.single { it.antallInnsendinger == 2 }
+                .saksnumre shouldContainExactlyInAnyOrder listOf("SAK-E1", "SAK-E2")
+        }
+
+        @Test
+        fun `kohort - del i vinduet matcher motpart utenfor vinduet`() {
+            val iVinduet = Instant.parse("2026-03-15T10:00:00Z")
+            val utenforVinduet = Instant.parse("2026-06-15T10:00:00Z")
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "33000000001", periode = periodeA, innsendtDato = iVinduet)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "33000000001", periode = periodeOverlapp, innsendtDato = utenforVinduet)
+
+            val s = hentBruk(fraOgMed = "2026-03-01", tilOgMed = "2026-03-31").saksdekning
+            with(s.arbeidstakerDeler) {
+                totalt shouldBe 1
+                medMotpart shouldBe 1
+                venterIngenMotpart shouldBe 0
+                venterMotpartHarUtkast shouldBe 0
+            }
+            s.arbeidsgiverDeler.totalt shouldBe 0
+            s.antallSakerMedBeggeDeler shouldBe 1
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 1
+        }
+
+        @Test
+        fun `erstattede versjoner holdes utenfor totalt og avstemmes mot innsendtPerSkjemadel`() {
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "34000000001", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "34000000001", periode = periodeOverlapp, erstatterSkjemaId = gammel.id)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "34000000002", periode = periodeA)
+
+            val body = hentBruk()
+            body.totaltInnsendt shouldBe 3 // fordelingene beholder alle innsendinger
+            with(body.saksdekning.arbeidsgiverDeler) {
+                totalt shouldBe 1
+                antallErstattedeVersjoner shouldBe 1
+                totalt + antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[Skjemadel.ARBEIDSGIVERS_DEL]
+            }
+            with(body.saksdekning.arbeidstakerDeler) {
+                antallErstattedeVersjoner shouldBe 0
+                totalt + antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[Skjemadel.ARBEIDSTAKERS_DEL]
+            }
+        }
+
+        @Test
+        fun `separat del dekkes av komplett skjema og venter dermed ikke`() {
+            // Arbeidsgiver sendte sin del, mens arbeidstakerens del kom via et komplett skjema
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "35000000001", periode = periodeA, saksstatus = Saksstatus.MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "35000000001", periode = periodeOverlapp)
+            // Samme, men saken er avsluttet
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "35000000002", periode = periodeA, saksstatus = Saksstatus.AVSLUTTET)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "35000000002", periode = periodeOverlapp)
+            // Komplett skjema uten overlappende periode dekker ikke delen
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "35000000003", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "35000000003", periode = periodeSenere)
+
+            val s = hentBruk().saksdekning
+            with(s.arbeidsgiverDeler) {
+                totalt shouldBe 3
+                medMotpart shouldBe 0
+                dekketAvKomplettSkjema shouldBe 2
+                dekketAvKomplettSkjemaAktivSak shouldBe 1
+                dekketAvKomplettSkjemaAvsluttetSak shouldBe 1
+                venterIngenMotpart shouldBe 1
+                totalt shouldBe medMotpart + dekketAvKomplettSkjema + venterMotpartHarUtkast + venterIngenMotpart
+            }
+        }
+
+        @Test
+        fun `dekomponering av saker med begge deler gaar opp`() {
+            // Kun komplett
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "36000000001")
+            // Kun matchende separate deler
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "36000000002", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "36000000002", periode = periodeOverlapp)
+            // Både komplett og matchende separate deler
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "36000000003")
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "36000000003", periode = periodeA)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "36000000003", periode = periodeOverlapp)
+            // Udekket sak
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "36000000004", periode = periodeA)
+
+            val s = hentBruk().saksdekning
+            s.antallSakerMedKomplett shouldBe 2
+            s.antallSakerMedMatchendeSeparateDeler shouldBe 2
+            s.antallSakerMedBaadeKomplettOgSeparate shouldBe 1
+            s.antallSakerMedBeggeDeler shouldBe 3
+            s.antallSakerMedBeggeDeler shouldBe
+                s.antallSakerMedKomplett + s.antallSakerMedMatchendeSeparateDeler - s.antallSakerMedBaadeKomplettOgSeparate
+        }
+
+        @Test
+        fun `initiativ - arbeidsgiver foerst, arbeidstaker foerst og uavhengig`() {
+            val t0 = Instant.parse("2026-02-01T08:00:00Z")
+            val t1 = Instant.parse("2026-02-02T08:00:00Z")
+            val t2 = Instant.parse("2026-02-03T08:00:00Z")
+            val t3 = Instant.parse("2026-02-04T08:00:00Z")
+
+            // Arbeidsgiver sendte inn først; arbeidstakerens utkast ble startet etterpå
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "37000000001", periode = periodeA, utkastStartet = t0, innsendtDato = t1)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000001", periode = periodeOverlapp, utkastStartet = t2, innsendtDato = t3)
+
+            // Arbeidstaker sendte inn først; arbeidsgiverens utkast ble startet etterpå
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000002", periode = periodeA, utkastStartet = t0, innsendtDato = t1)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "37000000002", periode = periodeOverlapp, utkastStartet = t2, innsendtDato = t3)
+
+            // Begge startet utkastet før noen av delene ble sendt inn
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000003", periode = periodeA, utkastStartet = t0, innsendtDato = t3)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "37000000003", periode = periodeOverlapp, utkastStartet = t1, innsendtDato = t3)
+
+            val s = hentBruk().saksdekning
+            s.parInitiertAvArbeidsgiver shouldBe 1
+            s.parInitiertAvArbeidstaker shouldBe 1
+            s.parUavhengigStartet shouldBe 1
+            s.parInitiertAvArbeidsgiver + s.parInitiertAvArbeidstaker + s.parUavhengigStartet shouldBe
+                s.antallSakerMedMatchendeSeparateDeler
+        }
+
+        @Test
+        fun `komplette fordeles paa fullmaktstype`() {
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                fnr = "38000000001",
+                representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                fnr = "38000000002",
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
+            )
+            lagInnsendt(
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL,
+                fnr = "38000000003",
+                representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
+            )
+
+            val s = hentBruk().saksdekning
+            s.antallKomplette shouldBe 3
+            s.komplettPerFlyt[Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT] shouldBe 1
+            s.komplettPerFlyt[Representasjonstype.RADGIVER_MED_FULLMAKT] shouldBe 2
+            s.komplettPerFlyt[Representasjonstype.DEG_SELV] shouldBe 0
+            s.komplettPerFlyt.values.sum() shouldBe s.antallKomplette
+        }
+
+        @Test
+        fun `deler uten utsendingsperiode telles som kvalitetsmaal`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "39000000001", periode = null)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "39000000002", periode = null)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "39000000003", periode = periodeA)
+
+            val s = hentBruk().saksdekning
+            s.antallDelerUtenPeriode shouldBe 2
+            s.arbeidstakerDeler.venterIngenMotpart shouldBe 2
+        }
+
+        @Test
+        fun `toppliste grupperer paa juridisk enhet paa tvers av underenheter og viser saksstatus`() {
+            val juridiskEnhet = "910000010"
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "41000000001", orgnr = "910000011", juridiskEnhet = juridiskEnhet, saksstatus = Saksstatus.MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "41000000001", orgnr = "910000012", juridiskEnhet = juridiskEnhet, periode = periodeOverlapp, saksstatus = Saksstatus.AVSLUTTET)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "41000000002", orgnr = "910000012", juridiskEnhet = juridiskEnhet)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "41000000003", orgnr = "910000020", juridiskEnhet = "910000020")
+
+            val topp = hentBruk().topplisteVirksomheter
+            topp shouldHaveSize 2
+            with(topp[0]) {
+                antallInnsendinger shouldBe 3 // begge underenhetene slått sammen
+                antallArbeidstakerDel shouldBe 2
+                antallArbeidsgiverDel shouldBe 1
+                antallSakerMedBeggeDeler shouldBe 1
+                antallMottatt shouldBe 1
+                antallAvsluttet shouldBe 1
+                antallUkjent shouldBe 1
+            }
+            topp[1].antallInnsendinger shouldBe 1
+            topp[1].antallKomplett shouldBe 1
+        }
+
+        @Test
+        fun `alle kontrollsummer gaar opp for en sammensatt populasjon`() {
+            val iVinduet = Instant.parse("2026-03-15T10:00:00Z")
+            val utenforVinduet = Instant.parse("2026-06-15T10:00:00Z")
+            // Komplett skjema
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "42000000001", innsendtDato = iVinduet, representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT)
+            // Matchende separat par, arbeidsgiver-delen sendt utenfor vinduet
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "42000000002", periode = periodeA, innsendtDato = iVinduet)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000002", periode = periodeOverlapp, innsendtDato = utenforVinduet)
+            // Versjonert arbeidsgiver-del
+            val gammel = lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000003", periode = periodeA, innsendtDato = iVinduet)
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000003", periode = periodeOverlapp, innsendtDato = iVinduet, erstatterSkjemaId = gammel.id)
+            // Duplikat-tilfelle
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "42000000004", periode = periodeA, innsendtDato = iVinduet, saksnummer = "SAK-X1")
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "42000000004", periode = periodeOverlapp, innsendtDato = iVinduet, saksnummer = "SAK-X2")
+            // Del uten periode
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000005", periode = null, innsendtDato = iVinduet, saksstatus = Saksstatus.AVSLUTTET)
+            // Separat del dekket av komplett skjema
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000006", periode = periodeA, innsendtDato = iVinduet)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "42000000006", periode = periodeOverlapp, innsendtDato = utenforVinduet)
+            // Ventende del der motparten har påbegynt utkast
+            lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "42000000007", periode = periodeA, innsendtDato = iVinduet)
+            lagUtkast(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "42000000007")
+
+            val body = hentBruk(fraOgMed = "2026-03-01", tilOgMed = "2026-03-31")
+            val s = body.saksdekning
+
+            Skjemadel.entries.forEach { del ->
+                val status = when (del) {
+                    Skjemadel.ARBEIDSTAKERS_DEL -> s.arbeidstakerDeler
+                    Skjemadel.ARBEIDSGIVERS_DEL -> s.arbeidsgiverDeler
+                    Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> null
+                }
+                status?.let {
+                    it.totalt + it.antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[del]
+                    it.totalt shouldBe it.medMotpart + it.dekketAvKomplettSkjema + it.venterMotpartHarUtkast + it.venterIngenMotpart
+                    it.medMotpart shouldBe it.medMotpartAktivSak + it.medMotpartAvsluttetSak
+                    it.dekketAvKomplettSkjema shouldBe it.dekketAvKomplettSkjemaAktivSak + it.dekketAvKomplettSkjemaAvsluttetSak
+                }
+            }
+
+            s.antallSakerMedBeggeDeler shouldBe
+                s.antallSakerMedKomplett + s.antallSakerMedMatchendeSeparateDeler - s.antallSakerMedBaadeKomplettOgSeparate
+            s.parInitiertAvArbeidsgiver + s.parInitiertAvArbeidstaker + s.parUavhengigStartet shouldBe
+                s.antallSakerMedMatchendeSeparateDeler
+            s.antallMuligeDobbeltinnsendinger shouldBe s.muligeDobbeltinnsendinger.size.toLong()
+            s.komplettPerFlyt.values.sum() shouldBe s.antallKomplette
+            s.antallVentendeMedAvsluttetSak shouldBe listOf(s.arbeidstakerDeler, s.arbeidsgiverDeler).sumOf {
+                it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
+            }
+            body.topplisteVirksomheter.sumOf { it.antallInnsendinger } shouldBe
+                s.antallKomplette + s.arbeidstakerDeler.totalt + s.arbeidsgiverDeler.totalt
+
+            // Konkrete tall for den sammensatte populasjonen
+            s.antallKomplette shouldBe 1
+            s.antallDelerUtenPeriode shouldBe 1
+            s.antallMuligeDobbeltinnsendinger shouldBe 1
+            s.arbeidsgiverDeler.antallErstattedeVersjoner shouldBe 1
+            s.arbeidsgiverDeler.dekketAvKomplettSkjema shouldBe 1
+            s.arbeidsgiverDeler.venterMotpartHarUtkast shouldBe 1
+            s.arbeidstakerDeler.medMotpart shouldBe 1
         }
 
         @Test
@@ -621,6 +881,114 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             adminClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .exchange()
+                .expectStatus().isForbidden
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /admin/statistikk/bruk/virksomheter/{rang}/saksnumre")
+    inner class VirksomhetSaksnumre {
+
+        private val periodeA = PeriodeDto(LocalDate.parse("2026-01-01"), LocalDate.parse("2026-06-30"))
+
+        private fun lagInnsendt(
+            fnr: String,
+            juridiskEnhet: String,
+            orgnr: String = juridiskEnhet,
+            saksnummer: String? = null,
+            innsendtDato: Instant = Instant.now()
+        ): Skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = fnr,
+                orgnr = orgnr,
+                status = SkjemaStatus.SENDT,
+                data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier().copy(utsendelsePeriode = periodeA)
+                ),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    juridiskEnhetOrgnr = juridiskEnhet
+                )
+            )
+        ).also { skjema ->
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(skjema = skjema, opprettetDato = innsendtDato, saksnummer = saksnummer)
+            )
+        }
+
+        private fun hentSaksnumre(rang: Int) =
+            adminClient.get().uri("/admin/statistikk/bruk/virksomheter/$rang/saksnumre")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+
+        @Test
+        fun `skal returnere saksnumrene for virksomheten paa oppgitt rang, uten personopplysninger`() {
+            val utenSaksnummer = lagInnsendt(fnr = "80000000001", juridiskEnhet = "920000010", orgnr = "920000011", saksnummer = null)
+            lagInnsendt(fnr = "80000000002", juridiskEnhet = "920000010", orgnr = "920000012", saksnummer = "SAK-A2")
+            lagInnsendt(fnr = "80000000003", juridiskEnhet = "920000010", saksnummer = "SAK-A3")
+            lagInnsendt(fnr = "80000000004", juridiskEnhet = "920000020", saksnummer = "SAK-B1")
+
+            val topp1 = hentSaksnumre(1)
+                .expectStatus().isOk
+                .expectBody<VirksomhetSaksnumreDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+            topp1.rang shouldBe 1
+            topp1.antallInnsendinger shouldBe 3
+            topp1.saksnumre shouldContainExactlyInAnyOrder listOf("SAK-A2", "SAK-A3", utenSaksnummer.id.toString())
+
+            val topp2 = hentSaksnumre(2)
+                .expectStatus().isOk
+                .expectBody<VirksomhetSaksnumreDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+            topp2.antallInnsendinger shouldBe 1
+            topp2.saksnumre shouldBe listOf("SAK-B1")
+
+            val json = hentSaksnumre(1).expectStatus().isOk
+                .expectBody(String::class.java).returnResult().responseBody!!
+            json shouldNotContain "80000000001"
+            json shouldNotContain "920000010"
+            json shouldNotContain "Test Testesen"
+        }
+
+        @Test
+        fun `antallInnsendinger skal stemme med samme rad i topplisten`() {
+            lagInnsendt(fnr = "81000000001", juridiskEnhet = "921000010")
+            lagInnsendt(fnr = "81000000002", juridiskEnhet = "921000010")
+            lagInnsendt(fnr = "81000000003", juridiskEnhet = "921000020")
+
+            val toppliste = adminClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<BrukStatistikkDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+                .topplisteVirksomheter
+
+            toppliste.forEachIndexed { indeks, virksomhet ->
+                val saksnumre = hentSaksnumre(indeks + 1)
+                    .expectStatus().isOk
+                    .expectBody<VirksomhetSaksnumreDto>()
+                    .returnResult().responseBody.shouldNotBeNull()
+                saksnumre.antallInnsendinger shouldBe virksomhet.antallInnsendinger
+                saksnumre.saksnumre shouldHaveSize virksomhet.antallInnsendinger.toInt()
+            }
+        }
+
+        @Test
+        fun `skal returnere 404 naar rang er utenfor topplisten`() {
+            lagInnsendt(fnr = "82000000001", juridiskEnhet = "922000010")
+
+            hentSaksnumre(2).expectStatus().isNotFound
+            hentSaksnumre(0).expectStatus().isNotFound
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            adminClient.get().uri("/admin/statistikk/bruk/virksomheter/1/saksnumre")
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
                 .exchange()
                 .expectStatus().isForbidden
