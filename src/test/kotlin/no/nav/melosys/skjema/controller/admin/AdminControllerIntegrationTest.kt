@@ -21,7 +21,6 @@ import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
-import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -72,9 +71,6 @@ class AdminControllerIntegrationTest : ApiTestBase() {
     private lateinit var innsendingService: InnsendingService
 
     @MockkBean(relaxed = true)
-    private lateinit var vedleggStorageClient: VedleggStorageClient
-
-    @MockkBean(relaxed = true)
     private lateinit var brukervarselProducer: BrukervarselProducer
 
     /** WebTestClient som sender gyldig admin-API-nøkkel på alle kall (jf. application-test.yml). */
@@ -84,7 +80,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @BeforeEach
     fun setUp() {
-        // Native delete (cascade) – rydder også gamle SLETTET-rader som seedes via SQL i denne testen.
+        // Native delete (cascade) – rydder skjema-tabellen før hver test.
         jdbcTemplate.update("DELETE FROM skjema")
     }
 
@@ -869,123 +865,4 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
     }
 
-    @Nested
-    @DisplayName("POST /admin/utkast/rydd-slettede")
-    inner class RyddSletteUtkast {
-
-        /** Seeder en SLETTET-skjemarad (med valgfritt vedlegg) direkte via SQL, jf. gammel soft-delete. */
-        private fun seedSletteSkjema(storageReferanse: String? = null): UUID {
-            val skjemaId = UUID.randomUUID()
-            jdbcTemplate.update(
-                """
-                INSERT INTO skjema (id, status, type, fnr, orgnr, metadata, opprettet_av, endret_av)
-                VALUES (?, 'SLETTET', 'UTSENDT_ARBEIDSTAKER', '01816023404', '123456789',
-                        '{"representasjonstype":"DEG_SELV"}'::jsonb, '01816023404', '01816023404')
-                """.trimIndent(),
-                skjemaId
-            )
-            if (storageReferanse != null) {
-                jdbcTemplate.update(
-                    """
-                    INSERT INTO vedlegg (id, skjema_id, filnavn, original_filnavn, filtype, filstorrelse, storage_referanse, opprettet_av)
-                    VALUES (?, ?, 'fil.pdf', 'fil.pdf', 'PDF', 123, ?, '01816023404')
-                    """.trimIndent(),
-                    UUID.randomUUID(), skjemaId, storageReferanse
-                )
-            }
-            return skjemaId
-        }
-
-        private fun antallSkjemaIDb(): Int =
-            jdbcTemplate.queryForObject("SELECT COUNT(*) FROM skjema", Int::class.java)!!
-
-        private fun antallVedleggIDb(): Int =
-            jdbcTemplate.queryForObject("SELECT COUNT(*) FROM vedlegg", Int::class.java)!!
-
-        @Test
-        fun `skal hard-slette SLETTET-skjema, cascade vedlegg-rader og slette blobs`() {
-            seedSletteSkjema(storageReferanse = "skjemaer/a/vedlegg/b/fil.pdf")
-            seedSletteSkjema(storageReferanse = "skjemaer/c/vedlegg/d/fil.pdf")
-            seedSletteSkjema(storageReferanse = null)
-            // Et innsendt skjema som IKKE skal røres
-            skjemaRepository.save(
-                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, data = arbeidstakersSkjemaDataDtoMedDefaultVerdier())
-            )
-
-            val body = adminClient.post().uri("/admin/utkast/rydd-slettede")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<RyddUtkastResultatDto>()
-                .returnResult().responseBody.shouldNotBeNull()
-
-            body.antallSkjema shouldBe 3
-            body.antallVedleggSlettet shouldBe 2
-            body.antallVedleggFeilet shouldBe 0
-
-            // Kun det innsendte skjemaet er igjen, alle vedlegg-rader er cascade-slettet
-            antallSkjemaIDb() shouldBe 1
-            antallVedleggIDb() shouldBe 0
-            verify(exactly = 1) { vedleggStorageClient.slett("skjemaer/a/vedlegg/b/fil.pdf") }
-            verify(exactly = 1) { vedleggStorageClient.slett("skjemaer/c/vedlegg/d/fil.pdf") }
-        }
-
-        @Test
-        fun `skal telle feilede blob-slettinger men likevel slette radene`() {
-            seedSletteSkjema(storageReferanse = "skjemaer/x/vedlegg/y/fil.pdf")
-            every { vedleggStorageClient.slett("skjemaer/x/vedlegg/y/fil.pdf") } throws RuntimeException("bucket nede")
-
-            val body = adminClient.post().uri("/admin/utkast/rydd-slettede")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<RyddUtkastResultatDto>()
-                .returnResult().responseBody.shouldNotBeNull()
-
-            body.antallSkjema shouldBe 1
-            body.antallVedleggSlettet shouldBe 0
-            body.antallVedleggFeilet shouldBe 1
-            antallSkjemaIDb() shouldBe 0
-        }
-
-        @Test
-        fun `skal returnere nuller når ingen SLETTET-utkast finnes`() {
-            val body = adminClient.post().uri("/admin/utkast/rydd-slettede")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<RyddUtkastResultatDto>()
-                .returnResult().responseBody.shouldNotBeNull()
-
-            body.antallSkjema shouldBe 0
-            body.antallVedleggSlettet shouldBe 0
-            body.antallVedleggFeilet shouldBe 0
-        }
-
-        @Test
-        fun `skal returnere 403 når azp ikke matcher tillatt klient`() {
-            adminClient.post().uri("/admin/utkast/rydd-slettede")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
-                .exchange()
-                .expectStatus().isForbidden
-        }
-
-        @Test
-        fun `JPA skal kunne laste legacy SLETTET-rad uten å kaste i opprydding-vinduet`() {
-            // Regresjon: SLETTET er fjernet som aktiv status, men beholdt i enumet slik at eksisterende
-            // rader kan mappes (EnumType.STRING) før admin-oppryddingen er kjørt i prod (MELOSYS-8157).
-            // Uten dette ville findById på en gammel soft-deletet rad kaste og gi 500 i klient-kodeløp.
-            val skjemaId = skjemaRepository.save(
-                skjemaMedDefaultVerdier(status = SkjemaStatus.SLETTET)
-            ).id.shouldNotBeNull()
-
-            val skjema = skjemaRepository.findById(skjemaId)
-
-            skjema.isPresent shouldBe true
-            skjema.get().status shouldBe SkjemaStatus.SLETTET
-        }
-    }
 }
