@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.controller.admin
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -1372,29 +1373,108 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
             lagInnsendtDel(Skjemadel.ARBEIDSTAKERS_DEL, Representasjonstype.DEG_SELV, fnr, periode, foerCutoff, juridiskEnhet)
 
-        private fun resend(dryRun: Boolean = false, ekskluderteSaksnumre: List<String>? = null): ResendVarslerResultatDto {
+        private fun resend(dryRun: Boolean = false, ekskluderteSaksnumre: List<String>? = null): ResendVarslerResultatDto =
+            resendRespons(dryRun, ekskluderteSaksnumre)
+                .expectStatus().isOk
+                .expectBody<ResendVarslerResultatDto>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+        private fun resendRespons(dryRun: Boolean = false, ekskluderteSaksnumre: List<String>? = null): WebTestClient.ResponseSpec {
             val request = adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
             val medBody = ekskluderteSaksnumre?.let { request.bodyValue(ResendVarslerRequestDto(it)) } ?: request
             return medBody.exchange()
-                .expectStatus().isOk
-                .expectBody<ResendVarslerResultatDto>()
-                .returnResult().responseBody.shouldNotBeNull()
         }
 
         @Test
-        fun `skal hoppe over saker i eksklusjonslisten og rapportere ukjente saksnumre`() {
+        fun `skal hoppe over saker i eksklusjonslisten, uavhengig av whitespace og store bokstaver`() {
             lagAgDel(fnr = "10000000040", saksnummer = "SAK-EKSKLUDERT")
             lagAgDel(fnr = "10000000041", saksnummer = "SAK-BEHOLDES")
 
-            val resultat = resend(ekskluderteSaksnumre = listOf("  SAK-EKSKLUDERT  ", "", "SAK-FINNES-IKKE"))
+            val resultat = resend(ekskluderteSaksnumre = listOf("  sak-Ekskludert  "))
 
             resultat.antallSendt shouldBe 1
             resultat.saksnumre shouldBe listOf("SAK-BEHOLDES")
             resultat.antallEkskludert shouldBe 1
-            resultat.ikkeFunnetEkskluderte shouldBe listOf("SAK-FINNES-IKKE")
+            resultat.ekskluderte shouldBe listOf("SAK-EKSKLUDERT")
+            resultat.ikkeFunnetEkskluderte.shouldBeEmpty()
             verify(exactly = 1) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `dry-run skal rapportere verdier som ikke traff noen kandidat, uten aa sende noe`() {
+            lagAgDel(fnr = "10000000042", saksnummer = "SAK-EKSKLUDERT")
+            lagAgDel(fnr = "10000000043", saksnummer = "SAK-BEHOLDES")
+
+            // Duplikat i lista skal telles én gang, ikke rapporteres som ikke-funnet
+            val resultat = resend(dryRun = true, ekskluderteSaksnumre = listOf("SAK-EKSKLUDERT", "SAK-EKSKLUDERT", "SAK-FINNES-IKKE"))
+
+            resultat.dryRun shouldBe true
+            resultat.antallSendt shouldBe 1
+            resultat.saksnumre shouldBe listOf("SAK-BEHOLDES")
+            resultat.antallEkskludert shouldBe 1
+            resultat.ikkeFunnetEkskluderte shouldBe listOf("SAK-FINNES-IKKE")
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `ekte kjoering skal avvises naar en oppgitt verdi ikke traff noen kandidat`() {
+            lagAgDel(fnr = "10000000044", saksnummer = "SAK-BEHOLDES")
+
+            resendRespons(dryRun = false, ekskluderteSaksnumre = listOf("SAK-FINNES-IKKE")).expectStatus().isBadRequest
+
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        @Test
+        fun `skal kunne ekskludere sak uten saksnummer via skjema-id`() {
+            val utenSaksnummer = lagAgDel(fnr = "10000000045")
+            lagAgDel(fnr = "10000000046", saksnummer = "SAK-BEHOLDES")
+
+            val resultat = resend(ekskluderteSaksnumre = listOf(utenSaksnummer.id.toString().uppercase()))
+
+            resultat.saksnumre shouldBe listOf("SAK-BEHOLDES")
+            resultat.ekskluderte shouldBe listOf(utenSaksnummer.id.toString())
+            resultat.ikkeFunnetEkskluderte.shouldBeEmpty()
+        }
+
+        @Test
+        fun `en oppfoering skal ekskludere alle kandidater med samme saksnummer`() {
+            lagAgDel(fnr = "10000000047", saksnummer = "SAK-DELT")
+            lagAgDel(fnr = "10000000048", saksnummer = "SAK-DELT")
+
+            val resultat = resend(ekskluderteSaksnumre = listOf("SAK-DELT"))
+
+            // antallEkskludert teller KANDIDATER, ikke listeoppføringer – her 2 fra én oppføring
+            resultat.antallEkskludert shouldBe 2
+            resultat.antallSendt shouldBe 0
+            resultat.ikkeFunnetEkskluderte.shouldBeEmpty()
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
+
+        /** Rå JSON-body, for tilfeller der [ResendVarslerRequestDto] ikke lar seg konstruere klientside. */
+        private fun resendRaaBody(json: String, dryRun: Boolean = false): WebTestClient.ResponseSpec =
+            adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(json)
+                .exchange()
+
+        @Test
+        fun `skal avvise tom eller ugyldig eksklusjonsliste, slik at feilstavet felt ikke gir full utsending`() {
+            lagAgDel(fnr = "10000000049", saksnummer = "SAK-BEHOLDES")
+
+            // Tom liste = trolig feilstavet feltnavn (ukjente felt ignoreres av Jackson-oppsettet)
+            resendRespons(ekskluderteSaksnumre = emptyList()).expectStatus().isBadRequest
+            resendRaaBody("""{"ekskluderteSaksnummer": ["SAK-BEHOLDES"]}""").expectStatus().isBadRequest
+            // Blanke, for lange og null-verdier er ikke gyldige saksnumre – og skal ikke gi 500
+            resendRaaBody("""{"ekskluderteSaksnumre": ["   "]}""").expectStatus().isBadRequest
+            resendRaaBody("""{"ekskluderteSaksnumre": ["${"S".repeat(100)}"]}""").expectStatus().isBadRequest
+            resendRaaBody("""{"ekskluderteSaksnumre": ["SAK-BEHOLDES", null]}""").expectStatus().isBadRequest
+
+            verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
         }
 
         @Test

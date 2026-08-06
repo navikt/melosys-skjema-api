@@ -729,16 +729,33 @@ class AdminService(
      *
      * [ekskluderteSaksnumre] er en manuell liste fra fagsiden: saker der saksbehandler har verifisert at
      * motparten allerede er mottatt via en annen kanal, og som derfor ikke skal varsles på nytt. Listen
-     * matches på samme nøkkel som responsen bruker (saksnummer, eller skjema-id for saker uten saksnummer).
+     * matches (case-insensitivt, trimmet) på samme nøkkel som responsen bruker – saksnummer, eller
+     * skjema-id for saker uten saksnummer.
+     *
+     * Sendingen kan ikke angres, så en ekte kjøring feiler med [IllegalArgumentException] hvis en oppgitt
+     * verdi ikke traff noen kandidat: da er listen misforstått (skrivefeil, feil felt i bodyen, eller feil
+     * datagrunnlag), og alternativet ville vært å varsle en sak saksbehandler eksplisitt ba oss droppe.
+     * Ved [dryRun] rapporteres avviket i stedet, så listen kan rettes før ekte kjøring.
      */
     fun resendVarsler(dryRun: Boolean, ekskluderteSaksnumre: List<String> = emptyList()): ResendVarslerResultatDto {
         val alleKandidater = finnResendKandidater()
-        val ekskluderte = ekskluderteSaksnumre.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
-        val (utelatt, kandidater) = alleKandidater.partition { it.nøkkel() in ekskluderte }
-        val ikkeFunnet = (ekskluderte - utelatt.map { it.nøkkel() }.toSet()).sorted()
+        // Slås opp normalisert (trimmet + lowercase), men rapporteres tilbake slik kaller skrev det.
+        val oppgitt: Map<String, String> = ekskluderteSaksnumre
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .associateBy { it.lowercase() }
+        val (utelatt, kandidater) = alleKandidater.partition { it.nøkkel().lowercase() in oppgitt }
+        val truffet = utelatt.map { it.nøkkel().lowercase() }.toSet()
+        val ikkeFunnet = (oppgitt - truffet).values.sorted()
         log.info { "Admin: Resend (dryRun=$dryRun) – fant ${alleKandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del), ${utelatt.size} ekskludert manuelt" }
+        advarOmFlertydigeEksklusjoner(utelatt)
         if (ikkeFunnet.isNotEmpty()) {
-            log.warn { "Admin: Resend – ${ikkeFunnet.size} oppgitt(e) saksnummer i eksklusjonslisten traff ingen kandidat: $ikkeFunnet" }
+            // Verdiene selv holdes utenfor loggen (fritekst fra kaller) – de returneres i responsen.
+            val melding = "${ikkeFunnet.size} av ${oppgitt.size} oppgitte verdier i eksklusjonslisten traff ingen kandidat"
+            require(dryRun) {
+                "Resend avbrutt: $melding. Kjør med dryRun=true for å se hvilke (ikkeFunnetEkskluderte), og rett listen."
+            }
+            log.warn { "Admin: Resend (dry-run) – $melding. Se ikkeFunnetEkskluderte i responsen." }
         }
 
         val sendteSaksnumre = mutableListOf<String>()
@@ -758,8 +775,26 @@ class AdminService(
             antallSendt = sendteSaksnumre.size,
             saksnumre = sendteSaksnumre,
             antallEkskludert = utelatt.size,
+            ekskluderte = utelatt.map { it.nøkkel() }.sorted(),
             ikkeFunnetEkskluderte = ikkeFunnet
         )
+    }
+
+    /**
+     * Nøkkelen er ikke unik: samme saksnummer kan ligge på flere handlingspliktige AG-deler (ulike personer
+     * eller perioder på samme sak). Da ekskluderer én oppføring flere kandidater, og noen kan miste varselet
+     * sitt uten at saksbehandler har vurdert dem. Vi stopper ikke kjøringen – over-eksklusjon er den trygge
+     * retningen – men det skal ikke skje ubemerket.
+     */
+    private fun advarOmFlertydigeEksklusjoner(utelatt: List<ResendKandidat>) {
+        utelatt.groupBy { it.nøkkel().lowercase() }
+            .filter { (_, kandidater) -> kandidater.size > 1 }
+            .forEach { (_, kandidater) ->
+                log.warn {
+                    "Admin: Resend – én oppføring i eksklusjonslisten traff ${kandidater.size} kandidater " +
+                        "(skjema ${kandidater.map { it.skjemaId }}). Alle er utelatt; verifiser at det er ønsket."
+                }
+            }
     }
 
     /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */

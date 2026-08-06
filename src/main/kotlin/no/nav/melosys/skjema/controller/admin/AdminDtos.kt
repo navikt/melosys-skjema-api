@@ -55,11 +55,38 @@ data class RetryResultatDto(
  * [ekskluderteSaksnumre] er saker en saksbehandler har gjennomgått manuelt og sett at motparten
  * allerede er mottatt via en annen kanal – de skal ikke varsles på nytt. Saker uten saksnummer kan
  * ekskluderes ved å oppgi skjema-id-en (samme representasjon som i responsen). Whitespace trimmes,
- * og tomme verdier ignoreres.
+ * og matchingen er ikke case-sensitiv.
+ *
+ * Valideres i [init] framfor med bean validation-annotasjoner, siden container element-constraints
+ * (`List<@NotBlank String>`) ikke slår inn her. Blanke og for lange verdier avvises: en verdi som ikke
+ * er et gyldig saksnummer (maks 99 tegn, jf. `innsending.saksnummer`) eller en skjema-id kan uansett
+ * ikke treffe en kandidat, og skal ikke havne i logger og responser.
+ *
+ * NB: sendingen er irreversibel, så en oppgitt verdi som ikke treffer noen kandidat avvises med 400
+ * ved ekte kjøring (`dryRun=false`) – se [ResendVarslerResultatDto.ikkeFunnetEkskluderte].
  */
 data class ResendVarslerRequestDto(
     val ekskluderteSaksnumre: List<String> = emptyList()
-)
+) {
+    init {
+        require(ekskluderteSaksnumre.size <= MAKS_ANTALL_EKSKLUDERTE) {
+            "Eksklusjonslisten kan ikke ha mer enn $MAKS_ANTALL_EKSKLUDERTE elementer"
+        }
+        // isNullOrBlank framfor isNotBlank: Jackson kan legge null i lista selv om typen er String.
+        require(ekskluderteSaksnumre.none { it.isNullOrBlank() }) {
+            "Eksklusjonslisten kan ikke inneholde tomme verdier"
+        }
+        require(ekskluderteSaksnumre.all { it.orEmpty().trim().length <= MAKS_LENGDE_SAKSNUMMER }) {
+            "En verdi i eksklusjonslisten er lengre enn $MAKS_LENGDE_SAKSNUMMER tegn og kan ikke være et saksnummer"
+        }
+    }
+
+    private companion object {
+        const val MAKS_ANTALL_EKSKLUDERTE = 2000
+        /** Matcher kolonnen innsending.saksnummer (VARCHAR(99)), jf. `GyldigSaksnummer`. */
+        const val MAKS_LENGDE_SAKSNUMMER = 99
+    }
+}
 
 /**
  * MELOSYS-8168 (midlertidig): Resultat av resending. Kandidatene finnes i koden (AG-del innsendt før
@@ -70,15 +97,21 @@ data class ResendVarslerRequestDto(
  * sendes. [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med
  * skjema-id-en sin.
  *
- * [antallEkskludert] er kandidatene som ble filtrert bort av eksklusjonslisten, og [ikkeFunnetEkskluderte]
- * er oppgitte saksnumre som ikke traff noen kandidat (typisk allerede ute av kandidatsettet, eller en
- * skrivefeil) – ta med som kontroll på at listen ble tolket som forventet.
+ * [ekskluderte] er kandidatene som ble filtrert bort av eksklusjonslisten, og [antallEkskludert] er
+ * antallet i den listen. NB: dette er KANDIDATER, ikke listeoppføringer – treffer én oppføring flere
+ * kandidater (samme saksnummer på flere handlingspliktige AG-deler), kan tallet være høyere enn
+ * antall oppgitte verdier. Sjekk listen mot din egen ved dry-run.
+ *
+ * [ikkeFunnetEkskluderte] er oppgitte verdier som ikke traff noen kandidat (typisk allerede ute av
+ * kandidatsettet, eller en skrivefeil). Ved `dryRun=false` er den alltid tom, siden kjøringen da
+ * avvises med 400 i stedet – en skrivefeil skal ikke føre til at saken varsles likevel.
  */
 data class ResendVarslerResultatDto(
     val dryRun: Boolean,
     val antallSendt: Int,
     val saksnumre: List<String>,
     val antallEkskludert: Int = 0,
+    val ekskluderte: List<String> = emptyList(),
     val ikkeFunnetEkskluderte: List<String> = emptyList()
 )
 
