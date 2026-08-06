@@ -46,7 +46,10 @@ private val OSLO: ZoneId = ZoneId.of("Europe/Oslo")
 data class ResendKandidat(
     val skjemaId: UUID,
     val saksnummer: String?
-)
+) {
+    /** Identifikatoren kandidaten kjennes på utad (rapportering og eksklusjon): saksnummer, ellers skjema-id. */
+    fun nøkkel(): String = saksnummer ?: skjemaId.toString()
+}
 
 /**
  * Administrative operasjoner som eksponeres via [no.nav.melosys.skjema.controller.admin.AdminController]
@@ -723,24 +726,40 @@ class AdminService(
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
      * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
      * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
+     *
+     * [ekskluderteSaksnumre] er en manuell liste fra fagsiden: saker der saksbehandler har verifisert at
+     * motparten allerede er mottatt via en annen kanal, og som derfor ikke skal varsles på nytt. Listen
+     * matches på samme nøkkel som responsen bruker (saksnummer, eller skjema-id for saker uten saksnummer).
      */
-    fun resendVarsler(dryRun: Boolean): ResendVarslerResultatDto {
-        val kandidater = finnResendKandidater()
-        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
+    fun resendVarsler(dryRun: Boolean, ekskluderteSaksnumre: List<String> = emptyList()): ResendVarslerResultatDto {
+        val alleKandidater = finnResendKandidater()
+        val ekskluderte = ekskluderteSaksnumre.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        val (utelatt, kandidater) = alleKandidater.partition { it.nøkkel() in ekskluderte }
+        val ikkeFunnet = (ekskluderte - utelatt.map { it.nøkkel() }.toSet()).sorted()
+        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${alleKandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del), ${utelatt.size} ekskludert manuelt" }
+        if (ikkeFunnet.isNotEmpty()) {
+            log.warn { "Admin: Resend – ${ikkeFunnet.size} oppgitt(e) saksnummer i eksklusjonslisten traff ingen kandidat: $ikkeFunnet" }
+        }
 
         val sendteSaksnumre = mutableListOf<String>()
         kandidater.forEach { kandidat ->
             try {
                 if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId, dryRun)) {
                     // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
-                    sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
+                    sendteSaksnumre += kandidat.nøkkel()
                 }
             } catch (e: Exception) {
                 log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
             }
         }
         log.info { "Admin: Resend ferdig (dryRun=$dryRun) – ${sendteSaksnumre.size} varsler ${if (dryRun) "ville blitt sendt" else "sendt"}" }
-        return ResendVarslerResultatDto(dryRun = dryRun, antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
+        return ResendVarslerResultatDto(
+            dryRun = dryRun,
+            antallSendt = sendteSaksnumre.size,
+            saksnumre = sendteSaksnumre,
+            antallEkskludert = utelatt.size,
+            ikkeFunnetEkskluderte = ikkeFunnet
+        )
     }
 
     /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */

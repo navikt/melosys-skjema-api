@@ -49,17 +49,37 @@ data class RetryResultatDto(
 )
 
 /**
+ * MELOSYS-8168 (midlertidig): Valgfri request-body til resending. Kandidatene finnes fortsatt i koden;
+ * dette er kun en manuell eksklusjonsliste.
+ *
+ * [ekskluderteSaksnumre] er saker en saksbehandler har gjennomgått manuelt og sett at motparten
+ * allerede er mottatt via en annen kanal – de skal ikke varsles på nytt. Saker uten saksnummer kan
+ * ekskluderes ved å oppgi skjema-id-en (samme representasjon som i responsen). Whitespace trimmes,
+ * og tomme verdier ignoreres.
+ */
+data class ResendVarslerRequestDto(
+    val ekskluderteSaksnumre: List<String> = emptyList()
+)
+
+/**
  * MELOSYS-8168 (midlertidig): Resultat av resending. Kandidatene finnes i koden (AG-del innsendt før
- * SMS ble aktivert, som fortsatt venter på AT-del), så endepunktet trenger ingen request-body.
+ * SMS ble aktivert, som fortsatt venter på AT-del), så endepunktet trenger ingen request-body utover
+ * en eventuell eksklusjonsliste ([ResendVarslerRequestDto]).
  *
  * [saksnumre] lister sakene som fikk et nytt varsel — eller ved [dryRun] ville fått, uten at noe
  * sendes. [antallSendt] er antallet i listen. Saker som mangler saksnummer representeres med
  * skjema-id-en sin.
+ *
+ * [antallEkskludert] er kandidatene som ble filtrert bort av eksklusjonslisten, og [ikkeFunnetEkskluderte]
+ * er oppgitte saksnumre som ikke traff noen kandidat (typisk allerede ute av kandidatsettet, eller en
+ * skrivefeil) – ta med som kontroll på at listen ble tolket som forventet.
  */
 data class ResendVarslerResultatDto(
     val dryRun: Boolean,
     val antallSendt: Int,
-    val saksnumre: List<String>
+    val saksnumre: List<String>,
+    val antallEkskludert: Int = 0,
+    val ikkeFunnetEkskluderte: List<String> = emptyList()
 )
 
 /**

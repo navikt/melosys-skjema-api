@@ -1372,14 +1372,30 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         private fun lagAtDel(fnr: String, periode: PeriodeDto = periodeA, juridiskEnhet: String = korrektSyntetiskOrgnr): Skjema =
             lagInnsendtDel(Skjemadel.ARBEIDSTAKERS_DEL, Representasjonstype.DEG_SELV, fnr, periode, foerCutoff, juridiskEnhet)
 
-        private fun resend(dryRun: Boolean = false): ResendVarslerResultatDto =
-            adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
+        private fun resend(dryRun: Boolean = false, ekskluderteSaksnumre: List<String>? = null): ResendVarslerResultatDto {
+            val request = adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
-                .exchange()
+            val medBody = ekskluderteSaksnumre?.let { request.bodyValue(ResendVarslerRequestDto(it)) } ?: request
+            return medBody.exchange()
                 .expectStatus().isOk
                 .expectBody<ResendVarslerResultatDto>()
                 .returnResult().responseBody.shouldNotBeNull()
+        }
+
+        @Test
+        fun `skal hoppe over saker i eksklusjonslisten og rapportere ukjente saksnumre`() {
+            lagAgDel(fnr = "10000000040", saksnummer = "SAK-EKSKLUDERT")
+            lagAgDel(fnr = "10000000041", saksnummer = "SAK-BEHOLDES")
+
+            val resultat = resend(ekskluderteSaksnumre = listOf("  SAK-EKSKLUDERT  ", "", "SAK-FINNES-IKKE"))
+
+            resultat.antallSendt shouldBe 1
+            resultat.saksnumre shouldBe listOf("SAK-BEHOLDES")
+            resultat.antallEkskludert shouldBe 1
+            resultat.ikkeFunnetEkskluderte shouldBe listOf("SAK-FINNES-IKKE")
+            verify(exactly = 1) { brukervarselProducer.sendBrukervarsel(any()) }
+        }
 
         @Test
         fun `dry-run teller kandidatene uten aa sende noe, og er default`() {
