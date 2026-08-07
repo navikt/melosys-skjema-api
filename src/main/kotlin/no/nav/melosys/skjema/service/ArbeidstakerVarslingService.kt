@@ -87,72 +87,6 @@ class ArbeidstakerVarslingService(
         log.info { "Sendt informasjonsvarsel til arbeidstaker om fullmaktsinnsending" }
     }
 
-    /**
-     * MELOSYS-8168 (midlertidig): Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til
-     * arbeidstaker for et gitt skjema. Brukes av admin-endepunktet for å nå AT-brukere som fikk et varsel
-     * med feil lenke før lenken ble fikset.
-     *
-     * Sender KUN for handlingspliktige caser (arbeidsgiver/rådgiver uten fullmakt, skjemadel = ARBEIDSGIVERS_DEL).
-     * Bypasser [no.nav.melosys.skjema.entity.Innsending.brukervarselSendt]-sjekken (resend er eksplisitt)
-     * og endrer ikke det feltet, men beholder utkast-guarden slik at de som har påbegynt sin del ikke purres.
-     *
-     * Med [dryRun] evalueres alle kriteriene uten at noe sendes — for trygg opptelling på forhånd.
-     *
-     * @return true hvis varsel ble sendt på nytt (eller ville blitt sendt ved dry-run), false ellers.
-     */
-    fun resendVarselTilArbeidstaker(skjemaId: UUID, dryRun: Boolean = false): Boolean {
-        val skjema = skjemaRepository.findById(skjemaId).orElse(null)
-        if (skjema == null) {
-            log.warn { "Resend: fant ikke skjema $skjemaId, hopper over" }
-            return false
-        }
-
-        val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata
-        if (metadata == null) {
-            log.warn { "Resend: skjema $skjemaId har ikke UtsendtArbeidstakerMetadata, hopper over" }
-            return false
-        }
-
-        if (metadata.skjemadel != Skjemadel.ARBEIDSGIVERS_DEL) {
-            log.info { "Resend: skjemadel=${metadata.skjemadel} (skjema $skjemaId) er ikke resend-kandidat, hopper over" }
-            return false
-        }
-
-        return when (metadata) {
-            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, skjema.orgnr, metadata, dryRun)
-            else -> {
-                log.info { "Resend: ${metadata.representasjonstype} (skjema $skjemaId) er ikke handlingspliktig, hopper over" }
-                false
-            }
-        }
-    }
-
-    private fun resendUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata, dryRun: Boolean): Boolean {
-        if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
-            log.info { "Resend: arbeidstaker har eksisterende utkast, sender ikke varsel" }
-            return false
-        }
-
-        if (dryRun) {
-            return true
-        }
-
-        val navn = arbeidsgiverVisningsnavnForResend(metadata, orgnr)
-        val tekster = lagResendVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
-        log.info { "Resend: sendt varsel på nytt til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
-        return true
-    }
-
-    /**
-     * MELOSYS-8168 (midlertidig): Returnerer navnet som skal vises i resend-varselteksten.
-     * Resend-teksten har en ekstra setning, og lange arbeidsgivernavn kan gjøre at teksten
-     * overstiger min-side sin maksgrense på 300 tegn. Navn over
-     * [RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE] tegn erstattes derfor med organisasjonsnummeret.
-     */
-    private fun arbeidsgiverVisningsnavnForResend(metadata: UtsendtArbeidstakerMetadata, orgnr: String): String =
-        if (metadata.arbeidsgiverNavn.length > RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE) orgnr else metadata.arbeidsgiverNavn
-
     private fun harEksisterendeArbeidstakerUtkast(fnr: String, juridiskEnhetOrgnr: String): Boolean =
         skjemaRepository.findByFnrAndTypeAndStatus(fnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.UTKAST).any { utkast ->
             val m = utkast.metadata as? UtsendtArbeidstakerMetadata
@@ -178,21 +112,6 @@ class ArbeidstakerVarslingService(
         )
     }
 
-    /**
-     * MELOSYS-8168 (midlertidig): Samme handlingspliktige tekst som [lagVarselteksterUtenFullmakt],
-     * men med en ekstra setning om at de som allerede har sendt inn sin del kan se bort fra meldingen.
-     * Tillegget gjelder kun resend, ikke den vanlige varselstien.
-     */
-    private fun lagResendVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> =
-        lagVarselteksterUtenFullmakt(arbeidsgiverNavn).map { varseltekst ->
-            val tillegg = when (varseltekst.språk) {
-                Språk.NORSK_BOKMAL -> " Hvis du allerede har fylt ut og sendt inn din del, kan du se bort fra denne meldingen."
-                Språk.ENGELSK -> " If you have already submitted your part, you can disregard this message."
-                else -> ""
-            }
-            varseltekst.copy(tekst = varseltekst.tekst + tillegg)
-        }
-
     private fun lagVarselteksterMedFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
             Varseltekst(
@@ -210,7 +129,6 @@ class ArbeidstakerVarslingService(
 
     companion object {
         private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
-        private const val RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE = 30
         private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad/oversikt"
     }
 }

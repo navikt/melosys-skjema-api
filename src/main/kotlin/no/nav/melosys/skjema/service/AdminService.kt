@@ -15,7 +15,6 @@ import no.nav.melosys.skjema.controller.admin.SaksstatusFordelingDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusEksportDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusEksportRadDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
-import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
@@ -42,15 +41,6 @@ import org.springframework.transaction.annotation.Transactional
 private val log = KotlinLogging.logger {}
 private val OSLO: ZoneId = ZoneId.of("Europe/Oslo")
 
-/** MELOSYS-8168: En resend-kandidat – skjema som skal få varsel på nytt, med saksnummer hvis det finnes. */
-data class ResendKandidat(
-    val skjemaId: UUID,
-    val saksnummer: String?
-) {
-    /** Identifikatoren kandidaten kjennes på utad (rapportering og eksklusjon): saksnummer, ellers skjema-id. */
-    fun nøkkel(): String = saksnummer ?: skjemaId.toString()
-}
-
 /**
  * Administrative operasjoner som eksponeres via [no.nav.melosys.skjema.controller.admin.AdminController]
  * og konsumeres av melosys-console. Gir innsyn i og mulighet til å reprosessere feilede innsendinger.
@@ -60,8 +50,7 @@ class AdminService(
     private val innsendingRepository: InnsendingRepository,
     private val skjemaRepository: SkjemaRepository,
     private val adminStatistikkRepository: AdminStatistikkRepository,
-    private val innsendingService: InnsendingService,
-    private val arbeidstakerVarslingService: ArbeidstakerVarslingService
+    private val innsendingService: InnsendingService
 ) {
 
     @Transactional(readOnly = true)
@@ -710,149 +699,6 @@ class AdminService(
         return RetryResultatDto(antallForsoekt = skjemaIder.size, antallFeilet = feilet)
     }
 
-    /**
-     * MELOSYS-8168 (midlertidig): Resender brukervarsel (nå med korrekt skjema-lenke) til arbeidstakere som
-     * fikk et varsel med feil lenke. Kandidatene finnes i koden – ingen kuratert liste – og er bevisst litt
-     * over-inkluderende (kan treffe et par ekstra), men ingen som faktisk fikk feil lenke skal utelates:
-     *
-     * Kandidat = handlingspliktig AG-del (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn FØR
-     * [VARSEL_LENKE_FIKSET_TIDSPUNKT] og som fortsatt venter på arbeidstakers del (ingen innsendt arbeidstaker-/
-     * kombinert-del matcher på samme fnr + juridisk enhet + overlappende periode). Innsendinger der saken er
-     * AVSLUTTET i melosys-api ekskluderes – der er det ingenting å varsle om (motpart-delen kom typisk via
-     * en annen kanal). NB: filteret forutsetter at saksstatus-massesynken fra melosys-api er kjørt først;
-     * innsendinger uten synket status (null) behandles som aktive og kan få varsel.
-     *
-     * Selve sendingen delegeres til [ArbeidstakerVarslingService.resendVarselTilArbeidstaker], som i tillegg
-     * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
-     * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
-     * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
-     *
-     * [ekskluderteSaksnumre] er en manuell liste fra fagsiden: saker der saksbehandler har verifisert at
-     * motparten allerede er mottatt via en annen kanal, og som derfor ikke skal varsles på nytt. Listen
-     * matches (case-insensitivt, trimmet) på samme nøkkel som responsen bruker – saksnummer, eller
-     * skjema-id for saker uten saksnummer.
-     *
-     * Sendingen kan ikke angres, så en ekte kjøring feiler med [IllegalArgumentException] hvis en oppgitt
-     * verdi ikke traff noen kandidat: da er listen misforstått (skrivefeil, feil felt i bodyen, eller feil
-     * datagrunnlag), og alternativet ville vært å varsle en sak saksbehandler eksplisitt ba oss droppe.
-     * Ved [dryRun] rapporteres avviket i stedet, så listen kan rettes før ekte kjøring.
-     */
-    fun resendVarsler(dryRun: Boolean, ekskluderteSaksnumre: List<String> = emptyList()): ResendVarslerResultatDto {
-        val alleKandidater = finnResendKandidater()
-        // Slås opp normalisert (trimmet + lowercase), men rapporteres tilbake slik kaller skrev det.
-        val oppgitt: Map<String, String> = ekskluderteSaksnumre
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .associateBy { it.lowercase() }
-        val (utelatt, kandidater) = alleKandidater.partition { it.nøkkel().lowercase() in oppgitt }
-        val truffet = utelatt.map { it.nøkkel().lowercase() }.toSet()
-        val ikkeFunnet = (oppgitt - truffet).values.sorted()
-        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${alleKandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del), ${utelatt.size} ekskludert manuelt" }
-        advarOmFlertydigeEksklusjoner(utelatt)
-        if (ikkeFunnet.isNotEmpty()) {
-            // Verdiene selv holdes utenfor loggen (fritekst fra kaller) – de returneres i responsen.
-            val melding = "${ikkeFunnet.size} av ${oppgitt.size} oppgitte verdier i eksklusjonslisten traff ingen kandidat"
-            require(dryRun) {
-                "Resend avbrutt: $melding. Kjør med dryRun=true for å se hvilke (ikkeFunnetEkskluderte), og rett listen."
-            }
-            log.warn { "Admin: Resend (dry-run) – $melding. Se ikkeFunnetEkskluderte i responsen." }
-        }
-
-        val sendteSaksnumre = mutableListOf<String>()
-        kandidater.forEach { kandidat ->
-            try {
-                if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId, dryRun)) {
-                    // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
-                    sendteSaksnumre += kandidat.nøkkel()
-                }
-            } catch (e: Exception) {
-                log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
-            }
-        }
-        log.info { "Admin: Resend ferdig (dryRun=$dryRun) – ${sendteSaksnumre.size} varsler ${if (dryRun) "ville blitt sendt" else "sendt"}" }
-        return ResendVarslerResultatDto(
-            dryRun = dryRun,
-            antallSendt = sendteSaksnumre.size,
-            saksnumre = sendteSaksnumre,
-            antallEkskludert = utelatt.size,
-            ekskluderte = utelatt.map { it.nøkkel() }.sorted(),
-            ikkeFunnetEkskluderte = ikkeFunnet
-        )
-    }
-
-    /**
-     * Nøkkelen er ikke unik: samme saksnummer kan ligge på flere handlingspliktige AG-deler (ulike personer
-     * eller perioder på samme sak). Da ekskluderer én oppføring flere kandidater, og noen kan miste varselet
-     * sitt uten at saksbehandler har vurdert dem. Vi stopper ikke kjøringen – over-eksklusjon er den trygge
-     * retningen – men det skal ikke skje ubemerket.
-     */
-    private fun advarOmFlertydigeEksklusjoner(utelatt: List<ResendKandidat>) {
-        utelatt.groupBy { it.nøkkel().lowercase() }
-            .filter { (_, kandidater) -> kandidater.size > 1 }
-            .forEach { (_, kandidater) ->
-                log.warn {
-                    "Admin: Resend – én oppføring i eksklusjonslisten traff ${kandidater.size} kandidater " +
-                        "(skjema ${kandidater.map { it.skjemaId }}). Alle er utelatt; verifiser at det er ønsket."
-                }
-            }
-    }
-
-    /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */
-    @Transactional(readOnly = true)
-    fun finnResendKandidater(): List<ResendKandidat> {
-        val alleInnsendte = innsendingRepository.finnAlleInnsendteMedSkjema()
-        val arbeidstakerDeler = alleInnsendte.filter { erArbeidstakerDel(it) }
-        val erstattedeIder: Set<UUID> = alleInnsendte
-            .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
-            .toSet()
-        val kandidater = alleInnsendte
-            .filter { innsending ->
-                innsending.skjema.id !in erstattedeIder &&
-                    innsending.saksstatus != Saksstatus.AVSLUTTET &&
-                    erHandlingspliktigAgDel(innsending) &&
-                    innsending.opprettetDato.isBefore(VARSEL_LENKE_FIKSET_TIDSPUNKT) &&
-                    venterPaaArbeidstakerDel(innsending, arbeidstakerDeler)
-            }
-        val antallUtenStatus = kandidater.count { it.saksstatus == null }
-        if (antallUtenStatus > 0) {
-            log.warn {
-                "Admin: Resend – $antallUtenStatus av ${kandidater.size} kandidat(er) mangler synket saksstatus " +
-                    "og kan gjelde avsluttede saker. Er saksstatus-massesynken fra melosys-api kjørt?"
-            }
-        }
-        return kandidater.map { ResendKandidat(skjemaId = it.skjema.id!!, saksnummer = it.saksnummer) }
-    }
-
-    /** Handlingspliktig AG/rådgiver-del uten fullmakt – arbeidstaker må sende inn sin egen del. */
-    private fun erHandlingspliktigAgDel(innsending: Innsending): Boolean {
-        val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
-        return metadata.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL &&
-            metadata.representasjonstype in HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER
-    }
-
-    /** Innsendt arbeidstaker-del – enten egen del eller kombinert skjema som dekker arbeidstakers del. */
-    private fun erArbeidstakerDel(innsending: Innsending): Boolean {
-        val skjemadel = (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel
-        return skjemadel == Skjemadel.ARBEIDSTAKERS_DEL || skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
-    }
-
-    /**
-     * AT-del mangler hvis ingen innsendt arbeidstaker-del matcher på samme fnr + juridisk enhet +
-     * overlappende periode (samme matching som mottak/saksdekning bruker). Mangler periode på AG-delen
-     * regnes som "venter" (vi sender da heller én ekstra enn å utelate noen som fikk feil lenke).
-     */
-    private fun venterPaaArbeidstakerDel(agDel: Innsending, arbeidstakerDeler: List<Innsending>): Boolean {
-        val agMeta = agDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return false
-        val agPeriode = agDel.skjema.utsendelsePeriode() ?: return true
-        return arbeidstakerDeler.none { atDel ->
-            val atMeta = atDel.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@none false
-            val atPeriode = atDel.skjema.utsendelsePeriode() ?: return@none false
-            agDel.skjema.fnr == atDel.skjema.fnr &&
-                agMeta.juridiskEnhetOrgnr == atMeta.juridiskEnhetOrgnr &&
-                agPeriode.overlapper(atPeriode)
-        }
-    }
-
     @Transactional(readOnly = true)
     fun hentFeiledeSkjemaIder(): List<UUID> =
         innsendingRepository.findByStatusMedSkjema(InnsendingStatus.KAFKA_FEILET).map { it.skjema.id!! }
@@ -880,17 +726,4 @@ class AdminService(
         saksstatusOppdatert = saksstatusOppdatert
     )
 
-    companion object {
-        /**
-         * MELOSYS-8168: Tidspunktet skjema-lenken i det handlingspliktige varselet ble fikset. Handlingspliktige
-         * AG-deler innsendt FØR dette fikk et varsel med feil lenke, og er kandidater for resend med korrekt lenke.
-         */
-        private val VARSEL_LENKE_FIKSET_TIDSPUNKT: Instant = Instant.parse("2026-07-03T12:10:38Z")
-
-        /** Representasjonstyper der arbeidstaker selv må sende inn sin del (uten fullmakt). */
-        private val HANDLINGSPLIKTIGE_REPRESENTASJONSTYPER = setOf(
-            Representasjonstype.ARBEIDSGIVER,
-            Representasjonstype.RADGIVER
-        )
-    }
 }
