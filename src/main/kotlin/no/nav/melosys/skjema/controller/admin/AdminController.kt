@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -134,13 +135,29 @@ class AdminController(
         description = "Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til arbeidstakere " +
             "som fikk et varsel med feil lenke før lenken ble fikset. Kandidatene finnes i koden: alle " +
             "handlingspliktige AG-deler (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn før " +
-            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Med dryRun=true (default) " +
-            "sendes ingenting — responsen viser hvem som VILLE fått varsel. Kjør med dryRun=false for å sende."
+            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Valgfri request-body " +
+            "(Content-Type: application/json) kan inneholde `ekskluderteSaksnumre` – saker der " +
+            "saksbehandler har verifisert at motparten allerede er mottatt via en annen kanal, og som " +
+            "derfor ikke skal varsles på nytt. Treffer en oppgitt verdi ingen kandidat, avvises kjøringen " +
+            "med 400 når dryRun=false. Med dryRun=true (default) sendes ingenting — responsen viser hvem " +
+            "som VILLE fått varsel, hvem som ble ekskludert, og hvilke verdier som ikke traff. " +
+            "Kjør med dryRun=false for å sende."
     )
     @ApiResponse(responseCode = "200", description = "Resending utført (eller opptalt ved dry-run)")
-    fun resendVarsler(@RequestParam(defaultValue = "true") dryRun: Boolean): ResendVarslerResultatDto {
-        log.info { "Admin: Resend varsler (dryRun=$dryRun) til arbeidstakere som fikk varsel med feil lenke" }
-        return adminService.resendVarsler(dryRun)
+    @ApiResponse(responseCode = "400", description = "Ugyldig eksklusjonsliste, eller verdier som ikke traff noen kandidat ved dryRun=false")
+    fun resendVarsler(
+        @RequestParam(defaultValue = "true") dryRun: Boolean,
+        @RequestBody(required = false) request: ResendVarslerRequestDto?
+    ): ResendVarslerResultatDto {
+        val ekskluderte = request?.ekskluderteSaksnumre.orEmpty()
+        // Ukjente felt ignoreres av Jackson-oppsettet vårt, så en feilstavet nøkkel ville ellers gitt en
+        // tom liste – og en full utsending – uten at kaller merket det. Sendte du en body, må den bety noe.
+        require(request == null || ekskluderte.isNotEmpty()) {
+            "Tom eksklusjonsliste. Utelat request-bodyen hvis du ikke vil ekskludere noe – ellers er " +
+                "feltnavnet trolig feilstavet (forventet: ekskluderteSaksnumre)."
+        }
+        log.info { "Admin: Resend varsler (dryRun=$dryRun, ${ekskluderte.size} ekskludert(e) saksnummer) til arbeidstakere som fikk varsel med feil lenke" }
+        return adminService.resendVarsler(dryRun, ekskluderte)
     }
 
 }
