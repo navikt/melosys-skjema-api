@@ -438,8 +438,8 @@ class UtsendtArbeidstakerService(
             ?: throw AccessDeniedException("Innlogget bruker har ikke tilgang til skjema")
 
     private fun findByIdOrThrow(skjemaId: UUID): Skjema =
-        skjemaRepository.findAktivById(skjemaId)
-            ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
+        skjemaRepository.findById(skjemaId)
+            .orElseThrow { NoSuchElementException("Skjema med id $skjemaId finnes ikke") }
 
     fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }

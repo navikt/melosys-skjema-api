@@ -9,22 +9,22 @@ import java.util.UUID
 import no.nav.melosys.skjema.controller.admin.AdminStatistikkDto
 import no.nav.melosys.skjema.controller.admin.BrukStatistikkDto
 import no.nav.melosys.skjema.controller.admin.DelStatusDto
+import no.nav.melosys.skjema.controller.admin.DobbeltinnsendingDto
 import no.nav.melosys.skjema.controller.admin.MotpartCtaStatistikkDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusFordelingDto
-import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkDto
-import no.nav.melosys.skjema.controller.admin.SaksstatusUttrekkRadDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusEksportDto
+import no.nav.melosys.skjema.controller.admin.SaksstatusEksportRadDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
 import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
-import no.nav.melosys.skjema.controller.admin.RyddUtkastResultatDto
 import no.nav.melosys.skjema.controller.admin.UtkastStatistikkDto
+import no.nav.melosys.skjema.controller.admin.VirksomhetSaksnumreDto
 import no.nav.melosys.skjema.controller.admin.VirksomhetStatistikkDto
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Innsending
 import no.nav.melosys.skjema.extensions.overlapper
 import no.nav.melosys.skjema.extensions.utsendelsePeriode
-import no.nav.melosys.skjema.integrasjon.storage.VedleggStorageClient
 import no.nav.melosys.skjema.repository.AdminStatistikkRepository
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
@@ -46,7 +46,10 @@ private val OSLO: ZoneId = ZoneId.of("Europe/Oslo")
 data class ResendKandidat(
     val skjemaId: UUID,
     val saksnummer: String?
-)
+) {
+    /** Identifikatoren kandidaten kjennes på utad (rapportering og eksklusjon): saksnummer, ellers skjema-id. */
+    fun nøkkel(): String = saksnummer ?: skjemaId.toString()
+}
 
 /**
  * Administrative operasjoner som eksponeres via [no.nav.melosys.skjema.controller.admin.AdminController]
@@ -58,8 +61,7 @@ class AdminService(
     private val skjemaRepository: SkjemaRepository,
     private val adminStatistikkRepository: AdminStatistikkRepository,
     private val innsendingService: InnsendingService,
-    private val arbeidstakerVarslingService: ArbeidstakerVarslingService,
-    private val vedleggStorageClient: VedleggStorageClient
+    private val arbeidstakerVarslingService: ArbeidstakerVarslingService
 ) {
 
     @Transactional(readOnly = true)
@@ -76,37 +78,15 @@ class AdminService(
      * Bruksstatistikk. Innsendt-statistikken (fordelinger, saksdekning, toppliste, unike) regnes i
      * minnet fra innsendinger med skjema, filtrert på innsendingsdato [fraOgMed]–[tilOgMed] (begge
      * valgfrie; null = ingen grense). Utkast og innsendt-trend er nåtilstand og påvirkes ikke av perioden.
+     *
+     * Periodefilteret avgjør kun hvilke deler som TELLES; egenskapene deres (motpart, komplett-dekning,
+     * erstattet-markering, duplikat-grupper) måles alltid mot hele den innsendte populasjonen.
      */
     @Transactional(readOnly = true)
     fun hentBruksstatistikk(fraOgMed: LocalDate?, tilOgMed: LocalDate?): BrukStatistikkDto {
         val naa = Instant.now()
-        val fraGrense = fraOgMed?.atStartOfDay(OSLO)?.toInstant()
-        val tilGrenseEksklusiv = tilOgMed?.plusDays(1)?.atStartOfDay(OSLO)?.toInstant()
-
-        val iPeriode = innsendingRepository.finnAlleInnsendteMedSkjema()
-            .filter { innenfor(it.opprettetDato, fraGrense, tilGrenseEksklusiv) }
-        // Id-er som er erstattet av en nyere versjon innenfor perioden (holdes utenfor duplikat-tellingen).
-        val erstattedeIder: Set<UUID> = iPeriode
-            .mapNotNull { (it.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId }
-            .toSet()
-
-        val innsendt = iPeriode.mapNotNull { innsending ->
-            val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
-            InnsendtSkjema(
-                id = innsending.skjema.id!!,
-                fnr = innsending.skjema.fnr,
-                orgnr = innsending.skjema.orgnr,
-                innsenderFnr = innsending.innsenderFnr,
-                juridiskEnhet = metadata.juridiskEnhetOrgnr,
-                skjemadel = metadata.skjemadel,
-                flyt = metadata.representasjonstype,
-                sprak = innsending.innsendtSprak,
-                periode = innsending.skjema.utsendelsePeriode(),
-                erstattet = innsending.skjema.id in erstattedeIder,
-                saksstatus = innsending.saksstatus,
-                opprettetVia = innsending.skjema.opprettetVia
-            )
-        }
+        val populasjon = hentInnsendtPopulasjon()
+        val kohort = filtrerPaaPeriode(populasjon, fraOgMed, tilOgMed)
 
         val utkastSkjemaer = adminStatistikkRepository.finnAlleUtkast()
         val utkast = utkastSkjemaer.mapNotNull { skjema ->
@@ -120,42 +100,130 @@ class AdminService(
             grense30d = naa.minus(30, ChronoUnit.DAYS)
         )
 
+        val indeks = SaksIndeks(populasjon)
         return BrukStatistikkDto(
             tidspunkt = naa,
             periodeFraOgMed = fraOgMed,
             periodeTilOgMed = tilOgMed,
             utkast = hentUtkastStatistikk(naa, utkast),
-            totaltInnsendt = innsendt.size.toLong(),
+            totaltInnsendt = kohort.size.toLong(),
             innsendtSisteDoegn = trend.sisteDoegn,
             innsendtSiste7Dager = trend.siste7Dager,
             innsendtSiste30Dager = trend.siste30Dager,
-            innsendtPerSkjemadel = Skjemadel.entries.associateWith { sd -> innsendt.count { it.skjemadel == sd }.toLong() },
-            innsendtPerFlyt = Representasjonstype.entries.associateWith { f -> innsendt.count { it.flyt == f }.toLong() },
-            innsendtPerSprak = Språk.entries.associateWith { sp -> innsendt.count { it.sprak == sp }.toLong() },
-            saksdekning = beregnSaksdekning(innsendt, utkast),
+            innsendtPerSkjemadel = Skjemadel.entries.associateWith { sd -> kohort.count { it.skjemadel == sd }.toLong() },
+            innsendtPerFlyt = Representasjonstype.entries.associateWith { f -> kohort.count { it.flyt == f }.toLong() },
+            innsendtPerSprak = Språk.entries.associateWith { sp -> kohort.count { it.sprak == sp }.toLong() },
+            saksdekning = beregnSaksdekning(kohort, populasjon, indeks, utkast),
             saksstatusFordeling = SaksstatusFordelingDto(
-                mottatt = innsendt.count { it.saksstatus == Saksstatus.MOTTATT }.toLong(),
-                avsluttet = innsendt.count { it.saksstatus == Saksstatus.AVSLUTTET }.toLong(),
-                ukjent = innsendt.count { it.saksstatus == null }.toLong()
+                mottatt = kohort.count { it.saksstatus == Saksstatus.MOTTATT }.toLong(),
+                avsluttet = kohort.count { it.saksstatus == Saksstatus.AVSLUTTET }.toLong(),
+                ukjent = kohort.count { it.saksstatus == null }.toLong()
             ),
             motpartCta = MotpartCtaStatistikkDto(
                 antallUtkastViaCta = utkastSkjemaer.count { it.opprettetVia == OpprettetVia.MOTPART_CTA }.toLong(),
-                antallInnsendtViaCta = innsendt.count { it.opprettetVia == OpprettetVia.MOTPART_CTA }.toLong()
+                antallInnsendtViaCta = kohort.count { it.opprettetVia == OpprettetVia.MOTPART_CTA }.toLong()
             ),
-            antallUnikePersoner = innsendt.mapTo(mutableSetOf()) { it.fnr }.size.toLong(),
-            antallUnikeVirksomheter = innsendt.mapTo(mutableSetOf()) { it.orgnr }.size.toLong(),
-            topplisteVirksomheter = beregnToppliste(innsendt)
+            antallUnikePersoner = kohort.mapTo(mutableSetOf()) { it.fnr }.size.toLong(),
+            antallUnikeVirksomheter = kohort.mapTo(mutableSetOf()) { it.orgnr }.size.toLong(),
+            antallUnikeJuridiskeEnheter = kohort.mapTo(mutableSetOf()) { it.juridiskEnhet }.size.toLong(),
+            topplisteVirksomheter = grupperVirksomheter(kohort).map { gruppe -> gruppe.tilDto(indeks) }
         )
     }
 
     /**
-     * Backup-uttrekk av synk-tilstanden før massesynk: feltene synken kan endre, per skjema-id.
-     * Ingen personopplysninger — se [SaksstatusUttrekkDto].
+     * Saksnumrene bak én rad i topplisten (1-basert [rang], samme gruppering/sortering/periode som
+     * `topplisteVirksomheter`). Returnerer kun saksnumre – ingen direkte identifikatorer (fnr/orgnr/navn).
+     *
+     * @throws NoSuchElementException hvis [rang] er utenfor topplisten for perioden
      */
     @Transactional(readOnly = true)
-    fun hentSaksstatusUttrekk(): SaksstatusUttrekkDto {
-        val rader = innsendingRepository.finnSaksstatusUttrekk().map { rad ->
-            SaksstatusUttrekkRadDto(
+    fun hentVirksomhetSaksnumre(rang: Int, fraOgMed: LocalDate?, tilOgMed: LocalDate?): VirksomhetSaksnumreDto {
+        val kohort = filtrerPaaPeriode(hentInnsendtPopulasjon(), fraOgMed, tilOgMed)
+        val virksomheter = grupperVirksomheter(kohort)
+        if (rang < 1 || rang > virksomheter.size) {
+            throw NoSuchElementException("Ingen virksomhet med rang $rang i topplisten (${virksomheter.size} virksomheter i perioden)")
+        }
+        val gruppe = virksomheter[rang - 1]
+        return VirksomhetSaksnumreDto(
+            rang = rang,
+            antallInnsendinger = gruppe.deler.size.toLong(),
+            // Innsendinger uten saksnummer representeres med skjema-id-en, så ingen blir usynlig.
+            saksnumre = gruppe.deler.map { it.saksnummer ?: it.id.toString() }.sorted()
+        )
+    }
+
+    /** Alle innsendte utsendt-arbeidstaker-deler med versjonslenken satt fra hele populasjonen. */
+    private fun hentInnsendtPopulasjon(): List<InnsendtSkjema> {
+        val alle = innsendingRepository.finnAlleInnsendteMedSkjema()
+        val erstattetAv = snuVersjonslenken(alle)
+        return alle.mapNotNull { innsending ->
+            val metadata = innsending.skjema.metadata as? UtsendtArbeidstakerMetadata ?: return@mapNotNull null
+            InnsendtSkjema(
+                id = innsending.skjema.id!!,
+                fnr = innsending.skjema.fnr,
+                orgnr = innsending.skjema.orgnr,
+                innsenderFnr = innsending.innsenderFnr,
+                juridiskEnhet = metadata.juridiskEnhetOrgnr,
+                skjemadel = metadata.skjemadel,
+                flyt = metadata.representasjonstype,
+                sprak = innsending.innsendtSprak,
+                periode = innsending.skjema.utsendelsePeriode(),
+                erstattetAv = erstattetAv[innsending.skjema.id],
+                saksstatus = innsending.saksstatus,
+                saksnummer = innsending.saksnummer,
+                opprettetVia = innsending.skjema.opprettetVia,
+                skjemaOpprettetDato = innsending.skjema.opprettetDato,
+                innsendtDato = innsending.opprettetDato
+            )
+        }
+    }
+
+    /** Én kobling i versjonslenken: skjemaet som ble erstattet, og versjonen som erstattet det. */
+    private data class Erstatterkobling(val erstattet: UUID, val erstatter: UUID, val erstatterInnsendt: Instant)
+
+    /**
+     * Snur versjonslenken til oppslaget «erstattet skjema -> versjonen som erstattet det».
+     *
+     * `erstatterSkjemaId` er ikke garantert unik, så et skjema kan ha flere erstattere. Koblingene
+     * sorteres derfor deterministisk før de slås sammen, slik at nyeste erstatter vinner og to identiske
+     * kall gir samme svar uavhengig av radenes rekkefølge fra databasen.
+     */
+    private fun snuVersjonslenken(alle: List<Innsending>): Map<UUID, UUID> {
+        val koblinger = alle.mapNotNull { innsending ->
+            (innsending.skjema.metadata as? UtsendtArbeidstakerMetadata)?.erstatterSkjemaId?.let { erstattet ->
+                Erstatterkobling(erstattet, innsending.skjema.id!!, innsending.opprettetDato)
+            }
+        }
+        val forgrenede = koblinger.groupingBy { it.erstattet }.eachCount().count { it.value > 1 }
+        if (forgrenede > 0) {
+            log.warn {
+                "Bruksstatistikk: $forgrenede skjema har mer enn én erstatter-versjon – nyeste innsending " +
+                    "brukes som gjeldende versjon i statistikken"
+            }
+        }
+        return koblinger
+            .sortedWith(compareBy({ it.erstatterInnsendt }, { it.erstatter }))
+            .associate { it.erstattet to it.erstatter }
+    }
+
+    private fun filtrerPaaPeriode(
+        populasjon: List<InnsendtSkjema>,
+        fraOgMed: LocalDate?,
+        tilOgMed: LocalDate?
+    ): List<InnsendtSkjema> {
+        val fraGrense = fraOgMed?.atStartOfDay(OSLO)?.toInstant()
+        val tilGrenseEksklusiv = tilOgMed?.plusDays(1)?.atStartOfDay(OSLO)?.toInstant()
+        return populasjon.filter { innenfor(it.innsendtDato, fraGrense, tilGrenseEksklusiv) }
+    }
+
+    /**
+     * Synk-tilstanden per skjema-id: feltene saksstatus-synken kan endre.
+     * Ingen personopplysninger — se [SaksstatusEksportDto].
+     */
+    @Transactional(readOnly = true)
+    fun hentSaksstatusEksport(): SaksstatusEksportDto {
+        val rader = innsendingRepository.finnSaksstatusEksport().map { rad ->
+            SaksstatusEksportRadDto(
                 skjemaId = rad.skjemaId,
                 referanseId = rad.referanseId,
                 saksnummer = rad.saksnummer,
@@ -163,7 +231,7 @@ class AdminService(
                 saksstatusOppdatert = rad.saksstatusOppdatert
             )
         }
-        return SaksstatusUttrekkDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)
+        return SaksstatusEksportDto(tidspunkt = Instant.now(), antall = rader.size, rader = rader)
     }
 
     private fun innenfor(tidspunkt: Instant, fra: Instant?, tilEksklusiv: Instant?): Boolean =
@@ -173,53 +241,116 @@ class AdminService(
      * Beregner saksdekning ut fra faktiske verdier: to deler hører til samme sak når de har samme
      * fnr + samme juridiske enhet + overlappende utsendelsesperiode — samme matching som mottak
      * bruker for å gruppere relaterte deler. For ventende deler ses det også mot påbegynte utkast.
+     *
+     * [kohort] er delene som telles (innenfor periodefilteret), [populasjon] er alle innsendte deler
+     * og avgjør egenskapene deres via [indeks]. Erstattede versjoner holdes utenfor tellingene.
      */
-    private fun beregnSaksdekning(innsendt: List<InnsendtSkjema>, utkast: List<UtkastSkjema>): SaksdekningDto {
-        val arbeidstakerDeler = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
-        val arbeidsgiverDeler = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
-        val arbeidstakerePerSak = arbeidstakerDeler.groupBy { it.sakNokkel() }
-        val arbeidsgiverePerSak = arbeidsgiverDeler.groupBy { it.sakNokkel() }
+    private fun beregnSaksdekning(
+        kohort: List<InnsendtSkjema>,
+        populasjon: List<InnsendtSkjema>,
+        indeks: SaksIndeks,
+        utkast: List<UtkastSkjema>
+    ): SaksdekningDto {
         val utkastArbeidstakerPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
         val utkastArbeidsgiverPerSak = utkast.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
 
-        val arbeidstakerStatus = delStatus(arbeidstakerDeler, arbeidsgiverePerSak, utkastArbeidsgiverPerSak)
-        val arbeidsgiverStatus = delStatus(arbeidsgiverDeler, arbeidstakerePerSak, utkastArbeidstakerPerSak)
+        val arbeidstakerStatus = delStatus(
+            kohort.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL },
+            indeks.arbeidsgiverePerSak,
+            indeks,
+            utkastArbeidsgiverPerSak
+        )
+        val arbeidsgiverStatus = delStatus(
+            kohort.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL },
+            indeks.arbeidstakerePerSak,
+            indeks,
+            utkastArbeidstakerPerSak
+        )
+
+        val gjeldendeKohort = kohort.filter { !it.erstattet }
+        val komplette = gjeldendeKohort.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+        val separateKohort = gjeldendeKohort.filter { it.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+
+        val kohortNokler = gjeldendeKohort.mapTo(mutableSetOf()) { it.sakNokkel() }
+        val medKomplett = kohortNokler.filterTo(mutableSetOf()) { indeks.harKomplett(it) }
+        val medSeparate = kohortNokler.filterTo(mutableSetOf()) { indeks.harMatchendeSeparateDeler(it) }
+        val initiativ = beregnInitiativ(medSeparate, populasjon)
+
+        // Gruppene bygges over hele populasjonen, men telles kun når de berører kohorten.
+        val kohortIder = gjeldendeKohort.mapTo(mutableSetOf()) { it.id }
+        val dobbeltinnsendinger = indeks.dobbeltinnsendinger
+            .filter { gruppe -> gruppe.any { it.id in kohortIder } }
+            .map { gruppe ->
+                DobbeltinnsendingDto(
+                    antallInnsendinger = gruppe.size,
+                    saksnumre = gruppe.map { it.saksnummer ?: it.id.toString() }.sorted()
+                )
+            }
+            .sortedWith(compareByDescending<DobbeltinnsendingDto> { it.antallInnsendinger }.thenBy { it.saksnumre.first() })
+
         return SaksdekningDto(
-            antallKomplette = innsendt.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
-            antallSakerMedBeggeDeler = antallSakerMedBeggeDeler(innsendt),
+            antallKomplette = komplette.size.toLong(),
+            antallErstattedeKomplette = kohort.count {
+                it.erstattet && it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL
+            }.toLong(),
+            antallSakerMedBeggeDeler = (medKomplett + medSeparate).size.toLong(),
+            antallSakerMedKomplett = medKomplett.size.toLong(),
+            antallSakerMedMatchendeSeparateDeler = medSeparate.size.toLong(),
+            antallSakerMedBaadeKomplettOgSeparate = medKomplett.intersect(medSeparate).size.toLong(),
             arbeidstakerDeler = arbeidstakerStatus,
             arbeidsgiverDeler = arbeidsgiverStatus,
-            antallMuligeDobbeltinnsendinger = antallDuplikater(arbeidstakerDeler) + antallDuplikater(arbeidsgiverDeler),
-            antallSakerMedFlereVersjoner = antallSakerMedFlereVersjoner(innsendt),
+            antallMuligeDobbeltinnsendinger = dobbeltinnsendinger.size.toLong(),
+            muligeDobbeltinnsendinger = dobbeltinnsendinger,
+            // Egen nøkkelmengde: en sak kan ha bare den erstattede versjonen i vinduet, og skal likevel telles.
+            antallSakerMedFlereVersjoner = kohort.mapTo(mutableSetOf()) { it.sakNokkel() }
+                .count { indeks.harFlereVersjoner(it) }.toLong(),
             antallVentendeMedAvsluttetSak = listOf(arbeidstakerStatus, arbeidsgiverStatus).sumOf {
                 it.venterMotpartHarUtkastAvsluttetSak + it.venterIngenMotpartAvsluttetSak
-            }
+            },
+            parInitiertAvArbeidsgiver = initiativ.arbeidsgiver,
+            parInitiertAvArbeidstaker = initiativ.arbeidstaker,
+            parUavhengigStartet = initiativ.uavhengig,
+            komplettPerFlyt = Representasjonstype.entries.associateWith { f -> komplette.count { it.flyt == f }.toLong() },
+            antallDelerUtenPeriode = separateKohort.count { it.periode == null }.toLong()
         )
     }
 
     /**
-     * Status for en deltype: har en innsendt motpart (overlappende periode), eller venter.
-     * For de som venter skilles det på om motparten har påbegynt et utkast eller ikke.
+     * Status for en gjeldende del: har en innsendt separat motpart, er dekket av et komplett skjema,
+     * eller venter. For de som venter skilles det på om motparten har påbegynt et utkast eller ikke.
+     * Kategoriene er gjensidig utelukkende og prioriteres i den rekkefølgen.
      *
      * Merk – med vilje to ulike matchekriterier:
-     * - innsendt motpart krever overlappende periode (en reell, fullført sak).
+     * - innsendt motpart / komplett skjema krever overlappende periode (en reell, fullført sak).
      * - utkast-motpart matcher kun på samme person + juridisk enhet (ikke periode), fordi et utkast
      *   under arbeid ofte ikke har fylt inn periode ennå. Hensikten er «har motparten startet noe».
      */
     private fun delStatus(
-        deler: List<InnsendtSkjema>,
+        kohortDeler: List<InnsendtSkjema>,
         motpartSendtPerSak: Map<Pair<String, String>, List<InnsendtSkjema>>,
+        indeks: SaksIndeks,
         motpartUtkastPerSak: Map<Pair<String, String>, List<UtkastSkjema>>
     ): DelStatusDto {
         var medMotpart = 0L
+        var medMotpartAvsluttet = 0L
+        var dekketAvKomplett = 0L
+        var dekketAvKomplettAvsluttet = 0L
         var venterMotpartHarUtkast = 0L
         var venterMotpartHarUtkastAvsluttet = 0L
         var venterIngenMotpart = 0L
         var venterIngenMotpartAvsluttet = 0L
-        for (del in deler) {
+        val gjeldende = kohortDeler.filter { !it.erstattet }
+        for (del in gjeldende) {
             val avsluttet = del.saksstatus == Saksstatus.AVSLUTTET
             when {
-                motpartSendtPerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> medMotpart++
+                motpartSendtPerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> {
+                    medMotpart++
+                    if (avsluttet) medMotpartAvsluttet++
+                }
+                indeks.komplettePerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> {
+                    dekketAvKomplett++
+                    if (avsluttet) dekketAvKomplettAvsluttet++
+                }
                 // Bevisst kun person + juridisk enhet (ikke periode): se kommentar over.
                 motpartUtkastPerSak[del.sakNokkel()]?.isNotEmpty() == true -> {
                     venterMotpartHarUtkast++
@@ -232,8 +363,14 @@ class AdminService(
             }
         }
         return DelStatusDto(
-            totalt = deler.size.toLong(),
+            totalt = gjeldende.size.toLong(),
+            antallErstattedeVersjoner = (kohortDeler.size - gjeldende.size).toLong(),
             medMotpart = medMotpart,
+            medMotpartAktivSak = medMotpart - medMotpartAvsluttet,
+            medMotpartAvsluttetSak = medMotpartAvsluttet,
+            dekketAvKomplettSkjema = dekketAvKomplett,
+            dekketAvKomplettSkjemaAktivSak = dekketAvKomplett - dekketAvKomplettAvsluttet,
+            dekketAvKomplettSkjemaAvsluttetSak = dekketAvKomplettAvsluttet,
             venterMotpartHarUtkast = venterMotpartHarUtkast,
             venterIngenMotpart = venterIngenMotpart,
             venterMotpartHarUtkastAktivSak = venterMotpartHarUtkast - venterMotpartHarUtkastAvsluttet,
@@ -243,47 +380,232 @@ class AdminService(
         )
     }
 
-    /** Saker (person + juridisk enhet) der begge deler er dekket – komplett eller matchende separate deler. */
-    private fun antallSakerMedBeggeDeler(innsendt: List<InnsendtSkjema>): Long {
-        val komplettSaker = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
-            .mapTo(mutableSetOf()) { it.sakNokkel() }
-        val ats = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
-        val ags = innsendt.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
-        val separateSaker = ats.keys.intersect(ags.keys).filterTo(mutableSetOf()) { nokkel ->
-            ats.getValue(nokkel).any { at -> ags.getValue(nokkel).any { at.matcher(it) } }
+    private data class InitiativFordeling(val arbeidsgiver: Long, val arbeidstaker: Long, val uavhengig: Long)
+
+    /**
+     * Fordeler saker med matchende separate deler på hvem som utløste paret. Signalet er om den ene
+     * sidens skjema ble PÅBEGYNT (skjema.opprettetDato) etter at den andre sidens del var SENDT INN
+     * (innsending.opprettetDato) – da fikk den siden trolig beskjed om at motparten hadde levert.
+     * Startet begge sider før noen av delene var innsendt, er de uavhengige initiativ.
+     *
+     * Tidspunktene måles innenfor ÉN utsendelse: de GJELDENDE separate delene på nøkkelen grupperes i
+     * klynger av overlappende perioder (samme transitive lukning som duplikat-grupperingen), og
+     * initiativet regnes på den tidligste klyngen som har et faktisk par. Dermed blandes ikke tidspunkter
+     * på tvers av to ulike utsendelser for samme person + enhet. Hver sak klassifiseres kun én gang.
+     *
+     * Se [initiativPar] for hvilke deler i klyngen som utgjør tidspunkt-grunnlaget, og hvordan tidligere
+     * versjoner knyttes til klyngen via versjonslenken.
+     */
+    private fun beregnInitiativ(saker: Set<Pair<String, String>>, populasjon: List<InnsendtSkjema>): InitiativFordeling {
+        val separateDelerPerSak = populasjon
+            .filter { it.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .groupBy { it.sakNokkel() }
+        val gjeldendeVersjon = gjeldendeVersjonPerErstattetDel(populasjon)
+        var arbeidsgiver = 0L
+        var arbeidstaker = 0L
+        var uavhengig = 0L
+        var utenPar = 0
+        for (sak in saker) {
+            val (gjeldende, erstattede) = separateDelerPerSak[sak].orEmpty().partition { !it.erstattet }
+            // Klyngegrensene forankres i gjeldende data: en erstattet versjon med feil periode skal ikke
+            // kunne lime to reelle utsendelser sammen. Erstattede deler knyttes til klyngen i [initiativPar].
+            val par = overlappendeGrupper(gjeldende)
+                .mapNotNull { klynge -> initiativPar(klynge, erstattede, gjeldendeVersjon) }
+                // Tidligste utsendelse vinner; id-en bryter likhet, siden innsendingene ikke har noen annen
+                // deterministisk rekkefølge.
+                .minWithOrNull(compareBy({ it.valgtEtterInnsending }, { it.valgtEtterId }))
+            if (par == null) {
+                // Uoppnåelig så lenge [saker] og [populasjon] er utledet av samme datasett: nøkkelen er i
+                // medSeparate, altså finnes det en direkte AT↔AG-kant mellom to gjeldende deler, og de to
+                // havner alltid i samme klynge. Telles og logges, så saken ikke forsvinner stille ut av
+                // kontrollsummen mot antallSakerMedMatchendeSeparateDeler.
+                utenPar++
+                continue
+            }
+            when {
+                par.atStartet.isAfter(par.agInnsendt) -> arbeidsgiver++
+                par.agStartet.isAfter(par.atInnsendt) -> arbeidstaker++
+                else -> uavhengig++
+            }
         }
-        return (komplettSaker + separateSaker).size.toLong()
+        if (utenPar > 0) {
+            log.warn {
+                "Bruksstatistikk: $utenPar sak(er) med matchende separate deler manglet en klynge med " +
+                    "faktisk par – initiativ-tallene summerer ikke til antallSakerMedMatchendeSeparateDeler"
+            }
+        }
+        return InitiativFordeling(arbeidsgiver, arbeidstaker, uavhengig)
     }
 
-    /** Saker der minst én deltype er sendt i flere overlappende versjoner (inkl. erstatninger). */
-    private fun antallSakerMedFlereVersjoner(innsendt: List<InnsendtSkjema>): Long =
-        innsendt.groupBy { it.sakNokkel() }.count { (_, saksdeler) ->
-            saksdeler.groupBy { it.skjemadel }.values.any { sammeDel ->
+    /**
+     * Kobler hver erstattede del til den gjeldende versjonen den til slutt ble erstattet av, ved å følge
+     * versjonslenken (erstatterSkjemaId) transitivt gjennom mellomliggende versjoner. Lenken er eksakt og
+     * uavhengig av hvilke perioder versjonene er utfylt med. En sykel i lenken stopper gjennomgangen, og
+     * delen ender da på en id som selv er erstattet – den faller dermed utenfor klyngens matchende deler.
+     */
+    private fun gjeldendeVersjonPerErstattetDel(populasjon: List<InnsendtSkjema>): Map<UUID, UUID> {
+        val nesteVersjon = populasjon.mapNotNull { del -> del.erstattetAv?.let { del.id to it } }.toMap()
+        return nesteVersjon.keys.associateWith { erstattetId ->
+            var versjon = nesteVersjon.getValue(erstattetId)
+            val besokt = mutableSetOf(erstattetId, versjon)
+            while (true) {
+                val neste = nesteVersjon[versjon] ?: break
+                if (!besokt.add(neste)) {
+                    log.warn { "Sirkulær erstatter-referanse oppdaget ved skjema $neste" }
+                    break
+                }
+                versjon = neste
+            }
+            versjon
+        }
+    }
+
+    /** Tidspunktene ett par klassifiseres på, og nøkkelen paret velges på når saken har flere utsendelser. */
+    private data class InitiativPar(
+        val atStartet: Instant,
+        val agStartet: Instant,
+        val atInnsendt: Instant,
+        val agInnsendt: Instant,
+        val valgtEtterInnsending: Instant,
+        val valgtEtterId: UUID
+    )
+
+    /**
+     * Tidspunkt-grunnlaget for én klynge av gjeldende deler, eller null hvis klyngen ikke har et faktisk par.
+     *
+     * Kun deler som matcher minst én del på MOTSATT side teller: en del kan være transitivt koblet inn i
+     * klyngen via en del på samme side uten selv å ha en motpart, og skal da ikke dra tidspunktene med seg.
+     *
+     * [erstattede] versjoner tas med i tidspunktene (den tidligste versjonen sier når siden faktisk startet),
+     * men kobles via VERSJONSLENKEN [gjeldendeVersjon] – ikke via periodeoverlapp – slik at en erstattet
+     * versjon med feil periode ikke kan forgifte tidsstemplene til en annen utsendelse. En erstattet del
+     * teller kun når versjonskjeden ender i en av klyngens matchende deler. Merk at det er ETTERFØLGEREN
+     * som må være en av klyngens matchende deler, ikke den erstattede delen selv: en gammel versjon som i
+     * sin tid matchet motparten, men som ble korrigert inn i en annen utsendelse, følger etterfølgeren sin
+     * og teller ikke her. Erstattede deler påvirker ikke hvilken klynge som velges.
+     */
+    private fun initiativPar(
+        klynge: List<InnsendtSkjema>,
+        erstattede: List<InnsendtSkjema>,
+        gjeldendeVersjon: Map<UUID, UUID>
+    ): InitiativPar? {
+        val atIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+        val agIKlynge = klynge.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+        val atMatchende = atIKlynge.filter { at -> agIKlynge.any { at.matcher(it) } }
+        val agMatchende = agIKlynge.filter { ag -> atIKlynge.any { ag.matcher(it) } }
+        if (atMatchende.isEmpty() || agMatchende.isEmpty()) return null
+
+        val matchendeIder = (atMatchende + agMatchende).mapTo(mutableSetOf()) { it.id }
+        val tidligereVersjoner = erstattede.filter { gjeldendeVersjon[it.id] in matchendeIder }
+        val atDeler = atMatchende + tidligereVersjoner.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }
+        val agDeler = agMatchende + tidligereVersjoner.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }
+        val tidligsteMatchende = (atMatchende + agMatchende).minWith(compareBy({ it.innsendtDato }, { it.id }))
+        return InitiativPar(
+            atStartet = atDeler.minOf { it.skjemaOpprettetDato },
+            agStartet = agDeler.minOf { it.skjemaOpprettetDato },
+            atInnsendt = atDeler.minOf { it.innsendtDato },
+            agInnsendt = agDeler.minOf { it.innsendtDato },
+            valgtEtterInnsending = tidligsteMatchende.innsendtDato,
+            valgtEtterId = tidligsteMatchende.id
+        )
+    }
+
+    /**
+     * Grupperer deler som overlapper hverandre i tid til sammenhengende grupper (transitiv lukning av
+     * overlapp), slik at ett tilfelle av dobbeltinnsending telles én gang uansett antall versjoner.
+     */
+    private fun overlappendeGrupper(deler: List<InnsendtSkjema>): List<List<InnsendtSkjema>> {
+        val gjenstaaende = ArrayDeque(deler)
+        val grupper = mutableListOf<List<InnsendtSkjema>>()
+        while (gjenstaaende.isNotEmpty()) {
+            val gruppe = mutableListOf(gjenstaaende.removeFirst())
+            var vokste = true
+            while (vokste) {
+                vokste = false
+                val iterator = gjenstaaende.iterator()
+                while (iterator.hasNext()) {
+                    val kandidat = iterator.next()
+                    if (gruppe.any { it.matcher(kandidat) }) {
+                        gruppe += kandidat
+                        iterator.remove()
+                        vokste = true
+                    }
+                }
+            }
+            grupper += gruppe
+        }
+        return grupper
+    }
+
+    /** Én virksomhet (juridisk enhet) i topplisten med de gjeldende delene som ligger bak tallene. */
+    private data class Virksomhet(val juridiskEnhet: String, val deler: List<InnsendtSkjema>)
+
+    /**
+     * Grupperer kohorten på juridisk enhet – samme nøkkel som saksdekningen bruker, så underenheter
+     * ikke splitter en sak i to rader. Sorteringen er deterministisk (antall, deretter enhet) slik at
+     * rang-oppslaget i [hentVirksomhetSaksnumre] treffer samme rad som topplisten.
+     */
+    private fun grupperVirksomheter(kohort: List<InnsendtSkjema>): List<Virksomhet> =
+        kohort.filter { !it.erstattet }
+            .groupBy { it.juridiskEnhet }
+            .map { (enhet, deler) -> Virksomhet(enhet, deler) }
+            .sortedWith(compareByDescending<Virksomhet> { it.deler.size }.thenBy { it.juridiskEnhet })
+
+    private fun Virksomhet.tilDto(indeks: SaksIndeks) = VirksomhetStatistikkDto(
+        antallInnsendinger = deler.size.toLong(),
+        antallUnikeInnsendere = deler.mapTo(mutableSetOf()) { it.innsenderFnr }.size.toLong(),
+        antallArbeidstakerDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.toLong(),
+        antallArbeidsgiverDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.toLong(),
+        antallKomplett = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
+        antallSakerMedBeggeDeler = deler.mapTo(mutableSetOf()) { it.sakNokkel() }.count { indeks.erDekket(it) }.toLong(),
+        antallMottatt = deler.count { it.saksstatus == Saksstatus.MOTTATT }.toLong(),
+        antallAvsluttet = deler.count { it.saksstatus == Saksstatus.AVSLUTTET }.toLong(),
+        antallUkjent = deler.count { it.saksstatus == null }.toLong()
+    )
+
+    /**
+     * Oppslag på hele den innsendte populasjonen. Alle egenskaps-spørsmål i statistikken stilles hit,
+     * slik at et periodefilter aldri bryter et par. Indeksen har to grunnlag:
+     * - gjeldende (ikke erstattede) deler for dekning og motpart-match ([harKomplett],
+     *   [harMatchendeSeparateDeler], [dobbeltinnsendinger])
+     * - hele populasjonen, inkl. erstattede versjoner, for versjonstellingen ([harFlereVersjoner])
+     */
+    private inner class SaksIndeks(populasjon: List<InnsendtSkjema>) {
+        private val gjeldende = populasjon.filter { !it.erstattet }
+
+        /** Alle versjoner per sak, også de erstattede – grunnlaget for [harFlereVersjoner]. */
+        private val alleDelerPerSak = populasjon.groupBy { it.sakNokkel() }
+
+        val komplettePerSak = gjeldende.filter { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .groupBy { it.sakNokkel() }
+        val arbeidstakerePerSak = gjeldende.filter { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.groupBy { it.sakNokkel() }
+        val arbeidsgiverePerSak = gjeldende.filter { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.groupBy { it.sakNokkel() }
+
+        /** Grupper av gjeldende deler av samme type/sak med overlappende perioder (mulige dobbeltinnsendinger). */
+        val dobbeltinnsendinger: List<List<InnsendtSkjema>> =
+            (arbeidstakerePerSak.values + arbeidsgiverePerSak.values)
+                .flatMap { overlappendeGrupper(it) }
+                .filter { it.size > 1 }
+
+        fun harKomplett(nokkel: Pair<String, String>): Boolean = komplettePerSak.containsKey(nokkel)
+
+        fun harMatchendeSeparateDeler(nokkel: Pair<String, String>): Boolean {
+            val arbeidstakere = arbeidstakerePerSak[nokkel] ?: return false
+            val arbeidsgivere = arbeidsgiverePerSak[nokkel] ?: return false
+            return arbeidstakere.any { at -> arbeidsgivere.any { at.matcher(it) } }
+        }
+
+        fun erDekket(nokkel: Pair<String, String>): Boolean = harKomplett(nokkel) || harMatchendeSeparateDeler(nokkel)
+
+        /**
+         * Minst én deltype på saken er sendt i flere versjoner med overlappende periode – både
+         * erstatninger og mulige dobbeltinnsendinger. Måles over hele populasjonen, inkl. erstattede.
+         */
+        fun harFlereVersjoner(nokkel: Pair<String, String>): Boolean =
+            alleDelerPerSak[nokkel].orEmpty().groupBy { it.skjemadel }.values.any { sammeDel ->
                 sammeDel.any { del -> sammeDel.any { it.id != del.id && del.matcher(it) } }
             }
-        }.toLong()
-
-    /** Antall deler som overlapper med en annen gjeldende del av samme type/sak (mulig dobbeltinnsending). */
-    private fun antallDuplikater(deler: List<InnsendtSkjema>): Long =
-        deler.filter { !it.erstattet }
-            .groupBy { it.sakNokkel() }
-            .values
-            .sumOf { gruppe -> gruppe.count { del -> gruppe.any { it.id != del.id && del.matcher(it) } }.toLong() }
-
-    /** Anonym toppliste per virksomhet (orgnr), sortert synkende på antall innsendinger. */
-    private fun beregnToppliste(innsendt: List<InnsendtSkjema>): List<VirksomhetStatistikkDto> =
-        innsendt.groupBy { it.orgnr }.values
-            .map { deler ->
-                VirksomhetStatistikkDto(
-                    antallInnsendinger = deler.size.toLong(),
-                    antallUnikeInnsendere = deler.mapTo(mutableSetOf()) { it.innsenderFnr }.size.toLong(),
-                    antallArbeidstakerDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL }.toLong(),
-                    antallArbeidsgiverDel = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVERS_DEL }.toLong(),
-                    antallKomplett = deler.count { it.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }.toLong(),
-                    antallSakerMedBeggeDeler = antallSakerMedBeggeDeler(deler)
-                )
-            }
-            .sortedByDescending { it.antallInnsendinger }
+    }
 
     private interface SakDel {
         val fnr: String
@@ -308,10 +630,18 @@ class AdminService(
         val flyt: Representasjonstype,
         val sprak: Språk,
         override val periode: PeriodeDto?,
-        val erstattet: Boolean,
+        /** Skjema-id-en til versjonen som erstattet denne, eller null hvis denne er gjeldende. */
+        val erstattetAv: UUID?,
         val saksstatus: Saksstatus?,
-        val opprettetVia: OpprettetVia?
-    ) : SakDel
+        val saksnummer: String?,
+        val opprettetVia: OpprettetVia?,
+        /** Da skjemaet ble opprettet (utkastet startet) – brukes til å avgjøre hvem som initierte et par. */
+        val skjemaOpprettetDato: Instant,
+        /** Da skjemaet ble sendt inn – styrer periodefilteret. */
+        val innsendtDato: Instant
+    ) : SakDel {
+        val erstattet: Boolean get() = erstattetAv != null
+    }
 
     private data class UtkastSkjema(
         override val fnr: String,
@@ -396,24 +726,75 @@ class AdminService(
      * hopper over arbeidstakere med påbegynt utkast. Sendingen skjer utenfor lese-transaksjonen (jf.
      * [retryAlleFeilede]) så vi ikke holder en DB-connection åpen gjennom Kafka-sendingen. Returnerer antall
      * sendte varsler og saksnumrene som faktisk fikk et nytt varsel (for sporbarhet på fagsiden).
+     *
+     * [ekskluderteSaksnumre] er en manuell liste fra fagsiden: saker der saksbehandler har verifisert at
+     * motparten allerede er mottatt via en annen kanal, og som derfor ikke skal varsles på nytt. Listen
+     * matches (case-insensitivt, trimmet) på samme nøkkel som responsen bruker – saksnummer, eller
+     * skjema-id for saker uten saksnummer.
+     *
+     * Sendingen kan ikke angres, så en ekte kjøring feiler med [IllegalArgumentException] hvis en oppgitt
+     * verdi ikke traff noen kandidat: da er listen misforstått (skrivefeil, feil felt i bodyen, eller feil
+     * datagrunnlag), og alternativet ville vært å varsle en sak saksbehandler eksplisitt ba oss droppe.
+     * Ved [dryRun] rapporteres avviket i stedet, så listen kan rettes før ekte kjøring.
      */
-    fun resendVarsler(dryRun: Boolean): ResendVarslerResultatDto {
-        val kandidater = finnResendKandidater()
-        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${kandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del)" }
+    fun resendVarsler(dryRun: Boolean, ekskluderteSaksnumre: List<String> = emptyList()): ResendVarslerResultatDto {
+        val alleKandidater = finnResendKandidater()
+        // Slås opp normalisert (trimmet + lowercase), men rapporteres tilbake slik kaller skrev det.
+        val oppgitt: Map<String, String> = ekskluderteSaksnumre
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .associateBy { it.lowercase() }
+        val (utelatt, kandidater) = alleKandidater.partition { it.nøkkel().lowercase() in oppgitt }
+        val truffet = utelatt.map { it.nøkkel().lowercase() }.toSet()
+        val ikkeFunnet = (oppgitt - truffet).values.sorted()
+        log.info { "Admin: Resend (dryRun=$dryRun) – fant ${alleKandidater.size} kandidat(er) (handlingspliktig AG-del før $VARSEL_LENKE_FIKSET_TIDSPUNKT som venter på AT-del), ${utelatt.size} ekskludert manuelt" }
+        advarOmFlertydigeEksklusjoner(utelatt)
+        if (ikkeFunnet.isNotEmpty()) {
+            // Verdiene selv holdes utenfor loggen (fritekst fra kaller) – de returneres i responsen.
+            val melding = "${ikkeFunnet.size} av ${oppgitt.size} oppgitte verdier i eksklusjonslisten traff ingen kandidat"
+            require(dryRun) {
+                "Resend avbrutt: $melding. Kjør med dryRun=true for å se hvilke (ikkeFunnetEkskluderte), og rett listen."
+            }
+            log.warn { "Admin: Resend (dry-run) – $melding. Se ikkeFunnetEkskluderte i responsen." }
+        }
 
         val sendteSaksnumre = mutableListOf<String>()
         kandidater.forEach { kandidat ->
             try {
                 if (arbeidstakerVarslingService.resendVarselTilArbeidstaker(kandidat.skjemaId, dryRun)) {
                     // Saker uten saksnummer representeres med skjema-id-en, så ingen sending blir usynlig.
-                    sendteSaksnumre += kandidat.saksnummer ?: kandidat.skjemaId.toString()
+                    sendteSaksnumre += kandidat.nøkkel()
                 }
             } catch (e: Exception) {
                 log.error(e) { "Admin: Resend feilet for skjema ${kandidat.skjemaId}" }
             }
         }
         log.info { "Admin: Resend ferdig (dryRun=$dryRun) – ${sendteSaksnumre.size} varsler ${if (dryRun) "ville blitt sendt" else "sendt"}" }
-        return ResendVarslerResultatDto(dryRun = dryRun, antallSendt = sendteSaksnumre.size, saksnumre = sendteSaksnumre)
+        return ResendVarslerResultatDto(
+            dryRun = dryRun,
+            antallSendt = sendteSaksnumre.size,
+            saksnumre = sendteSaksnumre,
+            antallEkskludert = utelatt.size,
+            ekskluderte = utelatt.map { it.nøkkel() }.sorted(),
+            ikkeFunnetEkskluderte = ikkeFunnet
+        )
+    }
+
+    /**
+     * Nøkkelen er ikke unik: samme saksnummer kan ligge på flere handlingspliktige AG-deler (ulike personer
+     * eller perioder på samme sak). Da ekskluderer én oppføring flere kandidater, og noen kan miste varselet
+     * sitt uten at saksbehandler har vurdert dem. Vi stopper ikke kjøringen – over-eksklusjon er den trygge
+     * retningen – men det skal ikke skje ubemerket.
+     */
+    private fun advarOmFlertydigeEksklusjoner(utelatt: List<ResendKandidat>) {
+        utelatt.groupBy { it.nøkkel().lowercase() }
+            .filter { (_, kandidater) -> kandidater.size > 1 }
+            .forEach { (_, kandidater) ->
+                log.warn {
+                    "Admin: Resend – én oppføring i eksklusjonslisten traff ${kandidater.size} kandidater " +
+                        "(skjema ${kandidater.map { it.skjemaId }}). Alle er utelatt; verifiser at det er ønsket."
+                }
+            }
     }
 
     /** Finner resend-kandidatene med skjema-id og saksnummer (se [resendVarsler] for kriteriene). */
@@ -470,46 +851,6 @@ class AdminService(
                 agMeta.juridiskEnhetOrgnr == atMeta.juridiskEnhetOrgnr &&
                 agPeriode.overlapper(atPeriode)
         }
-    }
-
-    /**
-     * MIDLERTIDIG: hard-sletter alle gjenværende soft-deletede (SLETTET) utkast for GDPR-opprydding.
-     *
-     * Sletter både vedlegg-blobs i bucket (ingen foreldreløse filer) og selve skjema-radene
-     * (DB-cascade fjerner vedlegg-/innsending-/fullmakt-rader). Blob-sletting er best-effort:
-     * en feilet blob stopper ikke radslettingen, men telles og logges.
-     *
-     * Bevisst IKKE `@Transactional`: de eksterne bucket-kallene gjøres utenfor DB-transaksjon for å
-     * unngå lange transaksjoner / lock-holdetid ved nettverkslatens. Selve DELETE-en kjøres i sin egen
-     * korte transaksjon ([SkjemaRepository.slettAlleSletteSkjema]).
-     *
-     * Fjernes når prod er ryddet (MELOSYS-8157).
-     */
-    fun ryddSletteUtkast(): RyddUtkastResultatDto {
-        val storageReferanser = skjemaRepository.finnVedleggStorageReferanserForSletteSkjema()
-
-        var slettedeBlober = 0
-        var feiledeBlober = 0
-        storageReferanser.forEach { referanse ->
-            try {
-                vedleggStorageClient.slett(referanse)
-                slettedeBlober++
-            } catch (e: Exception) {
-                feiledeBlober++
-                log.error(e) { "Admin: Klarte ikke slette vedlegg-blob $referanse under opprydding av slettede utkast" }
-            }
-        }
-
-        val antallSkjema = skjemaRepository.slettAlleSletteSkjema()
-        log.info {
-            "Admin: Ryddet $antallSkjema soft-deletede utkast " +
-                "(vedlegg-blobs slettet=$slettedeBlober, feilet=$feiledeBlober)"
-        }
-        return RyddUtkastResultatDto(
-            antallSkjema = antallSkjema,
-            antallVedleggSlettet = slettedeBlober,
-            antallVedleggFeilet = feiledeBlober
-        )
     }
 
     @Transactional(readOnly = true)
