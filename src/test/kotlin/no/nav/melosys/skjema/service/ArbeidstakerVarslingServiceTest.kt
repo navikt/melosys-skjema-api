@@ -85,6 +85,44 @@ class ArbeidstakerVarslingServiceTest {
     }
 
     @Test
+    fun `AG uten fullmakt der AT allerede har sendt inn sin del skal IKKE sende varsel`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                kobletSkjemaId = UUID.randomUUID()
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
+
+        service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
+
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
+    fun `Radgiver uten fullmakt der AT allerede har sendt inn sin del skal IKKE sende varsel`() {
+        val skjema = skjemaMedDefaultVerdier(
+            id = UUID.randomUUID(),
+            status = SkjemaStatus.SENDT,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.RADGIVER,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                kobletSkjemaId = UUID.randomUUID()
+            )
+        )
+        every { skjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+        every { skjemaRepository.findByFnrAndTypeAndStatus(any(), any(), any()) } returns emptyList()
+
+        service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
+
+        verify(exactly = 0) { brukervarselProducer.sendBrukervarsel(any()) }
+    }
+
+    @Test
     fun `Radgiver uten fullmakt og ingen AT-utkast skal sende varsel med link`() {
         val skjema = skjemaMedDefaultVerdier(
             id = UUID.randomUUID(),
