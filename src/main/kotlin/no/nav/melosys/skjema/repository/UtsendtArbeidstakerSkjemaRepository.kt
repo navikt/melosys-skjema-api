@@ -220,4 +220,25 @@ interface UtsendtArbeidstakerSkjemaRepository : JpaRepository<Skjema, UUID> {
         @Param("searchTerm") searchTerm: String,
         pageable: Pageable
     ): Page<Skjema>
+
+    /**
+     * Alle skjemaer med gitt status for gitte personer, uavhengig av representasjonstype.
+     *
+     * Brukes av motpart-status-utledningen i innsendte-listen: motpart-koblinger og
+     * erstatter-referanser settes kun mellom skjemaer med samme fnr
+     * (se [no.nav.melosys.skjema.service.UtsendtArbeidstakerSkjemaKoblingService]),
+     * så dette settet dekker hele kobling-/erstatter-kjeden for hver rad på siden.
+     */
+    @Query(
+        """
+        SELECT * FROM skjema
+        WHERE fnr IN :fnrs
+        AND type = '$TYPE_UTSENDT_ARBEIDSTAKER'
+        AND status = :status
+    """, nativeQuery = true
+    )
+    fun findByFnrInAndStatus(
+        @Param("fnrs") fnrs: List<String>,
+        @Param("status") status: String
+    ): List<Skjema>
 }

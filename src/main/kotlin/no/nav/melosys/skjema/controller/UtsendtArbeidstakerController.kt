@@ -10,6 +10,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.service.HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService
 import no.nav.melosys.skjema.service.HentUtkastUtsendtArbeidstakerService
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerService
+import no.nav.melosys.skjema.service.VentendeMotpartSoknadService
 import no.nav.melosys.skjema.types.HentInnsendteSoknaderRequest
 import no.nav.melosys.skjema.types.HentUtkastRequest
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
@@ -20,6 +21,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.UtkastListeResponse
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjemaDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.VentendeMotpartSoknaderResponse
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
@@ -54,6 +56,7 @@ class UtsendtArbeidstakerController(
     private val utsendtArbeidstakerService: UtsendtArbeidstakerService,
     private val hentInnsendteSoknaderService: HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService,
     private val hentUtkastService: HentUtkastUtsendtArbeidstakerService,
+    private val ventendeMotpartSoknadService: VentendeMotpartSoknadService,
 ) {
 
     @GetMapping("/utkast")
@@ -107,6 +110,13 @@ class UtsendtArbeidstakerController(
     fun slettUtkast(@PathVariable id: UUID) {
         log.info { "Sletter utkast: $id" }
         utsendtArbeidstakerService.slettUtkast(id)
+    }
+
+    @GetMapping("/ventende-motpart-soknader")
+    @Operation(summary = "Hent innsendte arbeidsgiver-deler som venter på innlogget brukers arbeidstaker-del")
+    @ApiResponse(responseCode = "200", description = "Liste over ventende motpart-søknader hentet (tom når toggle er av)")
+    fun hentVentendeMotpartSoknader(): ResponseEntity<VentendeMotpartSoknaderResponse> {
+        return ResponseEntity.ok(ventendeMotpartSoknadService.hentVentendeMotpartSoknader())
     }
 
     @PostMapping("/opprett-med-kontekst")

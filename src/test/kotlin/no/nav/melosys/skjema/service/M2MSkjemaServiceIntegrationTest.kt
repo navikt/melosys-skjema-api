@@ -4,6 +4,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
@@ -19,6 +20,7 @@ import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
@@ -403,6 +405,63 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
 
             val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
             oppdatert.saksnummer shouldBe "12345"
+        }
+
+        @Test
+        fun `registrerSaksnummer setter saksstatus MOTTATT naar status mangler`() {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidstakersDataMedOverlappendePeriode,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                )
+            ))
+
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                status = InnsendingStatus.FERDIG,
+                referanseId = "TEST11"
+            ))
+
+            m2mSkjemaService.registrerSaksnummer(skjema.id!!, "MEL-1")
+
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            oppdatert.saksstatus shouldBe Saksstatus.MOTTATT
+            oppdatert.saksstatusOppdatert.shouldNotBeNull()
+        }
+
+        @Test
+        fun `registrerSaksnummer nedgraderer ikke en avsluttet sak`() {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidstakersDataMedOverlappendePeriode,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL
+                )
+            ))
+
+            val avsluttetTidspunkt = Instant.parse("2026-01-01T00:00:00Z")
+            innsendingRepository.save(innsendingMedDefaultVerdier(
+                skjema = skjema,
+                status = InnsendingStatus.FERDIG,
+                referanseId = "TEST12"
+            ).apply {
+                saksnummer = "MEL-2"
+                saksstatus = Saksstatus.AVSLUTTET
+                saksstatusOppdatert = avsluttetTidspunkt
+            })
+
+            m2mSkjemaService.registrerSaksnummer(skjema.id!!, "MEL-2")
+
+            val oppdatert = innsendingRepository.findBySkjemaId(skjema.id!!)!!
+            oppdatert.saksstatus shouldBe Saksstatus.AVSLUTTET
+            oppdatert.saksstatusOppdatert shouldBe avsluttetTidspunkt
         }
 
         @Test

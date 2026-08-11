@@ -28,6 +28,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverfirmaInfo
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OpprettetVia
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.melosys.skjema.types.SkjemaType
@@ -53,6 +54,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.Ansettelsesform
@@ -385,6 +387,7 @@ fun skjemaMedDefaultVerdier(
     type: SkjemaType = SkjemaType.UTSENDT_ARBEIDSTAKER,
     data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
+    opprettetVia: OpprettetVia? = null,
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,
@@ -398,6 +401,7 @@ fun skjemaMedDefaultVerdier(
         orgnr = orgnr,
         data = data,
         metadata = metadata,
+        opprettetVia = opprettetVia,
         opprettetDato = opprettetDato,
         endretDato = endretDato,
         opprettetAv = opprettetAv,
@@ -472,7 +476,8 @@ fun innsendingMedDefaultVerdier(
     skjemaDefinisjonVersjon: String = "1",
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
     innsenderFnr: String = "12345678901",
-    saksnummer: String? = null
+    saksnummer: String? = null,
+    saksstatus: Saksstatus? = null
 ) = Innsending(
     id = id,
     skjema = skjema,
@@ -487,4 +492,5 @@ fun innsendingMedDefaultVerdier(
     innsenderFnr = innsenderFnr
 ).apply {
     this.saksnummer = saksnummer
+    this.saksstatus = saksstatus
 }

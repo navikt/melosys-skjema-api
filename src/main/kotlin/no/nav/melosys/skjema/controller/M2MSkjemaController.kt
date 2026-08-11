@@ -9,6 +9,9 @@ import no.nav.melosys.skjema.service.M2MSkjemaService
 import no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata
 import no.nav.melosys.skjema.sikkerhet.M2MWriteSkjemadata
 import jakarta.validation.Valid
+import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusRequest
+import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
+import no.nav.melosys.skjema.types.m2m.OppdaterSaksstatusRequest
 import no.nav.melosys.skjema.types.m2m.RegistrerSaksnummerRequest
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import org.springframework.http.ContentDisposition
@@ -18,6 +21,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -58,9 +62,10 @@ class M2MSkjemaController(
 
     @PostMapping("/{id}/saksnummer")
     @M2MWriteSkjemadata
-    @Operation(summary = "Registrer saksnummer fra melosys-api på innsendt skjema (M2M)")
+    @Operation(summary = "Registrer saksnummer fra melosys-api på innsendt skjema. Saksnummer er immutabelt når først satt (M2M)")
     @ApiResponse(responseCode = "204", description = "Saksnummer registrert")
     @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    @ApiResponse(responseCode = "409", description = "Innsendingen har allerede et annet saksnummer")
     fun registrerSaksnummer(
         @PathVariable id: UUID,
         @Valid @RequestBody request: RegistrerSaksnummerRequest
@@ -68,6 +73,31 @@ class M2MSkjemaController(
         log.info { "M2M: Registrerer saksnummer ${request.saksnummer} for skjema $id" }
         m2mSkjemaService.registrerSaksnummer(id, request.saksnummer)
         return ResponseEntity.noContent().build()
+    }
+
+    @PutMapping("/{id}/saksstatus")
+    @M2MWriteSkjemadata
+    @Operation(summary = "Oppdater saksstatus fra melosys-api. Oppdaterer kun innsendingen for gitt skjema-id (M2M)")
+    @ApiResponse(responseCode = "204", description = "Saksstatus oppdatert")
+    @ApiResponse(responseCode = "404", description = "Skjema ikke funnet")
+    @ApiResponse(responseCode = "409", description = "Innsendingen har allerede et annet saksnummer")
+    fun oppdaterSaksstatus(
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: OppdaterSaksstatusRequest
+    ): ResponseEntity<Void> {
+        m2mSkjemaService.oppdaterSaksstatus(id, request.saksnummer, request.saksstatus)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PutMapping("/saksstatus/bulk")
+    @M2MWriteSkjemadata
+    @Operation(summary = "Massesynk av saksstatus fra melosys-api. Ukjente skjema-id-er og saksnummer-konflikter rapporteres i resultatet (M2M)")
+    @ApiResponse(responseCode = "200", description = "Massesynk utført")
+    fun bulkOppdaterSaksstatus(
+        @Valid @RequestBody request: BulkOppdaterSaksstatusRequest
+    ): ResponseEntity<BulkOppdaterSaksstatusResultat> {
+        log.info { "M2M: Bulk-oppdaterer saksstatus for ${request.oppdateringer.size} skjema" }
+        return ResponseEntity.ok(m2mSkjemaService.bulkOppdaterSaksstatus(request.oppdateringer))
     }
 
     @GetMapping("/{skjemaId}/vedlegg/{vedleggId}/innhold")

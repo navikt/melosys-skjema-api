@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -40,6 +41,18 @@ class AdminController(
         return adminService.hentStatistikk()
     }
 
+    @GetMapping("/saksstatus/eksport")
+    @Operation(
+        summary = "Eksporter saksnummer og saksstatus per skjema-id",
+        description = "Synk-tilstanden per skjema, uten personopplysninger – til avstemming mot " +
+            "Melosys, feilsøking av synken, eller som diff-grunnlag før en eventuell migrering."
+    )
+    @ApiResponse(responseCode = "200", description = "Eksport hentet")
+    fun hentSaksstatusEksport(): SaksstatusEksportDto {
+        log.info { "Admin: Henter saksstatus-eksport" }
+        return adminService.hentSaksstatusEksport()
+    }
+
     @GetMapping("/statistikk/bruk")
     @Operation(
         summary = "Hent bruksstatistikk for skjemaene",
@@ -54,6 +67,25 @@ class AdminController(
     ): BrukStatistikkDto {
         log.info { "Admin: Henter bruksstatistikk (fraOgMed=$fraOgMed, tilOgMed=$tilOgMed)" }
         return adminService.hentBruksstatistikk(fraOgMed, tilOgMed)
+    }
+
+    @GetMapping("/statistikk/bruk/virksomheter/{rang}/saksnumre")
+    @Operation(
+        summary = "Hent saksnumrene bak én rad i virksomhets-topplisten",
+        description = "Slår opp virksomheten på plass {rang} (1-basert) i topplisten fra " +
+            "/admin/statistikk/bruk – samme gruppering (juridisk enhet), sortering og periodefilter – " +
+            "og returnerer saksnumrene til innsendingene dens. Innsendinger uten saksnummer " +
+            "representeres med skjema-id. Svaret inneholder bevisst ingen orgnr, navn eller fnr."
+    )
+    @ApiResponse(responseCode = "200", description = "Saksnumre hentet")
+    @ApiResponse(responseCode = "404", description = "Ingen virksomhet på oppgitt rang i perioden")
+    fun hentVirksomhetSaksnumre(
+        @PathVariable rang: Int,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fraOgMed: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) tilOgMed: LocalDate?
+    ): VirksomhetSaksnumreDto {
+        log.info { "Admin: Henter saksnumre for toppliste-virksomhet rang=$rang (fraOgMed=$fraOgMed, tilOgMed=$tilOgMed)" }
+        return adminService.hentVirksomhetSaksnumre(rang, fraOgMed, tilOgMed)
     }
 
     @GetMapping("/innsendinger/feilede")
@@ -103,24 +135,29 @@ class AdminController(
         description = "Resender det handlingspliktige varselet (nå med korrekt skjema-lenke) til arbeidstakere " +
             "som fikk et varsel med feil lenke før lenken ble fikset. Kandidatene finnes i koden: alle " +
             "handlingspliktige AG-deler (arbeidsgiver/rådgiver uten fullmakt) som ble sendt inn før " +
-            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Tar ingen parametere. " +
-            "Returnerer antall sendte varsler og saksnumrene som faktisk fikk et nytt varsel."
+            "2026-07-03 12:11:38 UTC og fortsatt venter på arbeidstakers del. Valgfri request-body " +
+            "(Content-Type: application/json) kan inneholde `ekskluderteSaksnumre` – saker der " +
+            "saksbehandler har verifisert at motparten allerede er mottatt via en annen kanal, og som " +
+            "derfor ikke skal varsles på nytt. Treffer en oppgitt verdi ingen kandidat, avvises kjøringen " +
+            "med 400 når dryRun=false. Med dryRun=true (default) sendes ingenting — responsen viser hvem " +
+            "som VILLE fått varsel, hvem som ble ekskludert, og hvilke verdier som ikke traff. " +
+            "Kjør med dryRun=false for å sende."
     )
-    @ApiResponse(responseCode = "200", description = "Resending utført")
-    fun resendVarsler(): ResendVarslerResultatDto {
-        log.info { "Admin: Resend varsler til arbeidstakere som fikk varsel med feil lenke" }
-        return adminService.resendVarsler()
+    @ApiResponse(responseCode = "200", description = "Resending utført (eller opptalt ved dry-run)")
+    @ApiResponse(responseCode = "400", description = "Ugyldig eksklusjonsliste, eller verdier som ikke traff noen kandidat ved dryRun=false")
+    fun resendVarsler(
+        @RequestParam(defaultValue = "true") dryRun: Boolean,
+        @RequestBody(required = false) request: ResendVarslerRequestDto?
+    ): ResendVarslerResultatDto {
+        val ekskluderte = request?.ekskluderteSaksnumre.orEmpty()
+        // Ukjente felt ignoreres av Jackson-oppsettet vårt, så en feilstavet nøkkel ville ellers gitt en
+        // tom liste – og en full utsending – uten at kaller merket det. Sendte du en body, må den bety noe.
+        require(request == null || ekskluderte.isNotEmpty()) {
+            "Tom eksklusjonsliste. Utelat request-bodyen hvis du ikke vil ekskludere noe – ellers er " +
+                "feltnavnet trolig feilstavet (forventet: ekskluderteSaksnumre)."
+        }
+        log.info { "Admin: Resend varsler (dryRun=$dryRun, ${ekskluderte.size} ekskludert(e) saksnummer) til arbeidstakere som fikk varsel med feil lenke" }
+        return adminService.resendVarsler(dryRun, ekskluderte)
     }
 
-    @PostMapping("/utkast/rydd-slettede")
-    @Operation(
-        summary = "MIDLERTIDIG: hard-delete av soft-deletede (SLETTET) utkast",
-        description = "Engangs GDPR-opprydding av gamle soft-deletede utkast. Sletter skjema-rader " +
-            "(cascade) og tilhørende vedlegg-blobs i bucket. Fjernes når prod er ryddet (MELOSYS-8157)."
-    )
-    @ApiResponse(responseCode = "200", description = "Opprydding utført")
-    fun ryddSletteUtkast(): RyddUtkastResultatDto {
-        log.info { "Admin: Rydder soft-deletede utkast" }
-        return adminService.ryddSletteUtkast()
-    }
 }
