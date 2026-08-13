@@ -187,8 +187,8 @@ class ArbeidstakerVarslingService(
         lagVarselteksterUtenFullmakt(arbeidsgiverNavn).map { varseltekst ->
             val tillegg = when (varseltekst.språk) {
                 Språk.NORSK_BOKMAL -> " Hvis du allerede har fylt ut og sendt inn din del, kan du se bort fra denne meldingen."
+                Språk.NYNORSK -> ""
                 Språk.ENGELSK -> " If you have already submitted your part, you can disregard this message."
-                else -> ""
             }
             varseltekst.copy(tekst = varseltekst.tekst + tillegg)
         }

@@ -37,7 +37,7 @@ object HtmlDokumentGenerator {
         val tittel = UtsendtArbeidstakerDokumentTittel.utled(skjema.skjemaData, språk)
 
         return buildString {
-            append(byggHtmlStart())
+            append(byggHtmlStart(språk))
             append(byggHeader(tittel, skjema.referanseId, skjema.innsendtDato, språk))
             append(byggAktørInfoSeksjon(skjema.aktørInfo, skjema.fullmektigInfo, skjema.radgiverInfo, språk))
             appendSkjemaData(skjema.skjemaData, skjema.definisjon, primaryRenderer, språk)
@@ -61,10 +61,10 @@ object HtmlDokumentGenerator {
         }
     }
 
-    private fun byggHtmlStart(): String {
+    private fun byggHtmlStart(språk: Språk): String {
         return """
             <!DOCTYPE html>
-            <html>
+            <html lang="${språk.kode}">
             <head>
                 <meta charset="UTF-8"/>
                 <style>
@@ -80,11 +80,13 @@ object HtmlDokumentGenerator {
     private fun byggHeader(tittel: String, referanseId: String, innsendtDato: Instant, språk: Språk): String {
         val referanseTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Referansenummer"
+            Språk.NYNORSK -> "Referansenummer"
             Språk.ENGELSK -> "Reference number"
         }
 
         val innsendtTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Innsendt"
+            Språk.NYNORSK -> "Innsendt"
             Språk.ENGELSK -> "Submitted"
         }
 
@@ -145,27 +147,33 @@ object HtmlDokumentGenerator {
     private fun byggAktørInfoSeksjon(aktørInfo: AktørInfo, fullmektigInfo: FullmektigInfo?, radgiverInfo: RadgiverInfo?, språk: Språk): String {
         val aktørerOverskrift = when (språk) {
             Språk.NORSK_BOKMAL -> "Aktører"
+            Språk.NYNORSK -> "Aktørar"
             Språk.ENGELSK -> "Parties"
         }
         val arbeidstakerRolle = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidstaker"
+            Språk.NYNORSK -> "Arbeidstakar"
             Språk.ENGELSK -> "Employee"
         }
         val arbeidsgiverRolle = when (språk) {
             Språk.NORSK_BOKMAL -> "Arbeidsgiver"
+            Språk.NYNORSK -> "Arbeidsgivar"
             Språk.ENGELSK -> "Employer"
         }
         val orgnrTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Organisasjonsnummer"
+            Språk.NYNORSK -> "Organisasjonsnummer"
             Språk.ENGELSK -> "Organisation number"
         }
         val identTekst = personidentifikatorLabel(aktørInfo.arbeidstakerFnr, språk)
         val navnTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Navn"
+            Språk.NYNORSK -> "Namn"
             Språk.ENGELSK -> "Name"
         }
         val virksomhetsnavnTekst = when (språk) {
             Språk.NORSK_BOKMAL -> "Virksomhetsnavn"
+            Språk.NYNORSK -> "Verksemdsnamn"
             Språk.ENGELSK -> "Company name"
         }
 
@@ -182,6 +190,7 @@ object HtmlDokumentGenerator {
                     ${fullmektigInfo?.let {
                         val fullmektigTekst = when (språk) {
                             Språk.NORSK_BOKMAL -> "Fullmektig"
+                            Språk.NYNORSK -> "Fullmektig"
                             Språk.ENGELSK -> "Power of attorney"
                         }
                         byggFormSummarySvar(fullmektigTekst, "${it.navn} (${norskDatoFormatter.format(it.foedselsdato)})")
@@ -201,10 +210,12 @@ object HtmlDokumentGenerator {
                     ${radgiverInfo?.let {
                         val radgiverFirmaTekst = when (språk) {
                             Språk.NORSK_BOKMAL -> "Rådgiverfirma"
+                            Språk.NYNORSK -> "Rådgjevarfirma"
                             Språk.ENGELSK -> "Advisory firm"
                         }
                         val kontaktpersonTekst = when (språk) {
                             Språk.NORSK_BOKMAL -> "Kontaktperson rådgiverfirma"
+                            Språk.NYNORSK -> "Kontaktperson rådgjevarfirma"
                             Språk.ENGELSK -> "Contact person at advisory firm"
                         }
                         byggFormSummarySvar(radgiverFirmaTekst, it.firmaNavn) + "\n" +
@@ -212,6 +223,7 @@ object HtmlDokumentGenerator {
                     } ?: aktørInfo.kontaktpersonNavn?.let {
                         val kontaktpersonTekst = when (språk) {
                             Språk.NORSK_BOKMAL -> "Kontaktperson"
+                            Språk.NYNORSK -> "Kontaktperson"
                             Språk.ENGELSK -> "Contact person"
                         }
                         byggFormSummarySvar(kontaktpersonTekst, it)
@@ -235,21 +247,22 @@ object HtmlDokumentGenerator {
      */
     private fun personidentifikatorLabel(ident: String, språk: Språk): String {
         val erDnummer = ident.length == 11 && ident[0].digitToInt() in 4..7
-        return when {
-            erDnummer && språk == Språk.NORSK_BOKMAL -> "D-nummer"
-            erDnummer && språk == Språk.ENGELSK -> "D number"
-            språk == Språk.NORSK_BOKMAL -> "Fødselsnummer"
-            else -> "National identity number"
+        return when (språk) {
+            Språk.NORSK_BOKMAL -> if (erDnummer) "D-nummer" else "Fødselsnummer"
+            Språk.NYNORSK -> if (erDnummer) "D-nummer" else "Fødselsnummer"
+            Språk.ENGELSK -> if (erDnummer) "D number" else "National identity number"
         }
     }
 
     private fun arbeidsgiverOverskrift(språk: Språk): String = when (språk) {
         Språk.NORSK_BOKMAL -> "Arbeidsgivers del"
+        Språk.NYNORSK -> "Arbeidsgivaren sin del"
         Språk.ENGELSK -> "Employer's section"
     }
 
     private fun arbeidstakerOverskrift(språk: Språk): String = when (språk) {
         Språk.NORSK_BOKMAL -> "Arbeidstakers del"
+        Språk.NYNORSK -> "Arbeidstakaren sin del"
         Språk.ENGELSK -> "Employee's section"
     }
 

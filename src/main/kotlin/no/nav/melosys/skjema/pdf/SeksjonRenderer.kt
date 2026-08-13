@@ -16,6 +16,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeid
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
@@ -116,12 +117,12 @@ class SeksjonRenderer(
             felt("erSkattepliktigTilNorgeIHeleutsendingsperioden", data.erSkattepliktigTilNorgeIHeleutsendingsperioden)
             felt("mottarPengestotteFraAnnetEosLandEllerSveits", data.mottarPengestotteFraAnnetEosLandEllerSveits)
             felt("landSomUtbetalerPengestotte", data.landSomUtbetalerPengestotte)
-            felt("pengestotteSomMottasFraAndreLandBelop", data.pengestotteSomMottasFraAndreLandBelop?.formaterSomKroner())
+            felt("pengestotteSomMottasFraAndreLandBelop", data.pengestotteSomMottasFraAndreLandBelop?.formaterSomKroner(feltRenderer.språk))
             felt("pengestotteSomMottasFraAndreLandBeskrivelse", data.pengestotteSomMottasFraAndreLandBeskrivelse)
             felt("inntektFraNorskEllerUtenlandskVirksomhet", data.inntektFraNorskEllerUtenlandskVirksomhet)
             felt("hvilkeTyperInntektHarDu", data.hvilkeTyperInntektHarDu)
-            felt("inntekt", data.inntekt?.formaterSomKroner())
-            felt("inntektFraEgenVirksomhet", data.inntektFraEgenVirksomhet?.formaterSomKroner())
+            felt("inntekt", data.inntekt?.formaterSomKroner(feltRenderer.språk))
+            felt("inntektFraEgenVirksomhet", data.inntektFraEgenVirksomhet?.formaterSomKroner(feltRenderer.språk))
         }
     }
 
@@ -340,10 +341,10 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
-        // Arbeidssted type
+        // Arbeidssted type — label og alternativer hentes fra definisjonen, som allerede er oversatt
         definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
             builder.append(byggSeksjon(seksjon) {
-                feltDirekte("Type arbeidssted", arbeidsstedTypeLabel(data.arbeidsstedType))
+                felt("arbeidsstedType", data.arbeidsstedType)
             })
         }
 
@@ -439,13 +440,6 @@ class SeksjonRenderer(
         }
     }
 
-    private fun arbeidsstedTypeLabel(type: ArbeidsstedType): String = when (type) {
-        ArbeidsstedType.PA_LAND -> "På land"
-        ArbeidsstedType.OFFSHORE -> "Offshore"
-        ArbeidsstedType.PA_SKIP -> "På skip"
-        ArbeidsstedType.OM_BORD_PA_FLY -> "Om bord på fly"
-    }
-
     // ==================== HELPERS ====================
 
     private fun byggSeksjon(
@@ -516,12 +510,16 @@ class SeksjonRenderer(
 }
 
 /**
- * Formaterer en heltallsstreng som kronebeløp med tusenskilletegn og " kr"-suffiks.
- * Eksempel: "1234567" → "1 234 567 kr"
+ * Formaterer en heltallsstreng som kronebeløp med språkets tusenskilletegn og " kr"-suffiks.
+ * Eksempel: "1234567" → "1 234 567 kr" (nb/nn) eller "1,234,567 kr" (en)
  */
-private fun String.formaterSomKroner(): String {
+private fun String.formaterSomKroner(språk: Språk): String {
     val tall = trim().toLongOrNull() ?: return this
-    val formatert = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("no-NO")).format(tall)
+    val locale = when (språk) {
+        Språk.NORSK_BOKMAL, Språk.NYNORSK -> java.util.Locale.forLanguageTag("no-NO")
+        Språk.ENGELSK -> java.util.Locale.forLanguageTag("en-GB")
+    }
+    val formatert = java.text.NumberFormat.getNumberInstance(locale).format(tall)
     return "$formatert kr"
 }
 

@@ -9,10 +9,11 @@ import com.fasterxml.jackson.annotation.JsonValue
  * Språkene finnes i én flerspråklig JSON-fil:
  * resources/skjema-definisjoner/{type}/v{versjon}/definisjon.json
  *
- * Serialiseres/deserialiseres som språkkode ("nb", "en") via Jackson.
+ * Serialiseres/deserialiseres som språkkode ("nb", "nn", "en") via Jackson.
  */
 enum class Språk(@get:JsonValue val kode: String) {
     NORSK_BOKMAL("nb"),
+    NYNORSK("nn"),
     ENGELSK("en");
 
     companion object {
@@ -21,7 +22,7 @@ enum class Språk(@get:JsonValue val kode: String) {
         /**
          * Konverterer språkkode til Språk enum.
          *
-         * @param kode Språkkode (f.eks. "nb", "en")
+         * @param kode Språkkode (f.eks. "nb", "nn", "en")
          * @return Språk enum
          * @throws IllegalArgumentException hvis kode ikke er gyldig
          */

@@ -27,7 +27,7 @@ import no.nav.melosys.skjema.types.skjemadefinisjon.TextareaFeltDefinisjon
  * Ingen Map-konvertering - jobber direkte med typede verdier.
  */
 class FeltRenderer(
-    private val språk: Språk = Språk.NORSK_BOKMAL
+    val språk: Språk
 ) {
     private val datoFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
@@ -213,7 +213,12 @@ class FeltRenderer(
 
     private fun renderGeneriskListe(felt: ListeFeltDefinisjon, liste: List<*>): String {
         // Fallback for ukjente listetyper
-        return renderEnkeltFelt(felt.label, "${liste.size} elementer")
+        val elementerTekst = when (språk) {
+            Språk.NORSK_BOKMAL -> "${liste.size} elementer"
+            Språk.NYNORSK -> "${liste.size} element"
+            Språk.ENGELSK -> "${liste.size} elements"
+        }
+        return renderEnkeltFelt(felt.label, elementerTekst)
     }
 
     private fun renderListeElement(label: String, verdi: String): String {

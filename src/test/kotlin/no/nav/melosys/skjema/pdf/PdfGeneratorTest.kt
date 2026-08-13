@@ -293,10 +293,10 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            html shouldContain "Application for A1 for workers posted in the EEA or Switzerland"
+            html shouldContain "Application for an A1 Certificate for Posted Workers in the EEA or Switzerland"
             html shouldContain "Employee"
             html shouldContain "Employer"
-            html shouldContain "Foreign assignment"
+            html shouldContain "Posting Period and Country"
         }
 
         test("viser landnavn på engelsk") {
@@ -322,6 +322,69 @@ class PdfGeneratorTest : FunSpec({
 
             html shouldContain ">Yes<"
             html shouldContain ">No<"
+        }
+    }
+
+    context("HTML-innhold - Nynorsk") {
+        test("inneholder nynorske overskrifter") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "NYN123",
+                språk = Språk.NYNORSK,
+                arbeidstakerData = lagKomplettArbeidstakerData(),
+                arbeidsgiverData = lagKomplettArbeidsgiverData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Søknad om A1 for utsende arbeidstakarar i EØS eller Sveits"
+            html shouldContain "Arbeidstakaren sin del"
+            html shouldContain "Arbeidsgivaren sin del"
+            html shouldContain "Familiemedlemmar"
+        }
+
+        test("viser nynorske tekster fra skjemadefinisjonen, ikke bokmål-fallback") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "NYNDEF",
+                språk = Språk.NYNORSK,
+                arbeidstakerData = lagKomplettArbeidstakerData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            // Seksjonstittelen skiller nn fra nb: nb sier «Utenlandsoppdraget»
+            html shouldContain "Utsendingsperiode og land"
+            html shouldContain "Har du vore, eller skal du vere i løna arbeid i Noreg i minst ein månad rett før utsendinga?"
+        }
+
+        test("viser landnavn på nynorsk") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "LANDNN",
+                språk = Språk.NYNORSK,
+                arbeidstakerData = lagKomplettArbeidstakerData()
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Sverige"
+            html shouldNotContain "Sweden"
+        }
+    }
+
+    context("html lang-attributt") {
+        test("PDF-HTML har lang fra innsendt språk") {
+            listOf(
+                Språk.NORSK_BOKMAL to """<html lang="nb">""",
+                Språk.NYNORSK to """<html lang="nn">""",
+                Språk.ENGELSK to """<html lang="en">"""
+            ).forEach { (språk, forventet) ->
+                val skjema = lagSkjemaPdfData(
+                    referanseId = "LANG-${språk.kode}",
+                    språk = språk,
+                    arbeidstakerData = lagKomplettArbeidstakerData()
+                )
+
+                HtmlDokumentGenerator.byggHtml(skjema) shouldContain forventet
+            }
         }
     }
 
