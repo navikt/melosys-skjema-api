@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
 import no.nav.melosys.skjema.entity.Vedlegg
+import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.extensions.toVedleggDto
 import no.nav.melosys.skjema.integrasjon.clamav.ClamAvClient
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
@@ -33,8 +34,8 @@ class VedleggService(
         val skjema = utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
 
         val antallEksisterende = vedleggRepository.countBySkjemaId(skjemaId)
-        require(antallEksisterende < MAKS_ANTALL_VEDLEGG) {
-            "Maks antall vedlegg ($MAKS_ANTALL_VEDLEGG) er nådd"
+        if (antallEksisterende >= MAKS_ANTALL_VEDLEGG) {
+            throw VedleggValideringException("Maks antall vedlegg ($MAKS_ANTALL_VEDLEGG) er nådd", "MAKS_ANTALL_VEDLEGG")
         }
 
         val filtype = FilValidator.validerOgDetekterFiltype(fil)

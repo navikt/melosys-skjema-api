@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SaksnummerKonfliktException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
+import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
@@ -120,6 +121,15 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.UNPROCESSABLE_ENTITY)
             .body(mapOf("message" to (e.message ?: "Virus funnet i fil"), "error" to "VIRUS_FOUND"))
+    }
+
+    @ExceptionHandler(VedleggValideringException::class)
+    fun handleVedleggValidering(e: VedleggValideringException): ResponseEntity<Map<String, String>> {
+        log.warn(e) { "Vedleggvalidering feilet: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(mapOf("message" to (e.message ?: "Ugyldig vedlegg"), "error" to e.errorCode))
     }
 
     @ExceptionHandler(SkjemaTypeMismatchException::class)

@@ -5,6 +5,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import org.springframework.web.multipart.MultipartFile
 
@@ -42,21 +43,21 @@ class FilValidatorTest : FunSpec({
         test("avviser ugyldig filformat") {
             val docBytes = byteArrayOf(0xD0.toByte(), 0xCF.toByte(), 0x11, 0xE0.toByte()) + ByteArray(10)
             val fil = lagMultipartFile(docBytes, filename = "test.doc")
-            shouldThrow<IllegalArgumentException> { FilValidator.validerOgDetekterFiltype(fil) }
+            shouldThrow<VedleggValideringException> { FilValidator.validerOgDetekterFiltype(fil) }
                 .message shouldBe "Ugyldig filformat. Kun PDF, JPEG og PNG er tillatt."
         }
 
         test("avviser for stor fil") {
             val pdfBytes = "%PDF-1.4".toByteArray()
             val fil = lagMultipartFile(pdfBytes, size = 11 * 1024 * 1024)
-            shouldThrow<IllegalArgumentException> { FilValidator.validerOgDetekterFiltype(fil) }
+            shouldThrow<VedleggValideringException> { FilValidator.validerOgDetekterFiltype(fil) }
                 .message shouldBe "Filen er for stor. Maks filstørrelse er 10 MB."
         }
 
         test("avviser tom fil") {
             val pdfBytes = "%PDF-1.4".toByteArray()
             val fil = lagMultipartFile(pdfBytes, size = 0)
-            shouldThrow<IllegalArgumentException> { FilValidator.validerOgDetekterFiltype(fil) }
+            shouldThrow<VedleggValideringException> { FilValidator.validerOgDetekterFiltype(fil) }
                 .message shouldBe "Filen er tom."
         }
     }
