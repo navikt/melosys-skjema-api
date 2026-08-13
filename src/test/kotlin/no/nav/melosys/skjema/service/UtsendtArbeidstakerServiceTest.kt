@@ -114,7 +114,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", any()) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 
@@ -143,7 +143,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", any()) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 
@@ -457,7 +457,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(alleredeSendtSkjema.id!!) } returns Optional.of(alleredeSendtSkjema)
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
-                service.sendInnSkjema(alleredeSendtSkjema.id!!)
+                service.sendInnSkjema(alleredeSendtSkjema.id!!, Språk.NORSK_BOKMAL)
             }
         }
     }

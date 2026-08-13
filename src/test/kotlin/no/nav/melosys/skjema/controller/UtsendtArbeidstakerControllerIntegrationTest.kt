@@ -45,6 +45,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeid
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.types.common.SkjemaStatus
+import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -895,6 +896,38 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             skjemaInnsendtKvittering.status shouldBe SkjemaStatus.SENDT
             skjemaInnsendtKvittering.referanseId shouldMatch "^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$"
         }
+
+        // Uten sprak-parameter skal innsendingen persisteres med bokmål
+        innsendingRepository.findBySkjemaId(skjemaSomSkalSendesInn.id!!)
+            .shouldNotBeNull().innsendtSprak shouldBe Språk.NORSK_BOKMAL
+    }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/send-inn?sprak=nn skal persistere nynorsk som innsendt språk")
+    fun `POST send-inn med sprak=nn skal persistere nynorsk`() {
+        val skjemaSomSkalSendesInn = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST,
+                type = SkjemaType.UTSENDT_ARBEIDSTAKER,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV
+                )
+            )
+        )
+
+        val token = createTokenForUser(skjemaSomSkalSendesInn.fnr)
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn?sprak=nn")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isOk
+
+        innsendingRepository.findBySkjemaId(skjemaSomSkalSendesInn.id!!)
+            .shouldNotBeNull().innsendtSprak shouldBe Språk.NYNORSK
     }
 
     @Test

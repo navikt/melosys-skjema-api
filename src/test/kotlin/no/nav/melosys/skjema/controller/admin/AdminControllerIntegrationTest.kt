@@ -366,7 +366,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
             lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "10000000001", representasjonstype = Representasjonstype.DEG_SELV)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "10000000002", representasjonstype = Representasjonstype.ARBEIDSGIVER, sprak = Språk.ENGELSK)
-            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "10000000003", representasjonstype = Representasjonstype.RADGIVER)
+            lagInnsendt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, fnr = "10000000003", representasjonstype = Representasjonstype.RADGIVER, sprak = Språk.NYNORSK)
 
             val body = hentBruk()
 
@@ -387,7 +387,8 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             body.innsendtPerFlyt[Representasjonstype.RADGIVER] shouldBe 1
             body.innsendtPerFlyt[Representasjonstype.ANNEN_PERSON] shouldBe 0
 
-            body.innsendtPerSprak[Språk.NORSK_BOKMAL] shouldBe 2
+            body.innsendtPerSprak[Språk.NORSK_BOKMAL] shouldBe 1
+            body.innsendtPerSprak[Språk.NYNORSK] shouldBe 1
             body.innsendtPerSprak[Språk.ENGELSK] shouldBe 1
 
             body.innsendtSisteDoegn shouldBe 3

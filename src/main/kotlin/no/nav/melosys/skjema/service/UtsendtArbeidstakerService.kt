@@ -289,7 +289,7 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID, sprak: Språk = Språk.NORSK_BOKMAL): SkjemaInnsendtKvittering {
+    fun sendInnSkjema(skjemaId: UUID, sprak: Språk): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
         val skjema = hentRedigerbartSkjema(skjemaId)
 
