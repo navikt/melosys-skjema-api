@@ -33,10 +33,10 @@ val kotestVersion = "6.2.3"
 val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
-val springdocVersion = "3.0.3"
+val springdocVersion = "3.1.0"
 val shedlockVersion = "7.7.0"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.28.1-alpha"
+val opentelemetryLogbackVersion = "2.30.0-alpha"
 
 repositories {
     mavenCentral()
@@ -81,7 +81,7 @@ dependencies {
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.73")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.70.0")
+    implementation("com.google.cloud:google-cloud-storage:2.71.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
