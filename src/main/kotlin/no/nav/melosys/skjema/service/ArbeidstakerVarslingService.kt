@@ -68,6 +68,11 @@ class ArbeidstakerVarslingService(
     }
 
     private fun varsleUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
+        if (metadata.kobletSkjemaId != null) {
+            log.info { "Arbeidstaker har allerede sendt inn sin del (koblet motpart), sender ikke varsel" }
+            return
+        }
+
         if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
             log.info { "Arbeidstaker har eksisterende utkast, sender ikke varsel" }
             return
