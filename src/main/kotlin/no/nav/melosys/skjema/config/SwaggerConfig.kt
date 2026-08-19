@@ -27,6 +27,13 @@ class SwaggerConfig {
      * /v3/api-docs er uendret og brukes fortsatt til frontend-typegenerering.
      */
     @Bean
+    fun allApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("all")
+        .displayName("Alle endepunkter")
+        .pathsToMatch("/**")
+        .build()
+
+    @Bean
     fun adminApi(): GroupedOpenApi = GroupedOpenApi.builder()
         .group("admin")
         .displayName("Melosys Skjema Admin API")
