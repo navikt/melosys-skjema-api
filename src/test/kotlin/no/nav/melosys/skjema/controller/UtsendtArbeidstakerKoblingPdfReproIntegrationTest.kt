@@ -223,9 +223,30 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
         )
     )
 
-    private fun sendInn(skjemaId: UUID, token: String): SkjemaInnsendtKvittering =
+    @Test
+    @DisplayName("Innsending med sprak=nn: den arkiverte PDF-en rendres på nynorsk")
+    fun `innsending paa nynorsk gir nynorsk PDF`() {
+        val innbyggerToken = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+
+        val arbeidstakerDel = seedUtkast(
+            representasjonstype = Representasjonstype.DEG_SELV,
+            skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+            data = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+        )
+        sendInn(arbeidstakerDel.id!!, innbyggerToken, sprak = "nn")
+
+        val m2mToken = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+        val pdfTekst = hentM2MPdfTekst(arbeidstakerDel.id!!, m2mToken)
+
+        // PDF-tekstuttrekket linjebryter lange titler, så det asserters på fragmenter
+        pdfTekst shouldContain "Arbeidstakaren sin del"
+        pdfTekst shouldContain "utsende arbeidstakarar"
+        pdfTekst shouldNotContain "Arbeidstakers del"
+    }
+
+    private fun sendInn(skjemaId: UUID, token: String, sprak: String? = null): SkjemaInnsendtKvittering =
         webTestClient.post()
-            .uri("/api/skjema/utsendt-arbeidstaker/$skjemaId/send-inn")
+            .uri("/api/skjema/utsendt-arbeidstaker/$skjemaId/send-inn" + (sprak?.let { "?sprak=$it" } ?: ""))
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk

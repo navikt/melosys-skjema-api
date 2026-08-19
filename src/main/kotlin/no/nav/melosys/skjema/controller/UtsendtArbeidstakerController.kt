@@ -134,9 +134,14 @@ class UtsendtArbeidstakerController(
     @Operation(summary = "Send inn skjema")
     @ApiResponse(responseCode = "200", description = "Skjema innsendt")
     @ApiResponse(responseCode = "404", description = "Skjema not found")
-    fun sendInnSkjema(@PathVariable id: UUID): ResponseEntity<SkjemaInnsendtKvittering> {
-        log.info { "Sender inn skjema med id: $id" }
-        val innsendtSkjemaKvittering = utsendtArbeidstakerService.sendInnSkjema(id)
+    fun sendInnSkjema(
+        @PathVariable id: UUID,
+        @Parameter(description = "Språket brukeren fylte ut skjemaet på (nb, nn, en). Default nb.")
+        @RequestParam(required = false) sprak: String?
+    ): ResponseEntity<SkjemaInnsendtKvittering> {
+        log.info { "Sender inn skjema med id: $id, språk: $sprak" }
+        val språk = sprak?.let { Språk.fraKode(it) } ?: Språk.NORSK_BOKMAL
+        val innsendtSkjemaKvittering = utsendtArbeidstakerService.sendInnSkjema(id, språk)
 
         return ResponseEntity.ok(innsendtSkjemaKvittering)
     }

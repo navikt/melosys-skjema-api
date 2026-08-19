@@ -14,9 +14,9 @@ object LandKodeMapper {
      * Returnerer landskoden selv hvis den ikke finnes i mappingen.
      *
      * @param kode ISO 3166-1 alpha-2 landskode
-     * @param språk Språk for landnavnet (default: norsk bokmål)
+     * @param språk Språk for landnavnet
      */
-    fun hentLandnavn(kode: String, språk: Språk = Språk.NORSK_BOKMAL): String {
+    fun hentLandnavn(kode: String, språk: Språk): String {
         return LandKode.hentLandnavn(kode, språk)
     }
 }

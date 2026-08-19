@@ -10,6 +10,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
+import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.entity.Vedlegg
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
@@ -109,7 +110,7 @@ class VedleggServiceTest : FunSpec({
             every { mockUtsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId) } returns skjema
             every { mockVedleggRepository.countBySkjemaId(skjemaId) } returns 10
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<VedleggValideringException> {
                 vedleggService.lastOpp(skjemaId, fil)
             }.message shouldBe "Maks antall vedlegg (10) er nådd"
         }

@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.vedlegg
 
+import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.types.vedlegg.VedleggFiltype
 import org.springframework.web.multipart.MultipartFile
 
@@ -20,7 +21,7 @@ object FilValidator {
             bytes.startsWith(PDF_MAGIC_BYTES) -> VedleggFiltype.PDF
             bytes.startsWith(PNG_MAGIC_BYTES) -> VedleggFiltype.PNG
             bytes.startsWith(JPEG_MAGIC_BYTES) -> VedleggFiltype.JPEG
-            else -> throw IllegalArgumentException("Ugyldig filformat. Kun PDF, JPEG og PNG er tillatt.")
+            else -> throw VedleggValideringException("Ugyldig filformat. Kun PDF, JPEG og PNG er tillatt.", "UGYLDIG_FILFORMAT")
         }
     }
 
@@ -35,11 +36,11 @@ object FilValidator {
     }
 
     private fun validerFilstorrelse(fil: MultipartFile) {
-        require(fil.size <= MAKS_FILSTORRELSE) {
-            "Filen er for stor. Maks filstørrelse er 10 MB."
+        if (fil.size > MAKS_FILSTORRELSE) {
+            throw VedleggValideringException("Filen er for stor. Maks filstørrelse er 10 MB.", "FIL_FOR_STOR")
         }
-        require(fil.size > 0) {
-            "Filen er tom."
+        if (fil.size <= 0) {
+            throw VedleggValideringException("Filen er tom.", "FIL_TOM")
         }
     }
 

@@ -6,54 +6,56 @@ import no.nav.melosys.skjema.types.common.Språk
 
 /**
  * EØS-land og Sveits som er relevante for A1-søknader.
- * Inneholder flerspråklige landnavn (norsk og engelsk).
+ * Inneholder flerspråklige landnavn (bokmål, nynorsk og engelsk).
  */
 enum class LandKode(
     private val navnNorsk: String,
+    private val navnNynorsk: String,
     private val navnEngelsk: String
 ) {
-    AT("Østerrike", "Austria"),
-    AX("Åland", "Åland Islands"),
-    BE("Belgia", "Belgium"),
-    BG("Bulgaria", "Bulgaria"),
-    CH("Sveits", "Switzerland"),
-    CY("Kypros", "Cyprus"),
-    CZ("Tsjekkia", "Czech Republic"),
-    DE("Tyskland", "Germany"),
-    DK("Danmark", "Denmark"),
-    EE("Estland", "Estonia"),
-    ES("Spania", "Spain"),
-    FI("Finland", "Finland"),
-    FO("Færøyene", "Faroe Islands"),
-    FR("Frankrike", "France"),
-    GB("Storbritannia", "United Kingdom"),
-    GL("Grønland", "Greenland"),
-    GR("Hellas", "Greece"),
-    HR("Kroatia", "Croatia"),
-    HU("Ungarn", "Hungary"),
-    IE("Irland", "Ireland"),
-    IS("Island", "Iceland"),
-    IT("Italia", "Italy"),
-    LI("Liechtenstein", "Liechtenstein"),
-    LT("Litauen", "Lithuania"),
-    LU("Luxembourg", "Luxembourg"),
-    LV("Latvia", "Latvia"),
-    MT("Malta", "Malta"),
-    NL("Nederland", "Netherlands"),
-    NO("Norge", "Norway"),
-    PL("Polen", "Poland"),
-    PT("Portugal", "Portugal"),
-    RO("Romania", "Romania"),
-    SE("Sverige", "Sweden"),
-    SI("Slovenia", "Slovenia"),
-    SJ("Svalbard og Jan Mayen", "Svalbard and Jan Mayen"),
-    SK("Slovakia", "Slovakia");
+    AT("Østerrike", "Austerrike", "Austria"),
+    AX("Åland", "Åland", "Åland Islands"),
+    BE("Belgia", "Belgia", "Belgium"),
+    BG("Bulgaria", "Bulgaria", "Bulgaria"),
+    CH("Sveits", "Sveits", "Switzerland"),
+    CY("Kypros", "Kypros", "Cyprus"),
+    CZ("Tsjekkia", "Tsjekkia", "Czechia"),
+    DE("Tyskland", "Tyskland", "Germany"),
+    DK("Danmark", "Danmark", "Denmark"),
+    EE("Estland", "Estland", "Estonia"),
+    ES("Spania", "Spania", "Spain"),
+    FI("Finland", "Finland", "Finland"),
+    FO("Færøyene", "Færøyane", "Faroe Islands"),
+    FR("Frankrike", "Frankrike", "France"),
+    GB("Storbritannia", "Storbritannia", "United Kingdom"),
+    GL("Grønland", "Grønland", "Greenland"),
+    GR("Hellas", "Hellas", "Greece"),
+    HR("Kroatia", "Kroatia", "Croatia"),
+    HU("Ungarn", "Ungarn", "Hungary"),
+    IE("Irland", "Irland", "Ireland"),
+    IS("Island", "Island", "Iceland"),
+    IT("Italia", "Italia", "Italy"),
+    LI("Liechtenstein", "Liechtenstein", "Liechtenstein"),
+    LT("Litauen", "Litauen", "Lithuania"),
+    LU("Luxembourg", "Luxembourg", "Luxembourg"),
+    LV("Latvia", "Latvia", "Latvia"),
+    MT("Malta", "Malta", "Malta"),
+    NL("Nederland", "Nederland", "Netherlands"),
+    NO("Norge", "Noreg", "Norway"),
+    PL("Polen", "Polen", "Poland"),
+    PT("Portugal", "Portugal", "Portugal"),
+    RO("Romania", "Romania", "Romania"),
+    SE("Sverige", "Sverige", "Sweden"),
+    SI("Slovenia", "Slovenia", "Slovenia"),
+    SJ("Svalbard og Jan Mayen", "Svalbard og Jan Mayen", "Svalbard and Jan Mayen"),
+    SK("Slovakia", "Slovakia", "Slovakia");
 
     /**
      * Henter landnavn på gitt språk.
      */
     fun hentNavn(språk: Språk): String = when (språk) {
         Språk.NORSK_BOKMAL -> navnNorsk
+        Språk.NYNORSK -> navnNynorsk
         Språk.ENGELSK -> navnEngelsk
     }
 
@@ -70,7 +72,7 @@ enum class LandKode(
          * Henter landnavn fra landskode og språk.
          * Returnerer landskoden selv hvis den ikke finnes.
          */
-        fun hentLandnavn(kode: String, språk: Språk = Språk.NORSK_BOKMAL): String {
+        fun hentLandnavn(kode: String, språk: Språk): String {
             return fraKode(kode)?.hentNavn(språk) ?: kode
         }
     }

@@ -96,6 +96,22 @@ class InnsendingServiceTest : ApiTestBase() {
             lagret.innsendtSprak shouldBe Språk.NORSK_BOKMAL
             lagret.innsenderFnr shouldBe "12345678901"
         }
+
+        @Test
+        @DisplayName("Skal persistere nynorsk som innsendt språk gjennom SpråkConverter")
+        fun `skal persistere nynorsk som innsendt språk`() {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
+
+            innsendingService.opprettInnsending(
+                skjema = skjema,
+                referanseId = "TEST02",
+                skjemaDefinisjonVersjon = "1",
+                innsendtSprak = Språk.NYNORSK,
+                innsenderFnr = "12345678901"
+            )
+
+            innsendingRepository.findBySkjemaId(skjema.id!!)!!.innsendtSprak shouldBe Språk.NYNORSK
+        }
     }
 
     @Nested
