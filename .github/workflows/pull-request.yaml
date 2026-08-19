@@ -1,5 +1,13 @@
 name: Gradle Test
-on: pull_request
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - 'src/**'
+      - '.github/*/pull-request.yaml'
+      - '*gradle*'
+      - 'melosys-skjema-api-types/**'
 permissions:
   contents: read
   packages: read
