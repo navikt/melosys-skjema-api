@@ -34,7 +34,7 @@ val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
 val springdocVersion = "3.1.0"
-val shedlockVersion = "7.7.0"
+val shedlockVersion = "7.8.0"
 val logstashLogbackEncoderVersion = "9.0"
 val opentelemetryLogbackVersion = "2.30.0-alpha"
 
