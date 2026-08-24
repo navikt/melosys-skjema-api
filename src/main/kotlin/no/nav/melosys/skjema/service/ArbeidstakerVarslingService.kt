@@ -172,7 +172,7 @@ class ArbeidstakerVarslingService(
         return listOf(
             Varseltekst(
                 språk = Språk.NORSK_BOKMAL,
-                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn, har meldt til Nav at du skal jobbe i EU/EØS eller Sveits. Du må sende inn din del av søknaden slik at Nav kan vurdere om du beholder medlemskapet i folketrygden.",
+                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn, har meldt til Nav at du skal jobbe i et annet EU/EØS- land eller Sveits. Klikk her for å sende inn søknaden om medlemskap i folketrygden og attest A1.",
                 default = true
             ),
             Varseltekst(
