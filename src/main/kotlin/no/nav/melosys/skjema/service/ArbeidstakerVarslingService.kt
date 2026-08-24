@@ -177,7 +177,7 @@ class ArbeidstakerVarslingService(
             ),
             Varseltekst(
                 språk = Språk.ENGELSK,
-                tekst = "Your employer, $arbeidsgiverNavn, has notified Nav that you will work in the EU/EEA or Switzerland. You must submit your part of the application so Nav can assess your National Insurance membership.",
+                tekst = "Your employer, $arbeidsgiverNavn, has notified Nav that you will be working in another EU/EEA country or Switzerland. Click here to submit your application for membership in the Norwegian National Insurance Scheme and an A1 certificate.",
                 default = false
             )
         )
