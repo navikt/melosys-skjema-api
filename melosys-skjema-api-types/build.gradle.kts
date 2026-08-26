@@ -7,7 +7,7 @@ group = "no.nav.melosys"
 
 val jacksonVersion = "2.22"
 val jakartaValidationVersion = "3.1.1"
-val swaggerVersion = "2.2.53"
+val swaggerVersion = "2.2.54"
 val junitVersion = "6.1.3"
 val kotestVersion = "6.2.4"
 
