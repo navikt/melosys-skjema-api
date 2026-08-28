@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "4.1.0"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm")
     kotlin("plugin.spring")
@@ -36,7 +36,7 @@ val springMockkVersion = "5.0.1"
 val springdocVersion = "3.1.0"
 val shedlockVersion = "7.9.0"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.30.0-alpha"
+val opentelemetryLogbackVersion = "2.31.0-alpha"
 
 repositories {
     mavenCentral()
