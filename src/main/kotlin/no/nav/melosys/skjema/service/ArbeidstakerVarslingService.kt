@@ -172,12 +172,12 @@ class ArbeidstakerVarslingService(
         return listOf(
             Varseltekst(
                 språk = Språk.NORSK_BOKMAL,
-                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn, har meldt til Nav at du skal jobbe i EU/EØS eller Sveits. Du må sende inn din del av søknaden slik at Nav kan vurdere om du beholder medlemskapet i folketrygden.",
+                tekst = "Arbeidsgiveren din, $arbeidsgiverNavn, har meldt til Nav at du skal jobbe i et annet EU/EØS- land eller Sveits. Klikk her for å sende inn søknaden om medlemskap i folketrygden og attest A1.",
                 default = true
             ),
             Varseltekst(
                 språk = Språk.ENGELSK,
-                tekst = "Your employer, $arbeidsgiverNavn, has notified Nav that you will work in the EU/EEA or Switzerland. You must submit your part of the application so Nav can assess your National Insurance membership.",
+                tekst = "Your employer, $arbeidsgiverNavn, has notified Nav that you will be working in another EU/EEA country or Switzerland. Click here to submit your application for membership in the Norwegian National Insurance Scheme and an A1 certificate.",
                 default = false
             )
         )
