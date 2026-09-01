@@ -77,11 +77,11 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.76")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.76")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.81")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.81")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.71.0")
+    implementation("com.google.cloud:google-cloud-storage:2.72.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
