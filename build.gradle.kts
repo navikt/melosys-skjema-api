@@ -33,8 +33,8 @@ val kotestVersion = "6.2.4"
 val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
-val springdocVersion = "3.1.0"
-val shedlockVersion = "7.9.0"
+val springdocVersion = "3.1.1"
+val shedlockVersion = "7.10.0"
 val logstashLogbackEncoderVersion = "9.0"
 val opentelemetryLogbackVersion = "2.31.1-alpha"
 
@@ -77,11 +77,11 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.83")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.83")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.85")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.85")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.72.0")
+    implementation("com.google.cloud:google-cloud-storage:2.73.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
