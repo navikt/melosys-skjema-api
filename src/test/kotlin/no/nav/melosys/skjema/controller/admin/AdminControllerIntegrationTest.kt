@@ -21,6 +21,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
+import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -252,6 +253,46 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isNotFound
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /admin/innsendinger")
+    inner class Innsendinger {
+
+        @Test
+        fun `skal returnere kun innsendinger som matcher fnr`() {
+            val skjemaMatch = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, fnr = korrektSyntetiskFnr, orgnr = korrektSyntetiskOrgnr)
+            )
+            val innsendingMatch = innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjemaMatch))
+
+            val skjemaAnnenFnr = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, fnr = "10000000099", orgnr = korrektSyntetiskOrgnr)
+            )
+            innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjemaAnnenFnr))
+
+            val body = adminClient.post().uri("/admin/innsendinger")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<List<InnsendingAdminDto>>()
+                .returnResult().responseBody.shouldNotBeNull()
+
+            body shouldHaveSize 1
+            body.single().innsendingId shouldBe innsendingMatch.id
+        }
+
+        @Test
+        fun `skal returnere 403 naar bruker ikke har admin-rettigheter`() {
+            adminClient.post().uri("/admin/innsendinger")
+                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(HentInnsendingerDto(fnr = null, orgnr = null))
+                .exchange()
+                .expectStatus().isForbidden
         }
     }
 

@@ -121,6 +121,14 @@ class AdminController(
         return adminService.retryInnsending(innsendingId)
     }
 
+    @PostMapping("/innsendinger")
+    @Operation(summary = "List innsendinger, filtrert på fnr og/eller orgnr hvis oppgitt")
+    @ApiResponse(responseCode = "200", description = "Innsendinger hentet")
+    fun innsendinger(@RequestBody request: HentInnsendingerDto): List<InnsendingAdminDto> {
+        log.info { "Admin: Henter innsendinger (fnr satt=${request.fnr != null}, orgnr satt=${request.orgnr != null})" }
+        return adminService.hentInnsendinger(request)
+    }
+
     @PostMapping("/innsendinger/retry-feilede")
     @Operation(summary = "Tving ny prosessering av alle innsendinger med status KAFKA_FEILET")
     @ApiResponse(responseCode = "200", description = "Reprosessering utført")

@@ -65,6 +65,11 @@ data class RetryResultatDto(
  * NB: sendingen er irreversibel, så en oppgitt verdi som ikke treffer noen kandidat avvises med 400
  * ved ekte kjøring (`dryRun=false`) – se [ResendVarslerResultatDto.ikkeFunnetEkskluderte].
  */
+data class HentInnsendingerDto(
+    val fnr: String?,
+    val orgnr: String?
+)
+
 data class ResendVarslerRequestDto(
     val ekskluderteSaksnumre: List<String> = emptyList()
 ) {
