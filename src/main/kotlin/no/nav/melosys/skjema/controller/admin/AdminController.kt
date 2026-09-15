@@ -124,7 +124,11 @@ class AdminController(
     @PostMapping("/innsendinger")
     @Operation(summary = "List innsendinger, filtrert på fnr og/eller orgnr hvis oppgitt")
     @ApiResponse(responseCode = "200", description = "Innsendinger hentet")
+    @ApiResponse(responseCode = "400", description = "Verken fnr eller orgnr er oppgitt")
     fun innsendinger(@RequestBody request: HentInnsendingerDto): List<InnsendingAdminDto> {
+        // Uten filter ville endepunktet returnert (og materialisert) hele innsendingshistorikken,
+        // noe som ikke skalerer – krev derfor minst ett av feltene.
+        require(request.fnr != null || request.orgnr != null) { "Minst ett av fnr og orgnr må oppgis" }
         log.info { "Admin: Henter innsendinger (fnr satt=${request.fnr != null}, orgnr satt=${request.orgnr != null})" }
         return adminService.hentInnsendinger(request)
     }
