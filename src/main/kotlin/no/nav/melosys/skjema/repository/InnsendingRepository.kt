@@ -40,6 +40,17 @@ interface InnsendingRepository : JpaRepository<Innsending, UUID> {
     """)
     fun findRetryKandidater(@Param("sisteForsoekTidspunktGrense") sisteForsoekTidspunktGrense: Instant, @Param("maxAttempts") maxAttempts: Int): List<Innsending>
 
+    /**
+     * Lister innsendinger filtrert på skjemaets fnr og/eller orgnr, hvis oppgitt.
+     * Begge parametre er valgfrie – utelatte filtre (null) ekskluderes fra WHERE-klausulen.
+     */
+    @Query(
+        "SELECT i FROM Innsending i JOIN FETCH i.skjema s " +
+            "WHERE (:fnr IS NULL OR s.fnr = :fnr) " +
+            "AND (:orgnr IS NULL OR s.orgnr = :orgnr)"
+    )
+    fun finnInnsendinger(@Param("fnr") fnr: String?, @Param("orgnr") orgnr: String?): List<Innsending>
+
     fun existsByReferanseId(referanseId: String): Boolean
 
     /**

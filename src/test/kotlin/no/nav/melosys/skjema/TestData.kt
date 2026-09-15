@@ -458,8 +458,8 @@ fun organisasjonsleddMedDefaultVerdier() = Organisasjonsledd(
 // Repr/Fullmakt test data
 
 fun fullmaktMedDefaultVerdier() = Fullmakt(
-    fullmaktsgiver = "12345678901",
-    fullmektig = "98765432109",
+    fullmaktsgiver = korrektSyntetiskFnr,
+    fullmektig = etAnnetKorrektSyntetiskFnr,
     leserettigheter = listOf("MED"),
     skriverettigheter = listOf("MED")
 )
@@ -475,7 +475,7 @@ fun innsendingMedDefaultVerdier(
     referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
     skjemaDefinisjonVersjon: String = "1",
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
-    innsenderFnr: String = "12345678901",
+    innsenderFnr: String = korrektSyntetiskFnr,
     saksnummer: String? = null,
     saksstatus: Saksstatus? = null
 ) = Innsending(

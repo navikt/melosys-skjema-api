@@ -78,12 +78,15 @@ class ReprClientTest : ApiTestBase() {
         fullmakter.shouldHaveSize(2)
         fullmakter[0].shouldBeEqual(
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
+                fullmektig = "98765432109",
                 leserettigheter = listOf("MED", "DAG")
             )
         )
         fullmakter[1].shouldBeEqual(
             fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "11111111111",
+                fullmektig = "98765432109",
                 leserettigheter = listOf("DAG", "FOS"),
                 skriverettigheter = listOf("DAG")
             )

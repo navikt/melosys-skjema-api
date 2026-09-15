@@ -33,6 +33,7 @@ class ReprServiceTest : FunSpec({
         val fullmakter = listOf(
             // Fullmakt 1: har MED i både lese- og skriverettigheter
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
                 leserettigheter = listOf("MED", "DAG")
             ),
             // Fullmakt 2: har IKKE MED (skal filtreres bort)
@@ -96,7 +97,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harSkriverettigheterForMedlemskap skal returnere true når fullmakt finnes") {
-        val fullmakter = listOf(fullmaktMedDefaultVerdier())
+        val fullmakter = listOf(fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901"))
 
         every { mockClient.hentKanRepresentere() } returns fullmakter
 
@@ -107,7 +108,7 @@ class ReprServiceTest : FunSpec({
 
     test("harSkriverettigheterForMedlemskap skal returnere false når kun leserettigheter") {
         val fullmakter = listOf(
-            fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901", skriverettigheter = emptyList())
         )
 
         every { mockClient.hentKanRepresentere() } returns fullmakter
@@ -139,7 +140,7 @@ class ReprServiceTest : FunSpec({
 
     test("harLeserettigheterForMedlemskap skal returnere true når fullmakt finnes") {
         val fullmakter = listOf(
-            fullmaktMedDefaultVerdier().copy(skriverettigheter = emptyList())
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901", skriverettigheter = emptyList())
         )
 
         every { mockClient.hentKanRepresentere() } returns fullmakter
@@ -150,7 +151,7 @@ class ReprServiceTest : FunSpec({
     }
 
     test("harLeserettigheterForMedlemskap skal returnere true når skriverettigheter finnes") {
-        val fullmakter = listOf(fullmaktMedDefaultVerdier())
+        val fullmakter = listOf(fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901"))
 
         every { mockClient.hentKanRepresentere() } returns fullmakter
 
@@ -201,6 +202,7 @@ class ReprServiceTest : FunSpec({
     test("harSkriverettigheterForMedlemskap skal returnere false når MED ikke i skriverettigheter") {
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
                 leserettigheter = listOf("MED", "DAG"),
                 skriverettigheter = listOf("DAG") // MED IKKE i skriverettigheter
             )
@@ -216,6 +218,7 @@ class ReprServiceTest : FunSpec({
     test("harLeserettigheterForMedlemskap skal returnere false når MED ikke i leserettigheter") {
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
                 leserettigheter = listOf("DAG", "FOS"), // MED IKKE i leserettigheter
                 skriverettigheter = listOf("DAG")
             )
@@ -232,10 +235,11 @@ class ReprServiceTest : FunSpec({
         val fullmakter = listOf(
             // Samme fullmaktsgiver, forskjellige områder
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
                 leserettigheter = listOf("DAG"),
                 skriverettigheter = listOf("DAG")
             ),
-            fullmaktMedDefaultVerdier()
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901")
         )
 
         every { mockClient.hentKanRepresentere() } returns fullmakter

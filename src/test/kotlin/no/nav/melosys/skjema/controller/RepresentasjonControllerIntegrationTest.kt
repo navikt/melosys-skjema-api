@@ -49,6 +49,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
 
         val fullmakter = listOf(
             fullmaktMedDefaultVerdier().copy(
+                fullmaktsgiver = "12345678901",
                 leserettigheter = listOf("MED", "DAG")
             ),
             fullmaktMedDefaultVerdier().copy(
@@ -120,7 +121,7 @@ class RepresentasjonControllerIntegrationTest : ApiTestBase() {
         clearMocks(reprClient)
 
         val fullmakter = listOf(
-            fullmaktMedDefaultVerdier(),
+            fullmaktMedDefaultVerdier().copy(fullmaktsgiver = "12345678901"),
             fullmaktMedDefaultVerdier().copy(
                 fullmaktsgiver = "22222222222",
                 leserettigheter = listOf("DAG", "FOS"),

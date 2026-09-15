@@ -15,6 +15,7 @@ import no.nav.melosys.skjema.controller.admin.SaksstatusFordelingDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusEksportDto
 import no.nav.melosys.skjema.controller.admin.SaksstatusEksportRadDto
 import no.nav.melosys.skjema.controller.admin.InnsendingAdminDto
+import no.nav.melosys.skjema.controller.admin.HentInnsendingerDto
 import no.nav.melosys.skjema.controller.admin.ResendVarslerResultatDto
 import no.nav.melosys.skjema.controller.admin.RetryResultatDto
 import no.nav.melosys.skjema.controller.admin.SaksdekningDto
@@ -680,6 +681,10 @@ class AdminService(
     @Transactional(readOnly = true)
     fun hentInnsending(innsendingId: UUID): InnsendingAdminDto =
         finnInnsending(innsendingId).tilAdminDto()
+
+    @Transactional(readOnly = true)
+    fun hentInnsendinger(request: HentInnsendingerDto): List<InnsendingAdminDto> =
+        innsendingRepository.finnInnsendinger(request.fnr, request.orgnr).map { it.tilAdminDto() }
 
     /**
      * Tvinger en ny prosessering (Kafka-sending) av en enkelt innsending.
