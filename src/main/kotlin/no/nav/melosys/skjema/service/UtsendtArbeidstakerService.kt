@@ -359,16 +359,6 @@ class UtsendtArbeidstakerService(
 
     }
 
-    fun getSkjemaMetadata(skjemaId: UUID): UtsendtArbeidstakerMetadata {
-        val skjema = findByIdOrThrow(skjemaId)
-        if (skjema.status == SkjemaStatus.SENDT) {
-            validerLesetilgangForSendtSkjema(skjema)
-        } else {
-            krevSkrivetilgang(skjema)
-        }
-        return skjema.utsendtArbeidstakerMetadataOrThrow()
-    }
-
     /**
      * Henter en innsendt søknad med skjemadefinisjon for visning.
      *

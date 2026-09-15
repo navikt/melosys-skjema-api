@@ -515,26 +515,6 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
         }
 
-        test("getSkjemaMetadata: tapt fullmakt + Altinn-tilgang → returnerer metadata") {
-            val skjemaId = UUID.randomUUID()
-            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId, medData = false))
-            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
-            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
-
-            service.getSkjemaMetadata(skjemaId).representasjonstype shouldBe Representasjonstype.RADGIVER_MED_FULLMAKT
-        }
-
-        test("getSkjemaMetadata: tapt fullmakt + ingen Altinn-tilgang → AccessDeniedException") {
-            val skjemaId = UUID.randomUUID()
-            every { mockSubjectHandler.getUserID() } returns fullmektigFnr
-            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId, medData = false))
-            every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
-            every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
-
-            shouldThrow<AccessDeniedException> { service.getSkjemaMetadata(skjemaId) }
-        }
-
         test("hentSkjema: ARBEIDSGIVER (uten _MED_FULLMAKT) med Altinn-tilgang skal returnere full data uten stripping") {
             val skjemaId = UUID.randomUUID()
             val skjema = skjemaMedDefaultVerdier(
