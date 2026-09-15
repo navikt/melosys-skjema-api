@@ -290,7 +290,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             adminClient.post().uri("/admin/innsendinger")
                 .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(HentInnsendingerDto(fnr = null, orgnr = null))
+                .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
                 .exchange()
                 .expectStatus().isForbidden
         }

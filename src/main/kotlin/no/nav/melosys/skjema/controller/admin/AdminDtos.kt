@@ -49,6 +49,19 @@ data class RetryResultatDto(
 )
 
 /**
+ * Request-body til [AdminController.innsendinger]. Minst ett av feltene må oppgis – uten filter
+ * ville endepunktet returnert (og materialisert) hele innsendingshistorikken, noe som ikke skalerer.
+ */
+data class HentInnsendingerDto(
+    val fnr: String?,
+    val orgnr: String?
+) {
+    init {
+        require(fnr != null || orgnr != null) { "Minst ett av fnr og orgnr må oppgis" }
+    }
+}
+
+/**
  * MELOSYS-8168 (midlertidig): Valgfri request-body til resending. Kandidatene finnes fortsatt i koden;
  * dette er kun en manuell eksklusjonsliste.
  *
@@ -65,11 +78,6 @@ data class RetryResultatDto(
  * NB: sendingen er irreversibel, så en oppgitt verdi som ikke treffer noen kandidat avvises med 400
  * ved ekte kjøring (`dryRun=false`) – se [ResendVarslerResultatDto.ikkeFunnetEkskluderte].
  */
-data class HentInnsendingerDto(
-    val fnr: String?,
-    val orgnr: String?
-)
-
 data class ResendVarslerRequestDto(
     val ekskluderteSaksnumre: List<String> = emptyList()
 ) {
