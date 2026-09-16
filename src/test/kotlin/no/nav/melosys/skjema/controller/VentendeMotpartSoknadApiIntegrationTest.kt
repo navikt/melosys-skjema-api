@@ -166,6 +166,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -198,6 +199,10 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}/utsendingsperiode-og-land")
             .headers { it.setBearerAuth(token) }
+            .header(
+                SKJEMA_DEFINISJON_VERSJON_HEADER,
+                skjemaRepository.findById(response.id).orElseThrow().skjemaDefinisjonVersjon
+            )
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("""{"utsendelseLand": "DE", "utsendelsePeriode": {"fraDato": "2025-03-01", "tilDato": "2025-09-30"}}""")
             .exchange()
@@ -206,6 +211,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .exchange()
             .expectStatus().isOk
             .expectBody()

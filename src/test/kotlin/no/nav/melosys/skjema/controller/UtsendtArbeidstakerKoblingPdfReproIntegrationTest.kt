@@ -248,6 +248,10 @@ class UtsendtArbeidstakerKoblingPdfReproIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/$skjemaId/send-inn" + (sprak?.let { "?sprak=$it" } ?: ""))
             .header("Authorization", "Bearer $token")
+            .header(
+                SKJEMA_DEFINISJON_VERSJON_HEADER,
+                skjemaRepository.findById(skjemaId).orElseThrow().skjemaDefinisjonVersjon
+            )
             .exchange()
             .expectStatus().isOk
             .expectBody(SkjemaInnsendtKvittering::class.java)

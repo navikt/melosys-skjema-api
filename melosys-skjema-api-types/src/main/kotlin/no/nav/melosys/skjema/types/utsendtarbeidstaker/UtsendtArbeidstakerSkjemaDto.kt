@@ -21,5 +21,7 @@ data class UtsendtArbeidstakerSkjemaDto(
      * Land og periode slik arbeidsgiveren oppga dem i delen utkastet ble forhåndsutfylt
      * fra (motpart-CTA) — uendret selv om bruker overskriver sine egne verdier.
      */
-    val motpartensUtsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null
+    val motpartensUtsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
+    /** Satt kun i responsen der utkastet ble reinitialisert. */
+    val utkastReinitialisert: Boolean = false
 ) : SkjemaDto
