@@ -244,13 +244,17 @@ class UtsendtArbeidstakerService(
 
     fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId)
+        val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+        // Klassifiseringen kommer fra EREG, så et eventuelt brukersvar forkastes før lagring.
+        val dataSomSkalLagres = request.copy(erArbeidsgiverenOffentligVirksomhet = null)
+        skjemaDataValidator.validate(dataSomSkalLagres, metadata.erOffentligArbeidsgiver)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
-                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = request)
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = dataSomSkalLagres)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
-                    arbeidsgiverensVirksomhetINorge = request
+                    arbeidsgiverensVirksomhetINorge = dataSomSkalLagres
                 ))
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidsgiverens virksomhet på arbeidstakers skjemadel")
             }
@@ -309,7 +313,10 @@ class UtsendtArbeidstakerService(
 
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
-        skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
+        skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
+            skjemaData,
+            skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligArbeidsgiver
+        )
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
         // 1. Generer referanseId
@@ -751,10 +758,14 @@ class UtsendtArbeidstakerService(
     private fun updateSkjemaData(
         skjemaId: UUID,
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
+    ): UtsendtArbeidstakerSkjemaDto =
+        updateSkjemaData(hentRedigerbartSkjema(skjemaId), updateFunction)
+
+    private fun updateSkjemaData(
+        skjema: Skjema,
+        updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentRedigerbartSkjema(skjemaId)
-        val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
-        skjema.data = updateFunction(existing)
+        skjema.data = updateFunction(skjema.utsendtArbeidstakerSkjemaDataOrEmpty())
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
 

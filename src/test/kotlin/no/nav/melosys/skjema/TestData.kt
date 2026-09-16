@@ -104,7 +104,8 @@ fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgi
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
-    erArbeidsgiverenOffentligVirksomhet = true
+    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
+    opprettholderArbeidsgiverenVanligDrift = true
 )
 
 fun periodeDtoMedDefaultVerdier() = PeriodeDto(

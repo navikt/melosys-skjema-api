@@ -39,8 +39,11 @@ class UtsendtArbeidstakerSkjemaDataValidator(
     private val familiemedlemmerValidator: FamiliemedlemmerValidator,
     private val vedleggValgValidator: VedleggValgValidator,
 ) {
-    fun validate(dto: ArbeidsgiverensVirksomhetINorgeDto?) {
-        throwIfViolations(arbeidsgiverensVirksomhetValidator.validate(dto))
+    fun validate(
+        dto: ArbeidsgiverensVirksomhetINorgeDto?,
+        erOffentligArbeidsgiver: Boolean?
+    ) {
+        throwIfViolations(arbeidsgiverensVirksomhetValidator.validate(dto, erOffentligArbeidsgiver))
     }
 
     fun validate(dto: UtenlandsoppdragetDto?) {
@@ -79,7 +82,10 @@ class UtsendtArbeidstakerSkjemaDataValidator(
         throwIfViolations(vedleggValgValidator.validate(dto))
     }
 
-    fun validateUtsendtArbeidstakerSkjemaData(skjemaData: UtsendtArbeidstakerSkjemaData) {
+    fun validateUtsendtArbeidstakerSkjemaData(
+        skjemaData: UtsendtArbeidstakerSkjemaData,
+        erOffentligArbeidsgiver: Boolean?
+    ) {
         val violations = mutableListOf<Violation>()
 
         violations += utsendingsperiodeOgLandValidator.validate(skjemaData.utsendingsperiodeOgLand)
@@ -88,7 +94,10 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 
         when (skjemaData) {
             is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> {
-                violations += arbeidsgiverensVirksomhetValidator.validate(skjemaData.arbeidsgiverensVirksomhetINorge)
+                violations += arbeidsgiverensVirksomhetValidator.validate(
+                    skjemaData.arbeidsgiverensVirksomhetINorge,
+                    erOffentligArbeidsgiver
+                )
                 violations += utenlandsoppdragetValidator.validate(skjemaData.utenlandsoppdraget)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidstakerensLonn)
                 violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsstedIUtlandet)
@@ -99,7 +108,10 @@ class UtsendtArbeidstakerSkjemaDataValidator(
                 violations += familiemedlemmerValidator.validate(skjemaData.familiemedlemmer)
             }
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> {
-                violations += arbeidsgiverensVirksomhetValidator.validate(skjemaData.arbeidsgiversData.arbeidsgiverensVirksomhetINorge)
+                violations += arbeidsgiverensVirksomhetValidator.validate(
+                    skjemaData.arbeidsgiversData.arbeidsgiverensVirksomhetINorge,
+                    erOffentligArbeidsgiver
+                )
                 violations += utenlandsoppdragetValidator.validate(skjemaData.arbeidsgiversData.utenlandsoppdraget)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidsgiversData.arbeidstakerensLonn)
                 violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsgiversData.arbeidsstedIUtlandet)

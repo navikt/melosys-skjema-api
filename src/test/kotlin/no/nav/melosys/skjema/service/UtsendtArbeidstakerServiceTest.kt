@@ -38,6 +38,7 @@ import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
@@ -597,6 +598,41 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
         }
+    }
+
+    context("saveArbeidsgiverensVirksomhetINorge") {
+        test("lagrer ikke EREG-data som et brukersvar") {
+            val skjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2",
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    erOffentligArbeidsgiver = false
+                ),
+                data = UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
+            )
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+            every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+
+            val resultat = service.saveArbeidsgiverensVirksomhetINorge(
+                skjema.id!!,
+                ArbeidsgiverensVirksomhetINorgeDto(
+                    erArbeidsgiverenOffentligVirksomhet = true,
+                    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
+                    opprettholderArbeidsgiverenVanligDrift = true
+                )
+            )
+
+            val lagret = (resultat.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto)
+                .arbeidsgiverensVirksomhetINorge!!
+            lagret.erArbeidsgiverenOffentligVirksomhet shouldBe null
+            lagret.erArbeidsgiverenBemanningsEllerVikarbyraa shouldBe false
+            lagret.opprettholderArbeidsgiverenVanligDrift shouldBe true
+        }
+
     }
 
     context("saveVedleggValg") {
