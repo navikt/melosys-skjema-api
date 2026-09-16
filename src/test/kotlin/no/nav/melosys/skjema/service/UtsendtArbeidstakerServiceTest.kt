@@ -90,7 +90,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         // Default: EregService returnerer juridisk enhet
         every { mockEregService.hentOrganisasjonMedJuridiskEnhet(any()) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
-            juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS")
+            juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS"),
+            erOffentligArbeidsgiver = false
         )
         // Default: Ingen kobling
         every { mockUtsendtArbeidstakerSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)

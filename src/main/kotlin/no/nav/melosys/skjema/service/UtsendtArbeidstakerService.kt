@@ -76,9 +76,18 @@ class UtsendtArbeidstakerService(
 
         val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
-        val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
+        val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(request.arbeidsgiver.orgnr)
+        val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
+            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${request.arbeidsgiver.orgnr.take(3)}***" }
+        }
 
-        val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr, arbeidstakerNavn)
+        val metadata = byggMetadata(
+            request,
+            innloggetBrukerFnr,
+            juridiskEnhetOrgnr,
+            organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver,
+            arbeidstakerNavn
+        )
 
         val skjema = when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> {
@@ -557,6 +566,7 @@ class UtsendtArbeidstakerService(
         request: OpprettUtsendtArbeidstakerSoknadRequest,
         innloggetBrukerFnr: String,
         juridiskEnhetOrgnr: String,
+        erOffentligArbeidsgiver: Boolean?,
         arbeidstakerNavn: String
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
@@ -566,18 +576,21 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -588,6 +601,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
@@ -599,6 +613,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     fullmektigFnr = innloggetBrukerFnr,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
@@ -608,26 +623,13 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
         }
     }
 
-    /**
-     * Henter juridisk enhet orgnr fra Enhetsregisteret.
-     * Brukes for kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
-     *
-     * @param orgnr Organisasjonsnummer (kan være underenhet)
-     * @return Orgnr til juridisk enhet
-     * @throws IllegalStateException hvis juridisk enhet ikke kan hentes
-     */
-    private fun hentJuridiskEnhetOrgnr(orgnr: String): String {
-        val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(orgnr)
-        return organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
-            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${orgnr.take(3)}***" }
-        }
-    }
 
 
     /**

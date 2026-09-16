@@ -106,7 +106,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.organisasjonsnummerEksisterer(korrektSyntetiskOrgnr) } returns true
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS")
+            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
+            erOffentligArbeidsgiver = false
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
@@ -300,7 +301,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.organisasjonsnummerEksisterer(korrektSyntetiskOrgnr) } returns true
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS")
+            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
+            erOffentligArbeidsgiver = false
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
     }
@@ -311,7 +313,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.organisasjonsnummerEksisterer(korrektSyntetiskOrgnr) } returns true
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS")
+            juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
+            erOffentligArbeidsgiver = false
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
