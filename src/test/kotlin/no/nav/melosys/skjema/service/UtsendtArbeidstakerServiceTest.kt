@@ -86,7 +86,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     beforeTest {
-        every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "1"
+        every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
         // Default: EregService returnerer juridisk enhet
         every { mockEregService.hentOrganisasjonMedJuridiskEnhet(any()) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
