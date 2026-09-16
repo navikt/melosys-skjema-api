@@ -21,6 +21,7 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
@@ -81,6 +82,7 @@ class UtsendtArbeidstakerService(
             log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${request.arbeidsgiver.orgnr.take(3)}***" }
         }
 
+        val skjemaDefinisjonVersjon = skjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER)
         val metadata = byggMetadata(
             request,
             innloggetBrukerFnr,
@@ -98,6 +100,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -114,6 +117,7 @@ class UtsendtArbeidstakerService(
                     fnr = request.arbeidstaker.fnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -127,6 +131,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -307,9 +312,8 @@ class UtsendtArbeidstakerService(
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
-        // 1. Generer referanseId og hent aktiv versjon
+        // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
-        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
 
         // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
@@ -331,7 +335,6 @@ class UtsendtArbeidstakerService(
         innsendingService.opprettInnsending(
             skjema = savedSkjema,
             referanseId = referanseId,
-            skjemaDefinisjonVersjon = aktivVersjon,
             innsendtSprak = sprak,
             innsenderFnr = subjectHandler.getUserID()
         )
@@ -344,7 +347,7 @@ class UtsendtArbeidstakerService(
             )
         )
 
-        log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=${sprak.kode}, referanseId=$referanseId" }
+        log.info { "Skjema $skjemaId sendt inn med versjon=${skjema.skjemaDefinisjonVersjon}, språk=${sprak.kode}, referanseId=$referanseId" }
 
         // 7. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(

@@ -70,12 +70,13 @@ class InnsendingServiceTest : ApiTestBase() {
         @Test
         @DisplayName("Skal opprette innsending med status MOTTATT")
         fun `skal opprette innsending med status MOTTATT`() {
-            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT))
+            val skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(status = SkjemaStatus.SENDT, skjemaDefinisjonVersjon = "2")
+            )
 
             val innsending = innsendingService.opprettInnsending(
                 skjema = skjema,
                 referanseId = "TEST01",
-                skjemaDefinisjonVersjon = "1",
                 innsendtSprak = Språk.NORSK_BOKMAL,
                 innsenderFnr = "12345678901"
             )
@@ -84,7 +85,7 @@ class InnsendingServiceTest : ApiTestBase() {
             innsending.status shouldBe InnsendingStatus.MOTTATT
             innsending.antallForsok shouldBe 0
             innsending.referanseId shouldBe "TEST01"
-            innsending.skjemaDefinisjonVersjon shouldBe "1"
+            innsending.skjemaDefinisjonVersjon shouldBe "2"
             innsending.innsendtSprak shouldBe Språk.NORSK_BOKMAL
             innsending.innsenderFnr shouldBe "12345678901"
 
@@ -92,7 +93,7 @@ class InnsendingServiceTest : ApiTestBase() {
             lagret shouldNotBe null
             lagret!!.status shouldBe InnsendingStatus.MOTTATT
             lagret.referanseId shouldBe "TEST01"
-            lagret.skjemaDefinisjonVersjon shouldBe "1"
+            lagret.skjemaDefinisjonVersjon shouldBe "2"
             lagret.innsendtSprak shouldBe Språk.NORSK_BOKMAL
             lagret.innsenderFnr shouldBe "12345678901"
         }
@@ -105,7 +106,6 @@ class InnsendingServiceTest : ApiTestBase() {
             innsendingService.opprettInnsending(
                 skjema = skjema,
                 referanseId = "TEST02",
-                skjemaDefinisjonVersjon = "1",
                 innsendtSprak = Språk.NYNORSK,
                 innsenderFnr = "12345678901"
             )
