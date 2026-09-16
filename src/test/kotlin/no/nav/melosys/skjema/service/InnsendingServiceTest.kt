@@ -137,7 +137,10 @@ class InnsendingServiceTest : ApiTestBase() {
             oppdatert.sisteForsoekTidspunkt shouldNotBe null
 
             verify {
-                skjemaMottattProducer.blokkerendeSendSkjemaMottatt(SkjemaMottattMelding(skjema.id!!))
+                // Enslig skjema er sin egen gruppe (MELOSYS-8151).
+                skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
+                    SkjemaMottattMelding(skjema.id!!, gruppeId = skjema.id!!)
+                )
             }
         }
 
@@ -451,6 +454,114 @@ class InnsendingServiceTest : ApiTestBase() {
             innsendingService.prosesserInnsending(skjemaUtenData.id!!)
 
             meldingSlot.captured.relaterteSkjemaIder.shouldBeEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("gruppeId (via prosesserInnsending)")
+    inner class GruppeIdTests {
+
+        private val periode = PeriodeDto(
+            fraDato = LocalDate.of(2024, 1, 1),
+            tilDato = LocalDate.of(2024, 12, 31)
+        )
+
+        private fun lagDel(
+            status: SkjemaStatus = SkjemaStatus.SENDT,
+            opprettetDato: java.time.Instant = java.time.Instant.now(),
+            kobletSkjemaId: UUID? = null
+        ) = skjemaMedDefaultVerdier(
+            fnr = korrektSyntetiskFnr,
+            orgnr = korrektSyntetiskOrgnr,
+            status = status,
+            opprettetDato = opprettetDato,
+            data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                utsendingsperiodeOgLand = UtsendingsperiodeOgLandDto(
+                    utsendelseLand = LandKode.SE,
+                    utsendelsePeriode = periode
+                )
+            ),
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                representasjonstype = Representasjonstype.DEG_SELV,
+                skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                juridiskEnhetOrgnr = korrektSyntetiskOrgnr,
+                kobletSkjemaId = kobletSkjemaId
+            )
+        )
+
+        private fun send(skjema: no.nav.melosys.skjema.entity.Skjema): SkjemaMottattMelding {
+            innsendingRepository.save(
+                innsendingMedDefaultVerdier(
+                    skjema = skjema,
+                    referanseId = UUID.randomUUID().toString().take(6).uppercase()
+                )
+            )
+            val meldingSlot = slot<SkjemaMottattMelding>()
+            every { skjemaMottattProducer.blokkerendeSendSkjemaMottatt(capture(meldingSlot)) } returns Result.success(Unit)
+            innsendingService.prosesserInnsending(skjema.id!!)
+            return meldingSlot.captured
+        }
+
+        @Test
+        @DisplayName("Forste innsending i gruppen far seg selv som gruppeId")
+        fun `forste innsending i gruppen far seg selv som gruppeId`() {
+            val skjema = skjemaRepository.save(lagDel())
+
+            send(skjema).gruppeId shouldBe skjema.id
+        }
+
+        @Test
+        @DisplayName("Relatert del gjenbruker gruppeId fra forste del")
+        fun `relatert del gjenbruker gruppeId fra forste del`() {
+            val v1 = skjemaRepository.save(lagDel(opprettetDato = java.time.Instant.now().minusSeconds(600)))
+            val ag = skjemaRepository.save(lagDel())
+
+            val gruppeIdV1 = send(v1).gruppeId
+            val gruppeIdAg = send(ag).gruppeId
+
+            gruppeIdV1 shouldBe v1.id
+            gruppeIdAg shouldBe v1.id
+        }
+
+        @Test
+        @DisplayName("Tidligere opprettet utkast som sendes sist gir samme gruppeId - stabilitet uavhengig av rekkefolge")
+        fun `tidligere opprettet utkast som sendes sist gir samme gruppeId`() {
+            // v1 er opprettet FORST, men ligger som utkast. AG opprettes senere og sendes forst.
+            // En ren utregning ville gitt AG gruppeId=AG (v1 er ikke SENDT og ses ikke), og
+            // deretter v1 gruppeId=v1 (v1 er tidligst opprettet) - altsa to ulike grupper.
+            val v1 = skjemaRepository.save(
+                lagDel(status = SkjemaStatus.UTKAST, opprettetDato = java.time.Instant.now().minusSeconds(600))
+            )
+            val ag = skjemaRepository.save(lagDel(kobletSkjemaId = v1.id))
+
+            val gruppeIdAg = send(ag).gruppeId
+
+            // v1 sendes etterpa
+            v1.status = SkjemaStatus.SENDT
+            skjemaRepository.save(v1)
+            val gruppeIdV1 = send(v1).gruppeId
+
+            gruppeIdV1.shouldNotBeNull()
+            gruppeIdV1 shouldBe gruppeIdAg
+        }
+
+        @Test
+        @DisplayName("gruppeId persisteres pa skjemaet")
+        fun `gruppeId persisteres pa skjemaet`() {
+            val skjema = skjemaRepository.save(lagDel())
+
+            val gruppeId = send(skjema).gruppeId
+
+            skjemaRepository.findByIdOrNull(skjema.id!!)!!.gruppeId shouldBe gruppeId
+        }
+
+        @Test
+        @DisplayName("Allerede tildelt gruppeId endres ikke ved ny prosessering")
+        fun `allerede tildelt gruppeId endres ikke ved ny prosessering`() {
+            val eksisterende = UUID.randomUUID()
+            val skjema = skjemaRepository.save(lagDel().apply { gruppeId = eksisterende })
+
+            send(skjema).gruppeId shouldBe eksisterende
         }
     }
 }

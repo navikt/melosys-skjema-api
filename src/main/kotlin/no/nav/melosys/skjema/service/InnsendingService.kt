@@ -72,10 +72,13 @@ class InnsendingService(
             // Marker som under behandling (med sisteForsoek for hung detection)
             startProsessering(skjemaId)
 
+            val relaterteSkjemaIder = samleRelaterteSkjemaIder(skjemaId)
+
             skjemaMottattProducer.blokkerendeSendSkjemaMottatt(
                 SkjemaMottattMelding(
                     skjemaId = skjemaId,
-                    relaterteSkjemaIder = samleRelaterteSkjemaIder(skjemaId)
+                    relaterteSkjemaIder = relaterteSkjemaIder,
+                    gruppeId = tildelEllerGjenbrukGruppeId(skjemaId, relaterteSkjemaIder)
                 )
             )
 
@@ -172,6 +175,64 @@ class InnsendingService(
 
         log.info { "Fant ${ider.size} relaterte skjemaer for skjema $skjemaId" }
         return ider.toList()
+    }
+
+    /**
+     * Finner gruppe-ID-en for skjemaet, og tildeler den hvis gruppen ikke har en fra før.
+     *
+     * Alle deler av samme søknad skal dele én stabil gruppe-ID, slik at melosys-api kan serialisere
+     * behandlingen av dem (MELOSYS-8151). ID-en persisteres i stedet for å regnes ut på nytt per
+     * melding, fordi en ren utregning ikke er stabil: gruppen ses via SENDT-skjemaer, så et
+     * tidligere opprettet utkast som sendes inn senere ville flyttet «tidligst opprettede» og gitt
+     * delene ulik gruppe-ID — nøyaktig de tilfellene serialiseringen skal fange.
+     *
+     * Regler:
+     * 1. Har noen i gruppen (inkludert skjemaer som ennå er utkast) allerede en gruppe-ID,
+     *    gjenbrukes den. Da spiller rekkefølgen ingen rolle.
+     * 2. Ellers tildeles ID-en til det tidligst opprettede skjemaet i gruppen, med skjema-ID som
+     *    deterministisk tie-break. To deler som sendes samtidig og ser samme gruppe kommer dermed
+     *    fram til samme verdi uten koordinering.
+     *
+     * Returnerer null hvis gruppe-ID ikke kan utledes; da faller melosys-api tilbake til å
+     * serialisere kun på skjemaId, altså dagens oppførsel.
+     */
+    private fun tildelEllerGjenbrukGruppeId(skjemaId: UUID, relaterteSkjemaIder: List<UUID>): UUID? {
+        val skjema = skjemaRepository.findById(skjemaId).orElse(null) ?: return null
+
+        skjema.gruppeId?.let { return it }
+
+        // Hent relaterte uavhengig av status: et utkast som ennå ikke er sendt kan allerede ha fått
+        // tildelt gruppe-ID av en annen del, og den skal gjenbrukes.
+        val gruppen = (skjemaRepository.findAllById(relaterteSkjemaIder) + skjema).distinctBy { it.id }
+
+        val eksisterende = gruppen.mapNotNull { it.gruppeId }.distinct()
+        val gruppeId = when {
+            eksisterende.size == 1 -> eksisterende.single()
+
+            eksisterende.size > 1 -> {
+                // To tidligere adskilte grupper har møttes (f.eks. via en ny kobling). Velg
+                // deterministisk, slik at alle deler ender på samme verdi ved neste innsending.
+                val valgt = eksisterende.minBy { it.toString() }
+                log.warn {
+                    "Skjema $skjemaId ser flere gruppe-ID-er (${eksisterende.joinToString()}) — velger $valgt"
+                }
+                valgt
+            }
+
+            else -> gruppen
+                .sortedWith(compareBy({ it.opprettetDato }, { it.id.toString() }))
+                .first().id
+        }
+
+        if (gruppeId == null) {
+            log.warn { "Kunne ikke utlede gruppe-ID for skjema $skjemaId — faller tilbake til skjemaId-serialisering" }
+            return null
+        }
+
+        skjema.gruppeId = gruppeId
+        skjemaRepository.save(skjema)
+        log.info { "Skjema $skjemaId tilknyttet gruppe $gruppeId (${gruppen.size} deler)" }
+        return gruppeId
     }
 
 }
