@@ -193,9 +193,10 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    fun `tidligereInnsendteSkjema returnerer erstatter-kjede`() {
+    fun `tidligereInnsendteSkjema bevarer erstatter-kjede med eldre skjemaversjoner`() {
         // v1 → v2 → v3 (v3 erstatter v2, v2 erstatter v1)
         val v1 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            skjemaDefinisjonVersjon = "1",
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
@@ -207,6 +208,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         ))
 
         val v2 = skjemaRepository.save(skjemaMedDefaultVerdier(
+            skjemaDefinisjonVersjon = "1",
             fnr = korrektSyntetiskFnr,
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.SENDT,
@@ -241,6 +243,8 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.tidligereInnsendteSkjema.size shouldBe 2
         result.tidligereInnsendteSkjema[0].id shouldBe v2.id
         result.tidligereInnsendteSkjema[1].id shouldBe v1.id
+        result.skjema.skjemaDefinisjonVersjon shouldBe "2"
+        result.tidligereInnsendteSkjema.map { it.skjemaDefinisjonVersjon } shouldBe listOf("1", "1")
     }
 
     @Test

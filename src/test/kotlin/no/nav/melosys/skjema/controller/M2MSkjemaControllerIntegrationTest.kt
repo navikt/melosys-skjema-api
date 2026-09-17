@@ -9,6 +9,7 @@ import io.mockk.every
 import java.time.Instant
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.extensions.toOsloLocalDateTime
@@ -22,19 +23,29 @@ import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.m2mTokenWithOnlyReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithReadSkjemaDataAccess
 import no.nav.melosys.skjema.m2mTokenWithoutAccess
+import no.nav.melosys.skjema.periodeDtoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.service.UtsendtArbeidstakerSkjemaKoblingService
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
 import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
+import no.nav.melosys.skjema.types.felles.LandKode
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
+import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -54,6 +65,9 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
 
+    @Autowired
+    private lateinit var skjemaKoblingService: UtsendtArbeidstakerSkjemaKoblingService
+
     @MockkBean
     private lateinit var pdlClient: PdlClient
 
@@ -72,13 +86,15 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
     @DisplayName("GET /m2m/api/skjema/utsendt-arbeidstaker/{id}/data")
     inner class GetSkjema {
 
-        @Test
-        fun `skal returnere skjema når gyldig M2M-token med tillatt klient`() {
+        @ParameterizedTest
+        @ValueSource(strings = ["1", "2", "3"])
+        fun `skal returnere kompatible skjemadata uten krav om aktiv versjon`(skjemaVersjon: String) {
             val skjemaData = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
             val skjema = skjemaRepository
                 .save(
                     skjemaMedDefaultVerdier(
                         status = SkjemaStatus.SENDT,
+                        skjemaDefinisjonVersjon = skjemaVersjon,
                         data = skjemaData
                     )
                 )
@@ -105,11 +121,74 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
 
             responseBody.skjema.id shouldBe skjema.id
             responseBody.skjema.fnr shouldBe skjema.fnr
+            responseBody.skjema.skjemaDefinisjonVersjon shouldBe skjemaVersjon
             responseBody.kobletSkjema.shouldBeNull()
             responseBody.tidligereInnsendteSkjema shouldBe emptyList()
             responseBody.referanseId shouldBe "TEST01"
             responseBody.innsenderFnr shouldBe innsending.innsenderFnr
             responseBody.dokumentTittel shouldBe "Søknad om A1 for utsendte arbeidstakere i EØS eller Sveits"
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = Skjemadel::class, names = ["ARBEIDSGIVERS_DEL", "ARBEIDSTAKERS_DEL"])
+        fun `kobler og leverer AG og AT innsendt på hver sin side av et versjonsbytte`(førsteDel: Skjemadel) {
+            val periodeOgLand = UtsendingsperiodeOgLandDto(
+                utsendelseLand = LandKode.SE,
+                utsendelsePeriode = periodeDtoMedDefaultVerdier()
+            )
+            fun lagDel(del: Skjemadel, versjon: String): Skjema = skjemaRepository.save(
+                skjemaMedDefaultVerdier(
+                    status = SkjemaStatus.SENDT,
+                    skjemaDefinisjonVersjon = versjon,
+                    opprettetDato = Instant.parse(if (versjon == "1") "2025-01-01T10:00:00Z" else "2025-02-01T10:00:00Z"),
+                    data = if (del == Skjemadel.ARBEIDSGIVERS_DEL) {
+                        arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
+                    } else {
+                        arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
+                    },
+                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                        skjemadel = del,
+                        representasjonstype = if (del == Skjemadel.ARBEIDSGIVERS_DEL) {
+                            Representasjonstype.ARBEIDSGIVER
+                        } else {
+                            Representasjonstype.DEG_SELV
+                        },
+                        erOffentligArbeidsgiver = true.takeIf { versjon == "2" }
+                    )
+                )
+            )
+            val gammelDel = lagDel(førsteDel, "1")
+            val nyDel = lagDel(
+                if (førsteDel == Skjemadel.ARBEIDSGIVERS_DEL) Skjemadel.ARBEIDSTAKERS_DEL else Skjemadel.ARBEIDSGIVERS_DEL,
+                "2"
+            )
+            skjemaKoblingService.finnOgKobl(nyDel).kobletSkjemaId shouldBe gammelDel.id
+            val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
+
+            listOf(gammelDel, nyDel).forEach { del ->
+                innsendingRepository.save(
+                    innsendingMedDefaultVerdier(
+                        skjema = del,
+                        referanseId = "TEST0${del.skjemaDefinisjonVersjon}",
+                        skjemaDefinisjonVersjon = del.skjemaDefinisjonVersjon
+                    )
+                )
+                val respons = webTestClient.get()
+                    .uri("/m2m/api/skjema/utsendt-arbeidstaker/${del.id}/data")
+                    .headers { it.setBearerAuth(token) }
+                    .exchange()
+                    .expectStatus().isOk
+                    .expectBody<UtsendtArbeidstakerSkjemaM2MDto>()
+                    .returnResult().responseBody.shouldNotBeNull()
+
+                val motpart = if (del.id == gammelDel.id) nyDel else gammelDel
+                respons.skjema.id shouldBe del.id
+                respons.skjema.skjemaDefinisjonVersjon shouldBe del.skjemaDefinisjonVersjon
+                respons.kobletSkjema.shouldNotBeNull().id shouldBe motpart.id
+                respons.kobletSkjema!!.skjemaDefinisjonVersjon shouldBe motpart.skjemaDefinisjonVersjon
+                listOf(respons.skjema, respons.kobletSkjema!!).mapNotNull { it.metadata.erOffentligArbeidsgiver } shouldBe listOf(true)
+            }
+            skjemaRepository.findById(gammelDel.id!!).get().skjemaDefinisjonVersjon shouldBe "1"
         }
 
         @Test
