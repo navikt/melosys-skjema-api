@@ -177,7 +177,7 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
             resultat.kobletSkjemaId shouldBe null
         }
 
-        test("skal koble skjemaer med matchende kriterier") {
+        test("skal koble skjemaer med ulike versjoner uten versjonsarv") {
             val skjemaId = UUID.randomUUID()
             val kandidatId = UUID.randomUUID()
 
@@ -199,7 +199,8 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = metadata,
-                data = arbeidstakerData
+                data = arbeidstakerData,
+                skjemaDefinisjonVersjon = "2"
             )
 
             val arbeidsgiverData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
@@ -220,7 +221,8 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
                 fnr = arbeidstakerFnr,
                 status = SkjemaStatus.SENDT,
                 metadata = kandidatMetadata,
-                data = arbeidsgiverData
+                data = arbeidsgiverData,
+                skjemaDefinisjonVersjon = "1"
             )
 
             every { mockSkjemaRepository.findByFnrAndTypeAndStatus(arbeidstakerFnr, any(), SkjemaStatus.SENDT) } returns listOf(kandidat)
@@ -230,6 +232,8 @@ class UtsendtArbeidstakerSkjemaKoblingServiceTest : FunSpec({
 
             resultat.kobletSkjemaId shouldBe kandidatId
             resultat.erstatterSkjemaId shouldBe null
+            skjema.skjemaDefinisjonVersjon shouldBe "2"
+            kandidat.skjemaDefinisjonVersjon shouldBe "1"
             verify(exactly = 2) { mockSkjemaRepository.save(any()) }
         }
 

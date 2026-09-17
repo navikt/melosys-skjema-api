@@ -37,29 +37,25 @@ class SkjemaDefinisjonController(
     @Operation(
         summary = "Hent skjemadefinisjon",
         description = """
-            Henter skjemadefinisjon for en gitt skjematype.
+            Henter aktiv skjemadefinisjon for en gitt skjematype.
             Brukes av frontend for å rendre skjemaer og oppsummeringer.
 
-            Hvis versjon ikke er spesifisert, returneres aktiv versjon.
             Hvis språk ikke er spesifisert, returneres norsk bokmål (nb).
         """
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Skjemadefinisjon funnet"),
-        ApiResponse(responseCode = "400", description = "Ukjent skjematype eller versjon", content = [Content()])
+        ApiResponse(responseCode = "400", description = "Ukjent skjematype", content = [Content()])
     )
     fun hentDefinisjon(
         @Parameter(description = "Skjematype (f.eks. 'A1')", required = true)
         @PathVariable type: SkjemaType,
 
-        @Parameter(description = "Versjon (valgfri - bruker aktiv versjon hvis ikke spesifisert)")
-        @RequestParam(required = false) versjon: String?,
-
         @Parameter(description = "Språkkode (nb, nn, en). Standard: nb")
         @RequestParam(defaultValue = "nb") sprak: String
     ): SkjemaDefinisjonDto {
         val validertSpråk = Språk.fraKode(sprak)
-        return skjemaDefinisjonService.hent(type, versjon, validertSpråk)
+        return skjemaDefinisjonService.hent(type, versjon = null, språk = validertSpråk)
     }
 
     @GetMapping("/{type}/versjon", produces = [MediaType.APPLICATION_JSON_VALUE])

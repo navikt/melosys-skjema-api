@@ -47,3 +47,7 @@ m2m:
     clients:
       - test-melosys-client-id
       - test-read-only-client-id
+
+# Retry-scheduleren skal aldri fyre under testkjoring: den ville kjort egne transaksjoner
+# mot innsending parallelt med testenes databaseopprydding og gitt deadlock.
+INNSENDING_RETRY_INITIAL_DELAY_SECONDS: 86400
