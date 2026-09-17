@@ -120,12 +120,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 )
             )
             val innsending = innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = Språk.NORSK_BOKMAL)
-            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
+            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = skjema.skjemaDefinisjonVersjon, seksjoner = emptyMap())
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, skjema.skjemaDefinisjonVersjon, Språk.NORSK_BOKMAL) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 
@@ -149,12 +149,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 saksnummer = "MEL-123456",
                 saksstatus = Saksstatus.AVSLUTTET
             )
-            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
+            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = skjema.skjemaDefinisjonVersjon, seksjoner = emptyMap())
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", any()) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, skjema.skjemaDefinisjonVersjon, any()) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 

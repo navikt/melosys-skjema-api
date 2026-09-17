@@ -483,7 +483,7 @@ fun innsendingMedDefaultVerdier(
     sisteForsoekTidspunkt: Instant? = null,
     feilmelding: String? = null,
     referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
-    skjemaDefinisjonVersjon: String = "1",
+    skjemaDefinisjonVersjon: String = skjema.skjemaDefinisjonVersjon,
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
     innsenderFnr: String = korrektSyntetiskFnr,
     saksnummer: String? = null,

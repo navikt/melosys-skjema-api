@@ -140,7 +140,6 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 skjemaMedDefaultVerdier(
                     status = SkjemaStatus.SENDT,
                     skjemaDefinisjonVersjon = versjon,
-                    opprettetDato = Instant.parse(if (versjon == "1") "2025-01-01T10:00:00Z" else "2025-02-01T10:00:00Z"),
                     data = if (del == Skjemadel.ARBEIDSGIVERS_DEL) {
                         arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
                     } else {
@@ -169,8 +168,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 innsendingRepository.save(
                     innsendingMedDefaultVerdier(
                         skjema = del,
-                        referanseId = "TEST0${del.skjemaDefinisjonVersjon}",
-                        skjemaDefinisjonVersjon = del.skjemaDefinisjonVersjon
+                        referanseId = "TEST0${del.skjemaDefinisjonVersjon}"
                     )
                 )
                 val respons = webTestClient.get()
@@ -184,9 +182,10 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 val motpart = if (del.id == gammelDel.id) nyDel else gammelDel
                 respons.skjema.id shouldBe del.id
                 respons.skjema.skjemaDefinisjonVersjon shouldBe del.skjemaDefinisjonVersjon
-                respons.kobletSkjema.shouldNotBeNull().id shouldBe motpart.id
-                respons.kobletSkjema!!.skjemaDefinisjonVersjon shouldBe motpart.skjemaDefinisjonVersjon
-                listOf(respons.skjema, respons.kobletSkjema!!).mapNotNull { it.metadata.erOffentligArbeidsgiver } shouldBe listOf(true)
+                val koblet = respons.kobletSkjema.shouldNotBeNull()
+                koblet.id shouldBe motpart.id
+                koblet.skjemaDefinisjonVersjon shouldBe motpart.skjemaDefinisjonVersjon
+                listOf(respons.skjema, koblet).mapNotNull { it.metadata.erOffentligArbeidsgiver } shouldBe listOf(true)
             }
             skjemaRepository.findById(gammelDel.id!!).get().skjemaDefinisjonVersjon shouldBe "1"
         }
