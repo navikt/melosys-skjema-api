@@ -59,6 +59,16 @@ class Skjema(
     @Column(name = "prefylt_fra_skjema_id", columnDefinition = "UUID")
     var prefyltFraSkjemaId: UUID? = null,
 
+    /**
+     * Stabil felles ID for alle relaterte deler av samme søknad (MELOSYS-8151).
+     *
+     * Tildeles ved første innsending i gruppen og gjenbrukes av de øvrige delene, slik at verdien
+     * er uavhengig av rekkefølgen delene sendes i. Sendes videre på SkjemaMottattMelding og brukes
+     * av melosys-api til å serialisere behandlingen per gruppe. Null inntil skjemaet sendes inn.
+     */
+    @Column(name = "gruppe_id", columnDefinition = "UUID")
+    var gruppeId: UUID? = null,
+
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 
