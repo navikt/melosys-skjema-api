@@ -59,6 +59,9 @@ class Skjema(
     @Column(name = "prefylt_fra_skjema_id", columnDefinition = "UUID")
     var prefyltFraSkjemaId: UUID? = null,
 
+    @Column(name = "skjema_definisjon_versjon", nullable = false, length = 50)
+    var skjemaDefinisjonVersjon: String,
+
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 
