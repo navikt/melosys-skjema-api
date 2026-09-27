@@ -34,6 +34,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.UUID
 
 private val log = KotlinLogging.logger { }
@@ -74,6 +75,9 @@ class UtsendtArbeidstakerService(
         val innloggetBrukerFnr = subjectHandler.getUserID()
         log.info { "Oppretter Utsendt Arbeidstaker søknad for representasjonstype: ${request.representasjonstype}" }
 
+        // Bekreftelsen er validert i requesten (@AssertTrue)
+        val bekreftetTidspunkt = Instant.now()
+
         val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
         val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
@@ -89,6 +93,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    bekreftetRiktigeOpplysningerTidspunkt = bekreftetTidspunkt,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -105,6 +110,7 @@ class UtsendtArbeidstakerService(
                     fnr = request.arbeidstaker.fnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    bekreftetRiktigeOpplysningerTidspunkt = bekreftetTidspunkt,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -118,6 +124,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    bekreftetRiktigeOpplysningerTidspunkt = bekreftetTidspunkt,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )

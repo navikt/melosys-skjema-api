@@ -179,7 +179,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.status shouldBe SkjemaStatus.UTKAST
 
             verify { mockValidator.validerOpprettelse(request, any()) }
-            verify { mockSkjemaRepository.save(any()) }
+            verify { mockSkjemaRepository.save(match { it.bekreftetRiktigeOpplysningerTidspunkt != null }) }
         }
 
         test("skal opprette skjema for ARBEIDSGIVER med fullmakt") {
@@ -208,7 +208,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             response.status shouldBe SkjemaStatus.UTKAST
 
             verify { mockValidator.validerOpprettelse(request, any()) }
-            verify { mockSkjemaRepository.save(any()) }
+            verify { mockSkjemaRepository.save(match { it.bekreftetRiktigeOpplysningerTidspunkt != null }) }
         }
 
         test("skal opprette skjema for RADGIVER") {

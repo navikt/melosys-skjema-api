@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.BeforeEach
@@ -122,6 +123,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
                   "radgiverfirma": null,
                   "arbeidsgiver": {"orgnr": "$korrektSyntetiskOrgnr", "navn": "Test Arbeidsgiver AS"},
                   "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"},
+                  "bekreftetRiktigeOpplysninger": true,
                   "opprettetVia": "MOTPART_CTA"
                 }
                 """.trimIndent()
@@ -135,6 +137,36 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         response.shouldNotBeNull()
         val lagret = skjemaRepository.findById(response.id).orElseThrow()
         lagret.opprettetVia shouldBe OpprettetVia.MOTPART_CTA
+        lagret.bekreftetRiktigeOpplysningerTidspunkt.shouldNotBeNull()
+    }
+
+    @Test
+    @DisplayName("Opprettelse uten bekreftelse av riktige opplysninger avvises og lagrer ingenting")
+    fun `opprettelse uten bekreftelse avvises`() {
+        mockOpprettAvhengigheter()
+        val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
+        val antallFor = skjemaRepository.count()
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/opprett-med-kontekst")
+            .headers { it.setBearerAuth(token) }
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "representasjonstype": "DEG_SELV",
+                  "radgiverfirma": null,
+                  "arbeidsgiver": {"orgnr": "$korrektSyntetiskOrgnr", "navn": "Test Arbeidsgiver AS"},
+                  "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody()
+            .jsonPath("$.errors.bekreftetRiktigeOpplysninger").isEqualTo(FELT_ER_PAAKREVD)
+
+        skjemaRepository.count() shouldBe antallFor
     }
 
     @Test
@@ -282,6 +314,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
                   "radgiverfirma": null,
                   "arbeidsgiver": {"orgnr": "$korrektSyntetiskOrgnr", "navn": "Test Arbeidsgiver AS"},
                   "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"},
+                  "bekreftetRiktigeOpplysninger": true,
                   $ekstraFelter
                 }
                 """.trimIndent()
@@ -326,7 +359,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
                   "representasjonstype": "DEG_SELV",
                   "radgiverfirma": null,
                   "arbeidsgiver": {"orgnr": "$korrektSyntetiskOrgnr", "navn": "Test Arbeidsgiver AS"},
-                  "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"}
+                  "arbeidstaker": {"fnr": "$korrektSyntetiskFnr", "etternavn": "Testesen"},
+                  "bekreftetRiktigeOpplysninger": true
                 }
                 """.trimIndent()
             )

@@ -371,12 +371,14 @@ fun opprettUtsendtArbeidstakerSoknadRequestMedDefaultVerdier(
     representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV,
     radgiverfirma: SimpleOrganisasjonDto? = null,
     arbeidsgiver: SimpleOrganisasjonDto = simpleOrganisasjonDtoMedDefaultVerdier(),
-    arbeidstaker: PersonDto = personDtoMedDefaultVerdier()
+    arbeidstaker: PersonDto = personDtoMedDefaultVerdier(),
+    bekreftetRiktigeOpplysninger: Boolean = true
 ) = OpprettUtsendtArbeidstakerSoknadRequest(
     representasjonstype = representasjonstype,
     radgiverfirma = radgiverfirma,
     arbeidsgiver = arbeidsgiver,
-    arbeidstaker = arbeidstaker
+    arbeidstaker = arbeidstaker,
+    bekreftetRiktigeOpplysninger = bekreftetRiktigeOpplysninger
 )
 
 fun skjemaMedDefaultVerdier(

@@ -59,6 +59,9 @@ class Skjema(
     @Column(name = "prefylt_fra_skjema_id", columnDefinition = "UUID")
     var prefyltFraSkjemaId: UUID? = null,
 
+    @Column(name = "bekreftet_riktige_opplysninger_tidspunkt")
+    val bekreftetRiktigeOpplysningerTidspunkt: Instant? = null,
+
     @Column(name = "opprettet_dato", nullable = false)
     val opprettetDato: Instant = Instant.now(),
 
