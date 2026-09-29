@@ -24,8 +24,8 @@ class ArbeidstakerVarslingServiceTest {
     private val brukervarselProducer: BrukervarselProducer = mockk(relaxed = true)
     private val skjemaRepository: SkjemaRepository = mockk()
     private val skjemaLenke = "https://test.nav.no"
-    private val forventetLenke =
-        "https://test.nav.no/medlemskap-lovvalg/soknad/oversikt?representasjonstype=DEG_SELV&arbeidsgiverOrgnr=$korrektSyntetiskOrgnr"
+    private fun forventetLenke(arbeidsgiversSkjemaId: UUID) =
+        "https://test.nav.no/medlemskap-lovvalg/soknad/fyll-ut-din-del?skjemaId=$arbeidsgiversSkjemaId&arbeidsgiverOrgnr=$korrektSyntetiskOrgnr"
 
     private val service = ArbeidstakerVarslingService(brukervarselProducer, skjemaRepository, skjemaLenke)
 
@@ -51,7 +51,7 @@ class ArbeidstakerVarslingServiceTest {
                     melding.tekster.size == 2 &&
                     melding.tekster.any { it.språk == Språk.NORSK_BOKMAL && it.default } &&
                     melding.tekster.any { it.språk == Språk.ENGELSK } &&
-                    melding.link == forventetLenke &&
+                    melding.link == forventetLenke(skjema.id!!) &&
                     melding.sms
                 }
             )
@@ -138,7 +138,7 @@ class ArbeidstakerVarslingServiceTest {
         service.varsleArbeidstakerHvisAktuelt(skjema.id!!)
 
         verify {
-            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == forventetLenke })
+            brukervarselProducer.sendBrukervarsel(match<BrukervarselMelding> { it.link == forventetLenke(skjema.id!!) })
         }
     }
 
@@ -292,7 +292,7 @@ class ArbeidstakerVarslingServiceTest {
                 match<BrukervarselMelding> { melding ->
                     melding.ident == skjema.fnr &&
                         melding.sms &&
-                        melding.link == forventetLenke &&
+                        melding.link == forventetLenke(skjema.id!!) &&
                         melding.tekster.first { it.språk == Språk.NORSK_BOKMAL }.tekst.contains("kan du se bort fra denne meldingen") &&
                         melding.tekster.first { it.språk == Språk.ENGELSK }.tekst.contains("you can disregard this message")
                 }

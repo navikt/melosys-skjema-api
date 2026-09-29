@@ -14,7 +14,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.DegSelvMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMedFullmaktMetadata
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.RadgiverMetadata
-import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerMetadata
 import no.nav.melosys.skjema.types.common.SkjemaStatus
@@ -56,7 +55,7 @@ class ArbeidstakerVarslingService(
 
         when (metadata) {
             is ArbeidsgiverMetadata, is RadgiverMetadata -> {
-                varsleUtenFullmakt(skjema.fnr, skjema.orgnr, metadata)
+                varsleUtenFullmakt(skjemaId, skjema.fnr, skjema.orgnr, metadata)
             }
             is ArbeidsgiverMedFullmaktMetadata, is RadgiverMedFullmaktMetadata -> {
                 varsleOmFullmaktsInnsending(skjema.fnr, skjema.orgnr, metadata)
@@ -67,7 +66,7 @@ class ArbeidstakerVarslingService(
         }
     }
 
-    private fun varsleUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
+    private fun varsleUtenFullmakt(skjemaId: UUID, fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata) {
         if (metadata.kobletSkjemaId != null) {
             log.info { "Arbeidstaker har allerede sendt inn sin del (koblet motpart), sender ikke varsel" }
             return
@@ -80,7 +79,7 @@ class ArbeidstakerVarslingService(
 
         val navn = metadata.arbeidsgiverNavn.take(MAX_ARBEIDSGIVERNAVN_LENGDE)
         val tekster = lagVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(skjemaId, orgnr)))
         log.info { "Sendt varsel til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
     }
 
@@ -124,7 +123,7 @@ class ArbeidstakerVarslingService(
         }
 
         return when (metadata) {
-            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjema.fnr, skjema.orgnr, metadata, dryRun)
+            is ArbeidsgiverMetadata, is RadgiverMetadata -> resendUtenFullmakt(skjemaId, skjema.fnr, skjema.orgnr, metadata, dryRun)
             else -> {
                 log.info { "Resend: ${metadata.representasjonstype} (skjema $skjemaId) er ikke handlingspliktig, hopper over" }
                 false
@@ -132,7 +131,7 @@ class ArbeidstakerVarslingService(
         }
     }
 
-    private fun resendUtenFullmakt(fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata, dryRun: Boolean): Boolean {
+    private fun resendUtenFullmakt(skjemaId: UUID, fnr: String, orgnr: String, metadata: UtsendtArbeidstakerMetadata, dryRun: Boolean): Boolean {
         if (harEksisterendeArbeidstakerUtkast(fnr, metadata.juridiskEnhetOrgnr)) {
             log.info { "Resend: arbeidstaker har eksisterende utkast, sender ikke varsel" }
             return false
@@ -144,7 +143,7 @@ class ArbeidstakerVarslingService(
 
         val navn = arbeidsgiverVisningsnavnForResend(metadata, orgnr)
         val tekster = lagResendVarselteksterUtenFullmakt(navn)
-        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(orgnr)))
+        brukervarselProducer.sendBrukervarsel(BrukervarselMelding(fnr, tekster, byggSkjemaLenke(skjemaId, orgnr)))
         log.info { "Resend: sendt varsel på nytt til arbeidstaker om AG-innsending (skjemadel=${metadata.skjemadel})" }
         return true
     }
@@ -164,9 +163,13 @@ class ArbeidstakerVarslingService(
             m != null && m.juridiskEnhetOrgnr == juridiskEnhetOrgnr && m.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL
         }
 
-    // Ruter arbeidstaker rett til DEG_SELV-forsiden med arbeidsgivers orgnr forhåndsutfylt
-    private fun byggSkjemaLenke(arbeidsgiverOrgnr: String): String =
-        "$skjemaLenke$ARBEIDSTAKER_SKJEMA_PATH?representasjonstype=${Representasjonstype.DEG_SELV}&arbeidsgiverOrgnr=$arbeidsgiverOrgnr"
+    /**
+     * Ruter arbeidstaker rett til introsiden for sin del, forhåndsutfylt fra arbeidsgivers del.
+     * Venter delen ikke lenger (allerede påbegynt, innsendt eller avsluttet), sender frontend
+     * brukeren til DEG_SELV-oversikten med arbeidsgivers orgnr forhåndsutfylt.
+     */
+    private fun byggSkjemaLenke(arbeidsgiversSkjemaId: UUID, arbeidsgiverOrgnr: String): String =
+        "$skjemaLenke$ARBEIDSTAKER_SKJEMA_PATH?skjemaId=$arbeidsgiversSkjemaId&arbeidsgiverOrgnr=$arbeidsgiverOrgnr"
 
     private fun lagVarselteksterUtenFullmakt(arbeidsgiverNavn: String): List<Varseltekst> {
         return listOf(
@@ -216,6 +219,6 @@ class ArbeidstakerVarslingService(
     companion object {
         private const val MAX_ARBEIDSGIVERNAVN_LENGDE = 100
         private const val RESEND_MAX_ARBEIDSGIVERNAVN_LENGDE = 30
-        private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad/oversikt"
+        private const val ARBEIDSTAKER_SKJEMA_PATH = "/medlemskap-lovvalg/soknad/fyll-ut-din-del"
     }
 }
