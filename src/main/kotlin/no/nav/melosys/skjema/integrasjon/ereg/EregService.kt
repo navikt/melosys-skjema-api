@@ -42,7 +42,8 @@ class EregService(
 
         return OrganisasjonMedJuridiskEnhetDto(
             organisasjon = organisasjon.toSimpleOrganisasjonDto(),
-            juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto()
+            juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
+            erOffentligArbeidsgiver = juridiskEnhet.erOffentligArbeidsgiver()
         )
     }
 
@@ -66,3 +67,10 @@ class EregService(
         return eregClient.hentOrganisasjon(juridiskEnhetOrganisasjonsnummer) as JuridiskEnhet
     }
 }
+
+private const val ENHETSTYPE_STATEN = "STAT"
+private const val SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN = "6100"
+
+internal fun JuridiskEnhet.erOffentligArbeidsgiver(): Boolean =
+    juridiskEnhetDetaljer?.enhetstype == ENHETSTYPE_STATEN &&
+        juridiskEnhetDetaljer.sektorkode == SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN

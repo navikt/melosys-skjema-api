@@ -3,6 +3,7 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
+import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhetDetaljer
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
@@ -34,9 +35,28 @@ class EregServiceTest {
         assertThat(result).isEqualTo(
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = virksomhet.toSimpleOrganisasjonDto(),
-                juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto()
+                juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
+                erOffentligArbeidsgiver = false
             )
         )
+    }
+
+    @Test
+    fun `klassifiserer juridisk enhet som offentlig bare for STAT og sektorkode 6100`() {
+        val offentlig = juridiskEnhetMedDefaultVerdier().copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "STAT", sektorkode = "6100")
+        )
+        val feilSektor = offentlig.copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "STAT", sektorkode = "6500")
+        )
+        val feilEnhetstype = offentlig.copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "AS", sektorkode = "6100")
+        )
+
+        assertThat(offentlig.erOffentligArbeidsgiver()).isTrue()
+        assertThat(feilSektor.erOffentligArbeidsgiver()).isFalse()
+        assertThat(feilEnhetstype.erOffentligArbeidsgiver()).isFalse()
+        assertThat(juridiskEnhetMedDefaultVerdier().erOffentligArbeidsgiver()).isFalse()
     }
 
     @Test

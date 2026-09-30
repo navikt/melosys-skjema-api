@@ -10,39 +10,62 @@ import org.springframework.stereotype.Component
 @Component
 class ArbeidsgiverensVirksomhetINorgeValidator {
 
-    fun validate(dto: ArbeidsgiverensVirksomhetINorgeDto?): List<Violation> {
-        if (dto == null) return listOf(Violation(
-            field = "arbeidsgiverensVirksomhetINorge",
-            translationKey = FELT_ER_PAAKREVD
-        ))
+    /**
+     * Klassifiseringen kommer fra Enhetsregisteret, ikke fra søkeren, og avgjør hvilke
+     * oppfølgingsspørsmål seksjonen skal ha. Mangler den, er det en systemfeil og ikke en brukerfeil.
+     */
+    fun validate(
+        dto: ArbeidsgiverensVirksomhetINorgeDto?,
+        erOffentligArbeidsgiver: Boolean?
+    ): List<Violation> {
+        checkNotNull(erOffentligArbeidsgiver) { "Skjemaet mangler EREG-data om arbeidsgiveren er offentlig" }
 
-        if (dto.erArbeidsgiverenOffentligVirksomhet) {
-            if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa != null) {
-                return listOf(Violation(
-                    field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
-                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiBemanningsbyraa.name)
-                ))
-            }
-            if (dto.opprettholderArbeidsgiverenVanligDrift != null) {
-                return listOf(Violation(
-                    field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
-                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiVanligDrift.name)
-                ))
-            }
+        return if (erOffentligArbeidsgiver) {
+            validerOffentligArbeidsgiver(dto)
         } else {
-            if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa == null) {
-                return listOf(Violation(
-                    field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
-                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name)
-                ))
-            }
-            if (dto.opprettholderArbeidsgiverenVanligDrift == null) {
-                return listOf(Violation(
-                    field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
-                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmVanligDrift.name)
-                ))
-            }
+            validerPrivatArbeidsgiver(dto)
         }
+    }
+
+    /** Offentlig arbeidsgiver får ikke oppfølgingsspørsmålene, så seksjonen kan mangle helt. */
+    private fun validerOffentligArbeidsgiver(dto: ArbeidsgiverensVirksomhetINorgeDto?): List<Violation> {
+        if (dto == null) return emptyList()
+
+        if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa != null) return listOf(
+            Violation(
+                field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiBemanningsbyraa.name)
+            )
+        )
+        if (dto.opprettholderArbeidsgiverenVanligDrift != null) return listOf(
+            Violation(
+                field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiVanligDrift.name)
+            )
+        )
+        return emptyList()
+    }
+
+    private fun validerPrivatArbeidsgiver(dto: ArbeidsgiverensVirksomhetINorgeDto?): List<Violation> {
+        if (dto == null) return listOf(
+            Violation(
+                field = "arbeidsgiverensVirksomhetINorge",
+                translationKey = FELT_ER_PAAKREVD
+            )
+        )
+
+        if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa == null) return listOf(
+            Violation(
+                field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name)
+            )
+        )
+        if (dto.opprettholderArbeidsgiverenVanligDrift == null) return listOf(
+            Violation(
+                field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmVanligDrift.name)
+            )
+        )
         return emptyList()
     }
 

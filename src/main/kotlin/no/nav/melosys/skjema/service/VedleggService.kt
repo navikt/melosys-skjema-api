@@ -30,8 +30,8 @@ class VedleggService(
     }
 
     @Transactional
-    fun lastOpp(skjemaId: UUID, fil: MultipartFile): VedleggDto {
-        val skjema = utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
+    fun lastOpp(skjemaId: UUID, klientVersjon: String?, fil: MultipartFile): VedleggDto {
+        val skjema = utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId, klientVersjon)
 
         val antallEksisterende = vedleggRepository.countBySkjemaId(skjemaId)
         if (antallEksisterende >= MAKS_ANTALL_VEDLEGG) {
@@ -97,8 +97,8 @@ class VedleggService(
     }
 
     @Transactional
-    fun slett(skjemaId: UUID, vedleggId: UUID) {
-        utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
+    fun slett(skjemaId: UUID, klientVersjon: String?, vedleggId: UUID) {
+        utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId, klientVersjon)
 
         val vedlegg = vedleggRepository.findByIdAndSkjemaId(vedleggId, skjemaId)
             ?: throw NoSuchElementException("Vedlegg med id $vedleggId ikke funnet for skjema $skjemaId")
@@ -110,9 +110,7 @@ class VedleggService(
     }
 
     @Transactional
-    fun slettAlleForSkjema(skjemaId: UUID) {
-        utsendtArbeidstakerService.hentRedigerbartSkjema(skjemaId)
-
+    fun slettAlleForLåstSkjema(skjemaId: UUID) {
         val vedleggListe = vedleggRepository.findBySkjemaId(skjemaId)
         if (vedleggListe.isEmpty()) return
 

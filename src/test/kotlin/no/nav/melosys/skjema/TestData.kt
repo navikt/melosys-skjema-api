@@ -104,7 +104,8 @@ fun arbeidsgiversSkjemaDataDtoMedDefaultVerdier() = UtsendtArbeidstakerArbeidsgi
 )
 
 fun arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier() = ArbeidsgiverensVirksomhetINorgeDto(
-    erArbeidsgiverenOffentligVirksomhet = true
+    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
+    opprettholderArbeidsgiverenVanligDrift = true
 )
 
 fun periodeDtoMedDefaultVerdier() = PeriodeDto(
@@ -281,6 +282,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     fullmektigFnr: String? = etAnnetKorrektSyntetiskFnr,
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
+    erOffentligArbeidsgiver: Boolean? = false,
     kobletSkjemaId: UUID? = null,
     erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
@@ -290,6 +292,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -298,6 +301,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -307,6 +311,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -315,6 +320,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -325,6 +331,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -335,6 +342,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
             arbeidstakerNavn = arbeidstakerNavn,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -388,6 +396,7 @@ fun skjemaMedDefaultVerdier(
     data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetVia: OpprettetVia? = null,
+    skjemaDefinisjonVersjon: String = "2",
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,
@@ -402,6 +411,7 @@ fun skjemaMedDefaultVerdier(
         data = data,
         metadata = metadata,
         opprettetVia = opprettetVia,
+        skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
         opprettetDato = opprettetDato,
         endretDato = endretDato,
         opprettetAv = opprettetAv,
@@ -473,7 +483,7 @@ fun innsendingMedDefaultVerdier(
     sisteForsoekTidspunkt: Instant? = null,
     feilmelding: String? = null,
     referanseId: String = UUID.randomUUID().toString().take(6).uppercase(),
-    skjemaDefinisjonVersjon: String = "1",
+    skjemaDefinisjonVersjon: String = skjema.skjemaDefinisjonVersjon,
     innsendtSprak: Språk = Språk.NORSK_BOKMAL,
     innsenderFnr: String = korrektSyntetiskFnr,
     saksnummer: String? = null,

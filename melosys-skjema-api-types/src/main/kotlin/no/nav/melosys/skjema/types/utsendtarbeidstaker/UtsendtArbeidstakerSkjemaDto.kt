@@ -16,9 +16,12 @@ data class UtsendtArbeidstakerSkjemaDto(
     override val endretDato: LocalDateTime,
     override val metadata: UtsendtArbeidstakerMetadata,
     override val data: UtsendtArbeidstakerSkjemaData,
+    val skjemaDefinisjonVersjon: String = "1",
     /**
      * Land og periode slik arbeidsgiveren oppga dem i delen utkastet ble forhåndsutfylt
      * fra (motpart-CTA) — uendret selv om bruker overskriver sine egne verdier.
      */
-    val motpartensUtsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null
+    val motpartensUtsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
+    /** Satt kun i responsen der utkastet ble reinitialisert. */
+    val utkastReinitialisert: Boolean = false
 ) : SkjemaDto

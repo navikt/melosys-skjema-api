@@ -20,5 +20,5 @@ data class SkjemaDefinisjonProperties(
      * Nøkkel: Skjematype (f.eks. "A1")
      * Verdi: Versjonsnummer (f.eks. "1")
      */
-    val aktiveVersjoner: Map<SkjemaType, String> = mapOf(SkjemaType.UTSENDT_ARBEIDSTAKER to "1")
+    val aktiveVersjoner: Map<SkjemaType, String> = mapOf(SkjemaType.UTSENDT_ARBEIDSTAKER to "2")
 )

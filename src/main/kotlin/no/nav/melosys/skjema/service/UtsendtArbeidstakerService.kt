@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
+import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
 import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
@@ -21,6 +22,7 @@ import no.nav.melosys.skjema.service.skjemadefinisjon.SkjemaDefinisjonService
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
 import no.nav.melosys.skjema.types.InnsendtSkjemaResponse
 import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
+import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
@@ -57,7 +59,7 @@ class UtsendtArbeidstakerService(
     private val eventPublisher: ApplicationEventPublisher,
     private val referanseIdGenerator: ReferanseIdGenerator,
     private val skjemaDefinisjonService: SkjemaDefinisjonService,
-    @Lazy private val vedleggService: VedleggService,
+    @param:Lazy private val vedleggService: VedleggService,
     private val unleash: Unleash,
 ) {
 
@@ -76,9 +78,19 @@ class UtsendtArbeidstakerService(
 
         val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
-        val juridiskEnhetOrgnr = hentJuridiskEnhetOrgnr(request.arbeidsgiver.orgnr)
+        val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(request.arbeidsgiver.orgnr)
+        val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
+            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${request.arbeidsgiver.orgnr.take(3)}***" }
+        }
 
-        val metadata = byggMetadata(request, innloggetBrukerFnr, juridiskEnhetOrgnr, arbeidstakerNavn)
+        val skjemaDefinisjonVersjon = skjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER)
+        val metadata = byggMetadata(
+            request,
+            innloggetBrukerFnr,
+            juridiskEnhetOrgnr,
+            organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver,
+            arbeidstakerNavn
+        )
 
         val skjema = when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> {
@@ -89,6 +101,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -105,6 +118,7 @@ class UtsendtArbeidstakerService(
                     fnr = request.arbeidstaker.fnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -118,6 +132,7 @@ class UtsendtArbeidstakerService(
                     orgnr = request.arbeidsgiver.orgnr,
                     metadata = metadata,
                     opprettetVia = request.opprettetVia,
+                    skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
                     opprettetAv = innloggetBrukerFnr,
                     endretAv = innloggetBrukerFnr
                 )
@@ -189,13 +204,21 @@ class UtsendtArbeidstakerService(
      * Henter et skjema for visning.
      *
      * For UTKAST: krever skrivetilgang og at innlogget bruker er den som starta utkastet.
+     * Et utdatert utkast reinitialiseres til aktiv skjemaversjon.
      * For SENDT: lenient kontroll via [validerLesetilgangForSendtSkjema] — fullmektig som har mistet
      * fullmakten men fortsatt har Altinn-tilgang får se skjemaet med arbeidstakers data strippet.
      */
-    fun hentSkjema(skjemaId: UUID): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun hentSkjema(skjemaId: UUID, klientVersjon: String?): UtsendtArbeidstakerSkjemaDto {
         val skjema = findByIdOrThrow(skjemaId)
-        if (skjema.status != SkjemaStatus.SENDT) {
-            return medMotpartensOppgitteVerdier(krevSkrivetilgang(skjema).toUtsendtArbeidstakerDto(), skjema)
+        if (skjema.status == SkjemaStatus.UTKAST) {
+            krevSkrivetilgang(skjema)
+            krevAktivKlientVersjon(skjema.type, klientVersjon)
+            val reinitialisert = oppgraderUtdatertUtkastHvisNødvendig(skjema)
+            return medMotpartensOppgitteVerdier(
+                skjema.toUtsendtArbeidstakerDto().copy(utkastReinitialisert = reinitialisert),
+                skjema
+            )
         }
 
         val dto = skjema.toUtsendtArbeidstakerDto()
@@ -219,7 +242,7 @@ class UtsendtArbeidstakerService(
      */
     @Transactional
     fun slettUtkast(skjemaId: UUID) {
-        val skjema = hentRedigerbartSkjema(skjemaId)
+        val skjema = hentRedigerbartSkjemaUtenVersjonskontroll(skjemaId)
 
         vedleggService.slettBlobberForSkjema(skjemaId)
         skjemaRepository.delete(skjema)
@@ -228,26 +251,32 @@ class UtsendtArbeidstakerService(
     }
 
 
-    fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveArbeidsgiverensVirksomhetINorge(skjemaId: UUID, klientVersjon: String?, request: ArbeidsgiverensVirksomhetINorgeDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving virksomhet info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+        // Klassifiseringen kommer fra EREG, så et eventuelt brukersvar forkastes før lagring.
+        val dataSomSkalLagres = request.copy(erArbeidsgiverenOffentligVirksomhet = null)
+        skjemaDataValidator.validate(dataSomSkalLagres, metadata.erOffentligArbeidsgiver)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
-                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = request)
+                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsgiverensVirksomhetINorge = dataSomSkalLagres)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
-                    arbeidsgiverensVirksomhetINorge = request
+                    arbeidsgiverensVirksomhetINorge = dataSomSkalLagres
                 ))
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidsgiverens virksomhet på arbeidstakers skjemadel")
             }
         }
     }
 
-    fun saveUtenlandsoppdraget(skjemaId: UUID, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveUtenlandsoppdraget(skjemaId: UUID, klientVersjon: String?, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utenlandsoppdraget = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
@@ -258,11 +287,12 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveArbeidstakerensLonn(skjemaId: UUID, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveArbeidstakerensLonn(skjemaId: UUID, klientVersjon: String?, request: ArbeidstakerensLonnDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidstaker lønn info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidstakerensLonn = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
@@ -273,11 +303,12 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveArbeidsstedIUtlandet(skjemaId: UUID, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveArbeidsstedIUtlandet(skjemaId: UUID, klientVersjon: String?, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsstedIUtlandet = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
@@ -289,18 +320,20 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun sendInnSkjema(skjemaId: UUID, sprak: Språk): SkjemaInnsendtKvittering {
+    fun sendInnSkjema(skjemaId: UUID, klientVersjon: String?, sprak: Språk): SkjemaInnsendtKvittering {
         log.info { "Submitting arbeidsgiver skjema: $skjemaId" }
-        val skjema = hentRedigerbartSkjema(skjemaId)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
 
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
-        skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(skjemaData)
+        skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
+            skjemaData,
+            skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligArbeidsgiver
+        )
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
-        // 1. Generer referanseId og hent aktiv versjon
+        // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
-        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
 
         // 2. Sett skjema-status til SENDT
         skjema.status = SkjemaStatus.SENDT
@@ -322,7 +355,6 @@ class UtsendtArbeidstakerService(
         innsendingService.opprettInnsending(
             skjema = savedSkjema,
             referanseId = referanseId,
-            skjemaDefinisjonVersjon = aktivVersjon,
             innsendtSprak = sprak,
             innsenderFnr = subjectHandler.getUserID()
         )
@@ -335,7 +367,7 @@ class UtsendtArbeidstakerService(
             )
         )
 
-        log.info { "Skjema $skjemaId sendt inn med versjon=$aktivVersjon, språk=${sprak.kode}, referanseId=$referanseId" }
+        log.info { "Skjema $skjemaId sendt inn med versjon=${skjema.skjemaDefinisjonVersjon}, språk=${sprak.kode}, referanseId=$referanseId" }
 
         // 7. Returner kvittering med referanseId
         return SkjemaInnsendtKvittering(
@@ -431,11 +463,12 @@ class UtsendtArbeidstakerService(
         skjemaRepository.findById(skjemaId)
             .orElseThrow { NoSuchElementException("Skjema med id $skjemaId finnes ikke") }
 
-    fun saveUtsendingsperiodeOgLand(skjemaId: UUID, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveUtsendingsperiodeOgLand(skjemaId: UUID, klientVersjon: String?, request: UtsendingsperiodeOgLandDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
@@ -444,11 +477,12 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveArbeidssituasjon(skjemaId: UUID, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveArbeidssituasjon(skjemaId: UUID, klientVersjon: String?, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(arbeidssituasjon = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
@@ -459,11 +493,12 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveSkatteforholdOgInntekt(skjemaId: UUID, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveSkatteforholdOgInntekt(skjemaId: UUID, klientVersjon: String?, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(skatteforholdOgInntekt = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
@@ -474,10 +509,11 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveFamiliemedlemmer(skjemaId: UUID, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveFamiliemedlemmer(skjemaId: UUID, klientVersjon: String?, request: FamiliemedlemmerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving familiemedlemmer info for skjema: $skjemaId" }
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(familiemedlemmer = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
@@ -488,11 +524,12 @@ class UtsendtArbeidstakerService(
         }
     }
 
-    fun saveTilleggsopplysninger(skjemaId: UUID, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
+    @Transactional
+    fun saveTilleggsopplysninger(skjemaId: UUID, klientVersjon: String?, request: TilleggsopplysningerDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving tilleggsopplysninger for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(tilleggsopplysninger = request)
@@ -512,15 +549,17 @@ class UtsendtArbeidstakerService(
     }
 
     @Transactional
-    fun saveVedleggValg(skjemaId: UUID, request: VedleggValgDto): UtsendtArbeidstakerSkjemaDto {
+    fun saveVedleggValg(skjemaId: UUID, klientVersjon: String?, request: VedleggValgDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving vedlegg-valg for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+
         if (!request.harAnnenDokumentasjon) {
-            vedleggService.slettAlleForSkjema(skjemaId)
+            vedleggService.slettAlleForLåstSkjema(skjemaId)
         }
 
-        return updateSkjemaData(skjemaId) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(vedlegg = request)
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(vedlegg = request)
@@ -557,6 +596,7 @@ class UtsendtArbeidstakerService(
         request: OpprettUtsendtArbeidstakerSoknadRequest,
         innloggetBrukerFnr: String,
         juridiskEnhetOrgnr: String,
+        erOffentligArbeidsgiver: Boolean?,
         arbeidstakerNavn: String
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
@@ -566,18 +606,21 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -588,6 +631,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
@@ -599,6 +643,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     fullmektigFnr = innloggetBrukerFnr,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
@@ -608,26 +653,13 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
         }
     }
 
-    /**
-     * Henter juridisk enhet orgnr fra Enhetsregisteret.
-     * Brukes for kobling av separate søknader (arbeidsgiver-del og arbeidstaker-del).
-     *
-     * @param orgnr Organisasjonsnummer (kan være underenhet)
-     * @return Orgnr til juridisk enhet
-     * @throws IllegalStateException hvis juridisk enhet ikke kan hentes
-     */
-    private fun hentJuridiskEnhetOrgnr(orgnr: String): String {
-        val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(orgnr)
-        return organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
-            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${orgnr.take(3)}***" }
-        }
-    }
 
 
     /**
@@ -745,24 +777,118 @@ class UtsendtArbeidstakerService(
 
     private fun updateSkjemaData(
         skjemaId: UUID,
+        klientVersjon: String?,
+        updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
+    ): UtsendtArbeidstakerSkjemaDto =
+        updateSkjemaData(hentRedigerbartSkjema(skjemaId, klientVersjon), updateFunction)
+
+    private fun updateSkjemaData(
+        skjema: Skjema,
         updateFunction: (UtsendtArbeidstakerSkjemaData) -> UtsendtArbeidstakerSkjemaData
     ): UtsendtArbeidstakerSkjemaDto {
-        val skjema = hentRedigerbartSkjema(skjemaId)
-        val existing = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()
-        skjema.data = updateFunction(existing)
+        skjema.data = updateFunction(skjema.utsendtArbeidstakerSkjemaDataOrEmpty())
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
 
-    fun hentRedigerbartSkjema(skjemaId: UUID): Skjema {
-        val skjema = hentSkjemaMedSkrivetilgang(skjemaId)
+    /** Reinitialisering sletter svar og vedlegg, så en utdatert klient får ikke utløse den. */
+    private fun krevAktivKlientVersjon(type: SkjemaType, klientVersjon: String?) {
+        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(type)
+        if (klientVersjon != aktivVersjon) {
+            throw UtdatertSkjemaDefinisjonVersjonException(
+                klientVersjon = klientVersjon,
+                aktivVersjon = aktivVersjon
+            )
+        }
+    }
+
+    fun hentRedigerbartSkjema(skjemaId: UUID, klientVersjon: String?): Skjema {
+        val skjema = hentRedigerbartSkjemaUtenVersjonskontroll(skjemaId)
+        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
+        if (klientVersjon != skjema.skjemaDefinisjonVersjon || skjema.skjemaDefinisjonVersjon != aktivVersjon) {
+            throw UtdatertSkjemaDefinisjonVersjonException(
+                klientVersjon = klientVersjon,
+                utkastVersjon = skjema.skjemaDefinisjonVersjon,
+                aktivVersjon = aktivVersjon
+            )
+        }
+        return skjema
+    }
+
+    private fun hentRedigerbartSkjemaUtenVersjonskontroll(skjemaId: UUID): Skjema {
+        val skjema = krevSkrivetilgang(findByIdForUpdateOrThrow(skjemaId))
         if (skjema.status != SkjemaStatus.UTKAST) {
             throw SkjemaErIkkeRedigerbartException()
         }
         return skjema
     }
 
+    private fun findByIdForUpdateOrThrow(skjemaId: UUID): Skjema =
+        skjemaRepository.findByIdForUpdate(skjemaId)
+            ?: throw NoSuchElementException("Skjema med id $skjemaId finnes ikke")
+
+    private fun oppgraderUtdatertUtkastHvisNødvendig(skjema: Skjema): Boolean {
+        val aktivVersjon = skjemaDefinisjonService.hentAktivVersjon(skjema.type)
+        if (skjema.skjemaDefinisjonVersjon == aktivVersjon) return false
+        // Låses først her: to faner på samme utdaterte utkast gir bare en gjentatt, identisk reinitialisering.
+        findByIdForUpdateOrThrow(skjema.id!!)
+
+        val organisasjon = eregService.hentOrganisasjonMedJuridiskEnhet(skjema.orgnr)
+        val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+        // prefyltFraSkjemaId beholdes, så varselet om avvikende periode og land virker etter ny utfylling.
+        skjema.data = null
+        skjema.metadata = metadata.medOppdaterteRegisterdata(
+            arbeidsgiverNavn = organisasjon.organisasjon.navn,
+            juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
+            erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver
+        )
+        vedleggService.slettAlleForLåstSkjema(skjema.id!!)
+        skjema.prefyltFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, subjectHandler.getUserID()) }
+        skjema.skjemaDefinisjonVersjon = aktivVersjon
+        skjema.endretAv = subjectHandler.getUserID()
+        skjemaRepository.save(skjema)
+        log.info { "Utdatert utkast ${skjema.id} reinitialisert til skjemaversjon $aktivVersjon" }
+        return true
+    }
+
+    private fun UtsendtArbeidstakerMetadata.medOppdaterteRegisterdata(
+        arbeidsgiverNavn: String,
+        juridiskEnhetOrgnr: String,
+        erOffentligArbeidsgiver: Boolean?
+    ): UtsendtArbeidstakerMetadata = when (this) {
+        is DegSelvMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+        is ArbeidsgiverMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+        is ArbeidsgiverMedFullmaktMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+        is RadgiverMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+        is RadgiverMedFullmaktMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+        is AnnenPersonMetadata -> copy(
+            arbeidsgiverNavn = arbeidsgiverNavn,
+            juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+        )
+    }
+
     /**
-     * Henter skjema og verifiserer at innlogget bruker har skrivetilgang.
+     * Verifiserer at innlogget bruker har skrivetilgang til skjemaet.
      *
      * Krever at brukeren har riktig rolle:
      * - DEG_SELV: Kun arbeidstaker selv (fnr-match)
@@ -772,9 +898,6 @@ class UtsendtArbeidstakerService(
      * I tillegg for UTKAST: kun den som starta utkastet kan redigere — utkast er personlig
      * og kan ikke overtas av andre brukere selv om de har samme rolle.
      */
-    private fun hentSkjemaMedSkrivetilgang(skjemaId: UUID): Skjema =
-        krevSkrivetilgang(findByIdOrThrow(skjemaId))
-
     private fun krevSkrivetilgang(skjema: Skjema): Skjema {
         val currentUser = subjectHandler.getUserID()
 

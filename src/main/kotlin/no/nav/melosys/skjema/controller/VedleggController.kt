@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -30,9 +31,10 @@ class VedleggController(
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun lastOppVedlegg(
         @PathVariable skjemaId: UUID,
+        @RequestHeader(value = SKJEMA_DEFINISJON_VERSJON_HEADER, required = false) klientVersjon: String?,
         @RequestPart("fil") fil: MultipartFile
     ): VedleggDto {
-        return vedleggService.lastOpp(skjemaId, fil)
+        return vedleggService.lastOpp(skjemaId, klientVersjon, fil)
     }
 
     @GetMapping
@@ -59,8 +61,9 @@ class VedleggController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun slettVedlegg(
         @PathVariable skjemaId: UUID,
+        @RequestHeader(value = SKJEMA_DEFINISJON_VERSJON_HEADER, required = false) klientVersjon: String?,
         @PathVariable vedleggId: UUID
     ) {
-        vedleggService.slett(skjemaId, vedleggId)
+        vedleggService.slett(skjemaId, klientVersjon, vedleggId)
     }
 }

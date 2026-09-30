@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.every
+import io.mockk.clearMocks
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.Runs
@@ -16,6 +17,7 @@ import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
+import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
@@ -34,10 +36,14 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
+import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsgiverensVirksomhetINorgeDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
@@ -86,11 +92,16 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     beforeTest {
-        every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "1"
+        clearMocks(mockVedleggService, answers = false, recordedCalls = true)
+        every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+        every { mockSkjemaRepository.findByIdForUpdate(any()) } answers {
+            mockSkjemaRepository.findById(firstArg()).orElse(null)
+        }
         // Default: EregService returnerer juridisk enhet
         every { mockEregService.hentOrganisasjonMedJuridiskEnhet(any()) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
-            juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS")
+            juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS"),
+            erOffentligArbeidsgiver = false
         )
         // Default: Ingen kobling
         every { mockUtsendtArbeidstakerSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
@@ -109,12 +120,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 )
             )
             val innsending = innsendingMedDefaultVerdier(skjema = skjema, innsendtSprak = Språk.NORSK_BOKMAL)
-            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
+            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = skjema.skjemaDefinisjonVersjon, seksjoner = emptyMap())
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", Språk.NORSK_BOKMAL) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, skjema.skjemaDefinisjonVersjon, Språk.NORSK_BOKMAL) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 
@@ -138,12 +149,12 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 saksnummer = "MEL-123456",
                 saksstatus = Saksstatus.AVSLUTTET
             )
-            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = "1", seksjoner = emptyMap())
+            val definisjon = SkjemaDefinisjonDto(type = "A1", versjon = skjema.skjemaDefinisjonVersjon, seksjoner = emptyMap())
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockInnsendingRepository.findBySkjemaId(skjemaId) } returns innsending
-            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "1", any()) } returns definisjon
+            every { mockSkjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, skjema.skjemaDefinisjonVersjon, any()) } returns definisjon
 
             val response = service.hentInnsendtSkjema(skjemaId, null)
 
@@ -457,8 +468,128 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(alleredeSendtSkjema.id!!) } returns Optional.of(alleredeSendtSkjema)
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
-                service.sendInnSkjema(alleredeSendtSkjema.id!!, Språk.NORSK_BOKMAL)
+                service.sendInnSkjema(alleredeSendtSkjema.id!!, "1", Språk.NORSK_BOKMAL)
             }
+        }
+    }
+
+    context("skjemaversjon for aktive utkast") {
+        test("skal forkaste svar og oppdatere registerdata når et gammelt utkast åpnes") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = korrektSyntetiskFnr,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier(),
+                skjemaDefinisjonVersjon = "1",
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    arbeidsgiverNavn = "Gammelt navn",
+                    juridiskEnhetOrgnr = "111111111",
+                    erOffentligArbeidsgiver = false
+                )
+            )
+            val prefyltFraSkjemaId = UUID.randomUUID()
+            skjema.prefyltFraSkjemaId = prefyltFraSkjemaId
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.findById(prefyltFraSkjemaId) } returns Optional.empty()
+            every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+            every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+            every { mockEregService.hentOrganisasjonMedJuridiskEnhet(skjema.orgnr) } returns
+                OrganisasjonMedJuridiskEnhetDto(
+                    organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(navn = "Nytt navn"),
+                    juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
+                    erOffentligArbeidsgiver = true
+                )
+
+            val resultat = service.hentSkjema(skjemaId, "2")
+
+            resultat.skjemaDefinisjonVersjon shouldBe "2"
+            resultat.utkastReinitialisert shouldBe true
+            skjema.data shouldBe null
+            skjema.prefyltFraSkjemaId shouldBe prefyltFraSkjemaId
+            resultat.metadata.arbeidsgiverNavn shouldBe "Nytt navn"
+            resultat.metadata.juridiskEnhetOrgnr shouldBe "999888777"
+            resultat.metadata.erOffentligArbeidsgiver shouldBe true
+            verify(exactly = 1) { mockVedleggService.slettAlleForLåstSkjema(skjemaId) }
+        }
+
+        test("skal legge inn startverdiene fra motparten på nytt etter reinitialisering") {
+            val kildeId = UUID.randomUUID()
+            val kilde = skjemaMedDefaultVerdier(
+                id = kildeId,
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.SENDT,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()
+                ),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.ARBEIDSGIVER,
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    juridiskEnhetOrgnr = "999888777"
+                )
+            )
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                fnr = korrektSyntetiskFnr,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
+                skjemaDefinisjonVersjon = "1",
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    juridiskEnhetOrgnr = "111111111"
+                )
+            )
+            skjema.prefyltFraSkjemaId = kildeId
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.findById(kildeId) } returns Optional.of(kilde)
+            every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+
+            val resultat = service.hentSkjema(skjemaId, "2")
+
+            resultat.utkastReinitialisert shouldBe true
+            resultat.data shouldBe UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
+                utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier()
+            )
+            resultat.motpartensUtsendingsperiodeOgLand shouldBe utsendingsperiodeOgLandDtoMedDefaultVerdier()
+            skjema.prefyltFraSkjemaId shouldBe kildeId
+        }
+
+        test("skal avvise lagring fra en gammel nettleserfane") {
+            val skjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2"
+            )
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+            every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+
+            shouldThrow<UtdatertSkjemaDefinisjonVersjonException> {
+                service.saveTilleggsopplysninger(skjema.id!!, "1", mockk(relaxed = true))
+            }
+        }
+
+        test("skal ikke reinitialisere et historisk innsendt skjema") {
+            val skjemaId = UUID.randomUUID()
+            val skjema = skjemaMedDefaultVerdier(
+                id = skjemaId,
+                status = SkjemaStatus.SENDT,
+                fnr = korrektSyntetiskFnr,
+                data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier(),
+                skjemaDefinisjonVersjon = "1"
+            )
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
+            every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+
+            val resultat = service.hentSkjema(skjemaId, "2")
+            resultat.skjemaDefinisjonVersjon shouldBe "1"
+            resultat.utkastReinitialisert shouldBe false
+            skjema.data shouldNotBe null
+            verify(exactly = 0) { mockVedleggService.slettAlleForLåstSkjema(any()) }
         }
     }
 
@@ -486,7 +617,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+            val data = service.hentSkjema(skjemaId, "2").data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 
             data.arbeidsgiversData.arbeidsgiverensVirksomhetINorge shouldNotBe null
             data.arbeidstakersData.arbeidssituasjon shouldBe null
@@ -500,7 +631,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(radgiverMedFullmaktSendtSkjema(skjemaId))
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns true
 
-            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
+            val data = service.hentSkjema(skjemaId, "2").data as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 
             data.arbeidstakersData.arbeidssituasjon shouldNotBe null
         }
@@ -512,7 +643,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockReprService.harLeserettigheterForMedlemskap(arbeidstakerFnr) } returns false
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns false
 
-            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId, "2") }
         }
 
         test("hentSkjema: ARBEIDSGIVER (uten _MED_FULLMAKT) med Altinn-tilgang skal returnere full data uten stripping") {
@@ -533,7 +664,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            val data = service.hentSkjema(skjemaId).data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+            val data = service.hentSkjema(skjemaId, "2").data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 
             data.arbeidsgiverensVirksomhetINorge shouldNotBe null
         }
@@ -557,7 +688,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockReprService.harSkriverettigheterForMedlemskap(arbeidstakerFnr) } returns false
 
-            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId, "2") }
         }
     }
 
@@ -585,7 +716,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId))
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            service.hentSkjema(skjemaId).id shouldBe skjemaId
+            service.hentSkjema(skjemaId, "2").id shouldBe skjemaId
         }
 
         test("hentSkjema: annen kollega med Altinn-tilgang får IKKE lese andres utkast") {
@@ -594,8 +725,44 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(arbeidsgiverUtkastStartetAv(hrPersonA, skjemaId))
             every { mockAltinnService.harBrukerTilgang(testArbeidsgiver.orgnr) } returns true
 
-            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId) }
+            shouldThrow<AccessDeniedException> { service.hentSkjema(skjemaId, "2") }
         }
+    }
+
+    context("saveArbeidsgiverensVirksomhetINorge") {
+        test("lagrer ikke EREG-data som et brukersvar") {
+            val skjema = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2",
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
+                    erOffentligArbeidsgiver = false
+                ),
+                data = UtsendtArbeidstakerArbeidsgiversSkjemaDataDto()
+            )
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+            every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
+
+            val resultat = service.saveArbeidsgiverensVirksomhetINorge(
+                skjema.id!!,
+                "2",
+                ArbeidsgiverensVirksomhetINorgeDto(
+                    erArbeidsgiverenOffentligVirksomhet = true,
+                    erArbeidsgiverenBemanningsEllerVikarbyraa = false,
+                    opprettholderArbeidsgiverenVanligDrift = true
+                )
+            )
+
+            val lagret = (resultat.data as UtsendtArbeidstakerArbeidsgiversSkjemaDataDto)
+                .arbeidsgiverensVirksomhetINorge!!
+            lagret.erArbeidsgiverenOffentligVirksomhet shouldBe null
+            lagret.erArbeidsgiverenBemanningsEllerVikarbyraa shouldBe false
+            lagret.opprettholderArbeidsgiverenVanligDrift shouldBe true
+        }
+
     }
 
     context("saveVedleggValg") {
@@ -603,32 +770,42 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             val skjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 status = SkjemaStatus.UTKAST,
-                fnr = korrektSyntetiskFnr
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2"
             )
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
             every { mockSkjemaRepository.save(any()) } returns skjema
 
-            service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = false))
+            service.saveVedleggValg(
+                skjema.id!!,
+                skjema.skjemaDefinisjonVersjon,
+                VedleggValgDto(harAnnenDokumentasjon = false)
+            )
 
-            verify(exactly = 1) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
+            verify(exactly = 1) { mockVedleggService.slettAlleForLåstSkjema(skjema.id!!) }
         }
 
         test("skal IKKE slette vedlegg når harAnnenDokumentasjon=true") {
             val skjema = skjemaMedDefaultVerdier(
                 id = UUID.randomUUID(),
                 status = SkjemaStatus.UTKAST,
-                fnr = korrektSyntetiskFnr
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2"
             )
 
             every { mockSubjectHandler.getUserID() } returns skjema.fnr
             every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
             every { mockSkjemaRepository.save(any()) } returns skjema
 
-            service.saveVedleggValg(skjema.id!!, VedleggValgDto(harAnnenDokumentasjon = true))
+            service.saveVedleggValg(
+                skjema.id!!,
+                skjema.skjemaDefinisjonVersjon,
+                VedleggValgDto(harAnnenDokumentasjon = true)
+            )
 
-            verify(exactly = 0) { mockVedleggService.slettAlleForSkjema(skjema.id!!) }
+            verify(exactly = 0) { mockVedleggService.slettAlleForLåstSkjema(skjema.id!!) }
         }
     }
 

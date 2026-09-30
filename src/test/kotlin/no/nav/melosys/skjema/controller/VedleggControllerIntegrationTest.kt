@@ -91,6 +91,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         val response = webTestClient.post()
             .uri("/api/skjema/${skjema.id}/vedlegg")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isOk
@@ -132,6 +133,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         val vedlegg = webTestClient.post()
             .uri("/api/skjema/${skjema.id}/vedlegg")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isOk
@@ -143,6 +145,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         webTestClient.delete()
             .uri("/api/skjema/${skjema.id}/vedlegg/${vedlegg.id}")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
             .exchange()
             .expectStatus().isNoContent
 
@@ -170,6 +173,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/${skjema.id}/vedlegg")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isForbidden
@@ -189,6 +193,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/$ukjentId/vedlegg")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isNotFound

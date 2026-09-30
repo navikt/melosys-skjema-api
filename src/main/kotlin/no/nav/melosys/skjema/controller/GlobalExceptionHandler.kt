@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SaksnummerKonfliktException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.SkjemaTypeMismatchException
+import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
 import no.nav.melosys.skjema.exception.VedleggValideringException
 import no.nav.melosys.skjema.exception.VedleggVirusFunnetException
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
@@ -85,6 +86,18 @@ class GlobalExceptionHandler(
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
             .body(ErrorResponse(message = e.message ?: ""))
+    }
+
+    @ExceptionHandler(UtdatertSkjemaDefinisjonVersjonException::class)
+    fun handleUtdatertSkjemaDefinisjonVersjon(
+        e: UtdatertSkjemaDefinisjonVersjonException
+    ): ResponseEntity<Map<String, String>> {
+        log.warn(e) {
+            "Utdatert skjemaversjon: klient=${e.klientVersjon}, utkast=${e.utkastVersjon}, aktiv=${e.aktivVersjon}"
+        }
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(mapOf("message" to (e.message ?: "Utdatert skjemaversjon"), "error" to UtdatertSkjemaDefinisjonVersjonException.ERROR_CODE))
     }
 
     @ExceptionHandler(SaksnummerKonfliktException::class)

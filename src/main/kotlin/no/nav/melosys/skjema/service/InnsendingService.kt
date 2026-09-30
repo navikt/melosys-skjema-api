@@ -44,7 +44,6 @@ class InnsendingService(
     fun opprettInnsending(
         skjema: Skjema,
         referanseId: String,
-        skjemaDefinisjonVersjon: String,
         innsendtSprak: Språk,
         innsenderFnr: String
     ): Innsending {
@@ -52,7 +51,7 @@ class InnsendingService(
             skjema = skjema,
             status = InnsendingStatus.MOTTATT,
             referanseId = referanseId,
-            skjemaDefinisjonVersjon = skjemaDefinisjonVersjon,
+            skjemaDefinisjonVersjon = skjema.skjemaDefinisjonVersjon,
             innsendtSprak = innsendtSprak,
             innsenderFnr = innsenderFnr
         )

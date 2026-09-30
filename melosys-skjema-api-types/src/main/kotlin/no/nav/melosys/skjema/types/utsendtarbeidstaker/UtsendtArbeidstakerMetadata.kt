@@ -31,6 +31,8 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
      * Ulike underenheter kan tilhøre samme juridiske enhet.
      */
     abstract val juridiskEnhetOrgnr: String
+    /** Fra EREG. Null for eldre metadata. */
+    abstract val erOffentligArbeidsgiver: Boolean?
     /**
      * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
@@ -61,6 +63,7 @@ data class DegSelvMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -78,6 +81,7 @@ data class ArbeidsgiverMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -97,6 +101,7 @@ data class ArbeidsgiverMedFullmaktMetadata(
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -114,6 +119,7 @@ data class RadgiverMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -135,6 +141,7 @@ data class RadgiverMedFullmaktMetadata(
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -156,6 +163,7 @@ data class AnnenPersonMetadata(
     /** Fødselsnummer til fullmektig (påkrevd for annen person) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
+    override val erOffentligArbeidsgiver: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {

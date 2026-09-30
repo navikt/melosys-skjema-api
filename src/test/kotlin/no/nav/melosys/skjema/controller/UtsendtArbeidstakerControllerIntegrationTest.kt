@@ -35,6 +35,7 @@ import no.nav.melosys.skjema.service.AltinnService
 import no.nav.melosys.skjema.service.NotificationService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
+import no.nav.melosys.skjema.simpleOrganisasjonDtoMedDefaultVerdier
 import no.nav.melosys.skjema.tilleggsopplysningerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.SkjemaData
@@ -48,6 +49,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.utenlandsoppdragetDtoMedDefaultVerdier
@@ -150,6 +152,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -164,6 +167,41 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             this.status shouldBe SkjemaStatus.UTKAST
             (this.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto) shouldBe skjemaData
         }
+    }
+
+    @Test
+    fun `GET skal reinitialisere et utkast fra en annen skjemaversjon`() {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.UTKAST,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier(),
+                skjemaDefinisjonVersjon = "1"
+            )
+        )
+        every { eregService.hentOrganisasjonMedJuridiskEnhet(skjema.orgnr) } returns
+            OrganisasjonMedJuridiskEnhetDto(
+                organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = skjema.orgnr, navn = "Oppdatert navn"),
+                juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
+                erOffentligArbeidsgiver = true
+            )
+        val token = createTokenForUser(skjema.fnr)
+
+        val response = webTestClient.get()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<UtsendtArbeidstakerSkjemaDto>()
+            .returnResult().responseBody.shouldNotBeNull()
+
+        response.skjemaDefinisjonVersjon shouldBe "2"
+        response.utkastReinitialisert shouldBe true
+        response.metadata.arbeidsgiverNavn shouldBe "Oppdatert navn"
+        val lagret = skjemaRepository.findByIdOrNull(skjema.id!!).shouldNotBeNull()
+        lagret.skjemaDefinisjonVersjon shouldBe "2"
+        lagret.data shouldBe null
     }
 
     @Test
@@ -186,6 +224,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -211,6 +250,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isNotFound
@@ -254,6 +294,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${existingSkjema.id}/${fixture.stepKey}")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, existingSkjema.skjemaDefinisjonVersjon)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(fixture.requestBody!!)
             .exchange()
@@ -279,6 +320,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val request = webTestClient.method(fixture.httpMethod!!)
             .uri(fixture.uri, existingSkjema.id)
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, existingSkjema.skjemaDefinisjonVersjon)
             .contentType(MediaType.APPLICATION_JSON)
 
         fixture.requestBody?.let { request.bodyValue(it) }
@@ -497,6 +539,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.method(httpMethod)
             .uri(path, savedSkjema.id)
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, savedSkjema.skjemaDefinisjonVersjon)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("{}")
             .exchange()
@@ -765,11 +808,15 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @MethodSource("endepunkterMedUgyldigData")
     fun `Påse at kjøres validering på alle request bodies`(fixture: UtsendtArbeidstakerControllerTestFixture<*>) {
         val token = createTokenForUser(korrektSyntetiskFnr)
-        val testId = UUID.randomUUID()
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(fnr = korrektSyntetiskFnr, status = SkjemaStatus.UTKAST)
+        )
+        val uri = fixture.uri.replace("f47ac10b-58cc-4372-a567-0e02b2c3d479", skjema.id.toString())
 
         webTestClient.post()
-            .uri(fixture.uri, testId)
+            .uri(uri)
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(fixture.requestBody!!)
             .exchange()
@@ -884,6 +931,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val skjemaInnsendtKvittering = webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjemaSomSkalSendesInn.skjemaDefinisjonVersjon)
             .exchange()
             .expectStatus().isOk
             .expectBody(SkjemaInnsendtKvittering::class.java)
@@ -923,6 +971,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjemaSomSkalSendesInn.id!!}/send-inn?sprak=nn")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjemaSomSkalSendesInn.skjemaDefinisjonVersjon)
             .exchange()
             .expectStatus().isOk
 
@@ -951,6 +1000,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjemaMedUfullstendigData.id!!}/send-inn")
             .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjemaMedUfullstendigData.skjemaDefinisjonVersjon)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(ErrorResponse::class.java)
@@ -966,6 +1016,27 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
                     "familiemedlemmer" to "fellesTranslation.feltErPaakrevd",
                 )
             }
+    }
+
+    @Test
+    fun `POST send-inn skal returnere 409 for utdatert klientversjon`() {
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.UTKAST,
+                skjemaDefinisjonVersjon = "2"
+            )
+        )
+        val token = createTokenForUser(skjema.fnr)
+
+        webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/send-inn")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "1")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+            .expectBody()
+            .jsonPath("$.error").isEqualTo("SKJEMA_DEFINISJON_VERSJON_UTDATERT")
     }
 
     @Test
