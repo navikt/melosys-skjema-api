@@ -29,12 +29,12 @@ gradle.beforeProject {
 val tokenSupportVersion = "6.0.12"
 val mockOAuth2ServerVersion = "6.0.2"
 val kotlinLoggingVersion = "8.0.4"
-val kotestVersion = "6.2.4"
+val kotestVersion = "6.2.5"
 val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
 val springdocVersion = "3.1.1"
-val shedlockVersion = "7.10.0"
+val shedlockVersion = "7.10.1"
 val logstashLogbackEncoderVersion = "9.0"
 val opentelemetryLogbackVersion = "2.31.1-alpha"
 
@@ -77,8 +77,8 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.85")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.85")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.86")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.86")
 
     // GCP Cloud Storage for vedlegg
     implementation("com.google.cloud:google-cloud-storage:2.73.0")
