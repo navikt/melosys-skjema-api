@@ -29,6 +29,7 @@ import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.service.UtsendtArbeidstakerSkjemaKoblingService
+import no.nav.melosys.skjema.types.SkjemaData
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.m2m.BulkOppdaterSaksstatusResultat
@@ -36,6 +37,7 @@ import no.nav.melosys.skjema.types.m2m.UtsendtArbeidstakerSkjemaM2MDto
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.security.mock.oauth2.MockOAuth2Server
@@ -136,31 +138,30 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 utsendelseLand = LandKode.SE,
                 utsendelsePeriode = periodeDtoMedDefaultVerdier()
             )
-            fun lagDel(del: Skjemadel, versjon: String): Skjema = skjemaRepository.save(
-                skjemaMedDefaultVerdier(
-                    status = SkjemaStatus.SENDT,
-                    skjemaDefinisjonVersjon = versjon,
-                    data = if (del == Skjemadel.ARBEIDSGIVERS_DEL) {
-                        arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
-                    } else {
-                        arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
-                    },
-                    metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
-                        skjemadel = del,
-                        representasjonstype = if (del == Skjemadel.ARBEIDSGIVERS_DEL) {
-                            Representasjonstype.ARBEIDSGIVER
-                        } else {
-                            Representasjonstype.DEG_SELV
-                        },
-                        erOffentligArbeidsgiver = true.takeIf { versjon == "2" }
+            fun lagDel(data: SkjemaData, versjon: String): Skjema {
+                val erArbeidsgiversDel = data is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
+                return skjemaRepository.save(
+                    skjemaMedDefaultVerdier(
+                        status = SkjemaStatus.SENDT,
+                        skjemaDefinisjonVersjon = versjon,
+                        data = data,
+                        metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                            skjemadel = if (erArbeidsgiversDel) Skjemadel.ARBEIDSGIVERS_DEL else Skjemadel.ARBEIDSTAKERS_DEL,
+                            representasjonstype = if (erArbeidsgiversDel) Representasjonstype.ARBEIDSGIVER else Representasjonstype.DEG_SELV,
+                            erOffentligArbeidsgiver = true.takeIf { versjon == "2" }
+                        )
                     )
                 )
-            )
-            val gammelDel = lagDel(førsteDel, "1")
-            val nyDel = lagDel(
-                if (førsteDel == Skjemadel.ARBEIDSGIVERS_DEL) Skjemadel.ARBEIDSTAKERS_DEL else Skjemadel.ARBEIDSGIVERS_DEL,
-                "2"
-            )
+            }
+            val arbeidsgiversData = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
+            val arbeidstakersData = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(utsendingsperiodeOgLand = periodeOgLand)
+            val (gammelData, nyData) = if (førsteDel == Skjemadel.ARBEIDSGIVERS_DEL) {
+                arbeidsgiversData to arbeidstakersData
+            } else {
+                arbeidstakersData to arbeidsgiversData
+            }
+            val gammelDel = lagDel(gammelData, "1")
+            val nyDel = lagDel(nyData, "2")
             skjemaKoblingService.finnOgKobl(nyDel).kobletSkjemaId shouldBe gammelDel.id
             val token = mockOAuth2Server.m2mTokenWithReadSkjemaDataAccess()
 
