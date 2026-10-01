@@ -7,6 +7,8 @@ import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.skjemadefinisjon.FeltFormat
+import no.nav.melosys.skjema.types.skjemadefinisjon.TextFeltDefinisjon
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.kotlinModule
 
@@ -49,5 +51,28 @@ class SkjemaDefinisjonServiceTest : FunSpec({
         v2Felter shouldNotContainKey "erArbeidsgiverenOffentligVirksomhet"
         v2Felter shouldContainKey "erArbeidsgiverenBemanningsEllerVikarbyraa"
         v2Felter shouldContainKey "opprettholderArbeidsgiverenVanligDrift"
+    }
+
+    test("v3 legger til opplysninger om foretakets samlede virksomhet med prosentformat på andelene") {
+        val v2 = service.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "2", Språk.NORSK_BOKMAL)
+        val v3 = service.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "3", Språk.NORSK_BOKMAL)
+        val v2Felter = v2.seksjoner["arbeidsgiverensVirksomhetINorge"].shouldNotBeNull().felter
+        val v3Felter = v3.seksjoner["arbeidsgiverensVirksomhetINorge"].shouldNotBeNull().felter
+        val antallFelter = listOf("antallAdministrativtAnsatte", "antallUtsendteArbeidstakere")
+        val andelFelter = listOf(
+            "andelAnsatteRekruttertINorge",
+            "andelOmsetningINorge",
+            "andelOppdragUtfortINorge",
+            "andelOppdragskontrakterInngattINorge"
+        )
+
+        v3.versjon shouldBe "3"
+        (antallFelter + andelFelter).forEach {
+            v2Felter shouldNotContainKey it
+            v3Felter shouldContainKey it
+        }
+        antallFelter.forEach { (v3Felter[it] as TextFeltDefinisjon).format shouldBe null }
+        andelFelter.forEach { (v3Felter[it] as TextFeltDefinisjon).format shouldBe FeltFormat.PROSENT }
+        v3Felter["andelOmsetningINorge"].shouldNotBeNull().label shouldBe "Andel omsetning opptjent i Norge"
     }
 })

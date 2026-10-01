@@ -43,7 +43,8 @@ class EregService(
         return OrganisasjonMedJuridiskEnhetDto(
             organisasjon = organisasjon.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-            erOffentligArbeidsgiver = juridiskEnhet.erOffentligArbeidsgiver()
+            erOffentligArbeidsgiver = juridiskEnhet.erOffentligArbeidsgiver(),
+            antallAnsatte = juridiskEnhet.antallAnsatte()
         )
     }
 
@@ -74,3 +75,14 @@ private const val SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN = "6100"
 internal fun JuridiskEnhet.erOffentligArbeidsgiver(): Boolean =
     juridiskEnhetDetaljer?.enhetstype == ENHETSTYPE_STATEN &&
         juridiskEnhetDetaljer.sektorkode == SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN
+
+/**
+ * «Antall ansatte i A-registeret» slik Enhetsregisteret viser det. Mangler opplysningen,
+ * har enheten ingen registrerte ansatte. Flere gjeldende opplysninger er tvetydige og gir feil.
+ */
+internal fun JuridiskEnhet.antallAnsatte(): Int {
+    val gjeldende = organisasjonDetaljer?.ansatte.orEmpty().filter { it.gyldighetsperiode?.tom == null }
+    check(gjeldende.size <= 1) { "Juridisk enhet $organisasjonsnummer har flere gjeldende ansattopplysninger i EREG" }
+    val ansatte = gjeldende.singleOrNull() ?: return 0
+    return checkNotNull(ansatte.antall) { "Juridisk enhet $organisasjonsnummer mangler antall i gjeldende ansattopplysning i EREG" }
+}

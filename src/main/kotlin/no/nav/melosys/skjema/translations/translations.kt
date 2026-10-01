@@ -23,7 +23,10 @@ val TRANSLATIONS = ErrorMessageTranslations(
             offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Offentlige virksomheter skal ikke oppgi om de er bemannings- eller vikarbyrå",
             offentligVirksomhetSkalIkkeOppgiVanligDrift = "Offentlige virksomheter skal ikke oppgi vanlig drift",
             maaOppgiOmBemanningsbyraa = "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå",
-            maaOppgiOmVanligDrift = "Du må oppgi om arbeidsgiver opprettholder vanlig drift"
+            maaOppgiOmVanligDrift = "Du må oppgi om arbeidsgiver opprettholder vanlig drift",
+            skalIkkeOppgiSamletVirksomhet = "Opplysninger om foretakets samlede virksomhet skal bare oppgis når arbeidsgiver har færre enn 20 ansatte eller er bemannings- eller vikarbyrå",
+            antallMaaVaereNullEllerMer = "Antallet må være 0 eller høyere",
+            andelMaaVaereMellom0Og100 = "Andelen må være mellom 0 og 100 prosent"
         ),
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "Du må oppgi aktivitet i måneden før utsendingen",
@@ -98,7 +101,10 @@ val TRANSLATIONS = ErrorMessageTranslations(
             offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Public organizations should not specify whether they are staffing or temporary employment agencies",
             offentligVirksomhetSkalIkkeOppgiVanligDrift = "Public organizations should not specify normal operations",
             maaOppgiOmBemanningsbyraa = "You must specify whether the employer is a staffing or temporary employment agency",
-            maaOppgiOmVanligDrift = "You must specify whether the employer maintains normal operations"
+            maaOppgiOmVanligDrift = "You must specify whether the employer maintains normal operations",
+            skalIkkeOppgiSamletVirksomhet = "Information about the company's overall business should only be provided when the employer has fewer than 20 employees or is a staffing or temporary employment agency",
+            antallMaaVaereNullEllerMer = "The number must be 0 or higher",
+            andelMaaVaereMellom0Og100 = "The share must be between 0 and 100 percent"
         ),
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "You must specify activity in the month before posting",

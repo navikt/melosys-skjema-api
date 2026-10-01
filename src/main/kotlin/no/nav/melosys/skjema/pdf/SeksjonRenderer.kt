@@ -299,6 +299,12 @@ class SeksjonRenderer(
             felt("erArbeidsgiverenOffentligVirksomhet", data.erArbeidsgiverenOffentligVirksomhet)
             felt("erArbeidsgiverenBemanningsEllerVikarbyraa", data.erArbeidsgiverenBemanningsEllerVikarbyraa)
             felt("opprettholderArbeidsgiverenVanligDrift", data.opprettholderArbeidsgiverenVanligDrift)
+            felt("antallAdministrativtAnsatte", data.antallAdministrativtAnsatte)
+            felt("antallUtsendteArbeidstakere", data.antallUtsendteArbeidstakere)
+            felt("andelAnsatteRekruttertINorge", data.andelAnsatteRekruttertINorge?.let { "$it %" })
+            felt("andelOmsetningINorge", data.andelOmsetningINorge?.let { "$it %" })
+            felt("andelOppdragUtfortINorge", data.andelOppdragUtfortINorge?.let { "$it %" })
+            felt("andelOppdragskontrakterInngattINorge", data.andelOppdragskontrakterInngattINorge?.let { "$it %" })
         }
     }
 

@@ -105,7 +105,7 @@ class SkjemaVersjonssjekkIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}")
             .header("Authorization", "Bearer ${token(skjema.fnr)}")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .exchange()
             .expectStatus().isOk
     }
@@ -118,7 +118,7 @@ class SkjemaVersjonssjekkIntegrationTest : ApiTestBase() {
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.aktivVersjon").isEqualTo("2")
+            .jsonPath("$.aktivVersjon").isEqualTo("3")
     }
 
     @Test
@@ -192,7 +192,7 @@ class SkjemaVersjonssjekkIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
     }
 
-    private fun lagreUtkast(skjemaDefinisjonVersjon: String = "2"): Skjema =
+    private fun lagreUtkast(skjemaDefinisjonVersjon: String = "3"): Skjema =
         skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = korrektSyntetiskFnr,

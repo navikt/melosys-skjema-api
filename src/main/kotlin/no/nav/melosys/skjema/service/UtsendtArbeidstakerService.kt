@@ -89,6 +89,7 @@ class UtsendtArbeidstakerService(
             innloggetBrukerFnr,
             juridiskEnhetOrgnr,
             organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver,
+            organisasjonMedJuridiskEnhet.antallAnsatte,
             arbeidstakerNavn
         )
 
@@ -258,7 +259,7 @@ class UtsendtArbeidstakerService(
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
         // Klassifiseringen kommer fra EREG, så et eventuelt brukersvar forkastes før lagring.
         val dataSomSkalLagres = request.copy(erArbeidsgiverenOffentligVirksomhet = null)
-        skjemaDataValidator.validate(dataSomSkalLagres, metadata.erOffentligArbeidsgiver)
+        skjemaDataValidator.validate(dataSomSkalLagres, metadata.erOffentligArbeidsgiver, metadata.antallAnsatte)
 
         return updateSkjemaData(skjema) { dto ->
             when (dto) {
@@ -326,9 +327,11 @@ class UtsendtArbeidstakerService(
 
         // Valider at skjemaet er komplett utfylt med gyldige data
         val skjemaData = skjema.utsendtArbeidstakerSkjemaDataOrThrow()
+        val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
-            skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligArbeidsgiver
+            metadata.erOffentligArbeidsgiver,
+            metadata.antallAnsatte
         )
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
@@ -597,6 +600,7 @@ class UtsendtArbeidstakerService(
         innloggetBrukerFnr: String,
         juridiskEnhetOrgnr: String,
         erOffentligArbeidsgiver: Boolean?,
+        antallAnsatte: Int,
         arbeidstakerNavn: String
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
@@ -607,6 +611,7 @@ class UtsendtArbeidstakerService(
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                antallAnsatte = antallAnsatte,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
@@ -614,6 +619,7 @@ class UtsendtArbeidstakerService(
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                antallAnsatte = antallAnsatte,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
@@ -621,6 +627,7 @@ class UtsendtArbeidstakerService(
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                antallAnsatte = antallAnsatte,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -632,6 +639,7 @@ class UtsendtArbeidstakerService(
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                    antallAnsatte = antallAnsatte,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
@@ -644,6 +652,7 @@ class UtsendtArbeidstakerService(
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                    antallAnsatte = antallAnsatte,
                     fullmektigFnr = innloggetBrukerFnr,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
@@ -654,6 +663,7 @@ class UtsendtArbeidstakerService(
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                antallAnsatte = antallAnsatte,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -839,7 +849,8 @@ class UtsendtArbeidstakerService(
         skjema.metadata = metadata.medOppdaterteRegisterdata(
             arbeidsgiverNavn = organisasjon.organisasjon.navn,
             juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
-            erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver,
+            antallAnsatte = organisasjon.antallAnsatte
         )
         vedleggService.slettAlleForLåstSkjema(skjema.id!!)
         skjema.prefyltFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, subjectHandler.getUserID()) }
@@ -853,37 +864,44 @@ class UtsendtArbeidstakerService(
     private fun UtsendtArbeidstakerMetadata.medOppdaterteRegisterdata(
         arbeidsgiverNavn: String,
         juridiskEnhetOrgnr: String,
-        erOffentligArbeidsgiver: Boolean?
+        erOffentligArbeidsgiver: Boolean?,
+        antallAnsatte: Int
     ): UtsendtArbeidstakerMetadata = when (this) {
         is DegSelvMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
         is RadgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
         is RadgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
         is AnnenPersonMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver
+            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte
         )
     }
 

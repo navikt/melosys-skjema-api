@@ -3,7 +3,11 @@ package no.nav.melosys.skjema.integrasjon.ereg
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.melosys.skjema.inngaarIJuridiskEnhetMedDefaultVerdier
+import java.time.LocalDate
+import no.nav.melosys.skjema.integrasjon.ereg.dto.Ansatte
+import no.nav.melosys.skjema.integrasjon.ereg.dto.Gyldighetsperiode
 import no.nav.melosys.skjema.integrasjon.ereg.dto.JuridiskEnhetDetaljer
+import no.nav.melosys.skjema.integrasjon.ereg.dto.OrganisasjonDetaljer
 import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.juridiskEnhetMedDefaultVerdier
@@ -11,6 +15,7 @@ import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.virksomhetMedDefaultVerdier
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class EregServiceTest {
 
@@ -19,7 +24,9 @@ class EregServiceTest {
 
     @Test
     fun `hentOrganisasjonMedJuridiskEnhet henter organisasjon og beriker med juridisk enhet`() {
-        val juridiskEnhet = juridiskEnhetMedDefaultVerdier()
+        val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
+            organisasjonDetaljer = OrganisasjonDetaljer(ansatte = listOf(Ansatte(antall = 12)))
+        )
         val virksomhet = virksomhetMedDefaultVerdier().copy(
             inngaarIJuridiskEnheter = listOf(inngaarIJuridiskEnhetMedDefaultVerdier()
                 .copy(organisasjonsnummer = juridiskEnhet.organisasjonsnummer
@@ -36,9 +43,41 @@ class EregServiceTest {
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = virksomhet.toSimpleOrganisasjonDto(),
                 juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-                erOffentligArbeidsgiver = false
+                erOffentligArbeidsgiver = false,
+                antallAnsatte = 12
             )
         )
+    }
+
+    @Test
+    fun `antall ansatte leses fra gjeldende ansattopplysning paa juridisk enhet`() {
+        fun medAnsatte(vararg ansatte: Ansatte) =
+            juridiskEnhetMedDefaultVerdier().copy(organisasjonDetaljer = OrganisasjonDetaljer(ansatte = ansatte.toList()))
+
+        assertThat(medAnsatte(Ansatte(antall = 19)).antallAnsatte()).isEqualTo(19)
+        assertThat(
+            medAnsatte(
+                Ansatte(antall = 3, gyldighetsperiode = Gyldighetsperiode(tom = LocalDate.of(2025, 12, 31))),
+                Ansatte(antall = 25, gyldighetsperiode = Gyldighetsperiode(fom = LocalDate.of(2026, 1, 1)))
+            ).antallAnsatte()
+        ).isEqualTo(25)
+    }
+
+    @Test
+    fun `juridisk enhet uten registrerte ansatte har 0 ansatte`() {
+        assertThat(juridiskEnhetMedDefaultVerdier().antallAnsatte()).isEqualTo(0)
+        assertThat(
+            juridiskEnhetMedDefaultVerdier().copy(organisasjonDetaljer = OrganisasjonDetaljer(ansatte = emptyList())).antallAnsatte()
+        ).isEqualTo(0)
+    }
+
+    @Test
+    fun `flere gjeldende ansattopplysninger er tvetydig og gir feil`() {
+        val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
+            organisasjonDetaljer = OrganisasjonDetaljer(ansatte = listOf(Ansatte(antall = 3), Ansatte(antall = 30)))
+        )
+
+        assertThrows<IllegalStateException> { juridiskEnhet.antallAnsatte() }
     }
 
     @Test

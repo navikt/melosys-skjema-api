@@ -107,7 +107,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
@@ -166,7 +167,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -211,7 +212,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -308,7 +309,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
     }
@@ -320,7 +322,8 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to korrektSyntetiskFnr))
