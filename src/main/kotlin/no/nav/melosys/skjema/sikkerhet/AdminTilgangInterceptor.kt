@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.sikkerhet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import no.nav.melosys.skjema.config.M2mConfigProperties
+import no.nav.melosys.skjema.config.AdminConfigProperties
 import no.nav.security.token.support.core.context.TokenValidationContextHolder
 import no.nav.security.token.support.core.jwt.JwtTokenClaims
 import org.springframework.http.MediaType
@@ -15,10 +15,10 @@ private val log = KotlinLogging.logger {}
 @Component
 class AdminTilgangInterceptor(
     private val tokenValidationContextHolder: TokenValidationContextHolder,
-    m2mConfigProperties: M2mConfigProperties
+    adminConfigProperties: AdminConfigProperties
 ) : HandlerInterceptor {
 
-    private val driftsgruppeId = m2mConfigProperties.admin.driftsgruppe
+    private val driftsgruppeId = adminConfigProperties.driftsgruppe
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val claims = gyldigeAzureClaims() ?: return true   // @AdminBeskyttet svarer 401

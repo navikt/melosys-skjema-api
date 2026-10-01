@@ -1,6 +1,7 @@
 package no.nav.melosys.skjema.sikkerhet
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.melosys.skjema.config.AdminConfigProperties
 import no.nav.melosys.skjema.config.M2mConfigProperties
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.security.token.support.core.context.TokenValidationContextHolder
@@ -14,7 +15,8 @@ private val log = KotlinLogging.logger { }
 @Component
 class M2MProtectedAspect(
     private val tokenValidationContextHolder: TokenValidationContextHolder,
-    private val m2mConfigProperties: M2mConfigProperties
+    private val m2mConfigProperties: M2mConfigProperties,
+    private val adminConfigProperties: AdminConfigProperties
 ) {
     companion object {
         private const val AZURE = "azure"
@@ -36,7 +38,7 @@ class M2MProtectedAspect(
             "@within(no.nav.melosys.skjema.sikkerhet.AdminBeskyttet)"
     )
     fun validateAdminAccess() {
-        validateClientAccess(m2mConfigProperties.admin.clients)
+        validateClientAccess(adminConfigProperties.clients)
     }
 
     private fun validateClientAccess(allowedClients: List<String>) {

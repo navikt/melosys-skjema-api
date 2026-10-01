@@ -8,7 +8,7 @@ import no.nav.security.token.support.core.api.ProtectedWithClaims
  *
  * Validerer at:
  * 1. Token er gyldig Azure AD-token
- * 2. Tokenets azp_name-claim matcher tillatte klienter fra m2m.admin.clients
+ * 2. Tokenets azp_name-claim matcher tillatte klienter fra admin.clients
  *    (typisk `<cluster>:teammelosys:melosys-console`)
  *
  * I tillegg krever [no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor] en gyldig delt
