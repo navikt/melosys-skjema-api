@@ -7,17 +7,25 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.string.shouldStartWith
 import io.mockk.every
 import io.mockk.verify
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import no.nav.melosys.skjema.ACCEPTED_AZURE_AUDIENCE
+import no.nav.melosys.skjema.AZURE_ISSUER_ID
 import no.nav.melosys.skjema.ApiTestBase
+import no.nav.melosys.skjema.DRIFTSGRUPPE_ID
+import no.nav.melosys.skjema.MELOSYS_CONSOLE_CLIENT_ID
+import no.nav.melosys.skjema.adminMaskinToken
+import no.nav.melosys.skjema.adminPersonToken
 import no.nav.melosys.skjema.adminTokenMedTilgang
 import no.nav.melosys.skjema.arbeidstakersSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
@@ -28,6 +36,7 @@ import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
 import no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor.Companion.API_KEY_HEADER
+import no.nav.melosys.skjema.sikkerhet.AdminTilgangInterceptor
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
@@ -43,6 +52,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
@@ -51,6 +62,7 @@ import org.springframework.test.web.reactive.server.expectBody
 import no.nav.security.mock.oauth2.MockOAuth2Server
 
 private const val TEST_ADMIN_APIKEY = "test-admin-apikey"
+private const val ANNEN_GRUPPE_ID = "00000000-0000-0000-0000-000000000099"
 
 class AdminControllerIntegrationTest : ApiTestBase() {
 
@@ -113,11 +125,46 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+        fun `skal returnere 401 naar token er fra en annen utsteder enn Azure`() {
             adminClient.get().uri("/admin/statistikk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.getToken()}")
+                .exchange()
+                .expectStatus().isUnauthorized
+        }
+
+        @Test
+        fun `skal returnere 401 naar Azure-token har feil audience`() {
+            val token = mockOAuth2Server.getToken(
+                issuerId = AZURE_ISSUER_ID,
+                audiences = listOf("annen-app"),
+                claims = mapOf("azp_name" to MELOSYS_CONSOLE_CLIENT_ID, "groups" to listOf(DRIFTSGRUPPE_ID))
+            )
+
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isUnauthorized
+        }
+
+        @Test
+        fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
+            // Driftsgruppen er med, så det er klientsjekken som avviser
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azpName = "ukjent-klient-id")
+
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+        }
+
+        @Test
+        fun `skal returnere 403 naar maskinkall kommer fra ukjent klient`() {
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
         }
 
         @Test
@@ -135,6 +182,76 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header(API_KEY_HEADER, "feil-noekkel")
                 .exchange()
                 .expectStatus().isForbidden
+        }
+
+        @Test
+        fun `personkall med driftsgruppe og noekkel faar tilgang`() {
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .exchange()
+                .expectStatus().isOk
+        }
+
+        @Test
+        fun `personkall uten driftsgruppe avvises med forklaring, selv med riktig noekkel`() {
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
+        }
+
+        @Test
+        fun `personkall uten groups-claim avvises`() {
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = null)}")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
+        }
+
+        @Test
+        fun `token med annen idtyp enn app regnes som personkall`() {
+            val token = mockOAuth2Server.getToken(
+                issuerId = AZURE_ISSUER_ID,
+                audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
+                claims = mapOf("azp_name" to MELOSYS_CONSOLE_CLIENT_ID, "idtyp" to "user")
+            )
+
+            adminClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
+        }
+
+        @Test
+        fun `noekkelsjekken kjoerer foer gruppesjekken`() {
+            // Dagens avvisning (manglende nøkkel) skal se lik ut, også for personkall uten driftsgruppe
+            webTestClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody.shouldNotBeNull() shouldStartWith "Ugyldig API-"
+        }
+
+        // De to rutene Console kaller uten innlogget bruker (statistikk på oversiktssiden)
+        @ParameterizedTest
+        @ValueSource(strings = ["/admin/innsendinger/feilede/antall", "/admin/statistikk/bruk"])
+        fun `maskinkall fra Console slipper gjennom gruppesjekken`(sti: String) {
+            adminClient.get().uri(sti)
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
+                .exchange()
+                .expectStatus().isOk
+        }
+
+        @Test
+        fun `maskinkall krever fortsatt noekkel`() {
+            webTestClient.get().uri("/admin/innsendinger/feilede/antall")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody.shouldNotBeNull() shouldStartWith "Ugyldig API-"
         }
     }
 

@@ -24,18 +24,21 @@ data class M2mConfigProperties(
 
     /**
      * Tilgangsstyring for admin-endepunktene: både azp_name-allowlist ([clients]) og en delt
-     * API-nøkkel ([apikey]) må stemme (i tillegg til gyldig Azure AD-token).
+     * API-nøkkel ([apikey]) må stemme (i tillegg til gyldig Azure AD-token). Personkall må i
+     * tillegg ha driftsgruppen ([driftsgruppe]) i groups-claimet.
      */
     data class AdminConfig(
         @field:NotEmpty(message = "m2m.admin.clients må være konfigurert")
         val clients: List<@NotBlank String> = emptyList(),
         @field:NotBlank(message = "m2m.admin.apikey må være konfigurert")
-        val apikey: String = ""
+        val apikey: String = "",
+        @field:NotBlank(message = "m2m.admin.driftsgruppe må være konfigurert")
+        val driftsgruppe: String = ""
     )
 
     @PostConstruct
     fun validateNoUnresolvedPlaceholders() {
-        (readSkjemadata.clients + writeSkjemadata.clients + admin.clients + admin.apikey).forEach { verdi ->
+        (readSkjemadata.clients + writeSkjemadata.clients + admin.clients + admin.apikey + admin.driftsgruppe).forEach { verdi ->
             require(!verdi.contains("\${")) {
                 "Uoppløst placeholder i m2m-konfigurasjon: '$verdi'. Sjekk at miljøvariabelen er satt."
             }
