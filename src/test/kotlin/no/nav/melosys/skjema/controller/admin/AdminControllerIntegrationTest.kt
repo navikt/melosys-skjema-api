@@ -31,7 +31,6 @@ import no.nav.melosys.skjema.kafka.BrukervarselMelding
 import no.nav.melosys.skjema.kafka.BrukervarselProducer
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
-import no.nav.melosys.skjema.m2mTokenWithoutAccess
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
@@ -185,7 +184,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `personkall med driftsgruppe og noekkel faar tilgang`() {
+        fun `skal returnere 200 naar personkall har driftsgruppe og noekkel`() {
             adminClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
@@ -193,7 +192,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `personkall uten driftsgruppe avvises med forklaring, selv med riktig noekkel`() {
+        fun `skal returnere 403 med forklaring naar personkall mangler driftsgruppe, selv med riktig noekkel`() {
             adminClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
                 .exchange()
@@ -202,7 +201,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `personkall uten groups-claim avvises`() {
+        fun `skal returnere 403 naar personkall mangler groups-claim`() {
             adminClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = null)}")
                 .exchange()
@@ -211,7 +210,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `token med annen idtyp enn app regnes som personkall`() {
+        fun `skal returnere 403 naar idtyp ikke er app og driftsgruppe mangler`() {
             val token = mockOAuth2Server.getToken(
                 issuerId = AZURE_ISSUER_ID,
                 audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
@@ -226,7 +225,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `noekkelsjekken kjoerer foer gruppesjekken`() {
+        fun `skal svare med noekkelfeil naar baade noekkel og driftsgruppe mangler`() {
             // Dagens avvisning (manglende nøkkel) skal se lik ut, også for personkall uten driftsgruppe
             webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
@@ -238,7 +237,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         // De to rutene Console kaller uten innlogget bruker (statistikk på oversiktssiden)
         @ParameterizedTest
         @ValueSource(strings = ["/admin/innsendinger/feilede/antall", "/admin/statistikk/bruk"])
-        fun `maskinkall fra Console slipper gjennom gruppesjekken`(sti: String) {
+        fun `skal returnere 200 for maskinkall fra Console uten driftsgruppe`(sti: String) {
             adminClient.get().uri(sti)
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
                 .exchange()
@@ -246,7 +245,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         @Test
-        fun `maskinkall krever fortsatt noekkel`() {
+        fun `skal returnere 403 naar maskinkall mangler noekkel`() {
             webTestClient.get().uri("/admin/innsendinger/feilede/antall")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
                 .exchange()
@@ -405,11 +404,12 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar bruker ikke har admin-rettigheter`() {
             adminClient.post().uri("/admin/innsendinger")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
         }
     }
 
@@ -1314,9 +1314,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             adminClient.get().uri("/admin/statistikk/bruk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
         }
     }
 
@@ -1469,9 +1470,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             adminClient.get().uri("/admin/statistikk/bruk/virksomheter/1/saksnumre")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
         }
     }
 
@@ -1806,9 +1808,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             adminClient.post().uri("/admin/varsler/resend")
-                .header("Authorization", "Bearer ${mockOAuth2Server.m2mTokenWithoutAccess()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
         }
     }
 

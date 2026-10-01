@@ -12,7 +12,7 @@ const val MELOSYS_CONSOLE_CLIENT_ID = "test-console-client-id"
 const val ISSUER_ID = "tokenx"
 const val AZURE_ISSUER_ID = "azure"
 
-/** Må stemme med GROUP_MELOSYS_INNLOGGING_VAKT i application-test.yml. */
+// Må stemme med GROUP_MELOSYS_INNLOGGING_VAKT i application-test.yml
 const val DRIFTSGRUPPE_ID = "00000000-0000-0000-0000-000000000001"
 
 fun MockOAuth2Server.getToken(
@@ -47,10 +47,9 @@ fun MockOAuth2Server.m2mTokenWithOnlyReadSkjemaDataAccess(): String = tokenWithA
 
 fun MockOAuth2Server.m2mTokenWithoutAccess(): String = tokenWithAzpClaim("ukjent-klient-id")
 
-/** Personkall fra Console for en som er i driftsgruppen. */
 fun MockOAuth2Server.adminTokenMedTilgang(): String = adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID))
 
-/** Personkall (OBO-token, uten idtyp). grupper = null gir token uten groups-claim. */
+// OBO-token har ikke idtyp
 fun MockOAuth2Server.adminPersonToken(
     grupper: List<String>?,
     azpName: String = MELOSYS_CONSOLE_CLIENT_ID,
@@ -64,7 +63,6 @@ fun MockOAuth2Server.adminPersonToken(
     }
 )
 
-/** Maskinkall (idtyp = app), slik Console henter statistikk uten innlogget bruker. */
 fun MockOAuth2Server.adminMaskinToken(azpName: String = MELOSYS_CONSOLE_CLIENT_ID): String = getToken(
     issuerId = AZURE_ISSUER_ID,
     audiences = listOf(ACCEPTED_AZURE_AUDIENCE),

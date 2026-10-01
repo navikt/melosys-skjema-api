@@ -9,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 /**
  * Konfigurasjon for Spring Web MVC.
- * Registrerer interceptors for bl.a. MDC-håndtering og tilgang til admin-endepunktene.
+ * Registrerer interceptors for bl.a. MDC-håndtering og API-nøkkel på admin-endepunktene.
  */
 @Configuration
 class WebConfig(

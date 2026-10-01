@@ -12,40 +12,38 @@ import org.springframework.web.servlet.HandlerInterceptor
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Personkall til admin-endepunktene (under /admin) må ha driftsgruppen i groups-claimet.
- * Maskinkall (idtyp = app) slipper gjennom, slik at Consoles automatiske statistikkhenting
- * virker som før. API-nøkkelen ([AdminApiKeyInterceptor]) og klientsjekken ([AdminBeskyttet])
- * gjelder fortsatt for alle kall.
- */
 @Component
 class AdminTilgangInterceptor(
     private val tokenValidationContextHolder: TokenValidationContextHolder,
-    private val m2mConfigProperties: M2mConfigProperties
+    m2mConfigProperties: M2mConfigProperties
 ) : HandlerInterceptor {
 
-    override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        // Uten gyldig Azure-token svarer @AdminBeskyttet 401
-        val claims = tokenValidationContextHolder.getTokenValidationContext().getJwtToken(AZURE)?.jwtTokenClaims
-            ?: return true
+    private val driftsgruppeId = m2mConfigProperties.admin.driftsgruppe
 
-        if (erMaskinkall(claims)) return true
+    override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+        val claims = gyldigeAzureClaims() ?: return true   // @AdminBeskyttet svarer 401
+
+        if (erMaskinkall(claims)) return true   // Consoles statistikkhenting, uten innlogget bruker
         if (erMedlemAvDriftsgruppe(claims)) return true
 
         log.warn { "Admin-kall avvist: personkall uten driftsgruppe (${request.method})" }
-        // Skrives direkte: Spring Boot tar ikke med meldingen fra ResponseStatusException i svaret
-        response.status = HttpServletResponse.SC_FORBIDDEN
+        // Skrives direkte, så Console viser årsaken. AccessDeniedException gir bare «Ingen tilgang».
+        response.status = 403
         response.contentType = MediaType.TEXT_PLAIN_VALUE
         response.writer.write(MANGLER_DRIFTSGRUPPE)
         return false
     }
+
+    // Token-support legger bare validerte token i konteksten
+    private fun gyldigeAzureClaims() =
+        tokenValidationContextHolder.getTokenValidationContext().getJwtToken(AZURE)?.jwtTokenClaims
 
     // Entra setter idtyp = app bare i maskintoken. Mangler den, regnes kallet som personkall.
     private fun erMaskinkall(claims: JwtTokenClaims) = claims.getStringClaim(IDTYP_CLAIM) == IDTYP_MASKIN
 
     // getAsList gir null når groups mangler
     private fun erMedlemAvDriftsgruppe(claims: JwtTokenClaims) =
-        m2mConfigProperties.admin.driftsgruppe in claims.getAsList(GROUPS_CLAIM).orEmpty()
+        driftsgruppeId in claims.getAsList(GROUPS_CLAIM).orEmpty()
 
     companion object {
         const val MANGLER_DRIFTSGRUPPE = "Mangler tilgang til admin-endepunkter"
