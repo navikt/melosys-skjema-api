@@ -62,6 +62,7 @@ import no.nav.security.mock.oauth2.MockOAuth2Server
 
 private const val TEST_ADMIN_APIKEY = "test-admin-apikey"
 private const val ANNEN_GRUPPE_ID = "00000000-0000-0000-0000-000000000099"
+private const val INGEN_TILGANG = "Ingen tilgang"
 
 class AdminControllerIntegrationTest : ApiTestBase() {
 
@@ -154,7 +155,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
 
         @Test
@@ -163,7 +164,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
 
         @Test
@@ -409,7 +410,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
     }
 
@@ -1317,7 +1318,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
     }
 
@@ -1473,7 +1474,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
     }
 
@@ -1811,7 +1812,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo("Ingen tilgang")
+                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
         }
     }
 
