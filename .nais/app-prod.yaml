@@ -70,6 +70,10 @@ spec:
     application:
       enabled: true
       allowAllUsers: true
+      # Gir gruppen i groups-claimet. Med allowAllUsers: true begrenser den ikke innlogging.
+      claims:
+        groups:
+          - id: f6da5fea-0907-47e6-8424-8dc4da6a7c42 # melosys-innlogging-vakt
   accessPolicy:
     inbound:
       rules:
@@ -106,6 +110,9 @@ spec:
     # azp_name til melosys-console som har tilgang til /admin/**-endepunktene
     - name: MELOSYS_CONSOLE_AZP_NAMES
       value: prod-gcp:teammelosys:melosys-console
+    # Driftsgruppen personkall til /admin/** må ha (melosys-innlogging-vakt, se claims.groups)
+    - name: GROUP_MELOSYS_INNLOGGING_VAKT
+      value: f6da5fea-0907-47e6-8424-8dc4da6a7c42
   envFrom:
     - secret: melosys-skjema-api
     - secret: melosys-skjema-api-unleash-api-token
