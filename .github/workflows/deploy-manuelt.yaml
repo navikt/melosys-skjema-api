@@ -86,7 +86,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Deploy til ${{ github.event.inputs.environment }}
-        uses: nais/deploy/actions/deploy@v2
+        uses: nais/deploy/actions/deploy@v3
         env:
           CLUSTER: ${{ env.CLUSTER }}
           RESOURCE: ${{ env.RESOURCE }}
