@@ -65,6 +65,7 @@ jobs:
           # Unleash-operatoren - aller første deploy kan trenge en retry hvis podden
           # rekker å starte før secreten finnes (selvhelende via kubelet).
           RESOURCE: .nais/unleash-apitoken-dev.yaml,.nais/app-dev.yaml
+          IMAGE: ${{ needs.build.outputs.image }}
           WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
       - name: Get commit message
         run: echo "COMMIT_MSG=$(git log --format=%s -n 1)" >> $GITHUB_ENV
