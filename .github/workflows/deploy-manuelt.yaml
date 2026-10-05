@@ -90,7 +90,6 @@ jobs:
         env:
           CLUSTER: ${{ env.CLUSTER }}
           RESOURCE: ${{ env.RESOURCE }}
-          WORKLOAD_IMAGE: ${{ env.IMAGE }}
       - name: Get commit message
         run: echo "COMMIT_MSG=$(git log --format=%s -n 1)" >> $GITHUB_ENV
       - name: Slack Notification
