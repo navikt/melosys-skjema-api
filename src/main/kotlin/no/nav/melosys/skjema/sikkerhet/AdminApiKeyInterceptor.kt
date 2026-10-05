@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import no.nav.melosys.skjema.config.M2mConfigProperties
+import no.nav.melosys.skjema.config.AdminConfigProperties
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
 
@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
  */
 @Component
 class AdminApiKeyInterceptor(
-    private val m2mConfigProperties: M2mConfigProperties
+    private val adminConfigProperties: AdminConfigProperties
 ) : HandlerInterceptor {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
@@ -37,7 +37,7 @@ class AdminApiKeyInterceptor(
         // Konstant-tid sammenligning for å unngå timing-angrep mot nøkkelen.
         return MessageDigest.isEqual(
             oppgitt.toByteArray(StandardCharsets.UTF_8),
-            m2mConfigProperties.admin.apikey.toByteArray(StandardCharsets.UTF_8)
+            adminConfigProperties.apikey.toByteArray(StandardCharsets.UTF_8)
         )
     }
 
