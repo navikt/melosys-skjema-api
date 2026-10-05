@@ -35,8 +35,8 @@ PDL_URL: http://localhost:8083/graphql
 REPR_URL: http://localhost:8083/repr
 AZURE_APP_WELL_KNOWN_URL: http://host.docker.internal:8082/isso/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: dev-fss:teammelosys:melosys
-MELOSYS_CONSOLE_AZP_NAMES: local:teammelosys:melosys-console
-MELOSYS_SKJEMA_ADMIN_APIKEY: local-admin-apikey
+# azp i Consoles lokale mock-token (audience=melosys-localhost, se melosys-docker-compose)
+MELOSYS_CONSOLE_CLIENT_ID: melosys-api
 # groups i Consoles lokale mock-token (audience=melosys-localhost). I Nais: melosys-innlogging-vakt.
 GROUP_MELOSYS_INNLOGGING_VAKT: 0000-GA-MELOSYS
 VEDLEGG_BUCKET_NAME: melosys-skjema-vedlegg-local

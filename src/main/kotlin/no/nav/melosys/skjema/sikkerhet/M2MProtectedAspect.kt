@@ -21,6 +21,7 @@ class M2MProtectedAspect(
     companion object {
         private const val AZURE = "azure"
         private const val AZP_NAME_CLAIM = "azp_name"
+        private const val AZP_CLAIM = "azp"
     }
 
     @Before("@annotation(no.nav.melosys.skjema.sikkerhet.M2MReadSkjemadata)")
@@ -38,7 +39,15 @@ class M2MProtectedAspect(
             "@within(no.nav.melosys.skjema.sikkerhet.AdminBeskyttet)"
     )
     fun validateAdminAccess() {
-        validateClientAccess(adminConfigProperties.clients)
+        val token = tokenValidationContextHolder.getTokenValidationContext().getJwtToken(AZURE)
+            ?: throw AccessDeniedException("Ingen gyldig Azure AD-token funnet")
+
+        // Klient-ID-en er unik i tenanten; azp_name er bare et visningsnavn. Mangler azp, avvises kallet.
+        val azp = token.jwtTokenClaims.getStringClaim(AZP_CLAIM)
+        if (azp != adminConfigProperties.consoleKlientId) {
+            log.warn { "Admin-kall avvist: ukjent klient (azp=$azp)" }
+            throw AccessDeniedException("Klient har ikke tilgang til admin-endepunktene")
+        }
     }
 
     private fun validateClientAccess(allowedClients: List<String>) {

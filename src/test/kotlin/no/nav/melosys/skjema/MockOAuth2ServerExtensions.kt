@@ -1,8 +1,10 @@
 package no.nav.melosys.skjema
 
 import com.nimbusds.jose.JOSEObjectType
+import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 
 const val ACCEPTED_AUDIENCE = "test-client-id"
 const val ACCEPTED_AZURE_AUDIENCE = "test-azure-client-id"
@@ -52,19 +54,32 @@ fun MockOAuth2Server.adminTokenMedTilgang(): String = adminPersonToken(grupper =
 // OBO-token har ikke idtyp
 fun MockOAuth2Server.adminPersonToken(
     grupper: List<String>?,
-    azpName: String = MELOSYS_CONSOLE_CLIENT_ID,
-): String = getToken(
-    issuerId = AZURE_ISSUER_ID,
-    audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
+    azp: String? = MELOSYS_CONSOLE_CLIENT_ID,
+    ekstraClaims: Map<String, Any> = emptyMap(),
+): String = azureAdminToken(
+    azp = azp,
     claims = buildMap {
-        put("azp_name", azpName)
         put("NAVident", "Z999999")
         grupper?.let { put("groups", it) }
+        putAll(ekstraClaims)
     }
 )
 
-fun MockOAuth2Server.adminMaskinToken(azpName: String = MELOSYS_CONSOLE_CLIENT_ID): String = getToken(
-    issuerId = AZURE_ISSUER_ID,
-    audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
-    claims = mapOf("azp_name" to azpName, "idtyp" to "app")
-)
+fun MockOAuth2Server.adminMaskinToken(azp: String = MELOSYS_CONSOLE_CLIENT_ID): String =
+    azureAdminToken(azp = azp, claims = mapOf("idtyp" to "app"))
+
+// mock-oauth2-server setter azp til klient-ID-en, så azp styres via clientId. azp = null gir token uten azp.
+private fun MockOAuth2Server.azureAdminToken(azp: String?, claims: Map<String, Any>): String {
+    val callback = DefaultOAuth2TokenCallback(
+        issuerId = AZURE_ISSUER_ID,
+        subject = "subjectId",
+        typeHeader = JOSEObjectType.JWT.type,
+        audience = listOf(ACCEPTED_AZURE_AUDIENCE),
+        claims = claims,
+        expiry = 36000,
+    )
+    val callbackUtenAzp = object : OAuth2TokenCallback by callback {
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = callback.addClaims(tokenRequest) - "azp"
+    }
+    return issueToken(AZURE_ISSUER_ID, azp ?: "ubrukt", if (azp == null) callbackUtenAzp else callback).serialize()
+}

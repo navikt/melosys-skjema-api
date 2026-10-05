@@ -107,9 +107,9 @@ spec:
         - application: logging
           namespace: nais-system
   env:
-    # azp_name til melosys-console som har tilgang til /admin/**-endepunktene
-    - name: MELOSYS_CONSOLE_AZP_NAMES
-      value: prod-gcp:teammelosys:melosys-console
+    # Klient-ID-en (azp) til melosys-console, som har tilgang til /admin/**-endepunktene
+    - name: MELOSYS_CONSOLE_CLIENT_ID
+      value: 7fe72335-687b-438c-be47-3bc81590a05d
     # Driftsgruppen personkall til /admin/** må ha (melosys-innlogging-vakt, se claims.groups)
     - name: GROUP_MELOSYS_INNLOGGING_VAKT
       value: f6da5fea-0907-47e6-8424-8dc4da6a7c42
