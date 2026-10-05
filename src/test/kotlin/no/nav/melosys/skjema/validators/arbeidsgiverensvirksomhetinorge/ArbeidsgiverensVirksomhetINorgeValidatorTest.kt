@@ -28,10 +28,10 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         andelOppdragskontrakterInngattINorge = 75
     )
 
-    private fun privat(bemanningsbyraa: Boolean, samlet: ArbeidsgiverensVirksomhetINorgeDto? = null) =
+    private fun privat(bemanningsbyraa: Boolean, samlet: ArbeidsgiverensVirksomhetINorgeDto? = null, vanligDrift: Boolean? = null) =
         (samlet ?: ArbeidsgiverensVirksomhetINorgeDto()).copy(
             erArbeidsgiverenBemanningsEllerVikarbyraa = bemanningsbyraa,
-            opprettholderArbeidsgiverenVanligDrift = true
+            opprettholderArbeidsgiverenVanligDrift = vanligDrift
         )
 
     @Test
@@ -97,7 +97,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
     @Test
     fun `20 eller flere ansatte uten bemanningsbyraa skal ikke oppgi samlet virksomhet`() {
         val avvik = validator.validate(
-            privat(bemanningsbyraa = false, samletVirksomhet.copy(antallUtsendteArbeidstakere = null)),
+            privat(bemanningsbyraa = false, samletVirksomhet.copy(antallUtsendteArbeidstakere = null), vanligDrift = true),
             erOffentligArbeidsgiver = false,
             antallAnsatte = GRENSE
         )
@@ -105,6 +105,22 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         avvik shouldHaveSize 5
         avvik.map { it.translationKey }.toSet() shouldBe
             setOf("arbeidsgiverensVirksomhetINorgeTranslation.skalIkkeOppgiSamletVirksomhet")
+    }
+
+    @Test
+    fun `vanlig drift avvises naar samlet virksomhet skal oppgis`() {
+        listOf(FAA to false, MANGE to true).forEach { (antallAnsatte, bemanningsbyraa) ->
+            val avvik = validator.validate(
+                privat(bemanningsbyraa, samletVirksomhet, vanligDrift = false),
+                erOffentligArbeidsgiver = false,
+                antallAnsatte = antallAnsatte
+            )
+
+            avvik.map { it.field to it.translationKey } shouldContainExactlyInAnyOrder listOf(
+                "opprettholderArbeidsgiverenVanligDrift" to
+                    "arbeidsgiverensVirksomhetINorgeTranslation.skalIkkeOppgiVanligDrift"
+            )
+        }
     }
 
     @Test
@@ -163,9 +179,9 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
             GRENSE,
             "privat med akkurat 20 ansatte, begge svar nei"
         ),
-        Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, FAA, "privat med faerre enn 20 ansatte og samlet virksomhet"),
-        Arguments.of(privat(bemanningsbyraa = true, samletVirksomhet), false, MANGE, "bemanningsbyraa med 20 eller flere ansatte og samlet virksomhet"),
-        Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, 0, "privat uten registrerte ansatte og samlet virksomhet")
+        Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, FAA, "privat med faerre enn 20 ansatte uten vanlig drift"),
+        Arguments.of(privat(bemanningsbyraa = true, samletVirksomhet), false, MANGE, "bemanningsbyraa med 20 eller flere ansatte uten vanlig drift"),
+        Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, 0, "privat uten registrerte ansatte og vanlig drift")
     )
 
     fun ugyldigeKombinasjoner(): Stream<Arguments> = Stream.of(
@@ -192,10 +208,10 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         ),
         Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), false, MANGE, "privat uten oppfoelgingssvar"),
         Arguments.of(
-            ArbeidsgiverensVirksomhetINorgeDto(erArbeidsgiverenBemanningsEllerVikarbyraa = true),
+            privat(bemanningsbyraa = false),
             false,
             MANGE,
-            "privat som mangler svar om vanlig drift"
+            "privat med mange ansatte som mangler svar om vanlig drift"
         ),
         Arguments.of(
             ArbeidsgiverensVirksomhetINorgeDto(opprettholderArbeidsgiverenVanligDrift = true),
@@ -208,6 +224,18 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
             false,
             MANGE,
             "bemanningsbyraa som mangler ett felt om samlet virksomhet"
+        ),
+        Arguments.of(
+            privat(bemanningsbyraa = false, samletVirksomhet, vanligDrift = true),
+            false,
+            FAA,
+            "privat med faerre enn 20 ansatte skal ikke svare om vanlig drift"
+        ),
+        Arguments.of(
+            privat(bemanningsbyraa = true, samletVirksomhet, vanligDrift = false),
+            false,
+            MANGE,
+            "bemanningsbyraa skal ikke svare om vanlig drift"
         )
     )
 

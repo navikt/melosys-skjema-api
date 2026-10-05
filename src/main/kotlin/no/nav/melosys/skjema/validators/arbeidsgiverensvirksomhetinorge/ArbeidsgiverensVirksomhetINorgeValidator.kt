@@ -65,16 +65,21 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
                 translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name)
             )
         )
-        if (dto.opprettholderArbeidsgiverenVanligDrift == null) return listOf(
-            Violation(
-                field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
-                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmVanligDrift.name)
-            )
-        )
-
         return if (skalOppgiSamletVirksomhet(antallAnsatte, dto.erArbeidsgiverenBemanningsEllerVikarbyraa)) {
+            if (dto.opprettholderArbeidsgiverenVanligDrift != null) return listOf(
+                Violation(
+                    field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
+                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::skalIkkeOppgiVanligDrift.name)
+                )
+            )
             validerSamletVirksomhet(dto)
         } else {
+            if (dto.opprettholderArbeidsgiverenVanligDrift == null) return listOf(
+                Violation(
+                    field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
+                    translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmVanligDrift.name)
+                )
+            )
             avvisSamletVirksomhet(dto)
         }
     }
