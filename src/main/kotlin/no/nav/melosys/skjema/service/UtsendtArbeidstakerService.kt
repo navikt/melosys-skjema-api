@@ -25,6 +25,7 @@ import no.nav.melosys.skjema.types.SkjemaInnsendtKvittering
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
@@ -79,19 +80,10 @@ class UtsendtArbeidstakerService(
         val arbeidstakerNavn = representasjonValidator.validerOpprettelse(request, innloggetBrukerFnr)
 
         val organisasjonMedJuridiskEnhet = eregService.hentOrganisasjonMedJuridiskEnhet(request.arbeidsgiver.orgnr)
-        val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.also {
-            log.info { "Hentet juridisk enhet ${it.take(3)}*** for org ${request.arbeidsgiver.orgnr.take(3)}***" }
-        }
+        log.info { "Hentet juridisk enhet ${organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr.take(3)}*** for org ${request.arbeidsgiver.orgnr.take(3)}***" }
 
         val skjemaDefinisjonVersjon = skjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER)
-        val metadata = byggMetadata(
-            request,
-            innloggetBrukerFnr,
-            juridiskEnhetOrgnr,
-            organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver,
-            organisasjonMedJuridiskEnhet.antallAnsatte,
-            arbeidstakerNavn
-        )
+        val metadata = byggMetadata(request, innloggetBrukerFnr, organisasjonMedJuridiskEnhet, arbeidstakerNavn)
 
         val skjema = when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> {
@@ -593,17 +585,18 @@ class UtsendtArbeidstakerService(
      *
      * @param request Opprettelsesforespørselen
      * @param innloggetBrukerFnr FNR til innlogget bruker
-     * @param juridiskEnhetOrgnr Orgnr til juridisk enhet (fra EREG) - brukes for kobling av separate søknader
+     * @param organisasjonMedJuridiskEnhet Organisasjon og juridisk enhet fra EREG - juridisk enhets orgnr brukes for kobling av separate søknader
      */
     private fun byggMetadata(
         request: OpprettUtsendtArbeidstakerSoknadRequest,
         innloggetBrukerFnr: String,
-        juridiskEnhetOrgnr: String,
-        erOffentligArbeidsgiver: Boolean?,
-        antallAnsatte: Int,
+        organisasjonMedJuridiskEnhet: OrganisasjonMedJuridiskEnhetDto,
         arbeidstakerNavn: String
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
+        val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr
+        val erOffentligArbeidsgiver = organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver
+        val antallAnsatte = organisasjonMedJuridiskEnhet.antallAnsatte
 
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> DegSelvMetadata(
