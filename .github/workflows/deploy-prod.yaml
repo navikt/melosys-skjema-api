@@ -25,13 +25,12 @@ jobs:
           docker pull ${{ env.IMAGE }}
           echo "✅ Image ${{ env.IMAGE }} eksisterer og kan hentes"
       - name: Deploy
-        uses: nais/deploy/actions/deploy@v2
+        uses: nais/deploy/actions/deploy@v3
         env:
           CLUSTER: prod-gcp
           # ApiToken-CR-en applyes før appen; secreten materialiseres asynkront av
           # Unleash-operatoren (se kommentar i deploy-dev.yaml)
           RESOURCE: .nais/unleash-apitoken-prod.yaml,.nais/app-prod.yaml
-          WORKLOAD_IMAGE: ${{ env.IMAGE }}
       - name: post-production
         uses: navikt/digihot-deploy/actions/post-production@v3
         env:

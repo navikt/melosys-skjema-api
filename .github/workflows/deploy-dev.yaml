@@ -58,14 +58,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy til dev-gcp
-        uses: nais/deploy/actions/deploy@v2
+        uses: nais/deploy/actions/deploy@v3
         env:
           CLUSTER: dev-gcp
           # ApiToken-CR-en applyes før appen, men secreten materialiseres asynkront av
           # Unleash-operatoren - aller første deploy kan trenge en retry hvis podden
           # rekker å starte før secreten finnes (selvhelende via kubelet).
           RESOURCE: .nais/unleash-apitoken-dev.yaml,.nais/app-dev.yaml
-          WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
+          IMAGE: ${{ needs.build.outputs.image }}
       - name: Get commit message
         run: echo "COMMIT_MSG=$(git log --format=%s -n 1)" >> $GITHUB_ENV
       - name: Slack Notification
@@ -99,7 +99,7 @@ jobs:
   e2e-marker:
     name: Slå opp e2e-markør
     # Etter bygget, så en label-kjøring som blir ferdig like etter merge, rekker å
-    # sette markøren. trigger-e2e-tests venter uansett på deploy.
+    # sette markøren.
     needs: build
     runs-on: ubuntu-latest
     # En timeout gir tom hit, og da kjører e2e som før.
@@ -129,11 +129,13 @@ jobs:
           echo "hit=$hit" >> "$GITHUB_OUTPUT"
           echo "e2e-marker: hit=$hit (tree ${TREE:-ukjent})" | tee -a "$GITHUB_STEP_SUMMARY"
 
+  # Venter ikke på deploy: e2e henter imaget fra GAR etter tag. Feiler dev-deployen,
+  # skal e2e likevel teste dette imaget, ellers får neste repo skylden for feilene.
   trigger-e2e-tests:
     name: Trigger E2E tests
     runs-on: ubuntu-latest
-    needs: [ build, deploy, e2e-marker ]
-    if: ${{ !cancelled() && needs.build.result == 'success' && needs.deploy.result == 'success' && needs.e2e-marker.outputs.hit != 'true' }}
+    needs: [ build, e2e-marker ]
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.e2e-marker.outputs.hit != 'true' }}
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v7

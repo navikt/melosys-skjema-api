@@ -12,6 +12,9 @@ const val MELOSYS_CONSOLE_CLIENT_ID = "test-console-client-id"
 const val ISSUER_ID = "tokenx"
 const val AZURE_ISSUER_ID = "azure"
 
+// Må stemme med GROUP_MELOSYS_INNLOGGING_VAKT i application-test.yml
+const val DRIFTSGRUPPE_ID = "00000000-0000-0000-0000-000000000001"
+
 fun MockOAuth2Server.getToken(
     issuerId: String = ISSUER_ID,
     audiences: List<String> = listOf(ACCEPTED_AUDIENCE),
@@ -44,4 +47,24 @@ fun MockOAuth2Server.m2mTokenWithOnlyReadSkjemaDataAccess(): String = tokenWithA
 
 fun MockOAuth2Server.m2mTokenWithoutAccess(): String = tokenWithAzpClaim("ukjent-klient-id")
 
-fun MockOAuth2Server.adminTokenMedTilgang(): String = tokenWithAzpClaim(MELOSYS_CONSOLE_CLIENT_ID)
+fun MockOAuth2Server.adminTokenMedTilgang(): String = adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID))
+
+// OBO-token har ikke idtyp
+fun MockOAuth2Server.adminPersonToken(
+    grupper: List<String>?,
+    azpName: String = MELOSYS_CONSOLE_CLIENT_ID,
+): String = getToken(
+    issuerId = AZURE_ISSUER_ID,
+    audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
+    claims = buildMap {
+        put("azp_name", azpName)
+        put("NAVident", "Z999999")
+        grupper?.let { put("groups", it) }
+    }
+)
+
+fun MockOAuth2Server.adminMaskinToken(azpName: String = MELOSYS_CONSOLE_CLIENT_ID): String = getToken(
+    issuerId = AZURE_ISSUER_ID,
+    audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
+    claims = mapOf("azp_name" to azpName, "idtyp" to "app")
+)

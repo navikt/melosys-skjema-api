@@ -200,9 +200,12 @@ m2m:
   write-skjemadata:
     clients:
       - ${MELOSYS_CLIENT_ID}
-  # Tilgang til admin-endepunktene (/admin/**): både azp_name-allowlist og delt
-  # API-nøkkel må stemme (i tillegg til gyldig Azure AD-token).
-  # clients: typisk melosys-console på formatet `<cluster>:teammelosys:melosys-console`.
-  admin:
-    clients: ${MELOSYS_CONSOLE_AZP_NAMES}
-    apikey: ${MELOSYS_SKJEMA_ADMIN_APIKEY}
+
+# Tilgang til admin-endepunktene (/admin/**): både azp_name-allowlist og delt
+# API-nøkkel må stemme (i tillegg til gyldig Azure AD-token).
+# clients: typisk melosys-console på formatet `<cluster>:teammelosys:melosys-console`.
+# driftsgruppe: personkall må ha denne gruppen i tokenet. I Nais: melosys-innlogging-vakt.
+admin:
+  clients: ${MELOSYS_CONSOLE_AZP_NAMES}
+  apikey: ${MELOSYS_SKJEMA_ADMIN_APIKEY}
+  driftsgruppe: ${GROUP_MELOSYS_INNLOGGING_VAKT}
