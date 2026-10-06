@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.integrasjon.ereg.dto.toSimpleOrganisasjonDto
 import no.nav.melosys.skjema.integrasjon.ereg.exception.OrganisasjonEksistererIkkeException
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
+import java.time.LocalDate
 import org.springframework.stereotype.Service
 
 private val log = KotlinLogging.logger { }
@@ -81,7 +82,12 @@ internal fun JuridiskEnhet.erOffentligArbeidsgiver(): Boolean =
  * har enheten ingen registrerte ansatte. Flere gjeldende opplysninger er tvetydige og gir feil.
  */
 internal fun JuridiskEnhet.antallAnsatte(): Int {
-    val gjeldende = organisasjonDetaljer?.ansatte.orEmpty().filter { it.gyldighetsperiode?.tom == null }
+    val iDag = LocalDate.now()
+    val gjeldende = organisasjonDetaljer?.ansatte.orEmpty().filter {
+        val periode = it.gyldighetsperiode
+        (periode?.fom == null || !periode.fom.isAfter(iDag)) &&
+            (periode?.tom == null || !periode.tom.isBefore(iDag))
+    }
     check(gjeldende.size <= 1) { "Juridisk enhet $organisasjonsnummer har flere gjeldende ansattopplysninger i EREG" }
     val ansatte = gjeldende.singleOrNull() ?: return 0
     return checkNotNull(ansatte.antall) { "Juridisk enhet $organisasjonsnummer mangler antall i gjeldende ansattopplysning i EREG" }

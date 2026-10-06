@@ -64,6 +64,25 @@ class EregServiceTest {
     }
 
     @Test
+    fun `antall ansatte leses fra periode som omfatter dagens dato`() {
+        val iDag = LocalDate.now()
+        val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
+            organisasjonDetaljer = OrganisasjonDetaljer(
+                ansatte = listOf(
+                    Ansatte(antall = 4, gyldighetsperiode = Gyldighetsperiode(tom = iDag.minusDays(1))),
+                    Ansatte(
+                        antall = 25,
+                        gyldighetsperiode = Gyldighetsperiode(fom = iDag.minusDays(1), tom = iDag.plusDays(1))
+                    ),
+                    Ansatte(antall = 3, gyldighetsperiode = Gyldighetsperiode(fom = iDag.plusDays(1)))
+                )
+            )
+        )
+
+        assertThat(juridiskEnhet.antallAnsatte()).isEqualTo(25)
+    }
+
+    @Test
     fun `juridisk enhet uten registrerte ansatte har 0 ansatte`() {
         assertThat(juridiskEnhetMedDefaultVerdier().antallAnsatte()).isEqualTo(0)
         assertThat(
