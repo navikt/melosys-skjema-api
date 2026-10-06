@@ -50,17 +50,12 @@ class EregServiceTest {
     }
 
     @Test
-    fun `antall ansatte leses fra gjeldende ansattopplysning paa juridisk enhet`() {
-        fun medAnsatte(vararg ansatte: Ansatte) =
-            juridiskEnhetMedDefaultVerdier().copy(organisasjonDetaljer = OrganisasjonDetaljer(ansatte = ansatte.toList()))
+    fun `ansattopplysning uten gyldighetsperiode er gjeldende`() {
+        val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
+            organisasjonDetaljer = OrganisasjonDetaljer(ansatte = listOf(Ansatte(antall = 19)))
+        )
 
-        assertThat(medAnsatte(Ansatte(antall = 19)).antallAnsatte()).isEqualTo(19)
-        assertThat(
-            medAnsatte(
-                Ansatte(antall = 3, gyldighetsperiode = Gyldighetsperiode(tom = LocalDate.of(2025, 12, 31))),
-                Ansatte(antall = 25, gyldighetsperiode = Gyldighetsperiode(fom = LocalDate.of(2026, 1, 1)))
-            ).antallAnsatte()
-        ).isEqualTo(25)
+        assertThat(juridiskEnhet.antallAnsatte()).isEqualTo(19)
     }
 
     @Test
@@ -94,6 +89,15 @@ class EregServiceTest {
     fun `flere gjeldende ansattopplysninger er tvetydig og gir feil`() {
         val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
             organisasjonDetaljer = OrganisasjonDetaljer(ansatte = listOf(Ansatte(antall = 3), Ansatte(antall = 30)))
+        )
+
+        assertThrows<IllegalStateException> { juridiskEnhet.antallAnsatte() }
+    }
+
+    @Test
+    fun `gjeldende ansattopplysning uten antall gir feil`() {
+        val juridiskEnhet = juridiskEnhetMedDefaultVerdier().copy(
+            organisasjonDetaljer = OrganisasjonDetaljer(ansatte = listOf(Ansatte(antall = null)))
         )
 
         assertThrows<IllegalStateException> { juridiskEnhet.antallAnsatte() }
