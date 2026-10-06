@@ -243,6 +243,30 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain ">Nei<"
         }
 
+        test("viser opplysninger om foretakets samlede virksomhet med prosent på andelene") {
+            val skjema = lagSkjemaPdfData(
+                referanseId = "SAMLET",
+                arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                    arbeidsgiverensVirksomhetINorge = arbeidsgiverensVirksomhetINorgeDtoMedDefaultVerdier().copy(
+                        antallAdministrativtAnsatte = 4,
+                        antallUtsendteArbeidstakere = 2,
+                        andelAnsatteRekruttertINorge = 80,
+                        andelOmsetningINorge = 65,
+                        andelOppdragUtfortINorge = 70,
+                        andelOppdragskontrakterInngattINorge = 90
+                    )
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            html shouldContain "Antall administrativt ansatte"
+            html shouldContain ">4<"
+            html shouldContain "Andel omsetning opptjent i Norge"
+            html shouldContain ">65 %<"
+            html shouldContain ">90 %<"
+        }
+
         test("viser datoer i norsk format") {
             val skjema = lagSkjemaPdfData(
                 referanseId = "DATO12",

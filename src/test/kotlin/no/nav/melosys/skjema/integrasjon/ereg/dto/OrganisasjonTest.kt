@@ -40,4 +40,28 @@ class OrganisasjonTest {
         inngaarIJuridiskEnhet.shouldBeInstanceOf<InngaarIJuridiskEnhet>()
         inngaarIJuridiskEnhet.organisasjonsnummer shouldBe "983887457"
     }
+
+    @Test
+    fun `skal deserialisere ansatte paa juridisk enhet`() {
+        val organisasjon = json.parseObject(
+            """
+            {
+              "type": "JuridiskEnhet",
+              "organisasjonsnummer": "889640782",
+              "organisasjonDetaljer": {
+                "ansatte": [
+                  {
+                    "antall": 17,
+                    "bruksperiode": { "fom": "2026-01-10T08:00:00.000" },
+                    "gyldighetsperiode": { "fom": "2026-01-01" }
+                  }
+                ]
+              }
+            }
+            """.trimIndent()
+        )
+
+        organisasjon.shouldBeInstanceOf<JuridiskEnhet>()
+        organisasjon.organisasjonDetaljer?.ansatte?.single()?.antall shouldBe 17
+    }
 }

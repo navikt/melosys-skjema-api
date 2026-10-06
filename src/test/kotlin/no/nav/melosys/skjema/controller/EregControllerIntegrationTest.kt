@@ -61,7 +61,8 @@ class EregControllerIntegrationTest : ApiTestBase() {
         val expected = OrganisasjonMedJuridiskEnhetDto(
             organisasjon = virksomhet.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-            erOffentligArbeidsgiver = false
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50
         )
 
         every { rateLimiterService.isRateLimited(any(), any()) } returns false

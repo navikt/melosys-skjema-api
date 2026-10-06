@@ -86,7 +86,17 @@ data class OrganisasjonDetaljer(
     val navn: List<Navn>? = null,
     val naeringer: List<Naering>? = null,
     val forretningsadresser: List<Adresse>? = null,
-    val postadresser: List<Adresse>? = null
+    val postadresser: List<Adresse>? = null,
+    val ansatte: List<Ansatte>? = null
+)
+
+/**
+ * Antall ansatte registrert i A-registeret, slik det vises i Enhetsregisteret
+ */
+data class Ansatte(
+    val antall: Int? = null,
+    val bruksperiode: Bruksperiode? = null,
+    val gyldighetsperiode: Gyldighetsperiode? = null
 )
 
 /**

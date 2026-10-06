@@ -283,6 +283,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     radgiverfirma: RadgiverfirmaInfo? = null,
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     erOffentligArbeidsgiver: Boolean? = false,
+    antallAnsatte: Int? = 50,
     kobletSkjemaId: UUID? = null,
     erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
@@ -293,6 +294,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -302,6 +304,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -312,6 +315,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ARBEIDSGIVER_MED_FULLMAKT"),
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -321,6 +325,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -332,6 +337,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for RADGIVER_MED_FULLMAKT"),
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -343,6 +349,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             fullmektigFnr = fullmektigFnr ?: throw IllegalArgumentException("fullmektigFnr er påkrevd for ANNEN_PERSON"),
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            antallAnsatte = antallAnsatte,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -396,7 +403,7 @@ fun skjemaMedDefaultVerdier(
     data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetVia: OpprettetVia? = null,
-    skjemaDefinisjonVersjon: String = "2",
+    skjemaDefinisjonVersjon: String = "3",
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,
