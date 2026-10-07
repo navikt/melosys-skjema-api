@@ -11,8 +11,8 @@ import no.nav.security.token.support.core.api.ProtectedWithClaims
  * 2. Tokenets azp-claim er Consoles klient-ID fra admin.console-klient-id
  *    (se [M2MProtectedAspect.validateAdminAccess])
  *
- * I tillegg krever [no.nav.melosys.skjema.sikkerhet.AdminTilgangInterceptor] driftsgruppen
- * for personkall under /admin.
+ * Under /admin gjør [AdminTilgangInterceptor] de samme sjekkene før kontrolleren nås, og krever
+ * i tillegg driftsgruppen for personkall. Annotasjonen er et ekstra lag, ikke den eneste sperren.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)

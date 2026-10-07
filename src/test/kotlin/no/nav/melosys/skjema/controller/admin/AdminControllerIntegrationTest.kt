@@ -58,7 +58,6 @@ import org.springframework.test.web.reactive.server.expectBody
 import no.nav.security.mock.oauth2.MockOAuth2Server
 
 private const val ANNEN_GRUPPE_ID = "00000000-0000-0000-0000-000000000099"
-private const val INGEN_TILGANG = "Ingen tilgang"
 private const val UKJENT_KLIENT = "ukjent-klient-id"
 // Headeren Console sender med nøkkelen fram til fase 5. Den skal ikke påvirke svaret.
 private const val ADMIN_NOEKKEL_HEADER = "X-MELOSYS-SKJEMA-ADMIN-APIKEY"
@@ -149,7 +148,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
@@ -158,7 +157,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
@@ -174,7 +173,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
@@ -185,7 +184,18 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
+        }
+
+        @Test
+        fun `skal sjekke klienten foer driftsgruppen`() {
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID), azp = UKJENT_KLIENT)
+
+            webTestClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
@@ -400,7 +410,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -1308,7 +1318,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -1464,7 +1474,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -1802,7 +1812,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
