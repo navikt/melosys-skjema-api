@@ -1,7 +1,10 @@
 package no.nav.melosys.skjema.controller.admin
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.assertions.assertSoftly
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -51,10 +54,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.web.reactive.server.EntityExchangeResult
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import no.nav.security.mock.oauth2.MockOAuth2Server
 
 private const val ANNEN_GRUPPE_ID = "00000000-0000-0000-0000-000000000099"
@@ -69,6 +77,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var mockOAuth2Server: MockOAuth2Server
+
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    private lateinit var handlerMapping: RequestMappingHandlerMapping
 
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
@@ -253,6 +265,91 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .exchange()
                 .expectStatus().isOk
         }
+    }
+
+    // Endepunktene hentes fra Spring, så nye admin-kontrollere dekkes uten at testene må oppdateres.
+    // assertSoftly viser alle endepunkter som feiler, ikke bare det første.
+    @Nested
+    @DisplayName("Alle registrerte admin-endepunkter")
+    inner class AlleAdminEndepunkter {
+
+        @Test
+        fun `skal returnere 401 uten token`() {
+            val endepunkter = registrerteAdminEndepunkter()
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    // Bare status: både AdminTilgangInterceptor og @AdminBeskyttet kan svare 401, og begge er riktige
+                    withClue(endepunkt) {
+                        kall(endepunkt, token = null).status.value() shouldBe 401
+                    }
+                }
+            }
+        }
+
+        @Test
+        fun `skal returnere 403 for kall fra annen klient`() {
+            val endepunkter = registrerteAdminEndepunkter()
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azp = UKJENT_KLIENT)
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    withClue(endepunkt) {
+                        val respons = kall(endepunkt, token)
+                        respons.status.value() shouldBe 403
+                        respons.responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
+                    }
+                }
+            }
+        }
+
+        @Test
+        fun `skal returnere 403 for personkall uten driftsgruppe`() {
+            val endepunkter = registrerteAdminEndepunkter()
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    withClue(endepunkt) {
+                        val respons = kall(endepunkt, token)
+                        respons.status.value() shouldBe 403
+                        respons.responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
+                    }
+                }
+            }
+        }
+
+        private fun registrerteAdminEndepunkter(): List<Endepunkt> {
+            val endepunkter = handlerMapping.handlerMethods.keys.flatMap { info ->
+                val metoder = info.methodsCondition.methods.ifEmpty { setOf(RequestMethod.GET) }
+                info.patternValues
+                    .filter { it.startsWith("/admin/") }
+                    .flatMap { mønster -> metoder.map { Endepunkt(it.asHttpMethod(), mønster) } }
+            }
+
+            // Vakt mot falsk grønn: finner oppslaget ingen endepunkter, kjører forEach ingen assertions,
+            // og testene passerer uten å ha sjekket noe. Ett GET- og ett POST-endepunkt viser at begge dekkes.
+            endepunkter.map { it.toString() }.shouldContainAll(
+                "GET /admin/statistikk",
+                "POST /admin/innsendinger/retry-feilede",
+            )
+            return endepunkter
+        }
+
+        private fun kall(endepunkt: Endepunkt, token: String?): EntityExchangeResult<String> =
+            webTestClient.method(endepunkt.metode).uri(endepunkt.sti)
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectBody<String>()
+                .returnResult()
+    }
+
+    private data class Endepunkt(val metode: HttpMethod, val mønster: String) {
+        // Interceptoren avviser før argumentene leses, så stivariablene trenger bare å matche mønsteret
+        val sti = mønster.replace(Regex("\\{[^}]+}"), "1")
+
+        override fun toString() = "$metode $mønster"
     }
 
     @Nested
