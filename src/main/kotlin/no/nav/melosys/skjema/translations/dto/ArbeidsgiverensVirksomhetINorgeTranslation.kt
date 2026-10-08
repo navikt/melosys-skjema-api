@@ -5,4 +5,8 @@ data class ArbeidsgiverensVirksomhetINorgeTranslation(
     val offentligVirksomhetSkalIkkeOppgiVanligDrift: String,
     val maaOppgiOmBemanningsbyraa: String,
     val maaOppgiOmVanligDrift: String,
+    val skalIkkeOppgiVanligDrift: String,
+    val skalIkkeOppgiSamletVirksomhet: String,
+    val antallMaaVaereNullEllerMer: String,
+    val andelMaaVaereMellom0Og100: String,
 )

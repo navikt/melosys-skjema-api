@@ -152,7 +152,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -183,24 +183,25 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = skjema.orgnr, navn = "Oppdatert navn"),
                 juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
-                erOffentligArbeidsgiver = true
+                erOffentligArbeidsgiver = true,
+                antallAnsatte = 50
             )
         val token = createTokenForUser(skjema.fnr)
 
         val response = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .exchange()
             .expectStatus().isOk
             .expectBody<UtsendtArbeidstakerSkjemaDto>()
             .returnResult().responseBody.shouldNotBeNull()
 
-        response.skjemaDefinisjonVersjon shouldBe "2"
+        response.skjemaDefinisjonVersjon shouldBe "3"
         response.utkastReinitialisert shouldBe true
         response.metadata.arbeidsgiverNavn shouldBe "Oppdatert navn"
         val lagret = skjemaRepository.findByIdOrNull(skjema.id!!).shouldNotBeNull()
-        lagret.skjemaDefinisjonVersjon shouldBe "2"
+        lagret.skjemaDefinisjonVersjon shouldBe "3"
         lagret.data shouldBe null
     }
 
@@ -224,7 +225,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -250,7 +251,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "2")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isNotFound

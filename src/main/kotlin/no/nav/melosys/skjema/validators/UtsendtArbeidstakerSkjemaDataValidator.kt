@@ -41,9 +41,10 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 ) {
     fun validate(
         dto: ArbeidsgiverensVirksomhetINorgeDto?,
-        erOffentligArbeidsgiver: Boolean?
+        erOffentligArbeidsgiver: Boolean?,
+        antallAnsatte: Int?
     ) {
-        throwIfViolations(arbeidsgiverensVirksomhetValidator.validate(dto, erOffentligArbeidsgiver))
+        throwIfViolations(arbeidsgiverensVirksomhetValidator.validate(dto, erOffentligArbeidsgiver, antallAnsatte))
     }
 
     fun validate(dto: UtenlandsoppdragetDto?) {
@@ -84,7 +85,8 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 
     fun validateUtsendtArbeidstakerSkjemaData(
         skjemaData: UtsendtArbeidstakerSkjemaData,
-        erOffentligArbeidsgiver: Boolean?
+        erOffentligArbeidsgiver: Boolean?,
+        antallAnsatte: Int?
     ) {
         val violations = mutableListOf<Violation>()
 
@@ -96,7 +98,8 @@ class UtsendtArbeidstakerSkjemaDataValidator(
             is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> {
                 violations += arbeidsgiverensVirksomhetValidator.validate(
                     skjemaData.arbeidsgiverensVirksomhetINorge,
-                    erOffentligArbeidsgiver
+                    erOffentligArbeidsgiver,
+                    antallAnsatte
                 )
                 violations += utenlandsoppdragetValidator.validate(skjemaData.utenlandsoppdraget)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidstakerensLonn)
@@ -110,7 +113,8 @@ class UtsendtArbeidstakerSkjemaDataValidator(
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> {
                 violations += arbeidsgiverensVirksomhetValidator.validate(
                     skjemaData.arbeidsgiversData.arbeidsgiverensVirksomhetINorge,
-                    erOffentligArbeidsgiver
+                    erOffentligArbeidsgiver,
+                    antallAnsatte
                 )
                 violations += utenlandsoppdragetValidator.validate(skjemaData.arbeidsgiversData.utenlandsoppdraget)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidsgiversData.arbeidstakerensLonn)

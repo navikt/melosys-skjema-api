@@ -1,13 +1,12 @@
 name: Gradle Test
+# Ingen paths-filter: Build og test er påkrevd, og en PR som bare endrer andre filer
+# (for eksempel Dependabots Actions-bumper) ville ellers aldri fått sjekken.
 on:
   pull_request:
     branches:
       - 'main'
-    paths:
-      - 'src/**'
-      - '.github/*/pull-request.yaml'
-      - '*gradle*'
-      - 'melosys-skjema-api-types/**'
+  merge_group:
+    types: [checks_requested]
 permissions:
   contents: read
   packages: read

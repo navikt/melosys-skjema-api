@@ -243,7 +243,7 @@ class M2MSkjemaServiceIntegrationTest : ApiTestBase() {
         result.tidligereInnsendteSkjema.size shouldBe 2
         result.tidligereInnsendteSkjema[0].id shouldBe v2.id
         result.tidligereInnsendteSkjema[1].id shouldBe v1.id
-        result.skjema.skjemaDefinisjonVersjon shouldBe "2"
+        result.skjema.skjemaDefinisjonVersjon shouldBe "3"
         result.tidligereInnsendteSkjema.map { it.skjemaDefinisjonVersjon } shouldBe listOf("1", "1")
     }
 

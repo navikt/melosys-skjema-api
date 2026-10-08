@@ -101,7 +101,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         every { mockEregService.hentOrganisasjonMedJuridiskEnhet(any()) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
             juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS"),
-            erOffentligArbeidsgiver = false
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50
         )
         // Default: Ingen kobling
         every { mockUtsendtArbeidstakerSkjemaKoblingService.finnOgKobl(any()) } returns KoblingsResultat(kobletSkjemaId = null, erstatterSkjemaId = null)
@@ -499,7 +500,8 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 OrganisasjonMedJuridiskEnhetDto(
                     organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(navn = "Nytt navn"),
                     juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
-                    erOffentligArbeidsgiver = true
+                    erOffentligArbeidsgiver = true,
+                    antallAnsatte = 7
                 )
 
             val resultat = service.hentSkjema(skjemaId, "2")
@@ -511,6 +513,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             resultat.metadata.arbeidsgiverNavn shouldBe "Nytt navn"
             resultat.metadata.juridiskEnhetOrgnr shouldBe "999888777"
             resultat.metadata.erOffentligArbeidsgiver shouldBe true
+            resultat.metadata.antallAnsatte shouldBe 7
             verify(exactly = 1) { mockVedleggService.slettAlleForLåstSkjema(skjemaId) }
         }
 

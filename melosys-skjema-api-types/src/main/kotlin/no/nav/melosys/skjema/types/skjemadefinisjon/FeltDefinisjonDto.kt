@@ -32,7 +32,7 @@ sealed class FeltDefinisjonDto {
     abstract val pakrevd: Boolean
 }
 
-enum class FeltFormat { BELOP }
+enum class FeltFormat { BELOP, PROSENT }
 
 /**
  * Boolean-felt (Ja/Nei).
