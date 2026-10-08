@@ -22,7 +22,7 @@ private val log = KotlinLogging.logger {}
 /**
  * Administrative endepunkter for drift og feilsøking, eksponert mot melosys-console.
  *
- * Alle endepunkter er beskyttet av [AdminBeskyttet] (Azure AD-token + azp_name-allowlist),
+ * Alle endepunkter er beskyttet av [AdminBeskyttet] (Azure AD-token + azp lik Consoles klient-ID),
  * og dukker opp som egen OpenAPI-gruppe på `/v3/api-docs/admin`.
  */
 @RestController

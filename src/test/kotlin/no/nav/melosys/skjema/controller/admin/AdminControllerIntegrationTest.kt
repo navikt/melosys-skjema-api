@@ -1,20 +1,21 @@
 package no.nav.melosys.skjema.controller.admin
 
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.assertions.assertSoftly
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
-import io.kotest.matchers.string.shouldStartWith
 import io.mockk.every
 import io.mockk.verify
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import no.nav.melosys.skjema.ACCEPTED_AZURE_AUDIENCE
 import no.nav.melosys.skjema.AZURE_ISSUER_ID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.DRIFTSGRUPPE_ID
@@ -34,7 +35,6 @@ import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.InnsendingService
-import no.nav.melosys.skjema.sikkerhet.AdminApiKeyInterceptor.Companion.API_KEY_HEADER
 import no.nav.melosys.skjema.sikkerhet.AdminTilgangInterceptor
 import no.nav.melosys.skjema.skjemaMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Saksstatus
@@ -54,15 +54,21 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.web.reactive.server.EntityExchangeResult
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import no.nav.security.mock.oauth2.MockOAuth2Server
 
-private const val TEST_ADMIN_APIKEY = "test-admin-apikey"
 private const val ANNEN_GRUPPE_ID = "00000000-0000-0000-0000-000000000099"
-private const val INGEN_TILGANG = "Ingen tilgang"
+private const val UKJENT_KLIENT = "ukjent-klient-id"
+// Headeren Console sender med nøkkelen fram til fase 5. Den skal ikke påvirke svaret.
+private const val ADMIN_NOEKKEL_HEADER = "X-MELOSYS-SKJEMA-ADMIN-APIKEY"
 
 class AdminControllerIntegrationTest : ApiTestBase() {
 
@@ -71,6 +77,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var mockOAuth2Server: MockOAuth2Server
+
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    private lateinit var handlerMapping: RequestMappingHandlerMapping
 
     @Autowired
     private lateinit var skjemaRepository: SkjemaRepository
@@ -86,11 +96,6 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
     @MockkBean(relaxed = true)
     private lateinit var brukervarselProducer: BrukervarselProducer
-
-    /** WebTestClient som sender gyldig admin-API-nøkkel på alle kall (jf. application-test.yml). */
-    private val adminClient by lazy {
-        webTestClient.mutate().defaultHeader(API_KEY_HEADER, TEST_ADMIN_APIKEY).build()
-    }
 
     @BeforeEach
     fun setUp() {
@@ -119,14 +124,14 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 401 naar token mangler`() {
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .exchange()
                 .expectStatus().isUnauthorized
         }
 
         @Test
         fun `skal returnere 401 naar token er fra en annen utsteder enn Azure`() {
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.getToken()}")
                 .exchange()
                 .expectStatus().isUnauthorized
@@ -140,7 +145,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 claims = mapOf("azp_name" to MELOSYS_CONSOLE_CLIENT_ID, "groups" to listOf(DRIFTSGRUPPE_ID))
             )
 
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isUnauthorized
@@ -149,52 +154,82 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
             // Driftsgruppen er med, så det er klientsjekken som avviser
-            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azpName = "ukjent-klient-id")
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azp = UKJENT_KLIENT)
 
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
         fun `skal returnere 403 naar maskinkall kommer fra ukjent klient`() {
-            adminClient.get().uri("/admin/statistikk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
-                .exchange()
-                .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
-        }
-
-        @Test
-        fun `skal returnere 403 naar API-noekkel mangler selv med gyldig token`() {
             webTestClient.get().uri("/admin/statistikk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
-        fun `skal returnere 403 naar API-noekkel er feil`() {
+        fun `skal returnere 403 naar azp_name er Console men azp er en annen klient`() {
+            // Bare azp avgjør. azp_name gir ikke lenger tilgang.
+            val token = mockOAuth2Server.adminPersonToken(
+                grupper = listOf(DRIFTSGRUPPE_ID),
+                azp = UKJENT_KLIENT,
+                ekstraClaims = mapOf("azp_name" to MELOSYS_CONSOLE_CLIENT_ID)
+            )
+
             webTestClient.get().uri("/admin/statistikk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
-                .header(API_KEY_HEADER, "feil-noekkel")
+                .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
 
         @Test
-        fun `skal returnere 200 naar personkall har driftsgruppe og noekkel`() {
-            adminClient.get().uri("/admin/statistikk")
+        fun `skal returnere 403 naar token mangler azp`() {
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azp = null)
+
+            webTestClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
+        }
+
+        @Test
+        fun `skal sjekke klienten foer driftsgruppen`() {
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID), azp = UKJENT_KLIENT)
+
+            webTestClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus().isForbidden
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
+        }
+
+        @Test
+        fun `skal returnere 200 naar personkall fra Console har driftsgruppe, uten noekkel`() {
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
                 .expectStatus().isOk
         }
 
         @Test
-        fun `skal returnere 403 med forklaring naar personkall mangler driftsgruppe, selv med riktig noekkel`() {
-            adminClient.get().uri("/admin/statistikk")
+        fun `skal ignorere feil noekkel i header`() {
+            webTestClient.get().uri("/admin/statistikk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
+                .header(ADMIN_NOEKKEL_HEADER, "feil-noekkel")
+                .exchange()
+                .expectStatus().isOk
+        }
+
+        @Test
+        fun `skal returnere 403 med forklaring naar personkall mangler driftsgruppe`() {
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
                 .exchange()
                 .expectStatus().isForbidden
@@ -203,7 +238,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar personkall mangler groups-claim`() {
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = null)}")
                 .exchange()
                 .expectStatus().isForbidden
@@ -212,47 +247,109 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar idtyp ikke er app og driftsgruppe mangler`() {
-            val token = mockOAuth2Server.getToken(
-                issuerId = AZURE_ISSUER_ID,
-                audiences = listOf(ACCEPTED_AZURE_AUDIENCE),
-                claims = mapOf("azp_name" to MELOSYS_CONSOLE_CLIENT_ID, "idtyp" to "user")
-            )
+            val token = mockOAuth2Server.adminPersonToken(grupper = null, ekstraClaims = mapOf("idtyp" to "user"))
 
-            adminClient.get().uri("/admin/statistikk")
+            webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isForbidden
                 .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
         }
 
-        @Test
-        fun `skal svare med noekkelfeil naar baade noekkel og driftsgruppe mangler`() {
-            // Dagens avvisning (manglende nøkkel) skal se lik ut, også for personkall uten driftsgruppe
-            webTestClient.get().uri("/admin/statistikk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))}")
-                .exchange()
-                .expectStatus().isForbidden
-                .expectBody<String>().returnResult().responseBody.shouldNotBeNull() shouldStartWith "Ugyldig API-"
-        }
-
         // De to rutene Console kaller uten innlogget bruker (statistikk på oversiktssiden)
         @ParameterizedTest
         @ValueSource(strings = ["/admin/innsendinger/feilede/antall", "/admin/statistikk/bruk"])
-        fun `skal returnere 200 for maskinkall fra Console uten driftsgruppe`(sti: String) {
-            adminClient.get().uri(sti)
+        fun `skal returnere 200 for maskinkall fra Console uten driftsgruppe, uten noekkel`(sti: String) {
+            webTestClient.get().uri(sti)
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
                 .exchange()
                 .expectStatus().isOk
         }
+    }
+
+    // Endepunktene hentes fra Spring, så nye admin-kontrollere dekkes uten at testene må oppdateres.
+    // assertSoftly viser alle endepunkter som feiler, ikke bare det første.
+    @Nested
+    @DisplayName("Alle registrerte admin-endepunkter")
+    inner class AlleAdminEndepunkter {
 
         @Test
-        fun `skal returnere 403 naar maskinkall mangler noekkel`() {
-            webTestClient.get().uri("/admin/innsendinger/feilede/antall")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken()}")
-                .exchange()
-                .expectStatus().isForbidden
-                .expectBody<String>().returnResult().responseBody.shouldNotBeNull() shouldStartWith "Ugyldig API-"
+        fun `skal returnere 401 uten token`() {
+            val endepunkter = registrerteAdminEndepunkter()
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    // Bare status: både AdminTilgangInterceptor og @AdminBeskyttet kan svare 401, og begge er riktige
+                    withClue(endepunkt) {
+                        kall(endepunkt, token = null).status.value() shouldBe 401
+                    }
+                }
+            }
         }
+
+        @Test
+        fun `skal returnere 403 for kall fra annen klient`() {
+            val endepunkter = registrerteAdminEndepunkter()
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(DRIFTSGRUPPE_ID), azp = UKJENT_KLIENT)
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    withClue(endepunkt) {
+                        val respons = kall(endepunkt, token)
+                        respons.status.value() shouldBe 403
+                        respons.responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
+                    }
+                }
+            }
+        }
+
+        @Test
+        fun `skal returnere 403 for personkall uten driftsgruppe`() {
+            val endepunkter = registrerteAdminEndepunkter()
+            val token = mockOAuth2Server.adminPersonToken(grupper = listOf(ANNEN_GRUPPE_ID))
+
+            assertSoftly {
+                endepunkter.forEach { endepunkt ->
+                    withClue(endepunkt) {
+                        val respons = kall(endepunkt, token)
+                        respons.status.value() shouldBe 403
+                        respons.responseBody shouldBe AdminTilgangInterceptor.MANGLER_DRIFTSGRUPPE
+                    }
+                }
+            }
+        }
+
+        private fun registrerteAdminEndepunkter(): List<Endepunkt> {
+            val endepunkter = handlerMapping.handlerMethods.keys.flatMap { info ->
+                val metoder = info.methodsCondition.methods.ifEmpty { setOf(RequestMethod.GET) }
+                info.patternValues
+                    .filter { it.startsWith("/admin/") }
+                    .flatMap { mønster -> metoder.map { Endepunkt(it.asHttpMethod(), mønster) } }
+            }
+
+            // Vakt mot falsk grønn: finner oppslaget ingen endepunkter, kjører forEach ingen assertions,
+            // og testene passerer uten å ha sjekket noe. Ett GET- og ett POST-endepunkt viser at begge dekkes.
+            endepunkter.map { it.toString() }.shouldContainAll(
+                "GET /admin/statistikk",
+                "POST /admin/innsendinger/retry-feilede",
+            )
+            return endepunkter
+        }
+
+        private fun kall(endepunkt: Endepunkt, token: String?): EntityExchangeResult<String> =
+            webTestClient.method(endepunkt.metode).uri(endepunkt.sti)
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectBody<String>()
+                .returnResult()
+    }
+
+    private data class Endepunkt(val metode: HttpMethod, val mønster: String) {
+        // Interceptoren avviser før argumentene leses, så stivariablene trenger bare å matche mønsteret
+        val sti = mønster.replace(Regex("\\{[^}]+}"), "1")
+
+        override fun toString() = "$metode $mønster"
     }
 
     @Nested
@@ -263,7 +360,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         fun `skal returnere antall per status`() {
             lagFeiletInnsending()
 
-            val body = adminClient.get().uri("/admin/statistikk")
+            val body = webTestClient.get().uri("/admin/statistikk")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -285,7 +382,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         fun `skal returnere feilede innsendinger uten personopplysninger`() {
             val innsending = lagFeiletInnsending()
 
-            val body = adminClient.get().uri("/admin/innsendinger/feilede")
+            val body = webTestClient.get().uri("/admin/innsendinger/feilede")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -305,7 +402,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             lagFeiletInnsending("FEIL01")
             lagFeiletInnsending("FEIL02")
 
-            val body = adminClient.get().uri("/admin/innsendinger/feilede/antall")
+            val body = webTestClient.get().uri("/admin/innsendinger/feilede/antall")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -325,7 +422,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         fun `skal returnere innsending`() {
             val innsending = lagFeiletInnsending()
 
-            adminClient.get().uri("/admin/innsendinger/${innsending.id}")
+            webTestClient.get().uri("/admin/innsendinger/${innsending.id}")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -337,7 +434,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 404 naar innsending ikke finnes`() {
-            adminClient.get().uri("/admin/innsendinger/${UUID.randomUUID()}")
+            webTestClient.get().uri("/admin/innsendinger/${UUID.randomUUID()}")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -354,7 +451,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             val innsending = lagFeiletInnsending()
             val skjemaId = innsending.skjema.id!!
 
-            adminClient.post().uri("/admin/innsendinger/${innsending.id}/retry")
+            webTestClient.post().uri("/admin/innsendinger/${innsending.id}/retry")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -365,7 +462,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 404 naar innsending ikke finnes`() {
-            adminClient.post().uri("/admin/innsendinger/${UUID.randomUUID()}/retry")
+            webTestClient.post().uri("/admin/innsendinger/${UUID.randomUUID()}/retry")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -389,7 +486,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             )
             innsendingRepository.save(innsendingMedDefaultVerdier(skjema = skjemaAnnenFnr))
 
-            val body = adminClient.post().uri("/admin/innsendinger")
+            val body = webTestClient.post().uri("/admin/innsendinger")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
@@ -404,13 +501,13 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar bruker ikke har admin-rettigheter`() {
-            adminClient.post().uri("/admin/innsendinger")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
+            webTestClient.post().uri("/admin/innsendinger")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(HentInnsendingerDto(fnr = korrektSyntetiskFnr, orgnr = null))
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -424,7 +521,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             val innsending2 = lagFeiletInnsending("FEIL02")
             every { innsendingService.prosesserInnsending(any()) } returns Unit
 
-            val body = adminClient.post().uri("/admin/innsendinger/retry-feilede")
+            val body = webTestClient.post().uri("/admin/innsendinger/retry-feilede")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -504,7 +601,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             )
 
         private fun hentBruk(fraOgMed: String? = null, tilOgMed: String? = null): BrukStatistikkDto =
-            adminClient.get().uri { b ->
+            webTestClient.get().uri { b ->
                 b.path("/admin/statistikk/bruk")
                 fraOgMed?.let { b.queryParam("fraOgMed", it) }
                 tilOgMed?.let { b.queryParam("tilOgMed", it) }
@@ -1178,7 +1275,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             innsending.saksnummer = "MEL-123456"
             innsendingRepository.save(innsending)
 
-            val json = adminClient.get().uri("/admin/saksstatus/eksport")
+            val json = webTestClient.get().uri("/admin/saksstatus/eksport")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
                 .expectStatus().isOk
@@ -1189,7 +1286,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             json shouldNotContain innsending.innsenderFnr
             json shouldNotContain "Test Testesen"
 
-            val eksport = adminClient.get().uri("/admin/saksstatus/eksport")
+            val eksport = webTestClient.get().uri("/admin/saksstatus/eksport")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .exchange()
                 .expectStatus().isOk
@@ -1314,11 +1411,11 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
-            adminClient.get().uri("/admin/statistikk/bruk")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
+            webTestClient.get().uri("/admin/statistikk/bruk")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -1354,7 +1451,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
         }
 
         private fun hentSaksnumre(rang: Int, fraOgMed: String? = null, tilOgMed: String? = null) =
-            adminClient.get().uri { b ->
+            webTestClient.get().uri { b ->
                 b.path("/admin/statistikk/bruk/virksomheter/$rang/saksnumre")
                 fraOgMed?.let { b.queryParam("fraOgMed", it) }
                 tilOgMed?.let { b.queryParam("tilOgMed", it) }
@@ -1371,7 +1468,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .returnResult().responseBody.shouldNotBeNull()
 
         private fun hentToppliste(fraOgMed: String? = null, tilOgMed: String? = null): List<VirksomhetStatistikkDto> =
-            adminClient.get().uri { b ->
+            webTestClient.get().uri { b ->
                 b.path("/admin/statistikk/bruk")
                 fraOgMed?.let { b.queryParam("fraOgMed", it) }
                 tilOgMed?.let { b.queryParam("tilOgMed", it) }
@@ -1470,11 +1567,11 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
-            adminClient.get().uri("/admin/statistikk/bruk/virksomheter/1/saksnumre")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
+            webTestClient.get().uri("/admin/statistikk/bruk/virksomheter/1/saksnumre")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 
@@ -1542,7 +1639,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 .returnResult().responseBody.shouldNotBeNull()
 
         private fun resendRespons(dryRun: Boolean = false, ekskluderteSaksnumre: List<String>? = null): WebTestClient.ResponseSpec {
-            val request = adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
+            val request = webTestClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
             val medBody = ekskluderteSaksnumre?.let { request.bodyValue(ResendVarslerRequestDto(it)) } ?: request
@@ -1617,7 +1714,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         /** Rå JSON-body, for tilfeller der [ResendVarslerRequestDto] ikke lar seg konstruere klientside. */
         private fun resendRaaBody(json: String, dryRun: Boolean = false): WebTestClient.ResponseSpec =
-            adminClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
+            webTestClient.post().uri("/admin/varsler/resend?dryRun=$dryRun")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
@@ -1660,7 +1757,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             eksplisitt.antallSendt shouldBe 1
             eksplisitt.saksnumre shouldBe listOf("SAK-DRY")
 
-            val defaultKall = adminClient.post().uri("/admin/varsler/resend")
+            val defaultKall = webTestClient.post().uri("/admin/varsler/resend")
                 .header("Authorization", "Bearer ${mockOAuth2Server.adminTokenMedTilgang()}")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -1808,11 +1905,11 @@ class AdminControllerIntegrationTest : ApiTestBase() {
 
         @Test
         fun `skal returnere 403 naar azp ikke matcher tillatt klient`() {
-            adminClient.post().uri("/admin/varsler/resend")
-                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azpName = "ukjent-klient-id")}")
+            webTestClient.post().uri("/admin/varsler/resend")
+                .header("Authorization", "Bearer ${mockOAuth2Server.adminMaskinToken(azp = UKJENT_KLIENT)}")
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("\$.message").isEqualTo(INGEN_TILGANG)
+                .expectBody<String>().returnResult().responseBody shouldBe AdminTilgangInterceptor.UKJENT_KLIENT
         }
     }
 

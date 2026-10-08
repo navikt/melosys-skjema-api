@@ -201,11 +201,9 @@ m2m:
     clients:
       - ${MELOSYS_CLIENT_ID}
 
-# Tilgang til admin-endepunktene (/admin/**): både azp_name-allowlist og delt
-# API-nøkkel må stemme (i tillegg til gyldig Azure AD-token).
-# clients: typisk melosys-console på formatet `<cluster>:teammelosys:melosys-console`.
+# Tilgang til admin-endepunktene (/admin/**), i tillegg til gyldig Azure AD-token:
+# console-klient-id: tokenets azp må være denne (klient-ID-en til melosys-console).
 # driftsgruppe: personkall må ha denne gruppen i tokenet. I Nais: melosys-innlogging-vakt.
 admin:
-  clients: ${MELOSYS_CONSOLE_AZP_NAMES}
-  apikey: ${MELOSYS_SKJEMA_ADMIN_APIKEY}
+  console-klient-id: ${MELOSYS_CONSOLE_CLIENT_ID}
   driftsgruppe: ${GROUP_MELOSYS_INNLOGGING_VAKT}
