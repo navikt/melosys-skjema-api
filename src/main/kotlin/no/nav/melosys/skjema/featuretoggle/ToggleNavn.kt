@@ -13,7 +13,10 @@ enum class ToggleNavn(val navn: String) {
     MOTPART_CTA("melosys.skjema.motpart-cta"),
 
     /** Sammendrag over innsendte søknader (antall innsendt / venter på motpart) på oversikten. */
-    INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag");
+    INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag"),
+
+    /** Ny inngangsside «Velg situasjonen som gjelder for deg» før representasjonsvalget. */
+    VELG_SITUASJON("melosys.skjema.velg-situasjon");
 
     companion object {
         /** Allowlist for /api/featuretoggle – kun disse kan evalueres av frontend. */
