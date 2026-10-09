@@ -36,6 +36,12 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     /** Antall ansatte i A-registeret for juridisk enhet, fra EREG. Null for eldre metadata. */
     abstract val antallAnsatte: Int?
     /**
+     * Fra AAREG ved innsending av arbeidstakers del hos en offentlig arbeidsgiver: arbeidstakeren har
+     * et ordinært arbeidsforhold hos arbeidsgiveren som overlapper utsendingsperioden. Da regnes delen
+     * som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
+     */
+    abstract val erOffentligTjenesteperson: Boolean?
+    /**
      * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
      * basert på fnr, juridisk enhet og overlappende perioder.
@@ -55,6 +61,9 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
 
     /** Oppretter en kopi med ny erstatterSkjemaId */
     abstract fun medErstatterSkjemaId(erstatterSkjemaId: UUID?): UtsendtArbeidstakerMetadata
+
+    /** Oppretter en kopi med ny erOffentligTjenesteperson */
+    abstract fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?): UtsendtArbeidstakerMetadata
 }
 
 /**
@@ -67,6 +76,7 @@ data class DegSelvMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -74,6 +84,8 @@ data class DegSelvMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 /**
@@ -86,6 +98,7 @@ data class ArbeidsgiverMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -93,6 +106,8 @@ data class ArbeidsgiverMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 /**
@@ -107,6 +122,7 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -114,6 +130,8 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 /**
@@ -126,6 +144,7 @@ data class RadgiverMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -135,6 +154,8 @@ data class RadgiverMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 /**
@@ -149,6 +170,7 @@ data class RadgiverMedFullmaktMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -158,6 +180,8 @@ data class RadgiverMedFullmaktMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 /**
@@ -172,6 +196,7 @@ data class AnnenPersonMetadata(
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
     override val antallAnsatte: Int? = null,
+    override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -179,6 +204,8 @@ data class AnnenPersonMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ANNEN_PERSON
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
+    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
+        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
 }
 
 data class RadgiverfirmaInfo(

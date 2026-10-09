@@ -92,7 +92,7 @@ spec:
       external:
         - host: teammelosys-unleash-api.nav.cloud.nais.io
         - host: pdl-api.dev-fss-pub.nais.io
-        - host: aareg-services.prod-fss-pub.nais.io
+        - host: aareg-services.dev-fss-pub.nais.io
         - host: ereg-services.dev-fss-pub.nais.io
         - host: altinn.no
         - host: nav-melding-api.intern.nav.no
@@ -105,6 +105,9 @@ spec:
         - application: pdl-api
           namespace: pdl
           cluster: dev-fss
+        - application: aareg-services-nais
+          namespace: arbeidsforhold
+          cluster: dev-fss
         - application: clamav
           namespace: nais-system
         - application: logging
@@ -116,6 +119,10 @@ spec:
     # Driftsgruppen personkall til /admin/** må ha (melosys-innlogging-vakt, se claims.groups)
     - name: GROUP_MELOSYS_INNLOGGING_VAKT
       value: fb706914-eede-490a-b9cd-2458983e24c1
+    - name: AAREG_URL
+      value: https://aareg-services.dev-fss-pub.nais.io
+    - name: AAREG_SCOPE
+      value: api://dev-fss.arbeidsforhold.aareg-services-nais/.default
   envFrom:
     - secret: melosys-skjema-api
     - secret: melosys-skjema-api-unleash-api-token

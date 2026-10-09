@@ -15,9 +15,12 @@ import io.mockk.verify
 import java.util.Optional
 import java.util.UUID
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
+import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
@@ -61,6 +64,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         every { hentFullmaktsgiverFnr() } returns emptySet()
     }
     val mockEregService = mockk<EregService>()
+    val mockAaregService = mockk<AaregService>()
     val mockUtsendtArbeidstakerSkjemaKoblingService = mockk<UtsendtArbeidstakerSkjemaKoblingService>()
     val mockSubjectHandler = mockk<SubjectHandler>()
     val innsendingService = mockk<InnsendingService>()
@@ -76,6 +80,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         mockAltinnService,
         mockReprService,
         mockEregService,
+        mockAaregService,
         mockUtsendtArbeidstakerSkjemaKoblingService,
         mockSubjectHandler,
         innsendingService,
@@ -470,6 +475,93 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
 
             shouldThrow<SkjemaErIkkeRedigerbartException> {
                 service.sendInnSkjema(alleredeSendtSkjema.id!!, "1", Språk.NORSK_BOKMAL)
+            }
+        }
+
+        context("offentlig tjenesteperson") {
+            val juridiskEnhetOrgnr = "999888777"
+
+            fun utkast(skjemadel: Skjemadel, erOffentligArbeidsgiver: Boolean) = skjemaMedDefaultVerdier(
+                id = UUID.randomUUID(),
+                fnr = korrektSyntetiskFnr,
+                skjemaDefinisjonVersjon = "2",
+                data = when (skjemadel) {
+                    Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                    Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
+                    Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier()
+                },
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = skjemadel,
+                    juridiskEnhetOrgnr = juridiskEnhetOrgnr,
+                    erOffentligArbeidsgiver = erOffentligArbeidsgiver
+                )
+            )
+
+            fun sendInn(skjema: Skjema) {
+                every { mockSubjectHandler.getUserID() } returns skjema.fnr
+                every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+                every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+                every { referanseIdGenerator.generer() } returns "MEL-123"
+                every { innsendingService.opprettInnsending(any(), any(), any(), any()) } returns mockk()
+                every { eventPublisher.publishEvent(any<Any>()) } just Runs
+                service.sendInnSkjema(skjema.id!!, "2", Språk.NORSK_BOKMAL)
+            }
+
+            beforeTest { clearMocks(mockAaregService) }
+
+            test("arbeidstakers del hos offentlig arbeidsgiver med treff i AAREG settes som offentlig tjenesteperson") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
+
+                sendInn(skjema)
+
+                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe true
+                skjema.status shouldBe SkjemaStatus.SENDT
+                verify(exactly = 1) {
+                    mockAaregService.harOrdinaertArbeidsforhold(
+                        skjema.fnr,
+                        skjema.orgnr,
+                        juridiskEnhetOrgnr,
+                        utsendingsperiodeOgLandDtoMedDefaultVerdier().utsendelsePeriode
+                    )
+                }
+            }
+
+            test("arbeidstakers del hos offentlig arbeidsgiver uten treff i AAREG settes ikke som offentlig tjenesteperson") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+                sendInn(skjema)
+
+                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe false
+            }
+
+            test("arbeidstakers del hos privat arbeidsgiver slår ikke opp i AAREG") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = false)
+
+                sendInn(skjema)
+
+                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe null
+                verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+            }
+
+            test("arbeidsgivers del hos offentlig arbeidsgiver slår ikke opp i AAREG") {
+                val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, erOffentligArbeidsgiver = true)
+
+                sendInn(skjema)
+
+                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe null
+                verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+            }
+
+            test("feil fra AAREG gjør at innsendingen feiler") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } throws
+                    IllegalStateException("AAREG nede")
+
+                shouldThrow<IllegalStateException> { sendInn(skjema) }
+
+                skjema.status shouldBe SkjemaStatus.UTKAST
             }
         }
     }

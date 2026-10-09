@@ -239,6 +239,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     /**
      * Utleder motpart-status for en skjemadel:
      * - Kombinert del (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har aldri motpart → IKKE_RELEVANT
+     * - Arbeidstakers del fra offentlig tjenesteperson (AAREG) er komplett alene → IKKE_RELEVANT
      * - Motpartens del finnes i noen SENDT versjon → HAR_SENDT
      * - Ellers → VENTER (inkluderer koblet skjema som kun er utkast, og motpart via annen kanal)
      *
@@ -258,6 +259,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         metadata: UtsendtArbeidstakerMetadata,
         sendteVersjonerPerFnr: Map<String, SendteVersjoner>
     ): MotpartStatus {
+        if (metadata.erOffentligTjenesteperson == true) return MotpartStatus.IKKE_RELEVANT
         val motpartsDel = when (metadata.skjemadel) {
             Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> return MotpartStatus.IKKE_RELEVANT
             Skjemadel.ARBEIDSTAKERS_DEL -> Skjemadel.ARBEIDSGIVERS_DEL

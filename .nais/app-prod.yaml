@@ -102,6 +102,9 @@ spec:
         - application: pdl-api
           namespace: pdl
           cluster: prod-fss
+        - application: aareg-services-nais
+          namespace: arbeidsforhold
+          cluster: prod-fss
         - application: clamav
           namespace: nais-system
         - application: logging
@@ -113,6 +116,10 @@ spec:
     # Driftsgruppen personkall til /admin/** må ha (melosys-innlogging-vakt, se claims.groups)
     - name: GROUP_MELOSYS_INNLOGGING_VAKT
       value: f6da5fea-0907-47e6-8424-8dc4da6a7c42
+    - name: AAREG_URL
+      value: https://aareg-services.prod-fss-pub.nais.io
+    - name: AAREG_SCOPE
+      value: api://prod-fss.arbeidsforhold.aareg-services-nais/.default
   envFrom:
     - secret: melosys-skjema-api
     - secret: melosys-skjema-api-unleash-api-token

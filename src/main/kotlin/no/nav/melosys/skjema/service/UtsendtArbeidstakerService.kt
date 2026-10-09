@@ -10,10 +10,12 @@ import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
 import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.featuretoggle.ToggleNavn
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -53,6 +55,7 @@ class UtsendtArbeidstakerService(
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val eregService: EregService,
+    private val aaregService: AaregService,
     private val skjemaKoblingService: UtsendtArbeidstakerSkjemaKoblingService,
     private val subjectHandler: SubjectHandler,
     private val innsendingService: InnsendingService,
@@ -327,6 +330,8 @@ class UtsendtArbeidstakerService(
         )
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
+        settOffentligTjenesteperson(skjema, metadata)
+
         // 1. Generer referanseId
         val referanseId = referanseIdGenerator.generer()
 
@@ -370,6 +375,24 @@ class UtsendtArbeidstakerService(
             referanseId = referanseId,
             status = savedSkjema.status
         )
+    }
+
+    /**
+     * Arbeidstakers del hos en offentlig arbeidsgiver: slå opp i AAREG om arbeidstakeren er offentlig
+     * tjenesteperson. Da er delen komplett alene og venter ikke på arbeidsgivers del.
+     * Feil fra AAREG gjør at innsendingen feiler.
+     */
+    private fun settOffentligTjenesteperson(skjema: Skjema, metadata: UtsendtArbeidstakerMetadata) {
+        if (metadata.skjemadel != Skjemadel.ARBEIDSTAKERS_DEL || metadata.erOffentligArbeidsgiver != true) return
+
+        val periode = checkNotNull(skjema.utsendelsePeriode()) { "Skjema ${skjema.id} mangler utsendelsesperiode" }
+        val erOffentligTjenesteperson = aaregService.harOrdinaertArbeidsforhold(
+            fnr = skjema.fnr,
+            orgnr = skjema.orgnr,
+            juridiskEnhetOrgnr = metadata.juridiskEnhetOrgnr,
+            periode = periode
+        )
+        skjema.metadata = metadata.medErOffentligTjenesteperson(erOffentligTjenesteperson)
     }
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
