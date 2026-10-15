@@ -36,7 +36,7 @@ val springMockkVersion = "5.0.1"
 val springdocVersion = "3.1.1"
 val shedlockVersion = "7.10.1"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.31.1-alpha"
+val opentelemetryLogbackVersion = "2.32.0-alpha"
 
 repositories {
     mavenCentral()
@@ -77,8 +77,8 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.87")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.87")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.93")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.93")
 
     // GCP Cloud Storage for vedlegg
     implementation("com.google.cloud:google-cloud-storage:2.75.0")
