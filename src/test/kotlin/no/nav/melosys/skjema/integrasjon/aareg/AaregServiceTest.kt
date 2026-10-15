@@ -7,8 +7,9 @@ import io.mockk.mockk
 import java.time.LocalDate
 import no.nav.melosys.skjema.integrasjon.aareg.dto.Ansettelsesperiode
 import no.nav.melosys.skjema.integrasjon.aareg.dto.Arbeidsforhold
-import no.nav.melosys.skjema.integrasjon.aareg.dto.Arbeidsgiver
-import no.nav.melosys.skjema.integrasjon.aareg.dto.Periode
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Enhet
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Ident
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Kodeverksentitet
 import no.nav.melosys.skjema.types.felles.PeriodeDto
 
 class AaregServiceTest : FunSpec({
@@ -28,10 +29,10 @@ class AaregServiceTest : FunSpec({
         fom: LocalDate? = LocalDate.of(2020, 1, 1),
         tom: LocalDate? = null
     ) = Arbeidsforhold(
-        type = type,
-        arbeidsgiver = Arbeidsgiver(type = "Organisasjon", organisasjonsnummer = arbeidsgiver),
-        opplysningspliktig = Arbeidsgiver(type = "Organisasjon", organisasjonsnummer = opplysningspliktig),
-        ansettelsesperiode = Ansettelsesperiode(Periode(fom = fom, tom = tom))
+        type = Kodeverksentitet(kode = type),
+        arbeidssted = Enhet(type = "Underenhet", identer = listOf(Ident(type = "ORGANISASJONSNUMMER", ident = arbeidsgiver))),
+        opplysningspliktig = Enhet(type = "Hovedenhet", identer = listOf(Ident(type = "ORGANISASJONSNUMMER", ident = opplysningspliktig))),
+        ansettelsesperiode = Ansettelsesperiode(startdato = fom, sluttdato = tom)
     )
 
     fun harTreff(vararg arbeidsforhold: Arbeidsforhold): Boolean {
@@ -69,6 +70,14 @@ class AaregServiceTest : FunSpec({
 
     test("arbeidsforhold som starter i søknadsperioden gir treff") {
         harTreff(arbeidsforhold(fom = LocalDate.of(2026, 8, 31))) shouldBe true
+    }
+
+    test("orgnr matches bare mot identer av typen organisasjonsnummer") {
+        harTreff(
+            arbeidsforhold(opplysningspliktig = "920000000").copy(
+                arbeidssted = Enhet(type = "Person", identer = listOf(Ident(type = "FOLKEREGISTERIDENT", ident = orgnr)))
+            )
+        ) shouldBe false
     }
 
     test("ingen arbeidsforhold gir ikke treff") {

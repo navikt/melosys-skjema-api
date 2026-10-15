@@ -15,7 +15,8 @@ private val log = KotlinLogging.logger { }
 const val ARBEIDSFORHOLDTYPE_ORDINAERT = "ordinaertArbeidsforhold"
 
 /**
- * Klient mot AAREG v1 (`/api/v1/arbeidstaker/arbeidsforhold`), samme API som melosys-api bruker.
+ * Klient mot AAREG v2 (`/api/v2/arbeidstaker/arbeidsforhold`). Henter også avsluttede arbeidsforhold,
+ * siden søknadsperioden kan ligge tilbake i tid (AAREG gir bare aktive og fremtidige som standard).
  */
 @Component
 class AaregClient(
@@ -33,9 +34,9 @@ class AaregClient(
         return aaregRestClient.get()
             .uri { uriBuilder ->
                 uriBuilder
-                    .path("/api/v1/arbeidstaker/arbeidsforhold")
-                    .queryParam("regelverk", "ALLE")
-                    .queryParam("arbeidsforholdType", ARBEIDSFORHOLDTYPE_ORDINAERT)
+                    .path("/api/v2/arbeidstaker/arbeidsforhold")
+                    .queryParam("arbeidsforholdtype", ARBEIDSFORHOLDTYPE_ORDINAERT)
+                    .queryParam("arbeidsforholdstatus", "AKTIV,AVSLUTTET,FREMTIDIG")
                     .build()
             }
             .header("Nav-Personident", fnr)

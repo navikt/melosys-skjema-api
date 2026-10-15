@@ -20,18 +20,18 @@ class AaregService(
     fun harOrdinaertArbeidsforhold(fnr: String, orgnr: String, juridiskEnhetOrgnr: String, periode: PeriodeDto): Boolean {
         val arbeidsforhold = aaregClient.hentOrdinaereArbeidsforhold(fnr)
         val harTreff = arbeidsforhold.any {
-            it.type == ARBEIDSFORHOLDTYPE_ORDINAERT && it.gjelder(orgnr, juridiskEnhetOrgnr) && it.overlapper(periode)
+            it.type?.kode == ARBEIDSFORHOLDTYPE_ORDINAERT && it.gjelder(orgnr, juridiskEnhetOrgnr) && it.overlapper(periode)
         }
         log.info { "AAREG: ${arbeidsforhold.size} ordinære arbeidsforhold, treff hos arbeidsgiver i perioden: $harTreff" }
         return harTreff
     }
 
     private fun Arbeidsforhold.gjelder(orgnr: String, juridiskEnhetOrgnr: String): Boolean =
-        arbeidsgiver?.organisasjonsnummer == orgnr || opplysningspliktig?.organisasjonsnummer == juridiskEnhetOrgnr
+        arbeidssted?.organisasjonsnummer() == orgnr || opplysningspliktig?.organisasjonsnummer() == juridiskEnhetOrgnr
 
     private fun Arbeidsforhold.overlapper(periode: PeriodeDto): Boolean {
-        val ansatt = ansettelsesperiode?.periode ?: return false
-        return (ansatt.fom == null || !ansatt.fom.isAfter(periode.tilDato)) &&
-            (ansatt.tom == null || !ansatt.tom.isBefore(periode.fraDato))
+        val ansatt = ansettelsesperiode ?: return false
+        return (ansatt.startdato == null || !ansatt.startdato.isAfter(periode.tilDato)) &&
+            (ansatt.sluttdato == null || !ansatt.sluttdato.isBefore(periode.fraDato))
     }
 }

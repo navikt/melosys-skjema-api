@@ -14,8 +14,9 @@ import java.time.LocalDate
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.integrasjon.aareg.dto.Ansettelsesperiode
 import no.nav.melosys.skjema.integrasjon.aareg.dto.Arbeidsforhold
-import no.nav.melosys.skjema.integrasjon.aareg.dto.Arbeidsgiver
-import no.nav.melosys.skjema.integrasjon.aareg.dto.Periode
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Enhet
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Ident
+import no.nav.melosys.skjema.integrasjon.aareg.dto.Kodeverksentitet
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenResponse
 import no.nav.security.token.support.client.core.oauth2.OAuth2AccessTokenService
 import org.junit.jupiter.api.AfterEach
@@ -45,7 +46,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold sender forventet request og deserialiserer arbeidsforhold`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v1/arbeidstaker/arbeidsforhold"))
+            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -53,12 +54,12 @@ class AaregClientTest : ApiTestBase() {
                         .withBody(
                             """
                             [{
-                              "navArbeidsforholdId": 123,
-                              "type": "ordinaertArbeidsforhold",
-                              "arbeidsgiver": { "type": "Organisasjon", "organisasjonsnummer": "910000001" },
-                              "opplysningspliktig": { "type": "Organisasjon", "organisasjonsnummer": "910000000" },
-                              "ansettelsesperiode": { "periode": { "fom": "2020-01-01" } },
-                              "arbeidstaker": { "offentligIdent": "12345678910" }
+                              "id": "V910000001R1L0001",
+                              "type": { "kode": "ordinaertArbeidsforhold", "beskrivelse": "Ordinært arbeidsforhold" },
+                              "arbeidstaker": { "identer": [{ "type": "FOLKEREGISTERIDENT", "ident": "12345678910", "gjeldende": true }] },
+                              "arbeidssted": { "type": "Underenhet", "identer": [{ "type": "ORGANISASJONSNUMMER", "ident": "910000001" }] },
+                              "opplysningspliktig": { "type": "Hovedenhet", "identer": [{ "type": "ORGANISASJONSNUMMER", "ident": "910000000" }] },
+                              "ansettelsesperiode": { "startdato": "2020-01-01" }
                             }]
                             """.trimIndent()
                         )
@@ -69,16 +70,16 @@ class AaregClientTest : ApiTestBase() {
 
         arbeidsforhold shouldBe listOf(
             Arbeidsforhold(
-                type = "ordinaertArbeidsforhold",
-                arbeidsgiver = Arbeidsgiver(type = "Organisasjon", organisasjonsnummer = "910000001"),
-                opplysningspliktig = Arbeidsgiver(type = "Organisasjon", organisasjonsnummer = "910000000"),
-                ansettelsesperiode = Ansettelsesperiode(Periode(fom = LocalDate.of(2020, 1, 1)))
+                type = Kodeverksentitet(kode = "ordinaertArbeidsforhold"),
+                arbeidssted = Enhet(type = "Underenhet", identer = listOf(Ident(type = "ORGANISASJONSNUMMER", ident = "910000001"))),
+                opplysningspliktig = Enhet(type = "Hovedenhet", identer = listOf(Ident(type = "ORGANISASJONSNUMMER", ident = "910000000"))),
+                ansettelsesperiode = Ansettelsesperiode(startdato = LocalDate.of(2020, 1, 1))
             )
         )
         wireMockServer.verify(
-            getRequestedFor(urlPathEqualTo("/api/v1/arbeidstaker/arbeidsforhold"))
-                .withQueryParam("regelverk", equalTo("ALLE"))
-                .withQueryParam("arbeidsforholdType", equalTo("ordinaertArbeidsforhold"))
+            getRequestedFor(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
+                .withQueryParam("arbeidsforholdtype", equalTo("ordinaertArbeidsforhold"))
+                .withQueryParam("arbeidsforholdstatus", equalTo("AKTIV,AVSLUTTET,FREMTIDIG"))
                 .withHeader("Nav-Personident", equalTo("12345678910"))
                 .withHeader(HttpHeaders.AUTHORIZATION, equalTo("Bearer aareg-token"))
         )
@@ -88,7 +89,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold returnerer tom liste når arbeidstakeren ikke har arbeidsforhold`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v1/arbeidstaker/arbeidsforhold"))
+            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
                 .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("[]"))
         )
 
@@ -99,7 +100,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold kaster feil når AAREG avviser kallet`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v1/arbeidstaker/arbeidsforhold"))
+            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
                 .willReturn(aResponse().withStatus(403))
         )
 

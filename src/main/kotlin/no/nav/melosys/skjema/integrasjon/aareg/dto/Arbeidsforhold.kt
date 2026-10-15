@@ -3,26 +3,35 @@ package no.nav.melosys.skjema.integrasjon.aareg.dto
 import java.time.LocalDate
 
 /**
- * Utdrag av arbeidsforhold fra AAREG v1 – bare feltene vi trenger for å avgjøre offentlig tjenesteperson.
+ * Utdrag av arbeidsforhold fra AAREG v2 – bare feltene vi trenger for å avgjøre offentlig tjenesteperson.
  */
 data class Arbeidsforhold(
-    val type: String? = null,
-    val arbeidsgiver: Arbeidsgiver? = null,
-    val opplysningspliktig: Arbeidsgiver? = null,
+    val type: Kodeverksentitet? = null,
+    val arbeidssted: Enhet? = null,
+    val opplysningspliktig: Enhet? = null,
     val ansettelsesperiode: Ansettelsesperiode? = null
 )
 
-/** Brukes både for arbeidsgiver (underenhet) og opplysningspliktig (juridisk enhet). */
-data class Arbeidsgiver(
+data class Kodeverksentitet(
+    val kode: String? = null
+)
+
+/** Brukes både for arbeidssted (underenhet) og opplysningspliktig (hovedenhet). */
+data class Enhet(
     val type: String? = null,
-    val organisasjonsnummer: String? = null
+    val identer: List<Ident> = emptyList()
+) {
+    fun organisasjonsnummer(): String? = identer.firstOrNull { it.type == IDENTTYPE_ORGANISASJONSNUMMER }?.ident
+}
+
+data class Ident(
+    val type: String? = null,
+    val ident: String? = null
 )
 
 data class Ansettelsesperiode(
-    val periode: Periode? = null
+    val startdato: LocalDate? = null,
+    val sluttdato: LocalDate? = null
 )
 
-data class Periode(
-    val fom: LocalDate? = null,
-    val tom: LocalDate? = null
-)
+const val IDENTTYPE_ORGANISASJONSNUMMER = "ORGANISASJONSNUMMER"
