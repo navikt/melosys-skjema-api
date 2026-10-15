@@ -36,9 +36,9 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     /** Antall ansatte i A-registeret for juridisk enhet, fra EREG. Null for eldre metadata. */
     abstract val antallAnsatte: Int?
     /**
-     * Fra AAREG ved innsending av arbeidstakers del hos en offentlig arbeidsgiver: arbeidstakeren har
-     * et ordinært arbeidsforhold hos arbeidsgiveren som overlapper utsendingsperioden. Da regnes delen
-     * som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
+     * Fra AAREG når utsendingsperioden settes i arbeidstakers del hos en offentlig arbeidsgiver:
+     * arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som overlapper utsendingsperioden.
+     * Da regnes delen som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
      */
     abstract val erOffentligTjenesteperson: Boolean?
     /**
