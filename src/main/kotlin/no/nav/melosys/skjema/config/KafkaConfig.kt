@@ -1,8 +1,6 @@
 package no.nav.melosys.skjema.config
 
-import no.nav.melosys.skjema.config.observability.CorrelationIdKafkaProducerInterceptor
 import no.nav.melosys.skjema.types.kafka.SkjemaMottattMelding
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties
@@ -22,7 +20,7 @@ class KafkaConfig {
     @Bean
     fun stringProducerFactory(kafkaProperties: KafkaProperties): ProducerFactory<String, String> {
         return DefaultKafkaProducerFactory(
-            kafkaProperties.buildProducerProperties().withCorrelationId(),
+            kafkaProperties.buildProducerProperties(),
             StringSerializer(),
             StringSerializer()
         )
@@ -39,7 +37,7 @@ class KafkaConfig {
         jsonMapper: JsonMapper
     ): ProducerFactory<String, SkjemaMottattMelding> {
         return DefaultKafkaProducerFactory(
-            kafkaProperties.buildProducerProperties().withCorrelationId(),
+            kafkaProperties.buildProducerProperties(),
             StringSerializer(),
             JacksonJsonSerializer(jsonMapper)
         )
@@ -55,8 +53,3 @@ class KafkaConfig {
         return kafkaTemplate
     }
 }
-
-private fun Map<String, Any>.withCorrelationId(): MutableMap<String, Any> =
-    toMutableMap().apply {
-        this[ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] = listOf(CorrelationIdKafkaProducerInterceptor::class.java.name)
-    }

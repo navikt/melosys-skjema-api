@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit
 import net.javacrumbs.shedlock.core.LockAssert
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
-import no.nav.melosys.skjema.config.observability.MDCOperations.Companion.withCorrelationId
+import no.nav.melosys.skjema.config.observability.Traceparent.medTraceparent
 import no.nav.melosys.skjema.service.InnsendingService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -44,7 +44,7 @@ class InnsendingRetryScheduler(
             maxAttempts = retryConfig.maxAttempts
         ).forEach { innsendingRetryKandidat ->
             try {
-                withCorrelationId(innsendingRetryKandidat.correlationId){
+                medTraceparent(innsendingRetryKandidat.traceparent) {
                     val skjemaId = innsendingRetryKandidat.skjema.id!!
                     log.info { "Starter retry av innsending for skjema $skjemaId" }
                     innsendingService.prosesserInnsending(skjemaId)

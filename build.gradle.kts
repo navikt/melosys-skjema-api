@@ -72,6 +72,7 @@ dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashLogbackEncoderVersion")
     implementation("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:$opentelemetryLogbackVersion")
+    implementation("io.opentelemetry:opentelemetry-api")
 
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")
