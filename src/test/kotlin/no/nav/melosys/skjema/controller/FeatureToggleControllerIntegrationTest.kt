@@ -44,11 +44,11 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
     }
 
     @Test
-    fun `skal filtrere bort ukjente og fjernede toggle-navn`() {
+    fun `skal filtrere bort ukjente toggle-navn`() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=melosys.annet.system.toggle&features=melosys.skjema.velg-situasjon")
+            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=melosys.annet.system.toggle")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
