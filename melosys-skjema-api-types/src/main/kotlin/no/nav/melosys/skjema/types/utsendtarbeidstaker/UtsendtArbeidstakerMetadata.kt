@@ -37,7 +37,7 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     abstract val antallAnsatte: Int?
     /**
      * Fra AAREG når utsendingsperioden settes i arbeidstakers del hos en offentlig arbeidsgiver:
-     * arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som overlapper utsendingsperioden.
+     * arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden.
      * Da regnes delen som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
      */
     abstract val erOffentligTjenesteperson: Boolean?

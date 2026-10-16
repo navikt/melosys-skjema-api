@@ -870,7 +870,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
             erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver,
             antallAnsatte = organisasjon.antallAnsatte
-        ).medErOffentligTjenesteperson(null) // gjaldt den forkastede perioden; settes på nytt med ny periode
+        ).medErOffentligTjenesteperson(null)
         vedleggService.slettAlleForLåstSkjema(skjema.id!!)
         skjema.prefyltFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, subjectHandler.getUserID()) }
         skjema.skjemaDefinisjonVersjon = aktivVersjon
