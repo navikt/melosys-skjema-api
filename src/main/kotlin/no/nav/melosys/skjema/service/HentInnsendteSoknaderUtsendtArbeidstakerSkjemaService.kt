@@ -220,10 +220,18 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * erstatter-kjeden — unngår N+1 selv om sidestørrelsen er lav (typisk 5 rader).
      * Motpart-koblinger og erstatter-referanser settes kun mellom skjemaer med samme fnr
      * (se [UtsendtArbeidstakerSkjemaKoblingService]), så settet dekker hele kjeden for hver rad.
+     *
+     * Kombinerte skjemaer og arbeidstaker-deler fra offentlige tjenestepersoner filtreres bort,
+     * siden disse er komplette alene ([MotpartStatus.IKKE_RELEVANT] i [utledMotpartStatus]) og
+     * ikke trenger oppslag av motpart.
      */
     private fun hentSendteVersjonerPerFnr(skjemaer: List<Skjema>): Map<String, SendteVersjoner> {
         val fnrs = skjemaer
-            .filter { (it.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .filter { skjema ->
+                val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata
+                metadata?.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL &&
+                    metadata?.erOffentligTjenesteperson != true
+            }
             .map { it.fnr }
             .distinct()
 

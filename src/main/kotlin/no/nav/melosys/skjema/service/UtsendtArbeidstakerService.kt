@@ -870,7 +870,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
             erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver,
             antallAnsatte = organisasjon.antallAnsatte
-        ).medErOffentligTjenesteperson(null)
+        )
         vedleggService.slettAlleForLåstSkjema(skjema.id!!)
         skjema.prefyltFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, subjectHandler.getUserID()) }
         skjema.skjemaDefinisjonVersjon = aktivVersjon
@@ -890,36 +890,42 @@ class UtsendtArbeidstakerService(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is RadgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is RadgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is AnnenPersonMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
     }

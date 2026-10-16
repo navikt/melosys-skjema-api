@@ -355,9 +355,10 @@ data class MotpartCtaStatistikkDto(
 /**
  * Status for en deltype (arbeidstaker- eller arbeidsgiver-deler) som er sendt hver for seg.
  *
- * Kategoriene [medMotpart], [dekketAvKomplettSkjema], [venterMotpartHarUtkast] og
- * [venterIngenMotpart] er gjensidig utelukkende og prioriteres i den rekkefølgen:
- * `totalt = medMotpart + dekketAvKomplettSkjema + venterMotpartHarUtkast + venterIngenMotpart`.
+ * Kategoriene [medMotpart], [komplettSomOffentligTjenesteperson], [dekketAvKomplettSkjema],
+ * [venterMotpartHarUtkast] og [venterIngenMotpart] er gjensidig utelukkende og prioriteres i den
+ * rekkefølgen:
+ * `totalt = medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema + venterMotpartHarUtkast + venterIngenMotpart`.
  *
  * Kontrollsum mot fordelingen: `innsendtPerSkjemadel[del] = totalt + antallErstattedeVersjoner`.
  */
