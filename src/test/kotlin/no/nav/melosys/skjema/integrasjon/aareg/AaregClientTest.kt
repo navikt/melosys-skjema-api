@@ -2,8 +2,9 @@ package no.nav.melosys.skjema.integrasjon.aareg
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.any
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
-import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.ninjasquad.springmockk.MockkBean
@@ -46,7 +47,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold sender forventet request og deserialiserer arbeidsforhold`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
+            any(anyUrl())
                 .willReturn(
                     aResponse()
                         .withStatus(200)
@@ -89,7 +90,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold returnerer tom liste når arbeidstakeren ikke har arbeidsforhold`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
+            any(anyUrl())
                 .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("[]"))
         )
 
@@ -100,7 +101,7 @@ class AaregClientTest : ApiTestBase() {
     fun `hentOrdinaereArbeidsforhold kaster feil når AAREG avviser kallet`() {
         every { oAuth2AccessTokenService.getAccessToken(any()) } returns OAuth2AccessTokenResponse(access_token = "aareg-token")
         wireMockServer.stubFor(
-            get(urlPathEqualTo("/api/v2/arbeidstaker/arbeidsforhold"))
+            any(anyUrl())
                 .willReturn(aResponse().withStatus(403))
         )
 
