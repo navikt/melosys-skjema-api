@@ -56,20 +56,24 @@ class AaregServiceTest : FunSpec({
         harTreff(arbeidsforhold(type = "maritimtArbeidsforhold")) shouldBe false
     }
 
-    test("avsluttet arbeidsforhold som overlapper søknadsperioden gir treff") {
-        harTreff(arbeidsforhold(tom = LocalDate.of(2026, 3, 1))) shouldBe true
+    test("arbeidsforhold som dekker nøyaktig søknadsperioden gir treff") {
+        harTreff(arbeidsforhold(fom = LocalDate.of(2026, 3, 1), tom = LocalDate.of(2026, 8, 31))) shouldBe true
     }
 
     test("arbeidsforhold avsluttet før søknadsperioden gir ikke treff") {
         harTreff(arbeidsforhold(tom = LocalDate.of(2026, 2, 28))) shouldBe false
     }
 
+    test("arbeidsforhold avsluttet i søknadsperioden gir ikke treff") {
+        harTreff(arbeidsforhold(tom = LocalDate.of(2026, 8, 30))) shouldBe false
+    }
+
     test("arbeidsforhold som starter etter søknadsperioden gir ikke treff") {
         harTreff(arbeidsforhold(fom = LocalDate.of(2026, 9, 1))) shouldBe false
     }
 
-    test("arbeidsforhold som starter i søknadsperioden gir treff") {
-        harTreff(arbeidsforhold(fom = LocalDate.of(2026, 8, 31))) shouldBe true
+    test("arbeidsforhold som starter i søknadsperioden gir ikke treff") {
+        harTreff(arbeidsforhold(fom = LocalDate.of(2026, 3, 2))) shouldBe false
     }
 
     test("orgnr matches bare mot identer av typen organisasjonsnummer") {

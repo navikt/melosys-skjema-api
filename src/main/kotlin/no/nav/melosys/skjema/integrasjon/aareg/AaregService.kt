@@ -13,14 +13,14 @@ class AaregService(
 ) {
 
     /**
-     * Om arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som overlapper [periode].
-     * Arbeidsforholdet matcher når arbeidsgiveren er [orgnr] (oppgitt i søknaden) eller når
-     * opplysningspliktig er [juridiskEnhetOrgnr]. Et arbeidsforhold uten sluttdato er aktivt.
+     * Om arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som er, eller har vært, aktivt
+     * gjennom hele [periode]. Arbeidsforholdet matcher når arbeidsgiveren er [orgnr] (oppgitt i søknaden)
+     * eller når opplysningspliktig er [juridiskEnhetOrgnr]. Et arbeidsforhold uten sluttdato er aktivt.
      */
     fun harOrdinaertArbeidsforhold(fnr: String, orgnr: String, juridiskEnhetOrgnr: String, periode: PeriodeDto): Boolean {
         val arbeidsforhold = aaregClient.hentOrdinaereArbeidsforhold(fnr)
         val harTreff = arbeidsforhold.any {
-            it.type?.kode == ARBEIDSFORHOLDTYPE_ORDINAERT && it.gjelder(orgnr, juridiskEnhetOrgnr) && it.overlapper(periode)
+            it.type?.kode == ARBEIDSFORHOLDTYPE_ORDINAERT && it.gjelder(orgnr, juridiskEnhetOrgnr) && it.dekker(periode)
         }
         log.info { "AAREG: ${arbeidsforhold.size} ordinære arbeidsforhold, treff hos arbeidsgiver i perioden: $harTreff" }
         return harTreff
@@ -29,9 +29,9 @@ class AaregService(
     private fun Arbeidsforhold.gjelder(orgnr: String, juridiskEnhetOrgnr: String): Boolean =
         arbeidssted?.organisasjonsnummer() == orgnr || opplysningspliktig?.organisasjonsnummer() == juridiskEnhetOrgnr
 
-    private fun Arbeidsforhold.overlapper(periode: PeriodeDto): Boolean {
+    private fun Arbeidsforhold.dekker(periode: PeriodeDto): Boolean {
         val ansatt = ansettelsesperiode ?: return false
-        return (ansatt.startdato == null || !ansatt.startdato.isAfter(periode.tilDato)) &&
-            (ansatt.sluttdato == null || !ansatt.sluttdato.isBefore(periode.fraDato))
+        return (ansatt.startdato == null || !ansatt.startdato.isAfter(periode.fraDato)) &&
+            (ansatt.sluttdato == null || !ansatt.sluttdato.isBefore(periode.tilDato))
     }
 }
