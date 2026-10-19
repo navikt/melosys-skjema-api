@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.pdl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingInterceptor
 import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -27,7 +26,6 @@ class PdlConfig(
     @Bean
     fun pdlRestClient(
         restClientBuilder: RestClient.Builder,
-        correlationIdOutgoingInterceptor: CorrelationIdOutgoingInterceptor,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
         log.info { "Konfigurerer PDL-klient med base URL: $pdlUrl" }
@@ -43,7 +41,6 @@ class PdlConfig(
                     ekstraTokenHeaders = listOf(NAV_CONSUMER_TOKEN)
                 )
             )
-            .requestInterceptor(correlationIdOutgoingInterceptor)
             .build()
     }
 }

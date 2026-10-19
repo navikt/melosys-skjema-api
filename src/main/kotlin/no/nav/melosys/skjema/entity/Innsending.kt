@@ -14,7 +14,7 @@ import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
-import no.nav.melosys.skjema.config.observability.MDCOperations
+import no.nav.melosys.skjema.config.observability.Traceparent
 import no.nav.melosys.skjema.domain.InnsendingStatus
 import no.nav.melosys.skjema.service.skjemadefinisjon.SpråkConverter
 import no.nav.melosys.skjema.types.common.Saksstatus
@@ -74,8 +74,9 @@ class Innsending(
     @Column(name = "innsender_fnr", nullable = false)
     val innsenderFnr: String,
 
-    @Column(name = "correlation_id")
-    var correlationId: String? = MDCOperations.getCorrelationId(),
+    /** W3C trace-kontekst fra innsendingen, slik at retry havner i samme trace */
+    @Column(name = "traceparent")
+    var traceparent: String? = Traceparent.nåværende(),
 
     @Column(name = "brukervarsel_sendt", nullable = false)
     var brukervarselSendt: Boolean = false,
