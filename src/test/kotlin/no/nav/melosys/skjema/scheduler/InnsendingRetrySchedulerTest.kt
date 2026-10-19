@@ -1,10 +1,12 @@
 package no.nav.melosys.skjema.scheduler
 
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.opentelemetry.api.trace.Span
 import java.util.UUID
 import net.javacrumbs.shedlock.core.LockAssert
 import no.nav.melosys.skjema.config.InnsendingRetryConfig
@@ -77,6 +79,20 @@ class InnsendingRetrySchedulerTest : FunSpec({
         verify { innsendingService.prosesserInnsending(kandidat2.skjema.id!!) }
     }
 
+    test("Skal kjøre retry med lagret trace-kontekst fra innsendingen") {
+        val kandidat = retryKandidat().apply {
+            traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        }
+        var traceIdUnderProsessering: String? = null
 
+        every { innsendingService.hentRetryKandidater(any(), eq(retryConfig.maxAttempts)) } returns listOf(kandidat)
+        every { innsendingService.prosesserInnsending(any()) } answers {
+            traceIdUnderProsessering = Span.current().spanContext.traceId
+        }
+
+        scheduler.retryFeiledeInnsendinger()
+
+        traceIdUnderProsessering shouldBe "4bf92f3577b34da6a3ce929d0e0e4736"
+    }
 })
 

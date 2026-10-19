@@ -27,7 +27,7 @@ gradle.beforeProject {
 }
 
 val tokenSupportVersion = "6.0.12"
-val mockOAuth2ServerVersion = "6.0.4"
+val mockOAuth2ServerVersion = "6.0.5"
 val kotlinLoggingVersion = "8.0.4"
 val kotestVersion = "6.2.5"
 val mockkVersion = "1.14.11"
@@ -72,13 +72,14 @@ dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:${kotlinLoggingVersion}")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashLogbackEncoderVersion")
     implementation("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:$opentelemetryLogbackVersion")
+    implementation("io.opentelemetry:opentelemetry-api")
 
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // PDF generation
-    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.93")
-    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.93")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-core:1.1.97")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.97")
 
     // GCP Cloud Storage for vedlegg
     implementation("com.google.cloud:google-cloud-storage:2.75.0")
@@ -89,7 +90,7 @@ dependencies {
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlockVersion}")
 
     // PDF/A-2u validation i tester - veraPDF Greenfield parser med Jakarta (Spring Boot 4)
-    testImplementation("org.verapdf:validation-model-jakarta:1.30.2")
+    testImplementation("org.verapdf:validation-model-jakarta:1.30.3")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")

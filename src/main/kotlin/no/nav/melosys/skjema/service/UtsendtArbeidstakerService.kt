@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.service
 
 import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.config.observability.MDCOperations
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.event.InnsendingOpprettetEvent
 import no.nav.melosys.skjema.exception.AccessDeniedException
@@ -360,12 +359,7 @@ class UtsendtArbeidstakerService(
         )
 
         // 6. Publiser event - async prosessering starter ETTER at transaksjonen er committed
-        eventPublisher.publishEvent(
-            InnsendingOpprettetEvent(
-                skjemaId = savedSkjema.id!!,
-                correlationId = MDCOperations.getCorrelationId()
-            )
-        )
+        eventPublisher.publishEvent(InnsendingOpprettetEvent(skjemaId = savedSkjema.id!!))
 
         log.info { "Skjema $skjemaId sendt inn med versjon=${skjema.skjemaDefinisjonVersjon}, språk=${sprak.kode}, referanseId=$referanseId" }
 

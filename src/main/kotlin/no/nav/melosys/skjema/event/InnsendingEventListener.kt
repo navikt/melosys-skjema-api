@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.event
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.config.observability.MDCOperations.Companion.withCorrelationId
 import no.nav.melosys.skjema.service.InnsendingService
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -29,9 +28,7 @@ class InnsendingEventListener(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onInnsendingOpprettet(innsendingOpprettetEvent: InnsendingOpprettetEvent) {
-        withCorrelationId(innsendingOpprettetEvent.correlationId) {
-            log.info { "Mottok InnsendingOpprettetEvent for skjema ${innsendingOpprettetEvent.skjemaId}" }
-            innsendingService.prosesserInnsending(innsendingOpprettetEvent.skjemaId)
-        }
+        log.info { "Mottok InnsendingOpprettetEvent for skjema ${innsendingOpprettetEvent.skjemaId}" }
+        innsendingService.prosesserInnsending(innsendingOpprettetEvent.skjemaId)
     }
 }
