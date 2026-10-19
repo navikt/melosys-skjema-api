@@ -284,6 +284,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     juridiskEnhetOrgnr: String = korrektSyntetiskOrgnr,
     erOffentligArbeidsgiver: Boolean? = false,
     antallAnsatte: Int? = 50,
+    erOffentligTjenesteperson: Boolean? = null,
     kobletSkjemaId: UUID? = null,
     erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
@@ -295,6 +296,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -305,6 +307,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -316,6 +319,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -326,6 +330,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -338,6 +343,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -350,6 +356,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             arbeidstakerNavn = arbeidstakerNavn,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             antallAnsatte = antallAnsatte,
+            erOffentligTjenesteperson = erOffentligTjenesteperson,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )

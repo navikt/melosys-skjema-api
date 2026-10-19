@@ -1149,6 +1149,31 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     @Test
+    @DisplayName("MotpartStatus: IKKE_RELEVANT for arbeidstakers del fra offentlig tjenesteperson")
+    fun `motpartStatus skal være IKKE_RELEVANT for offentlig tjenesteperson`() {
+        val userFnr = korrektSyntetiskFnr
+        every { subjectHandler.getUserID() } returns userFnr
+
+        skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = userFnr,
+                status = SkjemaStatus.SENDT,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    representasjonstype = Representasjonstype.DEG_SELV,
+                    skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
+                    erOffentligArbeidsgiver = true,
+                    erOffentligTjenesteperson = true
+                )
+            )
+        )
+
+        val response = service.hentInnsendteSoknader(standardRequestDegSelv())
+
+        response.soknader shouldHaveSize 1
+        response.soknader[0].motpartStatus shouldBe MotpartStatus.IKKE_RELEVANT
+    }
+
+    @Test
     @DisplayName("Saksinfo: AVSLUTTET sak uten kobling returnerer både saksstatus og motpartStatus (avsluttet-vinner håndteres i visning)")
     fun `avsluttet sak uten kobling skal returnere både saksstatus og motpartStatus`() {
         val userFnr = korrektSyntetiskFnr

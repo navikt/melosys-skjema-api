@@ -220,10 +220,18 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
      * erstatter-kjeden — unngår N+1 selv om sidestørrelsen er lav (typisk 5 rader).
      * Motpart-koblinger og erstatter-referanser settes kun mellom skjemaer med samme fnr
      * (se [UtsendtArbeidstakerSkjemaKoblingService]), så settet dekker hele kjeden for hver rad.
+     *
+     * Kombinerte skjemaer og arbeidstaker-deler fra offentlige tjenestepersoner filtreres bort,
+     * siden disse er komplette alene ([MotpartStatus.IKKE_RELEVANT] i [utledMotpartStatus]) og
+     * ikke trenger oppslag av motpart.
      */
     private fun hentSendteVersjonerPerFnr(skjemaer: List<Skjema>): Map<String, SendteVersjoner> {
         val fnrs = skjemaer
-            .filter { (it.metadata as? UtsendtArbeidstakerMetadata)?.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL }
+            .filter { skjema ->
+                val metadata = skjema.metadata as? UtsendtArbeidstakerMetadata
+                metadata?.skjemadel != Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL &&
+                    metadata?.erOffentligTjenesteperson != true
+            }
             .map { it.fnr }
             .distinct()
 
@@ -239,6 +247,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
     /**
      * Utleder motpart-status for en skjemadel:
      * - Kombinert del (ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL) har aldri motpart → IKKE_RELEVANT
+     * - Arbeidstakers del fra offentlig tjenesteperson (AAREG) er komplett alene → IKKE_RELEVANT
      * - Motpartens del finnes i noen SENDT versjon → HAR_SENDT
      * - Ellers → VENTER (inkluderer koblet skjema som kun er utkast, og motpart via annen kanal)
      *
@@ -258,6 +267,7 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaService(
         metadata: UtsendtArbeidstakerMetadata,
         sendteVersjonerPerFnr: Map<String, SendteVersjoner>
     ): MotpartStatus {
+        if (metadata.erOffentligTjenesteperson == true) return MotpartStatus.IKKE_RELEVANT
         val motpartsDel = when (metadata.skjemadel) {
             Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> return MotpartStatus.IKKE_RELEVANT
             Skjemadel.ARBEIDSTAKERS_DEL -> Skjemadel.ARBEIDSGIVERS_DEL
