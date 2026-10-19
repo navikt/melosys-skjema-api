@@ -1,7 +1,6 @@
 package no.nav.melosys.skjema.integrasjon.aareg
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.melosys.skjema.config.observability.CorrelationIdOutgoingInterceptor
 import no.nav.melosys.skjema.integrasjon.felles.AuthorizationHeaderInterceptorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -24,7 +23,6 @@ class AaregConfig(
     @Bean
     fun aaregRestClient(
         restClientBuilder: RestClient.Builder,
-        correlationIdOutgoingInterceptor: CorrelationIdOutgoingInterceptor,
         authorizationHeaderInterceptorFactory: AuthorizationHeaderInterceptorFactory
     ): RestClient {
         log.info { "Konfigurerer AAREG-klient med base URL: $aaregUrl" }
@@ -33,7 +31,6 @@ class AaregConfig(
             .baseUrl(aaregUrl)
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .requestInterceptor(authorizationHeaderInterceptorFactory.clientCredentialsInterceptor(CLIENT_NAME))
-            .requestInterceptor(correlationIdOutgoingInterceptor)
             .build()
     }
 }
