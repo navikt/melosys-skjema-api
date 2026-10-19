@@ -355,9 +355,10 @@ data class MotpartCtaStatistikkDto(
 /**
  * Status for en deltype (arbeidstaker- eller arbeidsgiver-deler) som er sendt hver for seg.
  *
- * Kategoriene [medMotpart], [dekketAvKomplettSkjema], [venterMotpartHarUtkast] og
- * [venterIngenMotpart] er gjensidig utelukkende og prioriteres i den rekkefølgen:
- * `totalt = medMotpart + dekketAvKomplettSkjema + venterMotpartHarUtkast + venterIngenMotpart`.
+ * Kategoriene [medMotpart], [komplettSomOffentligTjenesteperson], [dekketAvKomplettSkjema],
+ * [venterMotpartHarUtkast] og [venterIngenMotpart] er gjensidig utelukkende og prioriteres i den
+ * rekkefølgen:
+ * `totalt = medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema + venterMotpartHarUtkast + venterIngenMotpart`.
  *
  * Kontrollsum mot fordelingen: `innsendtPerSkjemadel[del] = totalt + antallErstattedeVersjoner`.
  */
@@ -375,6 +376,15 @@ data class DelStatusDto(
     val medMotpartAktivSak: Long = 0,
     /** Del av [medMotpart] der saken er AVSLUTTET i Melosys. */
     val medMotpartAvsluttetSak: Long = 0,
+    /**
+     * Arbeidstakers del uten innsendt motpart der arbeidstakeren er offentlig tjenesteperson (AAREG).
+     * Delen er komplett alene og venter ikke på arbeidsgivers del.
+     */
+    val komplettSomOffentligTjenesteperson: Long = 0,
+    /** Del av [komplettSomOffentligTjenesteperson] der saken IKKE er avsluttet i Melosys (inkl. ikke synket). */
+    val komplettSomOffentligTjenestepersonAktivSak: Long = 0,
+    /** Del av [komplettSomOffentligTjenesteperson] der saken er AVSLUTTET i Melosys. */
+    val komplettSomOffentligTjenestepersonAvsluttetSak: Long = 0,
     /**
      * Har ingen separat motpartsdel, men saken er likevel dekket av et komplett skjema (begge deler i
      * én innsending) for samme person + juridiske enhet med overlappende periode. Disse venter ikke

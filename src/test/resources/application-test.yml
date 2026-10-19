@@ -14,6 +14,8 @@ TOKENX_AUDIENCE_REPR: test:repr:repr-api
 REPR_CACHE_TTL_MINUTES: 0
 PDL_URL: ${wiremock.server.url}
 PDL_SCOPE: test:pdl:pdl-api
+AAREG_URL: ${wiremock.server.url}
+AAREG_SCOPE: test:arbeidsforhold:aareg-services-nais
 AZURE_OPENID_CONFIG_TOKEN_ENDPOINT: ${mock-oauth2-server.baseUrl}/azure/token
 AZURE_APP_CLIENT_ID: test-azure-client-id
 AZURE_APP_CLIENT_SECRET: test-azure-client-secret

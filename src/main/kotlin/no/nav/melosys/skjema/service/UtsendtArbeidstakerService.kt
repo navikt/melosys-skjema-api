@@ -9,10 +9,12 @@ import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
 import no.nav.melosys.skjema.extensions.tilSkjemadel
 import no.nav.melosys.skjema.extensions.toUtsendtArbeidstakerDto
+import no.nav.melosys.skjema.extensions.utsendelsePeriode
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrEmpty
 import no.nav.melosys.skjema.extensions.utsendtArbeidstakerSkjemaDataOrThrow
 import no.nav.melosys.skjema.featuretoggle.ToggleNavn
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.repository.InnsendingRepository
@@ -52,6 +54,7 @@ class UtsendtArbeidstakerService(
     private val altinnService: AltinnService,
     private val reprService: ReprService,
     private val eregService: EregService,
+    private val aaregService: AaregService,
     private val skjemaKoblingService: UtsendtArbeidstakerSkjemaKoblingService,
     private val subjectHandler: SubjectHandler,
     private val innsendingService: InnsendingService,
@@ -145,8 +148,9 @@ class UtsendtArbeidstakerService(
     /**
      * Forhåndsutfyller land og utsendingsperiode i et nytt arbeidstaker-utkast fra en innsendt
      * arbeidsgiver-del (motpart-CTA). Kilden må være innlogget brukers egen ventende
-     * arbeidsgiver-del; alt annet ignoreres slik at opprettelsen aldri feiler på prefyll.
-     * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen.
+     * arbeidsgiver-del; alt annet ignoreres slik at opprettelsen aldri feiler på en ugyldig kilde.
+     * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen. Siden perioden settes her,
+     * slås offentlig tjenesteperson opp i AAREG på samme måte som når periodesteget lagres.
      */
     private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
         if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
@@ -178,6 +182,7 @@ class UtsendtArbeidstakerService(
 
         skjema.data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(utsendingsperiodeOgLand = utsendingsperiodeOgLand)
         skjema.prefyltFraSkjemaId = kilde.id
+        oppdaterOffentligTjenesteperson(skjema)
     }
 
     /**
@@ -366,6 +371,26 @@ class UtsendtArbeidstakerService(
         )
     }
 
+    /**
+     * Arbeidstakers del hos en offentlig arbeidsgiver: slå opp i AAREG om arbeidstakeren er offentlig
+     * tjenesteperson i utsendingsperioden. Da er delen komplett alene og venter ikke på arbeidsgivers del.
+     * Kalles hver gang utsendingsperioden settes, så flagget alltid gjelder perioden som er lagret.
+     * Feil fra AAREG gjør at lagringen feiler.
+     */
+    private fun oppdaterOffentligTjenesteperson(skjema: Skjema) {
+        val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+        if (metadata.skjemadel != Skjemadel.ARBEIDSTAKERS_DEL || metadata.erOffentligArbeidsgiver != true) return
+
+        val periode = checkNotNull(skjema.utsendelsePeriode()) { "Skjema ${skjema.id} mangler utsendelsesperiode" }
+        val erOffentligTjenesteperson = aaregService.harOrdinaertArbeidsforhold(
+            fnr = skjema.fnr,
+            orgnr = skjema.orgnr,
+            juridiskEnhetOrgnr = metadata.juridiskEnhetOrgnr,
+            periode = periode
+        )
+        skjema.metadata = metadata.medErOffentligTjenesteperson(erOffentligTjenesteperson)
+    }
+
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
         val skjema = hentSkjemaMedLesetilgang(skjemaId)
 
@@ -457,13 +482,14 @@ class UtsendtArbeidstakerService(
         log.info { "Saving utsendingsperiode og land info for skjema: $skjemaId" }
         skjemaDataValidator.validate(request)
 
-        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
-            when (dto) {
-                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
-                is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
-                is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
-            }
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        skjema.data = when (val dto = skjema.utsendtArbeidstakerSkjemaDataOrEmpty()) {
+            is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+            is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
+            is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
         }
+        oppdaterOffentligTjenesteperson(skjema)
+        return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
 
     @Transactional
@@ -858,36 +884,42 @@ class UtsendtArbeidstakerService(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is ArbeidsgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is RadgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is RadgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
         is AnnenPersonMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+            erOffentligTjenesteperson = null,
             antallAnsatte = antallAnsatte
         )
     }

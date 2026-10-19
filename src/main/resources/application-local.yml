@@ -32,6 +32,8 @@ EREG_URL: http://localhost:8083/ereg
 BRUK_SYNTETISK_FNR: true
 VARSLING_ARBEIDSTAKER_SKJEMA_LENKE: http://localhost:3000
 PDL_URL: http://localhost:8083/graphql
+AAREG_URL: http://localhost:8083/aareg-services
+AAREG_SCOPE: local:arbeidsforhold:aareg-services-nais
 REPR_URL: http://localhost:8083/repr
 AZURE_APP_WELL_KNOWN_URL: http://host.docker.internal:8082/isso/.well-known/openid-configuration
 MELOSYS_CLIENT_ID: dev-fss:teammelosys:melosys
