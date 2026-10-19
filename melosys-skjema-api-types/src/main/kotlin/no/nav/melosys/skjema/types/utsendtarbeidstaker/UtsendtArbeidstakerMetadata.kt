@@ -33,6 +33,8 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     abstract val juridiskEnhetOrgnr: String
     /** Fra EREG. Null for eldre metadata. */
     abstract val erOffentligArbeidsgiver: Boolean?
+    /** Fra EREG: juridisk enhet er et norskregistrert utenlandsk foretak (NUF). Null for eldre metadata. */
+    abstract val erNorskregistrertUtenlandskForetak: Boolean?
     /** Antall ansatte i A-registeret for juridisk enhet, fra EREG. Null for eldre metadata. */
     abstract val antallAnsatte: Int?
     /**
@@ -75,6 +77,7 @@ data class DegSelvMetadata(
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
@@ -97,6 +100,7 @@ data class ArbeidsgiverMetadata(
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
@@ -121,6 +125,7 @@ data class ArbeidsgiverMedFullmaktMetadata(
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
@@ -143,6 +148,7 @@ data class RadgiverMetadata(
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
@@ -169,6 +175,7 @@ data class RadgiverMedFullmaktMetadata(
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
@@ -195,6 +202,7 @@ data class AnnenPersonMetadata(
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
     override val erOffentligArbeidsgiver: Boolean? = null,
+    override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
     override val erOffentligTjenesteperson: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,

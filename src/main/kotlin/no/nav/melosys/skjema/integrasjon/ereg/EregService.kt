@@ -45,6 +45,7 @@ class EregService(
             organisasjon = organisasjon.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
             erOffentligArbeidsgiver = juridiskEnhet.erOffentligArbeidsgiver(),
+            erNorskregistrertUtenlandskForetak = juridiskEnhet.erNorskregistrertUtenlandskForetak(),
             antallAnsatte = juridiskEnhet.antallAnsatte()
         )
     }
@@ -76,6 +77,13 @@ private const val SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN = "6100"
 internal fun JuridiskEnhet.erOffentligArbeidsgiver(): Boolean =
     juridiskEnhetDetaljer?.enhetstype == ENHETSTYPE_STATEN &&
         juridiskEnhetDetaljer.sektorkode == SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN
+
+private const val ENHETSTYPE_NORSKREGISTRERT_UTENLANDSK_FORETAK = "NUF"
+private const val SEKTORKODE_PRIVATE_AKSJESELSKAPER = "2100"
+
+internal fun JuridiskEnhet.erNorskregistrertUtenlandskForetak(): Boolean =
+    juridiskEnhetDetaljer?.enhetstype == ENHETSTYPE_NORSKREGISTRERT_UTENLANDSK_FORETAK &&
+        juridiskEnhetDetaljer.sektorkode == SEKTORKODE_PRIVATE_AKSJESELSKAPER
 
 /**
  * «Antall ansatte i A-registeret» slik Enhetsregisteret viser det. Mangler opplysningen,

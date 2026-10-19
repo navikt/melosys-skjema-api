@@ -44,6 +44,7 @@ class EregServiceTest {
                 organisasjon = virksomhet.toSimpleOrganisasjonDto(),
                 juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
                 erOffentligArbeidsgiver = false,
+                erNorskregistrertUtenlandskForetak = false,
                 antallAnsatte = 12
             )
         )
@@ -119,6 +120,24 @@ class EregServiceTest {
         assertThat(feilSektor.erOffentligArbeidsgiver()).isFalse()
         assertThat(feilEnhetstype.erOffentligArbeidsgiver()).isFalse()
         assertThat(juridiskEnhetMedDefaultVerdier().erOffentligArbeidsgiver()).isFalse()
+    }
+
+    @Test
+    fun `klassifiserer juridisk enhet som NUF bare for NUF og sektorkode 2100`() {
+        val nuf = juridiskEnhetMedDefaultVerdier().copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "NUF", sektorkode = "2100")
+        )
+        val feilSektor = nuf.copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "NUF", sektorkode = "9000")
+        )
+        val feilEnhetstype = nuf.copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "AS", sektorkode = "2100")
+        )
+
+        assertThat(nuf.erNorskregistrertUtenlandskForetak()).isTrue()
+        assertThat(feilSektor.erNorskregistrertUtenlandskForetak()).isFalse()
+        assertThat(feilEnhetstype.erNorskregistrertUtenlandskForetak()).isFalse()
+        assertThat(juridiskEnhetMedDefaultVerdier().erNorskregistrertUtenlandskForetak()).isFalse()
     }
 
     @Test

@@ -255,7 +255,12 @@ class UtsendtArbeidstakerService(
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
         // Klassifiseringen kommer fra EREG, så et eventuelt brukersvar forkastes før lagring.
         val dataSomSkalLagres = request.copy(erArbeidsgiverenOffentligVirksomhet = null)
-        skjemaDataValidator.validate(dataSomSkalLagres, metadata.erOffentligArbeidsgiver, metadata.antallAnsatte)
+        skjemaDataValidator.validate(
+            dataSomSkalLagres,
+            metadata.erOffentligArbeidsgiver,
+            metadata.antallAnsatte,
+            metadata.erNorskregistrertUtenlandskForetak
+        )
 
         return updateSkjemaData(skjema) { dto ->
             when (dto) {
@@ -327,7 +332,8 @@ class UtsendtArbeidstakerService(
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
             metadata.erOffentligArbeidsgiver,
-            metadata.antallAnsatte
+            metadata.antallAnsatte,
+            metadata.erNorskregistrertUtenlandskForetak
         )
         validerVedleggMotValg(skjemaId, skjemaData.vedlegg)
 
@@ -617,6 +623,7 @@ class UtsendtArbeidstakerService(
         val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr
         val erOffentligArbeidsgiver = organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver
         val antallAnsatte = organisasjonMedJuridiskEnhet.antallAnsatte
+        val erNorskregistrertUtenlandskForetak = organisasjonMedJuridiskEnhet.erNorskregistrertUtenlandskForetak
 
         return when (request.representasjonstype) {
             Representasjonstype.DEG_SELV -> DegSelvMetadata(
@@ -625,6 +632,7 @@ class UtsendtArbeidstakerService(
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
+                erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER -> ArbeidsgiverMetadata(
@@ -633,6 +641,7 @@ class UtsendtArbeidstakerService(
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
+                erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 arbeidstakerNavn = arbeidstakerNavn
             )
             Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT -> ArbeidsgiverMedFullmaktMetadata(
@@ -641,6 +650,7 @@ class UtsendtArbeidstakerService(
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
+                erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -653,6 +663,7 @@ class UtsendtArbeidstakerService(
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     antallAnsatte = antallAnsatte,
+                    erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
                 )
@@ -666,6 +677,7 @@ class UtsendtArbeidstakerService(
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                     erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                     antallAnsatte = antallAnsatte,
+                    erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                     fullmektigFnr = innloggetBrukerFnr,
                     arbeidstakerNavn = arbeidstakerNavn,
                     radgiverfirma = RadgiverfirmaInfo(orgnr = radgiverfirmaInfo.orgnr, navn = radgiverfirmaInfo.navn)
@@ -677,6 +689,7 @@ class UtsendtArbeidstakerService(
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
                 erOffentligArbeidsgiver = erOffentligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
+                erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 fullmektigFnr = innloggetBrukerFnr,
                 arbeidstakerNavn = arbeidstakerNavn
             )
@@ -863,7 +876,8 @@ class UtsendtArbeidstakerService(
             arbeidsgiverNavn = organisasjon.organisasjon.navn,
             juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
             erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver,
-            antallAnsatte = organisasjon.antallAnsatte
+            antallAnsatte = organisasjon.antallAnsatte,
+            erNorskregistrertUtenlandskForetak = organisasjon.erNorskregistrertUtenlandskForetak
         )
         vedleggService.slettAlleForLåstSkjema(skjema.id!!)
         skjema.prefyltFraSkjemaId?.let { prefyllFraMotpartsDel(skjema, it, subjectHandler.getUserID()) }
@@ -878,49 +892,56 @@ class UtsendtArbeidstakerService(
         arbeidsgiverNavn: String,
         juridiskEnhetOrgnr: String,
         erOffentligArbeidsgiver: Boolean?,
-        antallAnsatte: Int
+        antallAnsatte: Int,
+        erNorskregistrertUtenlandskForetak: Boolean
     ): UtsendtArbeidstakerMetadata = when (this) {
         is DegSelvMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
         is ArbeidsgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
         is ArbeidsgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
         is RadgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
         is RadgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
         is AnnenPersonMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erOffentligArbeidsgiver = erOffentligArbeidsgiver,
             erOffentligTjenesteperson = null,
-            antallAnsatte = antallAnsatte
+            antallAnsatte = antallAnsatte,
+            erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
     }
 
