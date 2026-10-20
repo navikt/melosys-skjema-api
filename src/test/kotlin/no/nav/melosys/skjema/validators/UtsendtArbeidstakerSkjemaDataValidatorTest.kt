@@ -68,7 +68,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             familiemedlemmerValidator,
             vedleggValgValidator,
         )
-        every { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any()) } returns emptyList()
+        every { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any(), any()) } returns emptyList()
         every { utenlandsoppdragetValidator.validate(any()) } returns emptyList()
         every { utsendingsperiodeOgLandValidator.validate(any()) } returns emptyList()
         every { arbeidstakerensLonnValidator.validate(any()) } returns emptyList()
@@ -88,7 +88,12 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         forventedeKall: List<() -> Unit>,
         uforventedeKall: List<() -> Unit>
     ) {
-        validator.validateUtsendtArbeidstakerSkjemaData(skjemaData, erOffentligArbeidsgiver = false, antallAnsatte = 50)
+        validator.validateUtsendtArbeidstakerSkjemaData(
+            skjemaData,
+            erOffentligArbeidsgiver = false,
+            antallAnsatte = 50,
+            erNorskregistrertUtenlandskForetak = false
+        )
 
         forventedeKall.forEach { verifisering -> verifisering() }
         uforventedeKall.forEach { verifisering -> verifisering() }
@@ -102,7 +107,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
                 { verify { utsendingsperiodeOgLandValidator.validate(any()) } },
                 { verify { tilleggsopplysningerValidator.validate(any()) } },
                 { verify { vedleggValgValidator.validate(any()) } },
-                { verify { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any()) } },
+                { verify { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any(), any()) } },
                 { verify { utenlandsoppdragetValidator.validate(any()) } },
                 { verify { arbeidstakerensLonnValidator.validate(any()) } },
                 { verify { arbeidsstedIUtlandetValidator.validate(any()) } },
@@ -125,7 +130,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
                 { verify { familiemedlemmerValidator.validate(any()) } },
             ),
             listOf(
-                { verify(exactly = 0) { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any()) } },
+                { verify(exactly = 0) { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any(), any()) } },
                 { verify(exactly = 0) { utenlandsoppdragetValidator.validate(any()) } },
                 { verify(exactly = 0) { arbeidstakerensLonnValidator.validate(any()) } },
                 { verify(exactly = 0) { arbeidsstedIUtlandetValidator.validate(any()) } },
@@ -138,7 +143,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
                 { verify { utsendingsperiodeOgLandValidator.validate(any()) } },
                 { verify { tilleggsopplysningerValidator.validate(any()) } },
                 { verify { vedleggValgValidator.validate(any()) } },
-                { verify { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any()) } },
+                { verify { arbeidsgiverensVirksomhetValidator.validate(any(), any(), any(), any()) } },
                 { verify { utenlandsoppdragetValidator.validate(any()) } },
                 { verify { arbeidstakerensLonnValidator.validate(any()) } },
                 { verify { arbeidsstedIUtlandetValidator.validate(any()) } },
@@ -160,7 +165,8 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             validator.validateUtsendtArbeidstakerSkjemaData(
                 UtsendtArbeidstakerArbeidstakersSkjemaDataDto(),
                 erOffentligArbeidsgiver = false,
-                antallAnsatte = 50
+                antallAnsatte = 50,
+                erNorskregistrertUtenlandskForetak = false
             )
         }
     }

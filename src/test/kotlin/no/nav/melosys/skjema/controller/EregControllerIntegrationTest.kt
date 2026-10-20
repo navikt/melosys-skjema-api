@@ -62,6 +62,7 @@ class EregControllerIntegrationTest : ApiTestBase() {
             organisasjon = virksomhet.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
             erOffentligArbeidsgiver = false,
+            erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
 

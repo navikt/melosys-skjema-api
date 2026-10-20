@@ -108,6 +108,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
             juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777", navn = "Juridisk Enhet AS"),
             erOffentligArbeidsgiver = false,
+            erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
         // Default: Ingen kobling
@@ -604,6 +605,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
                 juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = juridiskEnhetOrgnr),
                 erOffentligArbeidsgiver = true,
+                erNorskregistrertUtenlandskForetak = false,
                 antallAnsatte = 50
             )
             every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
@@ -670,6 +672,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                     organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(navn = "Nytt navn"),
                     juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
                     erOffentligArbeidsgiver = true,
+                    erNorskregistrertUtenlandskForetak = true,
                     antallAnsatte = 7
                 )
 
@@ -683,6 +686,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             resultat.metadata.juridiskEnhetOrgnr shouldBe "999888777"
             resultat.metadata.erOffentligArbeidsgiver shouldBe true
             resultat.metadata.antallAnsatte shouldBe 7
+            resultat.metadata.erNorskregistrertUtenlandskForetak shouldBe true
             verify(exactly = 1) { mockVedleggService.slettAlleForLåstSkjema(skjemaId) }
         }
 

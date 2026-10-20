@@ -12,13 +12,14 @@ import org.springframework.stereotype.Component
 class ArbeidsgiverensVirksomhetINorgeValidator {
 
     /**
-     * Klassifiseringen og ansattallet kommer fra Enhetsregisteret, ikke fra søkeren, og avgjør hvilke
+     * Klassifiseringene og ansattallet kommer fra Enhetsregisteret, ikke fra søkeren, og avgjør hvilke
      * oppfølgingsspørsmål seksjonen skal ha. Mangler de, er det en systemfeil og ikke en brukerfeil.
      */
     fun validate(
         dto: ArbeidsgiverensVirksomhetINorgeDto?,
         erOffentligArbeidsgiver: Boolean?,
-        antallAnsatte: Int?
+        antallAnsatte: Int?,
+        erNorskregistrertUtenlandskForetak: Boolean?
     ): List<Violation> {
         checkNotNull(erOffentligArbeidsgiver) { "Skjemaet mangler EREG-data om arbeidsgiveren er offentlig" }
 
@@ -27,7 +28,8 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
         } else {
             validerPrivatArbeidsgiver(
                 dto,
-                checkNotNull(antallAnsatte) { "Skjemaet mangler EREG-data om antall ansatte" }
+                checkNotNull(antallAnsatte) { "Skjemaet mangler EREG-data om antall ansatte" },
+                checkNotNull(erNorskregistrertUtenlandskForetak) { "Skjemaet mangler EREG-data om arbeidsgiveren er NUF" }
             )
         }
     }
@@ -51,7 +53,11 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
         return avvisSamletVirksomhet(dto)
     }
 
-    private fun validerPrivatArbeidsgiver(dto: ArbeidsgiverensVirksomhetINorgeDto?, antallAnsatte: Int): List<Violation> {
+    private fun validerPrivatArbeidsgiver(
+        dto: ArbeidsgiverensVirksomhetINorgeDto?,
+        antallAnsatte: Int,
+        erNorskregistrertUtenlandskForetak: Boolean
+    ): List<Violation> {
         if (dto == null) return listOf(
             Violation(
                 field = "arbeidsgiverensVirksomhetINorge",
@@ -65,7 +71,7 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
                 translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name)
             )
         )
-        return if (skalOppgiSamletVirksomhet(antallAnsatte, dto.erArbeidsgiverenBemanningsEllerVikarbyraa)) {
+        return if (skalOppgiSamletVirksomhet(antallAnsatte, dto.erArbeidsgiverenBemanningsEllerVikarbyraa, erNorskregistrertUtenlandskForetak)) {
             if (dto.opprettholderArbeidsgiverenVanligDrift != null) return listOf(
                 Violation(
                     field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
@@ -116,8 +122,14 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
         /** Under denne grensen må arbeidsgiver oppgi opplysninger om foretakets samlede virksomhet. */
         const val ANSATTGRENSE_SAMLET_VIRKSOMHET = 20
 
-        fun skalOppgiSamletVirksomhet(antallAnsatte: Int, erBemanningsEllerVikarbyraa: Boolean?): Boolean =
-            antallAnsatte < ANSATTGRENSE_SAMLET_VIRKSOMHET || erBemanningsEllerVikarbyraa == true
+        fun skalOppgiSamletVirksomhet(
+            antallAnsatte: Int,
+            erBemanningsEllerVikarbyraa: Boolean?,
+            erNorskregistrertUtenlandskForetak: Boolean
+        ): Boolean =
+            erNorskregistrertUtenlandskForetak ||
+                antallAnsatte < ANSATTGRENSE_SAMLET_VIRKSOMHET ||
+                erBemanningsEllerVikarbyraa == true
 
         private val ANTALL_FELTER = listOf(
             ArbeidsgiverensVirksomhetINorgeDto::antallAdministrativtAnsatte,

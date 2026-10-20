@@ -108,6 +108,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             erOffentligArbeidsgiver = false,
+            erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
@@ -167,7 +168,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -212,7 +213,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "3")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -310,6 +311,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             erOffentligArbeidsgiver = false,
+            erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
@@ -323,6 +325,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             erOffentligArbeidsgiver = false,
+            erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
         every { pdlService.hentNavn(korrektSyntetiskFnr) } returns "Test Testesen"
