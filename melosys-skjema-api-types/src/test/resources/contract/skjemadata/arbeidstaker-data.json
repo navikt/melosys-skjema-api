@@ -1,0 +1,53 @@
+{
+  "type" : "UTSENDT_ARBEIDSTAKER_ARBEIDSTAKERS_DEL",
+  "utsendingsperiodeOgLand" : {
+    "utsendelseLand" : "SE",
+    "utsendelsePeriode" : {
+      "fraDato" : "2026-01-01",
+      "tilDato" : "2026-12-31"
+    }
+  },
+  "arbeidssituasjon" : {
+    "harVaertEllerSkalVaereILonnetArbeidFoerUtsending" : true,
+    "aktivitetIMaanedenFoerUtsendingen" : "Jobbet i Norge",
+    "skalJobbeForFlereVirksomheter" : true,
+    "virksomheterArbeidstakerJobberForIutsendelsesPeriode" : {
+      "norskeVirksomheter" : [ {
+        "organisasjonsnummer" : "123456789"
+      } ],
+      "utenlandskeVirksomheter" : [ {
+        "navn" : "Utenlandsk AB",
+        "organisasjonsnummer" : "SE123",
+        "vegnavnOgHusnummer" : "Storgatan 1",
+        "bygning" : "Bygg A",
+        "postkode" : "11122",
+        "byStedsnavn" : "Stockholm",
+        "region" : "Stockholms län",
+        "land" : "SE",
+        "tilhorerSammeKonsern" : true,
+        "ansettelsesform" : "ARBEIDSTAKER_ELLER_FRILANSER"
+      } ]
+    }
+  },
+  "skatteforholdOgInntekt" : {
+    "erSkattepliktigTilNorgeIHeleutsendingsperioden" : true,
+    "mottarPengestotteFraAnnetEosLandEllerSveits" : true,
+    "landSomUtbetalerPengestotte" : "SE",
+    "pengestotteSomMottasFraAndreLandBelop" : "1000",
+    "pengestotteSomMottasFraAndreLandBeskrivelse" : "Barnetrygd",
+    "inntektFraNorskEllerUtenlandskVirksomhet" : [ "NORSK_VIRKSOMHET", "UTENLANDSK_VIRKSOMHET" ],
+    "hvilkeTyperInntektHarDu" : [ "LOENN", "INNTEKT_FRA_EGEN_VIRKSOMHET" ],
+    "inntekt" : "50000",
+    "inntektFraEgenVirksomhet" : "10000"
+  },
+  "familiemedlemmer" : {
+    "skalHaMedFamiliemedlemmer" : true
+  },
+  "tilleggsopplysninger" : {
+    "harFlereOpplysningerTilSoknaden" : true,
+    "tilleggsopplysningerTilSoknad" : "Tilleggsopplysninger"
+  },
+  "vedlegg" : {
+    "harAnnenDokumentasjon" : true
+  }
+}
