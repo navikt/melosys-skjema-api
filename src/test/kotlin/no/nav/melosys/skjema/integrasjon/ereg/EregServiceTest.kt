@@ -123,28 +123,16 @@ class EregServiceTest {
     }
 
     @Test
-    fun `klassifiserer juridisk enhet som NUF basert på enhetstype uavhengig av sektorkode`() {
+    fun `klassifiserer juridisk enhet som NUF bare for enhetstype NUF`() {
         val nuf = juridiskEnhetMedDefaultVerdier().copy(
-            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "NUF", sektorkode = "2100")
-        )
-        val annenSektor = nuf.copy(
-            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "NUF", sektorkode = "9000")
-        )
-        val utenSektorkode = nuf.copy(
             juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "NUF")
         )
         val feilEnhetstype = nuf.copy(
-            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "AS", sektorkode = "2100")
-        )
-        val utenEnhetstype = nuf.copy(
-            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(sektorkode = "2100")
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "AS")
         )
 
         assertThat(nuf.erNorskregistrertUtenlandskForetak()).isTrue()
-        assertThat(annenSektor.erNorskregistrertUtenlandskForetak()).isTrue()
-        assertThat(utenSektorkode.erNorskregistrertUtenlandskForetak()).isTrue()
         assertThat(feilEnhetstype.erNorskregistrertUtenlandskForetak()).isFalse()
-        assertThat(utenEnhetstype.erNorskregistrertUtenlandskForetak()).isFalse()
         assertThat(juridiskEnhetMedDefaultVerdier().erNorskregistrertUtenlandskForetak()).isFalse()
     }
 
