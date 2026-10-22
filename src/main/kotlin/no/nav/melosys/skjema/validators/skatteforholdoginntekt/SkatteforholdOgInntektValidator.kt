@@ -3,22 +3,36 @@ package no.nav.melosys.skjema.validators.skatteforholdoginntekt
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.translations.dto.SkatteforholdOgInntektTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsinntektKilde
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.InntektType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnValidator
 import org.springframework.stereotype.Component
 
 @Component
-class SkatteforholdOgInntektValidator {
+class SkatteforholdOgInntektValidator(
+    private val arbeidstakerensLonnValidator: ArbeidstakerensLonnValidator
+) {
 
-    fun validate(dto: SkatteforholdOgInntektDto?): List<Violation> {
+    /**
+     * @param forenklet offentlig tjenesteperson: inntektsspørsmålene stilles ikke.
+     * @param medLonn offentlig tjenesteperson som sender før arbeidsgiver: lønnsspørsmålet fra
+     * arbeidsgivers del stilles her. Ellers skal lønnsfeltene mangle.
+     */
+    fun validate(dto: SkatteforholdOgInntektDto?, forenklet: Boolean = false, medLonn: Boolean = false): List<Violation> {
         if (dto == null) return listOf(
             Violation(field = "skatteforholdOgInntekt", translationKey = FELT_ER_PAAKREVD)
         )
 
+        val lonnViolations = validateLonn(dto, medLonn)
+        if (lonnViolations.isNotEmpty()) return lonnViolations
+
         val pengestotteViolations = validatePengestotte(dto)
         if (pengestotteViolations.isNotEmpty()) return pengestotteViolations
+
+        if (forenklet) return validateInntektMangler(dto)
 
         val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet
         val inntektTyper = dto.hvilkeTyperInntektHarDu
@@ -30,6 +44,49 @@ class SkatteforholdOgInntektValidator {
 
         // Etter validateInntektValg vet vi at begge har minst én valgt verdi
         return validateInntektBelop(dto, inntektKilder!!, inntektTyper!!)
+    }
+
+    private fun validateLonn(dto: SkatteforholdOgInntektDto, medLonn: Boolean): List<Violation> {
+        val arbeidsgiverBetalerAlt = dto.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden
+
+        if (!medLonn) {
+            return if (arbeidsgiverBetalerAlt == null && dto.virksomheterSomUtbetalerLonnOgNaturalytelser == null) {
+                emptyList()
+            } else listOf(
+                Violation(
+                    field = SkatteforholdOgInntektDto::arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden.name,
+                    translationKey = translationFieldName(SkatteforholdOgInntektTranslation::lonnSkalIkkeOppgis.name)
+                )
+            )
+        }
+
+        if (arbeidsgiverBetalerAlt == null) {
+            return listOf(
+                Violation(
+                    field = SkatteforholdOgInntektDto::arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden.name,
+                    translationKey = FELT_ER_PAAKREVD
+                )
+            )
+        }
+
+        return arbeidstakerensLonnValidator.validate(
+            ArbeidstakerensLonnDto(
+                arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = arbeidsgiverBetalerAlt,
+                virksomheterSomUtbetalerLonnOgNaturalytelser = dto.virksomheterSomUtbetalerLonnOgNaturalytelser
+            )
+        )
+    }
+
+    private fun validateInntektMangler(dto: SkatteforholdOgInntektDto): List<Violation> {
+        val feltSomSkalMangle = listOf(
+            Triple(dto.inntektFraNorskEllerUtenlandskVirksomhet != null, SkatteforholdOgInntektDto::inntektFraNorskEllerUtenlandskVirksomhet.name, SkatteforholdOgInntektTranslation::inntektskildeSkalIkkeOppgis.name),
+            Triple(dto.hvilkeTyperInntektHarDu != null, SkatteforholdOgInntektDto::hvilkeTyperInntektHarDu.name, SkatteforholdOgInntektTranslation::inntektstypeSkalIkkeOppgis.name),
+            Triple(!dto.inntekt.isNullOrBlank(), SkatteforholdOgInntektDto::inntekt.name, SkatteforholdOgInntektTranslation::inntektSkalIkkeOppgis.name),
+            Triple(!dto.inntektFraEgenVirksomhet.isNullOrBlank(), SkatteforholdOgInntektDto::inntektFraEgenVirksomhet.name, SkatteforholdOgInntektTranslation::inntektFraEgenVirksomhetSkalIkkeOppgis.name),
+        )
+        return feltSomSkalMangle.firstOrNull { (erOppgitt) -> erOppgitt }
+            ?.let { (_, field, key) -> listOf(Violation(field = field, translationKey = translationFieldName(key))) }
+            ?: emptyList()
     }
 
     /**

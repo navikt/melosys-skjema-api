@@ -417,7 +417,7 @@ fun skjemaMedDefaultVerdier(
     data: no.nav.melosys.skjema.types.SkjemaData? = null,
     metadata: UtsendtArbeidstakerMetadata = utsendtArbeidstakerMetadataMedDefaultVerdier(),
     opprettetVia: OpprettetVia? = null,
-    skjemaDefinisjonVersjon: String = "4",
+    skjemaDefinisjonVersjon: String = "5",
     opprettetDato: Instant = Instant.now(),
     endretDato: Instant = Instant.now(),
     opprettetAv: String = fnr,

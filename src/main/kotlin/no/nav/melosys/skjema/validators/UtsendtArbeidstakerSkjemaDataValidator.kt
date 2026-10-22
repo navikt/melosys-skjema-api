@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -19,6 +20,7 @@ import no.nav.melosys.skjema.validators.arbeidssituasjon.ArbeidssituasjonValidat
 import no.nav.melosys.skjema.validators.arbeidsstediutlandet.ArbeidsstedIUtlandetValidator
 import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnValidator
 import no.nav.melosys.skjema.validators.familiemedlemmer.FamiliemedlemmerValidator
+import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgInntektValidator
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
@@ -50,32 +52,36 @@ class UtsendtArbeidstakerSkjemaDataValidator(
         )
     }
 
-    fun validate(dto: UtenlandsoppdragetDto?) {
-        throwIfViolations(utenlandsoppdragetValidator.validate(dto))
+    fun validate(dto: UtenlandsoppdragetDto?, flyt: UtsendtArbeidstakerFlyt) {
+        throwIfViolations(utenlandsoppdragetValidator.validate(dto, flyt.utenlandsoppdragetSkalOppgis))
     }
 
     fun validate(dto: UtsendingsperiodeOgLandDto) {
         throwIfViolations(utsendingsperiodeOgLandValidator.validate(dto))
     }
 
+    fun validate(dto: PeriodeDto) {
+        throwIfViolations(PeriodeValidator.validate(dto))
+    }
+
     fun validate(dto: ArbeidstakerensLonnDto?) {
         throwIfViolations(arbeidstakerensLonnValidator.validate(dto))
     }
 
-    fun validate(dto: ArbeidsstedIUtlandetDto?) {
-        throwIfViolations(arbeidsstedIUtlandetValidator.validate(dto))
+    fun validate(dto: ArbeidsstedIUtlandetDto?, flyt: UtsendtArbeidstakerFlyt) {
+        throwIfViolations(validateArbeidssted(dto, flyt))
     }
 
     fun validate(dto: TilleggsopplysningerDto?) {
         throwIfViolations(tilleggsopplysningerValidator.validate(dto))
     }
 
-    fun validate(dto: ArbeidssituasjonDto?) {
-        throwIfViolations(arbeidssituasjonValidator.validate(dto))
+    fun validate(dto: ArbeidssituasjonDto?, flyt: UtsendtArbeidstakerFlyt) {
+        throwIfViolations(arbeidssituasjonValidator.validate(dto, flyt.forenkletArbeidstakerdel))
     }
 
-    fun validate(dto: SkatteforholdOgInntektDto?) {
-        throwIfViolations(skatteforholdOgInntektValidator.validate(dto))
+    fun validate(dto: SkatteforholdOgInntektDto?, flyt: UtsendtArbeidstakerFlyt) {
+        throwIfViolations(validateSkatteforhold(dto, flyt))
     }
 
     fun validate(dto: FamiliemedlemmerDto?) {
@@ -88,6 +94,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 
     fun validateUtsendtArbeidstakerSkjemaData(
         skjemaData: UtsendtArbeidstakerSkjemaData,
+        flyt: UtsendtArbeidstakerFlyt,
         erOffentligArbeidsgiver: Boolean?,
         antallAnsatte: Int?,
         erNorskregistrertUtenlandskForetak: Boolean?
@@ -106,13 +113,14 @@ class UtsendtArbeidstakerSkjemaDataValidator(
                     antallAnsatte,
                     erNorskregistrertUtenlandskForetak
                 )
-                violations += utenlandsoppdragetValidator.validate(skjemaData.utenlandsoppdraget)
+                violations += utenlandsoppdragetValidator.validate(skjemaData.utenlandsoppdraget, flyt.utenlandsoppdragetSkalOppgis)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidstakerensLonn)
-                violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsstedIUtlandet)
+                violations += validateArbeidssted(skjemaData.arbeidsstedIUtlandet, flyt)
             }
             is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> {
-                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidssituasjon)
-                violations += skatteforholdOgInntektValidator.validate(skjemaData.skatteforholdOgInntekt)
+                violations += validateArbeidssted(skjemaData.arbeidsstedIUtlandet, flyt)
+                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidssituasjon, flyt.forenkletArbeidstakerdel)
+                violations += validateSkatteforhold(skjemaData.skatteforholdOgInntekt, flyt)
                 violations += familiemedlemmerValidator.validate(skjemaData.familiemedlemmer)
             }
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> {
@@ -122,17 +130,23 @@ class UtsendtArbeidstakerSkjemaDataValidator(
                     antallAnsatte,
                     erNorskregistrertUtenlandskForetak
                 )
-                violations += utenlandsoppdragetValidator.validate(skjemaData.arbeidsgiversData.utenlandsoppdraget)
+                violations += utenlandsoppdragetValidator.validate(skjemaData.arbeidsgiversData.utenlandsoppdraget, flyt.utenlandsoppdragetSkalOppgis)
                 violations += arbeidstakerensLonnValidator.validate(skjemaData.arbeidsgiversData.arbeidstakerensLonn)
-                violations += arbeidsstedIUtlandetValidator.validate(skjemaData.arbeidsgiversData.arbeidsstedIUtlandet)
-                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidstakersData.arbeidssituasjon)
-                violations += skatteforholdOgInntektValidator.validate(skjemaData.arbeidstakersData.skatteforholdOgInntekt)
+                violations += validateArbeidssted(skjemaData.arbeidsgiversData.arbeidsstedIUtlandet, flyt)
+                violations += arbeidssituasjonValidator.validate(skjemaData.arbeidstakersData.arbeidssituasjon, flyt.forenkletArbeidstakerdel)
+                violations += validateSkatteforhold(skjemaData.arbeidstakersData.skatteforholdOgInntekt, flyt)
                 violations += familiemedlemmerValidator.validate(skjemaData.arbeidstakersData.familiemedlemmer)
             }
         }
 
         throwIfViolations(violations)
     }
+
+    private fun validateArbeidssted(dto: ArbeidsstedIUtlandetDto?, flyt: UtsendtArbeidstakerFlyt) =
+        arbeidsstedIUtlandetValidator.validate(dto, flyt.arbeidsstedSkalOppgis, flyt.forenkletArbeidssted)
+
+    private fun validateSkatteforhold(dto: SkatteforholdOgInntektDto?, flyt: UtsendtArbeidstakerFlyt) =
+        skatteforholdOgInntektValidator.validate(dto, flyt.forenkletArbeidstakerdel, flyt.lonnOppgisISkatteforhold)
 
     private fun throwIfViolations(violations: List<Violation>) {
         if (violations.isNotEmpty()) {

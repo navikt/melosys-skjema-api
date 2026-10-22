@@ -10,20 +10,15 @@ import org.springframework.stereotype.Component
 @Component
 class ArbeidssituasjonValidator {
 
-    fun validate(dto: ArbeidssituasjonDto?): List<Violation> {
+    /** @param forenklet offentlig tjenesteperson: bare spørsmålet om flere virksomheter stilles. */
+    fun validate(dto: ArbeidssituasjonDto?, forenklet: Boolean = false): List<Violation> {
         if (dto == null) return listOf(Violation(
             field = "arbeidssituasjon",
             translationKey = FELT_ER_PAAKREVD
         ))
 
-        if (!dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending) {
-            if (dto.aktivitetIMaanedenFoerUtsendingen.isNullOrBlank()) {
-                return listOf(Violation(
-                    field = "aktivitetIMaanedenFoerUtsendingen",
-                    translationKey = translationFieldName(ArbeidssituasjonTranslation::maaOppgiAktivitetFoerUtsending.name)
-                ))
-            }
-        }
+        val lonnetArbeidViolations = if (forenklet) validateForenklet(dto) else validateLonnetArbeidFoerUtsending(dto)
+        if (lonnetArbeidViolations.isNotEmpty()) return lonnetArbeidViolations
 
         if (dto.skalJobbeForFlereVirksomheter) {
             val virksomheter = dto.virksomheterArbeidstakerJobberForIutsendelsesPeriode
@@ -37,6 +32,40 @@ class ArbeidssituasjonValidator {
                     translationKey = translationFieldName(ArbeidssituasjonTranslation::maaOppgiMinstEnVirksomhet.name)
                 ))
             }
+        }
+
+        return emptyList()
+    }
+
+    private fun validateLonnetArbeidFoerUtsending(dto: ArbeidssituasjonDto): List<Violation> {
+        val harLonnetArbeid = dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending ?: return listOf(Violation(
+            field = ArbeidssituasjonDto::harVaertEllerSkalVaereILonnetArbeidFoerUtsending.name,
+            translationKey = FELT_ER_PAAKREVD
+        ))
+
+        if (!harLonnetArbeid && dto.aktivitetIMaanedenFoerUtsendingen.isNullOrBlank()) {
+            return listOf(Violation(
+                field = ArbeidssituasjonDto::aktivitetIMaanedenFoerUtsendingen.name,
+                translationKey = translationFieldName(ArbeidssituasjonTranslation::maaOppgiAktivitetFoerUtsending.name)
+            ))
+        }
+
+        return emptyList()
+    }
+
+    private fun validateForenklet(dto: ArbeidssituasjonDto): List<Violation> {
+        if (dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending != null) {
+            return listOf(Violation(
+                field = ArbeidssituasjonDto::harVaertEllerSkalVaereILonnetArbeidFoerUtsending.name,
+                translationKey = translationFieldName(ArbeidssituasjonTranslation::lonnetArbeidFoerUtsendingSkalIkkeOppgis.name)
+            ))
+        }
+
+        if (!dto.aktivitetIMaanedenFoerUtsendingen.isNullOrBlank()) {
+            return listOf(Violation(
+                field = ArbeidssituasjonDto::aktivitetIMaanedenFoerUtsendingen.name,
+                translationKey = translationFieldName(ArbeidssituasjonTranslation::aktivitetFoerUtsendingSkalIkkeOppgis.name)
+            ))
         }
 
         return emptyList()

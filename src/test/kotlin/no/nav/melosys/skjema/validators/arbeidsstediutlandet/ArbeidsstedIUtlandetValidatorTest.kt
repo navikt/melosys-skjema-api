@@ -1,5 +1,7 @@
 package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.Violation
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -189,4 +191,27 @@ class ArbeidsstedIUtlandetValidatorTest {
         violations.shouldHaveSize(1)
     }
 
+    @Test
+    fun `forenklet arbeidssted godtar bare på land uten hjemmekontor`() {
+        val paLandUtenHjemmekontor = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+            paLand = paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)
+        )
+        val offshore = ArbeidsstedIUtlandetDto(arbeidsstedType = ArbeidsstedType.OFFSHORE, offshore = offshoreDtoMedDefaultVerdier())
+
+        validator.validate(paLandUtenHjemmekontor, forenklet = true).shouldBeEmpty()
+        validator.validate(offshore, forenklet = true) shouldBe listOf(
+            Violation(field = "paLand", translationKey = "arbeidsstedIUtlandetTranslation.maaOppgiArbeidsstedPaLand")
+        )
+        validator.validate(arbeidsstedIUtlandetDtoMedDefaultVerdier(), forenklet = true) shouldBe listOf(
+            Violation(field = "erHjemmekontor", translationKey = "paLandTranslation.hjemmekontorSkalIkkeOppgis")
+        )
+    }
+
+    @Test
+    fun `arbeidssted skal ikke oppgis når steget ikke er i flyten`() {
+        validator.validate(null, skalOppgis = false).shouldBeEmpty()
+        validator.validate(arbeidsstedIUtlandetDtoMedDefaultVerdier(), skalOppgis = false) shouldBe listOf(
+            Violation(field = "arbeidsstedIUtlandet", translationKey = "arbeidsstedIUtlandetTranslation.arbeidsstedSkalIkkeOppgis")
+        )
+    }
 }

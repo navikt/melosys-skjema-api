@@ -24,7 +24,7 @@ private val log = KotlinLogging.logger {}
  * ```yaml
  * skjemadefinisjon:
  *   aktive-versjoner:
- *     UTSENDT_ARBEIDSTAKER: "4"
+ *     UTSENDT_ARBEIDSTAKER: "5"
  * ```
  *
  * Cache-invalidering: Cachen tømmes ikke automatisk. Ved oppdatering av

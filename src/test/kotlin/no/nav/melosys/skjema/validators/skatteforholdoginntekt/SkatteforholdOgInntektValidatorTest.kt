@@ -1,13 +1,21 @@
 package no.nav.melosys.skjema.validators.skatteforholdoginntekt
 
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
 import java.util.stream.Stream
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsinntektKilde
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.InntektType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnValidator
+import no.nav.melosys.skjema.validators.felles.OrganisasjonsnummerValidator
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -17,7 +25,12 @@ import org.junit.jupiter.params.provider.ValueSource
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SkatteforholdOgInntektValidatorTest {
 
-    private val validator = SkatteforholdOgInntektValidator()
+    private val eregService = mockk<EregService>().also {
+        every { it.organisasjonsnummerEksisterer(any()) } returns true
+    }
+    private val validator = SkatteforholdOgInntektValidator(
+        ArbeidstakerensLonnValidator(OrganisasjonsnummerValidator(eregService))
+    )
 
     @ParameterizedTest
     @MethodSource("validCombinations")
@@ -218,4 +231,68 @@ class SkatteforholdOgInntektValidatorTest {
             inntektFraEgenVirksomhet = "300",
         ),
     ).map { Arguments.of(it) }.stream()
+
+    private val forenkletSkatteforhold = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+        inntektFraNorskEllerUtenlandskVirksomhet = null,
+        hvilkeTyperInntektHarDu = null,
+        inntekt = null,
+        inntektFraEgenVirksomhet = null,
+    )
+
+    @Test
+    fun `offentlig tjenesteperson skal ikke oppgi inntekt`() {
+        validator.validate(forenkletSkatteforhold, forenklet = true).shouldBeEmpty()
+        validator.validate(skatteforholdOgInntektDtoMedDefaultVerdier(), forenklet = true) shouldBe listOf(
+            Violation(
+                field = "inntektFraNorskEllerUtenlandskVirksomhet",
+                translationKey = "skatteforholdOgInntektTranslation.inntektskildeSkalIkkeOppgis"
+            )
+        )
+        validator.validate(forenkletSkatteforhold.copy(inntekt = "1000"), forenklet = true) shouldBe listOf(
+            Violation(field = "inntekt", translationKey = "skatteforholdOgInntektTranslation.inntektSkalIkkeOppgis")
+        )
+    }
+
+    @Test
+    fun `offentlig tjenesteperson må fortsatt oppgi pengestøtte`() {
+        val dto = forenkletSkatteforhold.copy(
+            mottarPengestotteFraAnnetEosLandEllerSveits = true,
+            landSomUtbetalerPengestotte = null,
+        )
+
+        validator.validate(dto, forenklet = true).shouldHaveSize(1)
+    }
+
+    @Test
+    fun `lønn er påkrevd når arbeidstaker sender før arbeidsgiver`() {
+        validator.validate(forenkletSkatteforhold, forenklet = true, medLonn = true) shouldBe listOf(
+            Violation(field = "arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden", translationKey = FELT_ER_PAAKREVD)
+        )
+        validator.validate(
+            forenkletSkatteforhold.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true),
+            forenklet = true,
+            medLonn = true
+        ).shouldBeEmpty()
+    }
+
+    @Test
+    fun `lønn valideres som arbeidsgivers lønnsspørsmål`() {
+        val dto = forenkletSkatteforhold.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false)
+
+        validator.validate(dto, forenklet = true, medLonn = true).shouldHaveSize(1)
+    }
+
+    @Test
+    fun `lønn skal ikke oppgis utenfor flyten der arbeidstaker sender først`() {
+        val dto = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true
+        )
+
+        validator.validate(dto) shouldBe listOf(
+            Violation(
+                field = "arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden",
+                translationKey = "skatteforholdOgInntektTranslation.lonnSkalIkkeOppgis"
+            )
+        )
+    }
 }

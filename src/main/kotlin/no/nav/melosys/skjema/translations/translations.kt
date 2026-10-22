@@ -31,13 +31,16 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "Du må oppgi aktivitet i måneden før utsendingen",
-            maaOppgiMinstEnVirksomhet = "Du må oppgi minst én virksomhet"
+            maaOppgiMinstEnVirksomhet = "Du må oppgi minst én virksomhet",
+            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Lønnet arbeid før utsendingen skal ikke oppgis for offentlig tjenesteperson",
+            aktivitetFoerUtsendingSkalIkkeOppgis = "Aktivitet i måneden før utsendingen skal ikke oppgis for offentlig tjenesteperson"
         ),
         arbeidsstedIUtlandetTranslation = ArbeidsstedIUtlandetTranslation(
             maaOppgiArbeidsstedPaLand = "Du må oppgi arbeidssted på land",
             maaOppgiOffshoreArbeidssted = "Du må oppgi offshore arbeidssted",
             maaOppgiArbeidsstedPaSkip = "Du må oppgi arbeidssted på skip",
-            maaOppgiArbeidsstedOmBordPaFly = "Du må oppgi arbeidssted om bord på fly"
+            maaOppgiArbeidsstedOmBordPaFly = "Du må oppgi arbeidssted om bord på fly",
+            arbeidsstedSkalIkkeOppgis = "Arbeidssted i utlandet skal ikke oppgis i denne delen av søknaden"
         ),
         omBordPaFlyTranslation = OmBordPaFlyTranslation(
             vanligHjemmebaseLandSkalIkkeOppgis = "Vanlig hjemmebase land skal ikke oppgis",
@@ -47,7 +50,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "Du må oppgi fast arbeidssted",
-            fastArbeidsstedSkalIkkeOppgis = "Fast arbeidssted skal ikke oppgis"
+            fastArbeidsstedSkalIkkeOppgis = "Fast arbeidssted skal ikke oppgis",
+            hjemmekontorSkalIkkeOppgis = "Hjemmekontor skal ikke oppgis for offentlig arbeidsgiver"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "Du må oppgi flaggland for skip i internasjonalt farvann",
@@ -73,6 +77,9 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "Du må oppgi inntekter fra egen virksomhet",
             inntektSkalIkkeOppgis = "Inntekt skal ikke oppgis",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Inntekter fra egen virksomhet skal ikke oppgis",
+            inntektskildeSkalIkkeOppgis = "Arbeidsinntektkilde skal ikke oppgis for offentlig tjenesteperson",
+            inntektstypeSkalIkkeOppgis = "Inntekttype skal ikke oppgis for offentlig tjenesteperson",
+            lonnSkalIkkeOppgis = "Lønn og naturalytelser skal ikke oppgis i denne delen av søknaden",
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "Du må oppgi tilleggsopplysninger",
@@ -85,7 +92,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
             duMaOppgiBegrunnelse = "Du må oppgi begrunnelse for utenlandsoppholdet",
             duMaOppgiOmArbeidstakerVilJobbeEtterOppdraget = "Du må oppgi om arbeidstaker vil jobbe for virksomhet i Norge etter oppdraget",
             duMaOppgiBeskrivelseAvAnsettelsesforhold = "Du må oppgi beskrivelse av ansettelsesforholdet",
-            duMaOppgiForrigeArbeidstakerUtsendelsePeriode = "Du må oppgi forrige arbeidstakers utsendelseperiode"
+            duMaOppgiForrigeArbeidstakerUtsendelsePeriode = "Du må oppgi forrige arbeidstakers utsendelseperiode",
+            utenlandsoppdragetSkalIkkeOppgis = "Opplysninger om utenlandsoppdraget skal ikke oppgis i denne søknaden"
         ),
         utenlandsoppdragetArbeidstakerTranslation = UtenlandsoppdragetArbeidstakerTranslation(
             duMaOppgiUtsendelsesland = "Du må oppgi utsendelsesland"
@@ -110,13 +118,16 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "You must specify activity in the month before posting",
-            maaOppgiMinstEnVirksomhet = "You must specify at least one company"
+            maaOppgiMinstEnVirksomhet = "You must specify at least one company",
+            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Paid work before the posting should not be specified for public servants",
+            aktivitetFoerUtsendingSkalIkkeOppgis = "Activity in the month before the posting should not be specified for public servants"
         ),
         arbeidsstedIUtlandetTranslation = ArbeidsstedIUtlandetTranslation(
             maaOppgiArbeidsstedPaLand = "You must specify workplace on land",
             maaOppgiOffshoreArbeidssted = "You must specify offshore workplace",
             maaOppgiArbeidsstedPaSkip = "You must specify workplace on ship",
-            maaOppgiArbeidsstedOmBordPaFly = "You must specify workplace on board aircraft"
+            maaOppgiArbeidsstedOmBordPaFly = "You must specify workplace on board aircraft",
+            arbeidsstedSkalIkkeOppgis = "Workplace abroad should not be specified in this part of the application"
         ),
         omBordPaFlyTranslation = OmBordPaFlyTranslation(
             vanligHjemmebaseLandSkalIkkeOppgis = "Regular home base country should not be specified",
@@ -126,7 +137,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         ),
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "You must specify fixed workplace",
-            fastArbeidsstedSkalIkkeOppgis = "Fixed workplace should not be specified"
+            fastArbeidsstedSkalIkkeOppgis = "Fixed workplace should not be specified",
+            hjemmekontorSkalIkkeOppgis = "Home office should not be specified for public employers"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "You must specify flag country for ship in international waters",
@@ -152,6 +164,9 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "You must specify income from own business",
             inntektSkalIkkeOppgis = "Income should not be specified",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Income from own business should not be specified",
+            inntektskildeSkalIkkeOppgis = "Work income source should not be specified for public servants",
+            inntektstypeSkalIkkeOppgis = "Income type should not be specified for public servants",
+            lonnSkalIkkeOppgis = "Salary and benefits in kind should not be specified in this part of the application",
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
             maaOppgiTilleggsopplysninger = "You must provide additional information",
@@ -164,7 +179,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
             duMaOppgiBegrunnelse = "You must provide justification for the stay abroad",
             duMaOppgiOmArbeidstakerVilJobbeEtterOppdraget = "You must specify whether employee will work for company in Norway after assignment",
             duMaOppgiBeskrivelseAvAnsettelsesforhold = "You must provide description of employment relationship",
-            duMaOppgiForrigeArbeidstakerUtsendelsePeriode = "You must specify previous employee's posting period"
+            duMaOppgiForrigeArbeidstakerUtsendelsePeriode = "You must specify previous employee's posting period",
+            utenlandsoppdragetSkalIkkeOppgis = "Information about the foreign assignment should not be provided in this application"
         ),
         utenlandsoppdragetArbeidstakerTranslation = UtenlandsoppdragetArbeidstakerTranslation(
             duMaOppgiUtsendelsesland = "You must specify posting country"

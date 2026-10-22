@@ -11,7 +11,15 @@ import org.springframework.stereotype.Component
 @Component
 class UtenlandsoppdragetValidator() {
 
-    fun validate(dto: UtenlandsoppdragetDto?): List<Violation> {
+    /** @param skalOppgis false når steget ikke er i flyten (offentlig arbeidsgiver eller arbeidstakers del), og svar ikke skal finnes. */
+    fun validate(dto: UtenlandsoppdragetDto?, skalOppgis: Boolean = true): List<Violation> {
+        if (!skalOppgis) {
+            return if (dto == null) emptyList() else listOf(Violation(
+                field = "utenlandsoppdraget",
+                translationKey = translationFieldName(UtenlandsoppdragetTranslation::utenlandsoppdragetSkalIkkeOppgis.name)
+            ))
+        }
+
         if (dto == null) return listOf(Violation(
             field = "utenlandsoppdraget",
             translationKey = FELT_ER_PAAKREVD
