@@ -415,10 +415,13 @@ class UtsendtArbeidstakerService(
      * Sjekker om arbeidstakeren har et arbeidsforhold i AAREG for en periode som ennå ikke er lagret,
      * så brukeren kan varsles mens perioden fylles ut. Krever samme tilgang som lagring, men lagrer ingenting.
      */
-    @Transactional
+    @Transactional(readOnly = true)
     fun sjekkArbeidsforholdIAareg(skjemaId: UUID, periode: PeriodeDto): AaregSjekkResponse {
         skjemaDataValidator.validate(periode)
-        val skjema = hentRedigerbartSkjemaUtenVersjonskontroll(skjemaId)
+        val skjema = krevSkrivetilgang(findByIdOrThrow(skjemaId))
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
         val harArbeidsforhold = aaregService.harOrdinaertArbeidsforhold(
             fnr = skjema.fnr,
             orgnr = skjema.orgnr,
