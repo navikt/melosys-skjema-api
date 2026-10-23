@@ -31,6 +31,7 @@ import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
@@ -51,6 +52,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.AaregSjekkResponse
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -66,6 +68,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
@@ -1004,6 +1007,54 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         innsendingRepository.findBySkjemaId(skjemaSomSkalSendesInn.id!!)
             .shouldNotBeNull().innsendtSprak shouldBe Språk.NYNORSK
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["skatteforhold-og-inntekt", "send-inn"])
+    fun `statsansatt uten lønnsutbetalere får valideringsfeil ved lagring og innsending`(endepunkt: String) {
+        val skatteforhold = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+            inntektFraNorskEllerUtenlandskVirksomhet = null,
+            hvilkeTyperInntektHarDu = null,
+            inntekt = null,
+            inntektFraEgenVirksomhet = null,
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+            virksomheterSomUtbetalerLonnOgNaturalytelser = NorskeOgUtenlandskeVirksomheter(emptyList(), emptyList())
+        )
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                        paLand = paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)
+                    ),
+                    arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                        harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
+                        aktivitetIMaanedenFoerUtsendingen = null
+                    ),
+                    skatteforholdOgInntekt = skatteforhold
+                ),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(erStatligArbeidsgiver = true)
+                    .medHarArbeidsforholdIAareg(true)
+                    .medErStatsansatt(true)
+            )
+        )
+        val token = createTokenForUser(skjema.fnr)
+        val request = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/$endepunkt")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
+        if (endepunkt == "skatteforhold-og-inntekt") request.bodyValue(skatteforhold)
+
+        val feil = request.exchange()
+            .expectStatus().isBadRequest
+            .expectBody(ErrorResponse::class.java)
+            .returnResult().responseBody
+
+        feil.shouldNotBeNull()
+        feil.errors shouldBe mapOf(
+            "virksomheterSomUtbetalerLonnOgNaturalytelser" to "arbeidstakerensLonnTranslation.maaOppgiVirksomheter"
+        )
+        skjemaRepository.findByIdOrNull(skjema.id!!)!!.status shouldBe SkjemaStatus.UTKAST
     }
 
     @Test

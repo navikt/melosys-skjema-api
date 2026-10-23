@@ -10,7 +10,9 @@ import io.mockk.every
 import io.mockk.mockk
 import java.util.stream.Stream
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
+import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
 import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsinntektKilde
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.InntektType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
@@ -280,6 +282,45 @@ class SkatteforholdOgInntektValidatorTest {
         val dto = skatteforholdForStatsansatt.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false)
 
         validator.validate(dto, statsansattFlyt = true, medLonn = true).shouldHaveSize(1)
+    }
+
+    @Test
+    fun `statsansatt må oppgi minst en lønnsutbetaler når arbeidsgiver ikke betaler all lønn`() {
+        val tommeVirksomheter = listOf(
+            NorskeOgUtenlandskeVirksomheter(null, null),
+            NorskeOgUtenlandskeVirksomheter(emptyList(), null),
+            NorskeOgUtenlandskeVirksomheter(null, emptyList()),
+            NorskeOgUtenlandskeVirksomheter(emptyList(), emptyList())
+        )
+        tommeVirksomheter.forEach { virksomheter ->
+            val dto = skatteforholdForStatsansatt.copy(
+                arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                virksomheterSomUtbetalerLonnOgNaturalytelser = virksomheter
+            )
+
+            validator.validate(dto, statsansattFlyt = true, medLonn = true) shouldBe listOf(
+                Violation(
+                    field = "virksomheterSomUtbetalerLonnOgNaturalytelser",
+                    translationKey = "arbeidstakerensLonnTranslation.maaOppgiVirksomheter"
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `statsansatt kan oppgi bare norsk eller bare utenlandsk lønnsutbetaler`() {
+        val virksomheter = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
+        listOf(
+            virksomheter.copy(utenlandskeVirksomheter = null),
+            virksomheter.copy(norskeVirksomheter = null)
+        ).forEach { lonnsutbetalere ->
+            val dto = skatteforholdForStatsansatt.copy(
+                arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                virksomheterSomUtbetalerLonnOgNaturalytelser = lonnsutbetalere
+            )
+
+            validator.validate(dto, statsansattFlyt = true, medLonn = true).shouldBeEmpty()
+        }
     }
 
     @Test
