@@ -48,6 +48,12 @@ class SeksjonRenderer(
             }
         }
 
+        data.arbeidssituasjon?.let { dto ->
+            definisjon.seksjoner["arbeidssituasjon"]?.let { seksjon ->
+                builder.append(byggArbeidssituasjon(dto, seksjon))
+            }
+        }
+
         data.arbeidsstedIUtlandet?.let { dto ->
             builder.append(
                 byggArbeidsstedIUtlandet(
@@ -57,12 +63,6 @@ class SeksjonRenderer(
                     paLandSeksjon = "arbeidsstedPaLandArbeidstaker"
                 )
             )
-        }
-
-        data.arbeidssituasjon?.let { dto ->
-            definisjon.seksjoner["arbeidssituasjon"]?.let { seksjon ->
-                builder.append(byggArbeidssituasjon(dto, seksjon))
-            }
         }
 
         data.skatteforholdOgInntekt?.let { dto ->
@@ -364,11 +364,14 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
-        // Arbeidssted type — label og alternativer hentes fra definisjonen, som allerede er oversatt
-        definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
-            builder.append(byggSeksjon(seksjon) {
-                felt("arbeidsstedType", data.arbeidsstedType)
-            })
+        // Arbeidssted type — vises ikke når typevalget var skjult (statlig arbeidsgiver / statsansatt)
+        val typevalgVist = data.arbeidsstedType != ArbeidsstedType.PA_LAND || data.paLand?.erHjemmekontor != null
+        if (typevalgVist) {
+            definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
+                builder.append(byggSeksjon(seksjon) {
+                    felt("arbeidsstedType", data.arbeidsstedType)
+                })
+            }
         }
 
         // Subtype-spesifikke seksjoner

@@ -286,6 +286,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
     antallAnsatte: Int? = 50,
     erNorskregistrertUtenlandskForetak: Boolean? = false,
     erStatsansatt: Boolean? = null,
+    harArbeidsforholdIAareg: Boolean? = null,
     kobletSkjemaId: UUID? = null,
     erstatterSkjemaId: UUID? = null,
 ): UtsendtArbeidstakerMetadata {
@@ -299,6 +300,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -311,6 +313,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -324,6 +327,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
@@ -336,6 +340,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -350,6 +355,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId,
             radgiverfirma = radgiverfirma ?: radgiverfirmaInfoMedDefaultVerdier()
@@ -364,6 +370,7 @@ fun utsendtArbeidstakerMetadataMedDefaultVerdier(
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
             erStatsansatt = erStatsansatt,
+            harArbeidsforholdIAareg = harArbeidsforholdIAareg,
             kobletSkjemaId = kobletSkjemaId,
             erstatterSkjemaId = erstatterSkjemaId
         )
