@@ -973,7 +973,7 @@ class PdfGeneratorTest : FunSpec({
 
             // Sjekk at arbeidstaker-seksjoner er med
             html shouldContain "Arbeidstakers del"
-            html shouldContain "Utenlandsoppdraget"
+            html shouldContain "Utenlandsperiode og land"
             html shouldContain "Arbeidssituasjon"
 
             // Sjekk at arbeidsgiver-overskrift IKKE er med (nøyaktig match)
