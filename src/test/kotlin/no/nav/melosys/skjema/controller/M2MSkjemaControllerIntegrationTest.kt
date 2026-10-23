@@ -148,7 +148,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                         metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                             skjemadel = if (erArbeidsgiversDel) Skjemadel.ARBEIDSGIVERS_DEL else Skjemadel.ARBEIDSTAKERS_DEL,
                             representasjonstype = if (erArbeidsgiversDel) Representasjonstype.ARBEIDSGIVER else Representasjonstype.DEG_SELV,
-                            erOffentligArbeidsgiver = true.takeIf { versjon == "2" }
+                            erStatligArbeidsgiver = true.takeIf { versjon == "2" }
                         )
                     )
                 )
@@ -186,7 +186,7 @@ class M2MSkjemaControllerIntegrationTest : ApiTestBase() {
                 val koblet = respons.kobletSkjema.shouldNotBeNull()
                 koblet.id shouldBe motpart.id
                 koblet.skjemaDefinisjonVersjon shouldBe motpart.skjemaDefinisjonVersjon
-                listOf(respons.skjema, koblet).mapNotNull { it.metadata.erOffentligArbeidsgiver } shouldBe listOf(true)
+                listOf(respons.skjema, koblet).mapNotNull { it.metadata.erStatligArbeidsgiver } shouldBe listOf(true)
             }
             skjemaRepository.findById(gammelDel.id!!).get().skjemaDefinisjonVersjon shouldBe "1"
         }

@@ -259,7 +259,7 @@ class UtsendtArbeidstakerService(
         val dataSomSkalLagres = request.copy(erArbeidsgiverenOffentligVirksomhet = null)
         skjemaDataValidator.validate(
             dataSomSkalLagres,
-            metadata.erOffentligArbeidsgiver,
+            metadata.erStatligArbeidsgiver,
             metadata.antallAnsatte,
             metadata.erNorskregistrertUtenlandskForetak
         )
@@ -312,7 +312,7 @@ class UtsendtArbeidstakerService(
     fun saveArbeidsstedIUtlandet(skjemaId: UUID, klientVersjon: String?, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
         val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
-        // Arbeidstakers del har bare steget når offentlig tjenesteperson sender før arbeidsgiver, og det sjekker flyten.
+        // Arbeidstakers del har bare steget når statsansatt sender før arbeidsgiver, og det sjekker flyten.
         skjemaDataValidator.validate(request, skjema.flyt())
 
         return updateSkjemaData(skjema) { dto ->
@@ -337,7 +337,7 @@ class UtsendtArbeidstakerService(
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
             skjema.flyt(),
-            metadata.erOffentligArbeidsgiver,
+            metadata.erStatligArbeidsgiver,
             metadata.antallAnsatte,
             metadata.erNorskregistrertUtenlandskForetak
         )
@@ -388,7 +388,7 @@ class UtsendtArbeidstakerService(
      * utsendingsperioden, for alle skjemadeler. Kalles hver gang utsendingsperioden settes, så flaggene
      * alltid gjelder perioden som er lagret. Feil fra AAREG gjør at lagringen feiler.
      *
-     * Arbeidstakers del hos en offentlig arbeidsgiver med treff er offentlig tjenesteperson: delen er da
+     * Arbeidstaker med statlig arbeidsgiver og treff følger statsansattflyten: arbeidstakers del er da
      * komplett alene og venter ikke på arbeidsgivers del. Siden treffet styrer spørsmålsflyten, fjernes
      * lagrede svar som ikke hører til flyten etter oppslaget.
      */
@@ -403,8 +403,8 @@ class UtsendtArbeidstakerService(
         )
 
         val oppdatertMetadata = metadata.medHarArbeidsforholdIAareg(harArbeidsforhold)
-        skjema.metadata = if (metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL && metadata.erOffentligArbeidsgiver == true) {
-            oppdatertMetadata.medErOffentligTjenesteperson(harArbeidsforhold)
+        skjema.metadata = if (metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL && metadata.erStatligArbeidsgiver == true) {
+            oppdatertMetadata.medErStatsansatt(harArbeidsforhold)
         } else {
             oppdatertMetadata
         }
@@ -657,7 +657,7 @@ class UtsendtArbeidstakerService(
     ): UtsendtArbeidstakerMetadata {
         val skjemadel = request.representasjonstype.tilSkjemadel()
         val juridiskEnhetOrgnr = organisasjonMedJuridiskEnhet.juridiskEnhet.orgnr
-        val erOffentligArbeidsgiver = organisasjonMedJuridiskEnhet.erOffentligArbeidsgiver
+        val erStatligArbeidsgiver = organisasjonMedJuridiskEnhet.erStatligArbeidsgiver
         val antallAnsatte = organisasjonMedJuridiskEnhet.antallAnsatte
         val erNorskregistrertUtenlandskForetak = organisasjonMedJuridiskEnhet.erNorskregistrertUtenlandskForetak
 
@@ -666,7 +666,7 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                erStatligArbeidsgiver = erStatligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
                 erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 arbeidstakerNavn = arbeidstakerNavn
@@ -675,7 +675,7 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                erStatligArbeidsgiver = erStatligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
                 erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 arbeidstakerNavn = arbeidstakerNavn
@@ -684,7 +684,7 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                erStatligArbeidsgiver = erStatligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
                 erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 fullmektigFnr = innloggetBrukerFnr,
@@ -697,7 +697,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                    erStatligArbeidsgiver = erStatligArbeidsgiver,
                     antallAnsatte = antallAnsatte,
                     erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                     arbeidstakerNavn = arbeidstakerNavn,
@@ -711,7 +711,7 @@ class UtsendtArbeidstakerService(
                     skjemadel = skjemadel,
                     arbeidsgiverNavn = request.arbeidsgiver.navn,
                     juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                    erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                    erStatligArbeidsgiver = erStatligArbeidsgiver,
                     antallAnsatte = antallAnsatte,
                     erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                     fullmektigFnr = innloggetBrukerFnr,
@@ -723,7 +723,7 @@ class UtsendtArbeidstakerService(
                 skjemadel = skjemadel,
                 arbeidsgiverNavn = request.arbeidsgiver.navn,
                 juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-                erOffentligArbeidsgiver = erOffentligArbeidsgiver,
+                erStatligArbeidsgiver = erStatligArbeidsgiver,
                 antallAnsatte = antallAnsatte,
                 erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak,
                 fullmektigFnr = innloggetBrukerFnr,
@@ -911,7 +911,7 @@ class UtsendtArbeidstakerService(
         skjema.metadata = metadata.medOppdaterteRegisterdata(
             arbeidsgiverNavn = organisasjon.organisasjon.navn,
             juridiskEnhetOrgnr = organisasjon.juridiskEnhet.orgnr,
-            erOffentligArbeidsgiver = organisasjon.erOffentligArbeidsgiver,
+            erStatligArbeidsgiver = organisasjon.erStatligArbeidsgiver,
             antallAnsatte = organisasjon.antallAnsatte,
             erNorskregistrertUtenlandskForetak = organisasjon.erNorskregistrertUtenlandskForetak
         )
@@ -927,15 +927,15 @@ class UtsendtArbeidstakerService(
     private fun UtsendtArbeidstakerMetadata.medOppdaterteRegisterdata(
         arbeidsgiverNavn: String,
         juridiskEnhetOrgnr: String,
-        erOffentligArbeidsgiver: Boolean?,
+        erStatligArbeidsgiver: Boolean?,
         antallAnsatte: Int,
         erNorskregistrertUtenlandskForetak: Boolean
     ): UtsendtArbeidstakerMetadata = when (this) {
         is DegSelvMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
@@ -943,8 +943,8 @@ class UtsendtArbeidstakerService(
         is ArbeidsgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
@@ -952,8 +952,8 @@ class UtsendtArbeidstakerService(
         is ArbeidsgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
@@ -961,8 +961,8 @@ class UtsendtArbeidstakerService(
         is RadgiverMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
@@ -970,8 +970,8 @@ class UtsendtArbeidstakerService(
         is RadgiverMedFullmaktMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
@@ -979,8 +979,8 @@ class UtsendtArbeidstakerService(
         is AnnenPersonMetadata -> copy(
             arbeidsgiverNavn = arbeidsgiverNavn,
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
-            erOffentligArbeidsgiver = erOffentligArbeidsgiver,
-            erOffentligTjenesteperson = null,
+            erStatligArbeidsgiver = erStatligArbeidsgiver,
+            erStatsansatt = null,
             harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak

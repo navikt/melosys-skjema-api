@@ -232,7 +232,7 @@ class SkatteforholdOgInntektValidatorTest {
         ),
     ).map { Arguments.of(it) }.stream()
 
-    private val forenkletSkatteforhold = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+    private val skatteforholdForStatsansatt = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
         inntektFraNorskEllerUtenlandskVirksomhet = null,
         hvilkeTyperInntektHarDu = null,
         inntekt = null,
@@ -240,46 +240,46 @@ class SkatteforholdOgInntektValidatorTest {
     )
 
     @Test
-    fun `offentlig tjenesteperson skal ikke oppgi inntekt`() {
-        validator.validate(forenkletSkatteforhold, forenklet = true).shouldBeEmpty()
-        validator.validate(skatteforholdOgInntektDtoMedDefaultVerdier(), forenklet = true) shouldBe listOf(
+    fun `statsansatt skal ikke oppgi inntekt`() {
+        validator.validate(skatteforholdForStatsansatt, statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(skatteforholdOgInntektDtoMedDefaultVerdier(), statsansattFlyt = true) shouldBe listOf(
             Violation(
                 field = "inntektFraNorskEllerUtenlandskVirksomhet",
                 translationKey = "skatteforholdOgInntektTranslation.inntektskildeSkalIkkeOppgis"
             )
         )
-        validator.validate(forenkletSkatteforhold.copy(inntekt = "1000"), forenklet = true) shouldBe listOf(
+        validator.validate(skatteforholdForStatsansatt.copy(inntekt = "1000"), statsansattFlyt = true) shouldBe listOf(
             Violation(field = "inntekt", translationKey = "skatteforholdOgInntektTranslation.inntektSkalIkkeOppgis")
         )
     }
 
     @Test
-    fun `offentlig tjenesteperson må fortsatt oppgi pengestøtte`() {
-        val dto = forenkletSkatteforhold.copy(
+    fun `statsansatt må fortsatt oppgi pengestøtte`() {
+        val dto = skatteforholdForStatsansatt.copy(
             mottarPengestotteFraAnnetEosLandEllerSveits = true,
             landSomUtbetalerPengestotte = null,
         )
 
-        validator.validate(dto, forenklet = true).shouldHaveSize(1)
+        validator.validate(dto, statsansattFlyt = true).shouldHaveSize(1)
     }
 
     @Test
     fun `lønn er påkrevd når arbeidstaker sender før arbeidsgiver`() {
-        validator.validate(forenkletSkatteforhold, forenklet = true, medLonn = true) shouldBe listOf(
+        validator.validate(skatteforholdForStatsansatt, statsansattFlyt = true, medLonn = true) shouldBe listOf(
             Violation(field = "arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden", translationKey = FELT_ER_PAAKREVD)
         )
         validator.validate(
-            forenkletSkatteforhold.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true),
-            forenklet = true,
+            skatteforholdForStatsansatt.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true),
+            statsansattFlyt = true,
             medLonn = true
         ).shouldBeEmpty()
     }
 
     @Test
     fun `lønn valideres som arbeidsgivers lønnsspørsmål`() {
-        val dto = forenkletSkatteforhold.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false)
+        val dto = skatteforholdForStatsansatt.copy(arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false)
 
-        validator.validate(dto, forenklet = true, medLonn = true).shouldHaveSize(1)
+        validator.validate(dto, statsansattFlyt = true, medLonn = true).shouldHaveSize(1)
     }
 
     @Test

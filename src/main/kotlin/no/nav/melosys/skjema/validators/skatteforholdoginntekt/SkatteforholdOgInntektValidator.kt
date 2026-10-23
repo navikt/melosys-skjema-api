@@ -17,11 +17,11 @@ class SkatteforholdOgInntektValidator(
 ) {
 
     /**
-     * @param forenklet offentlig tjenesteperson: inntektsspørsmålene stilles ikke.
-     * @param medLonn offentlig tjenesteperson som sender før arbeidsgiver: lønnsspørsmålet fra
+     * @param statsansattFlyt statsansatt: inntektsspørsmålene stilles ikke.
+     * @param medLonn statsansatt som sender før arbeidsgiver: lønnsspørsmålet fra
      * arbeidsgivers del stilles her. Ellers skal lønnsfeltene mangle.
      */
-    fun validate(dto: SkatteforholdOgInntektDto?, forenklet: Boolean = false, medLonn: Boolean = false): List<Violation> {
+    fun validate(dto: SkatteforholdOgInntektDto?, statsansattFlyt: Boolean = false, medLonn: Boolean = false): List<Violation> {
         if (dto == null) return listOf(
             Violation(field = "skatteforholdOgInntekt", translationKey = FELT_ER_PAAKREVD)
         )
@@ -32,7 +32,7 @@ class SkatteforholdOgInntektValidator(
         val pengestotteViolations = validatePengestotte(dto)
         if (pengestotteViolations.isNotEmpty()) return pengestotteViolations
 
-        if (forenklet) return validateInntektMangler(dto)
+        if (statsansattFlyt) return validateInntektMangler(dto)
 
         val inntektKilder = dto.inntektFraNorskEllerUtenlandskVirksomhet
         val inntektTyper = dto.hvilkeTyperInntektHarDu

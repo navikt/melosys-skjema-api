@@ -19,86 +19,86 @@ class UtsendtArbeidstakerFlytTest {
     private val vanligFlyt = UtsendtArbeidstakerFlyt(
         utenlandsoppdragetSkalOppgis = true,
         arbeidsstedSkalOppgis = true,
-        forenkletArbeidssted = false,
-        forenkletArbeidstakerdel = false,
+        arbeidsstedForStatsansatt = false,
+        arbeidstakerdelForStatsansatt = false,
         lonnOppgisISkatteforhold = false,
     )
 
     private fun flyt(
         skjemadel: Skjemadel,
-        erOffentligArbeidsgiver: Boolean?,
+        erStatligArbeidsgiver: Boolean?,
         harArbeidsforholdIAareg: Boolean?,
         prefyltFraSkjemaId: UUID? = null,
     ) = UtsendtArbeidstakerFlyt.fra(
-        utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel, erOffentligArbeidsgiver = erOffentligArbeidsgiver)
+        utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel, erStatligArbeidsgiver = erStatligArbeidsgiver)
             .medHarArbeidsforholdIAareg(harArbeidsforholdIAareg),
         prefyltFraSkjemaId,
     )
 
     @ParameterizedTest
     @EnumSource(Skjemadel::class, names = ["ARBEIDSGIVERS_DEL", "ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL"])
-    fun `privat arbeidsgiver får vanlig flyt i arbeidsgivers del og kombinert skjema`(skjemadel: Skjemadel) {
-        flyt(skjemadel, erOffentligArbeidsgiver = false, harArbeidsforholdIAareg = true) shouldBe vanligFlyt
-        flyt(skjemadel, erOffentligArbeidsgiver = null, harArbeidsforholdIAareg = true) shouldBe vanligFlyt
+    fun `ikke-statlig arbeidsgiver får vanlig flyt i arbeidsgivers del og kombinert skjema`(skjemadel: Skjemadel) {
+        flyt(skjemadel, erStatligArbeidsgiver = false, harArbeidsforholdIAareg = true) shouldBe vanligFlyt
+        flyt(skjemadel, erStatligArbeidsgiver = null, harArbeidsforholdIAareg = true) shouldBe vanligFlyt
     }
 
     @Test
-    fun `offentlig arbeidsgiver uten utenlandsoppdraget og med forenklet arbeidssted i arbeidsgivers del`() {
-        val forventet = vanligFlyt.copy(utenlandsoppdragetSkalOppgis = false, forenkletArbeidssted = true)
+    fun `statlig arbeidsgiver uten utenlandsoppdraget og med arbeidssted for statsansatt i arbeidsgivers del`() {
+        val forventet = vanligFlyt.copy(utenlandsoppdragetSkalOppgis = false, arbeidsstedForStatsansatt = true)
 
-        flyt(Skjemadel.ARBEIDSGIVERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe forventet
-        flyt(Skjemadel.ARBEIDSGIVERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe forventet
+        flyt(Skjemadel.ARBEIDSGIVERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe forventet
+        flyt(Skjemadel.ARBEIDSGIVERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe forventet
     }
 
     @Test
-    fun `kombinert skjema forenkler arbeidstakerdelen bare for offentlig tjenesteperson`() {
-        val offentligAg = vanligFlyt.copy(utenlandsoppdragetSkalOppgis = false, forenkletArbeidssted = true)
+    fun `kombinert skjema bruker statsansattflyten bare ved AAREG-treff`() {
+        val statligArbeidsgiver = vanligFlyt.copy(utenlandsoppdragetSkalOppgis = false, arbeidsstedForStatsansatt = true)
 
-        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe offentligAg
-        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = null) shouldBe offentligAg
-        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe
-            offentligAg.copy(forenkletArbeidstakerdel = true)
+        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe statligArbeidsgiver
+        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = null) shouldBe statligArbeidsgiver
+        flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe
+            statligArbeidsgiver.copy(arbeidstakerdelForStatsansatt = true)
     }
 
     @Test
-    fun `arbeidstakers del uten offentlig tjenesteperson har verken utenlandsoppdraget, arbeidssted eller lønn`() {
+    fun `arbeidstakers del uten statsansattflyt har verken utenlandsoppdraget, arbeidssted eller lønn`() {
         val forventet = UtsendtArbeidstakerFlyt(
             utenlandsoppdragetSkalOppgis = false,
             arbeidsstedSkalOppgis = false,
-            forenkletArbeidssted = true,
-            forenkletArbeidstakerdel = false,
+            arbeidsstedForStatsansatt = true,
+            arbeidstakerdelForStatsansatt = false,
             lonnOppgisISkatteforhold = false,
         )
 
-        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = false, harArbeidsforholdIAareg = true) shouldBe forventet
-        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe forventet
-        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = null) shouldBe forventet
+        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = false, harArbeidsforholdIAareg = true) shouldBe forventet
+        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = false) shouldBe forventet
+        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = null) shouldBe forventet
     }
 
     @Test
-    fun `offentlig tjenesteperson som sender før arbeidsgiver oppgir arbeidssted og lønn`() {
-        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe
+    fun `statsansatt som sender før arbeidsgiver oppgir arbeidssted og lønn`() {
+        flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true) shouldBe
             UtsendtArbeidstakerFlyt(
                 utenlandsoppdragetSkalOppgis = false,
                 arbeidsstedSkalOppgis = true,
-                forenkletArbeidssted = true,
-                forenkletArbeidstakerdel = true,
+                arbeidsstedForStatsansatt = true,
+                arbeidstakerdelForStatsansatt = true,
                 lonnOppgisISkatteforhold = true,
             )
     }
 
     @Test
-    fun `offentlig tjenesteperson forhåndsutfylt fra arbeidsgivers del oppgir ikke arbeidssted og lønn`() {
+    fun `statsansatt forhåndsutfylt fra arbeidsgivers del oppgir ikke arbeidssted og lønn`() {
         flyt(
             Skjemadel.ARBEIDSTAKERS_DEL,
-            erOffentligArbeidsgiver = true,
+            erStatligArbeidsgiver = true,
             harArbeidsforholdIAareg = true,
             prefyltFraSkjemaId = UUID.randomUUID()
         ) shouldBe UtsendtArbeidstakerFlyt(
             utenlandsoppdragetSkalOppgis = false,
             arbeidsstedSkalOppgis = false,
-            forenkletArbeidssted = true,
-            forenkletArbeidstakerdel = true,
+            arbeidsstedForStatsansatt = true,
+            arbeidstakerdelForStatsansatt = true,
             lonnOppgisISkatteforhold = false,
         )
     }
@@ -107,7 +107,7 @@ class UtsendtArbeidstakerFlytTest {
     fun `fjernSvarUtenforFlyten lar arbeidsgivers del være urørt`() {
         val data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier()
 
-        vanligFlyt.copy(forenkletArbeidstakerdel = true).fjernSvarUtenforFlyten(data) shouldBe data
+        vanligFlyt.copy(arbeidstakerdelForStatsansatt = true).fjernSvarUtenforFlyten(data) shouldBe data
     }
 
     @Test
@@ -119,7 +119,7 @@ class UtsendtArbeidstakerFlytTest {
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true
             ),
         )
-        val flyt = flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true, UUID.randomUUID())
+        val flyt = flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true, UUID.randomUUID())
 
         val resultat = flyt.fjernSvarUtenforFlyten(data) as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
 
@@ -136,7 +136,7 @@ class UtsendtArbeidstakerFlytTest {
     }
 
     @Test
-    fun `fjernSvarUtenforFlyten beholder svarene når offentlig tjenesteperson sender før arbeidsgiver`() {
+    fun `fjernSvarUtenforFlyten beholder svarene når statsansatt sender før arbeidsgiver`() {
         val default = arbeidstakersSkjemaDataDtoMedDefaultVerdier()
         val data = default.copy(
             arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
@@ -150,15 +150,15 @@ class UtsendtArbeidstakerFlytTest {
                 arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = true,
             ),
         )
-        val flyt = flyt(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true)
+        val flyt = flyt(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true)
 
         flyt.fjernSvarUtenforFlyten(data) shouldBe data
     }
 
     @Test
-    fun `fjernSvarUtenforFlyten forenkler arbeidstakerdelen i kombinert skjema for offentlig tjenesteperson`() {
+    fun `fjernSvarUtenforFlyten tilpasser arbeidstakerdelen til statsansattflyten i kombinert skjema`() {
         val data = arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier()
-        val flyt = flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = true, harArbeidsforholdIAareg = true)
+        val flyt = flyt(Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true, harArbeidsforholdIAareg = true)
 
         val resultat = flyt.fjernSvarUtenforFlyten(data) as UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto
 

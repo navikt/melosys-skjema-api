@@ -13,18 +13,18 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjema
 /**
  * Hvilke spørsmål skjemadelen skal ha svar på, gitt arbeidsgivertype og AAREG-treff.
  *
- * - Offentlig arbeidsgiver (arbeidsgivers del og kombinert skjema): utenlandsoppdraget faller bort,
- *   og arbeidsstedet forenkles til «på land» uten hjemmekontor.
- * - Offentlig tjenesteperson (offentlig arbeidsgiver + arbeidsforhold i AAREG, arbeidstakers del og
+ * - Statlig arbeidsgiver (arbeidsgivers del og kombinert skjema): utenlandsoppdraget faller bort,
+ *   og arbeidssted oppgis som «på land» uten spørsmål om hjemmekontor.
+ * - Statsansatt (statlig arbeidsgiver + arbeidsforhold i AAREG, arbeidstakers del og
  *   kombinert skjema): arbeidssituasjon og skatteforhold reduseres.
- * - Offentlig tjenesteperson i arbeidstakers del som sender før arbeidsgiver (ikke forhåndsutfylt fra en
- *   innsendt arbeidsgivers del): arbeidstaker oppgir selv arbeidssted (forenklet) og lønnsspørsmålet.
+ * - Statsansatt i arbeidstakers del som sender før arbeidsgiver (ikke forhåndsutfylt fra en
+ *   innsendt arbeidsgivers del): arbeidstaker oppgir selv arbeidssted på land og svarer på lønnsspørsmålet.
  */
 data class UtsendtArbeidstakerFlyt(
     val utenlandsoppdragetSkalOppgis: Boolean,
     val arbeidsstedSkalOppgis: Boolean,
-    val forenkletArbeidssted: Boolean,
-    val forenkletArbeidstakerdel: Boolean,
+    val arbeidsstedForStatsansatt: Boolean,
+    val arbeidstakerdelForStatsansatt: Boolean,
     val lonnOppgisISkatteforhold: Boolean,
 ) {
     /**
@@ -47,12 +47,12 @@ data class UtsendtArbeidstakerFlyt(
     }
 
     private fun tilpassArbeidssituasjon(dto: ArbeidssituasjonDto): ArbeidssituasjonDto =
-        if (forenkletArbeidstakerdel) {
+        if (arbeidstakerdelForStatsansatt) {
             dto.copy(harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null, aktivitetIMaanedenFoerUtsendingen = null)
         } else dto
 
     private fun tilpassSkatteforhold(dto: SkatteforholdOgInntektDto): SkatteforholdOgInntektDto {
-        val utenInntekt = if (forenkletArbeidstakerdel) {
+        val utenInntekt = if (arbeidstakerdelForStatsansatt) {
             dto.copy(
                 inntektFraNorskEllerUtenlandskVirksomhet = null,
                 hvilkeTyperInntektHarDu = null,
@@ -68,25 +68,25 @@ data class UtsendtArbeidstakerFlyt(
 
     companion object {
         fun fra(metadata: UtsendtArbeidstakerMetadata, prefyltFraSkjemaId: UUID?): UtsendtArbeidstakerFlyt {
-            val erOffentligArbeidsgiver = metadata.erOffentligArbeidsgiver == true
-            val erOffentligTjenesteperson = erOffentligArbeidsgiver && metadata.harArbeidsforholdIAareg == true
+            val erStatligArbeidsgiver = metadata.erStatligArbeidsgiver == true
+            val erStatsansatt = erStatligArbeidsgiver && metadata.harArbeidsforholdIAareg == true
 
             return when (metadata.skjemadel) {
                 Skjemadel.ARBEIDSGIVERS_DEL, Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> UtsendtArbeidstakerFlyt(
-                    utenlandsoppdragetSkalOppgis = !erOffentligArbeidsgiver,
+                    utenlandsoppdragetSkalOppgis = !erStatligArbeidsgiver,
                     arbeidsstedSkalOppgis = true,
-                    forenkletArbeidssted = erOffentligArbeidsgiver,
-                    forenkletArbeidstakerdel = metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL &&
-                        erOffentligTjenesteperson,
+                    arbeidsstedForStatsansatt = erStatligArbeidsgiver,
+                    arbeidstakerdelForStatsansatt = metadata.skjemadel == Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL &&
+                        erStatsansatt,
                     lonnOppgisISkatteforhold = false,
                 )
                 Skjemadel.ARBEIDSTAKERS_DEL -> {
-                    val arbeidstakerSenderFoerst = erOffentligTjenesteperson && prefyltFraSkjemaId == null
+                    val arbeidstakerSenderFoerst = erStatsansatt && prefyltFraSkjemaId == null
                     UtsendtArbeidstakerFlyt(
                         utenlandsoppdragetSkalOppgis = false,
                         arbeidsstedSkalOppgis = arbeidstakerSenderFoerst,
-                        forenkletArbeidssted = true,
-                        forenkletArbeidstakerdel = erOffentligTjenesteperson,
+                        arbeidsstedForStatsansatt = true,
+                        arbeidstakerdelForStatsansatt = erStatsansatt,
                         lonnOppgisISkatteforhold = arbeidstakerSenderFoerst,
                     )
                 }

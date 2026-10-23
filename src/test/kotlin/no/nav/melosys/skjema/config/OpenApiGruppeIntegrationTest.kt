@@ -22,6 +22,10 @@ class OpenApiGruppeIntegrationTest : ApiTestBase() {
             .returnResult().responseBody!!
 
         spec shouldContain "/api/skjema"
+        spec shouldContain "\"erStatligArbeidsgiver\""
+        spec shouldContain "\"erStatsansatt\""
+        spec shouldNotContain "\"erOffentligArbeidsgiver\""
+        spec shouldNotContain "\"erOffentligTjenesteperson\""
     }
 
     @Test

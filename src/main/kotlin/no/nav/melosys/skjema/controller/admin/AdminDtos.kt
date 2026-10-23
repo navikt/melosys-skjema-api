@@ -377,7 +377,7 @@ data class DelStatusDto(
     /** Del av [medMotpart] der saken er AVSLUTTET i Melosys. */
     val medMotpartAvsluttetSak: Long = 0,
     /**
-     * Arbeidstakers del uten innsendt motpart der arbeidstakeren er offentlig tjenesteperson (AAREG).
+     * Arbeidstakers del uten innsendt motpart der arbeidstakeren er statsansatt (AAREG).
      * Delen er komplett alene og venter ikke på arbeidsgivers del.
      */
     val komplettSomOffentligTjenesteperson: Long = 0,

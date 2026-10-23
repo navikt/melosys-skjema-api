@@ -10,14 +10,14 @@ import org.springframework.stereotype.Component
 @Component
 class ArbeidssituasjonValidator {
 
-    /** @param forenklet offentlig tjenesteperson: bare spørsmålet om flere virksomheter stilles. */
-    fun validate(dto: ArbeidssituasjonDto?, forenklet: Boolean = false): List<Violation> {
+    /** @param statsansattFlyt statsansatt: bare spørsmålet om flere virksomheter stilles. */
+    fun validate(dto: ArbeidssituasjonDto?, statsansattFlyt: Boolean = false): List<Violation> {
         if (dto == null) return listOf(Violation(
             field = "arbeidssituasjon",
             translationKey = FELT_ER_PAAKREVD
         ))
 
-        val lonnetArbeidViolations = if (forenklet) validateForenklet(dto) else validateLonnetArbeidFoerUtsending(dto)
+        val lonnetArbeidViolations = if (statsansattFlyt) validateStatsansatt(dto) else validateLonnetArbeidFoerUtsending(dto)
         if (lonnetArbeidViolations.isNotEmpty()) return lonnetArbeidViolations
 
         if (dto.skalJobbeForFlereVirksomheter) {
@@ -53,7 +53,7 @@ class ArbeidssituasjonValidator {
         return emptyList()
     }
 
-    private fun validateForenklet(dto: ArbeidssituasjonDto): List<Violation> {
+    private fun validateStatsansatt(dto: ArbeidssituasjonDto): List<Violation> {
         if (dto.harVaertEllerSkalVaereILonnetArbeidFoerUtsending != null) {
             return listOf(Violation(
                 field = ArbeidssituasjonDto::harVaertEllerSkalVaereILonnetArbeidFoerUtsending.name,

@@ -44,8 +44,8 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
     private val privatFlyt = UtsendtArbeidstakerFlyt(
         utenlandsoppdragetSkalOppgis = true,
         arbeidsstedSkalOppgis = true,
-        forenkletArbeidssted = false,
-        forenkletArbeidstakerdel = false,
+        arbeidsstedForStatsansatt = false,
+        arbeidstakerdelForStatsansatt = false,
         lonnOppgisISkatteforhold = false,
     )
 
@@ -99,7 +99,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         validator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
             flyt = privatFlyt,
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             antallAnsatte = 50,
             erNorskregistrertUtenlandskForetak = false
         )
@@ -169,15 +169,15 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         val flyt = UtsendtArbeidstakerFlyt(
             utenlandsoppdragetSkalOppgis = false,
             arbeidsstedSkalOppgis = true,
-            forenkletArbeidssted = true,
-            forenkletArbeidstakerdel = true,
+            arbeidsstedForStatsansatt = true,
+            arbeidstakerdelForStatsansatt = true,
             lonnOppgisISkatteforhold = true,
         )
 
         validator.validateUtsendtArbeidstakerSkjemaData(
             UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto(),
             flyt = flyt,
-            erOffentligArbeidsgiver = true,
+            erStatligArbeidsgiver = true,
             antallAnsatte = 50,
             erNorskregistrertUtenlandskForetak = false
         )
@@ -198,7 +198,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
             validator.validateUtsendtArbeidstakerSkjemaData(
                 UtsendtArbeidstakerArbeidstakersSkjemaDataDto(),
                 flyt = privatFlyt,
-                erOffentligArbeidsgiver = false,
+                erStatligArbeidsgiver = false,
                 antallAnsatte = 50,
                 erNorskregistrertUtenlandskForetak = false
             )

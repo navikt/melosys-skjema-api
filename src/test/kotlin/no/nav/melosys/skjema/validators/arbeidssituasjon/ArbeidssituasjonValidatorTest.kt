@@ -122,20 +122,20 @@ class ArbeidssituasjonValidatorTest {
     ).map { Arguments.of(it) }.stream()
 
     @Test
-    fun `offentlig tjenesteperson skal ikke oppgi lønnet arbeid og aktivitet før utsendingen`() {
-        val forenklet = arbeidssituasjonDtoMedDefaultVerdier().copy(
+    fun `statsansatt skal ikke oppgi lønnet arbeid og aktivitet før utsendingen`() {
+        val statsansattFlyt = arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
             aktivitetIMaanedenFoerUtsendingen = null,
         )
 
-        validator.validate(forenklet, forenklet = true).shouldBeEmpty()
-        validator.validate(forenklet.copy(harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true), forenklet = true) shouldBe listOf(
+        validator.validate(statsansattFlyt, statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(statsansattFlyt.copy(harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true), statsansattFlyt = true) shouldBe listOf(
             Violation(
                 field = "harVaertEllerSkalVaereILonnetArbeidFoerUtsending",
                 translationKey = "arbeidssituasjonTranslation.lonnetArbeidFoerUtsendingSkalIkkeOppgis"
             )
         )
-        validator.validate(forenklet.copy(aktivitetIMaanedenFoerUtsendingen = "STUDENT"), forenklet = true) shouldBe listOf(
+        validator.validate(statsansattFlyt.copy(aktivitetIMaanedenFoerUtsendingen = "STUDENT"), statsansattFlyt = true) shouldBe listOf(
             Violation(
                 field = "aktivitetIMaanedenFoerUtsendingen",
                 translationKey = "arbeidssituasjonTranslation.aktivitetFoerUtsendingSkalIkkeOppgis"
@@ -144,7 +144,7 @@ class ArbeidssituasjonValidatorTest {
     }
 
     @Test
-    fun `offentlig tjenesteperson må fortsatt oppgi virksomhetene ved flere arbeidsgivere`() {
+    fun `statsansatt må fortsatt oppgi virksomhetene ved flere arbeidsgivere`() {
         val dto = arbeidssituasjonDtoMedDefaultVerdier().copy(
             harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
             aktivitetIMaanedenFoerUtsendingen = null,
@@ -152,7 +152,7 @@ class ArbeidssituasjonValidatorTest {
             virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
         )
 
-        validator.validate(dto, forenklet = true).shouldHaveSize(1)
+        validator.validate(dto, statsansattFlyt = true).shouldHaveSize(1)
     }
 
     @Test

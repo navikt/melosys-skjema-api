@@ -20,8 +20,8 @@ import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetTranslation
 val TRANSLATIONS = ErrorMessageTranslations(
     no = ErrorMessageTranslation(
         arbeidsgiverensVirksomhetINorgeTranslation = ArbeidsgiverensVirksomhetINorgeTranslation(
-            offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Offentlige virksomheter skal ikke oppgi om de er bemannings- eller vikarbyrå",
-            offentligVirksomhetSkalIkkeOppgiVanligDrift = "Offentlige virksomheter skal ikke oppgi vanlig drift",
+            statligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Statlige virksomheter skal ikke oppgi om de er bemannings- eller vikarbyrå",
+            statligVirksomhetSkalIkkeOppgiVanligDrift = "Statlige virksomheter skal ikke oppgi vanlig drift",
             maaOppgiOmBemanningsbyraa = "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå",
             maaOppgiOmVanligDrift = "Du må oppgi om arbeidsgiver opprettholder vanlig drift",
             skalIkkeOppgiVanligDrift = "Vanlig drift skal ikke oppgis når foretakets samlede virksomhet oppgis",
@@ -32,8 +32,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "Du må oppgi aktivitet i måneden før utsendingen",
             maaOppgiMinstEnVirksomhet = "Du må oppgi minst én virksomhet",
-            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Lønnet arbeid før utsendingen skal ikke oppgis for offentlig tjenesteperson",
-            aktivitetFoerUtsendingSkalIkkeOppgis = "Aktivitet i måneden før utsendingen skal ikke oppgis for offentlig tjenesteperson"
+            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Lønnet arbeid før utsendingen skal ikke oppgis for statsansatt",
+            aktivitetFoerUtsendingSkalIkkeOppgis = "Aktivitet i måneden før utsendingen skal ikke oppgis for statsansatt"
         ),
         arbeidsstedIUtlandetTranslation = ArbeidsstedIUtlandetTranslation(
             maaOppgiArbeidsstedPaLand = "Du må oppgi arbeidssted på land",
@@ -51,7 +51,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "Du må oppgi fast arbeidssted",
             fastArbeidsstedSkalIkkeOppgis = "Fast arbeidssted skal ikke oppgis",
-            hjemmekontorSkalIkkeOppgis = "Hjemmekontor skal ikke oppgis for offentlig arbeidsgiver"
+            hjemmekontorSkalIkkeOppgis = "Hjemmekontor skal ikke oppgis for statlig arbeidsgiver"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "Du må oppgi flaggland for skip i internasjonalt farvann",
@@ -77,8 +77,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "Du må oppgi inntekter fra egen virksomhet",
             inntektSkalIkkeOppgis = "Inntekt skal ikke oppgis",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Inntekter fra egen virksomhet skal ikke oppgis",
-            inntektskildeSkalIkkeOppgis = "Arbeidsinntektkilde skal ikke oppgis for offentlig tjenesteperson",
-            inntektstypeSkalIkkeOppgis = "Inntekttype skal ikke oppgis for offentlig tjenesteperson",
+            inntektskildeSkalIkkeOppgis = "Inntektskilde skal ikke oppgis for statsansatt",
+            inntektstypeSkalIkkeOppgis = "Inntekttype skal ikke oppgis for statsansatt",
             lonnSkalIkkeOppgis = "Lønn og naturalytelser skal ikke oppgis i denne delen av søknaden",
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(
@@ -107,8 +107,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
     ),
     en = ErrorMessageTranslation(
         arbeidsgiverensVirksomhetINorgeTranslation = ArbeidsgiverensVirksomhetINorgeTranslation(
-            offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Public organizations should not specify whether they are staffing or temporary employment agencies",
-            offentligVirksomhetSkalIkkeOppgiVanligDrift = "Public organizations should not specify normal operations",
+            statligVirksomhetSkalIkkeOppgiBemanningsbyraa = "State employers should not specify whether they are staffing or temporary employment agencies",
+            statligVirksomhetSkalIkkeOppgiVanligDrift = "State employers should not specify normal operations",
             maaOppgiOmBemanningsbyraa = "You must specify whether the employer is a staffing or temporary employment agency",
             maaOppgiOmVanligDrift = "You must specify whether the employer maintains normal operations",
             skalIkkeOppgiVanligDrift = "Normal operations must not be specified when information about the company's overall business is provided",
@@ -119,8 +119,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
         arbeidssituasjonTranslation = ArbeidssituasjonTranslation(
             maaOppgiAktivitetFoerUtsending = "You must specify activity in the month before posting",
             maaOppgiMinstEnVirksomhet = "You must specify at least one company",
-            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Paid work before the posting should not be specified for public servants",
-            aktivitetFoerUtsendingSkalIkkeOppgis = "Activity in the month before the posting should not be specified for public servants"
+            lonnetArbeidFoerUtsendingSkalIkkeOppgis = "Paid work before the posting should not be specified for state employees",
+            aktivitetFoerUtsendingSkalIkkeOppgis = "Activity in the month before the posting should not be specified for state employees"
         ),
         arbeidsstedIUtlandetTranslation = ArbeidsstedIUtlandetTranslation(
             maaOppgiArbeidsstedPaLand = "You must specify workplace on land",
@@ -138,7 +138,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
         paLandTranslation = PaLandTranslation(
             maaOppgiFastArbeidssted = "You must specify fixed workplace",
             fastArbeidsstedSkalIkkeOppgis = "Fixed workplace should not be specified",
-            hjemmekontorSkalIkkeOppgis = "Home office should not be specified for public employers"
+            hjemmekontorSkalIkkeOppgis = "Home office should not be specified for state employers"
         ),
         paSkipTranslation = PaSkipTranslation(
             duMaOppgiFlaggland = "You must specify flag country for ship in international waters",
@@ -164,8 +164,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
             maaOppgiInntektFraEgenVirksomhet = "You must specify income from own business",
             inntektSkalIkkeOppgis = "Income should not be specified",
             inntektFraEgenVirksomhetSkalIkkeOppgis = "Income from own business should not be specified",
-            inntektskildeSkalIkkeOppgis = "Work income source should not be specified for public servants",
-            inntektstypeSkalIkkeOppgis = "Income type should not be specified for public servants",
+            inntektskildeSkalIkkeOppgis = "Work income source should not be specified for state employees",
+            inntektstypeSkalIkkeOppgis = "Income type should not be specified for state employees",
             lonnSkalIkkeOppgis = "Salary and benefits in kind should not be specified in this part of the application",
         ),
         tilleggsopplysningerTranslation = TilleggsopplysningerTranslation(

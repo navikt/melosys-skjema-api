@@ -60,9 +60,9 @@ class PaLandValidatorTest {
     ).map { Arguments.of(it) }.stream()
 
     @Test
-    fun `hjemmekontor skal ikke oppgis i forenklet arbeidssted`() {
-        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null), forenklet = true).shouldBeEmpty()
-        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = false), forenklet = true) shouldBe listOf(
+    fun `hjemmekontor skal ikke oppgis i arbeidssted for statsansatt`() {
+        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null), statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = false), statsansattFlyt = true) shouldBe listOf(
             Violation(field = "erHjemmekontor", translationKey = "paLandTranslation.hjemmekontorSkalIkkeOppgis")
         )
     }

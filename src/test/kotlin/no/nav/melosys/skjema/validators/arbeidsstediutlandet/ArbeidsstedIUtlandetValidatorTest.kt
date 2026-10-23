@@ -192,17 +192,17 @@ class ArbeidsstedIUtlandetValidatorTest {
     }
 
     @Test
-    fun `forenklet arbeidssted godtar bare på land uten hjemmekontor`() {
+    fun `arbeidssted for statsansatt godtar bare på land uten hjemmekontor`() {
         val paLandUtenHjemmekontor = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
             paLand = paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)
         )
         val offshore = ArbeidsstedIUtlandetDto(arbeidsstedType = ArbeidsstedType.OFFSHORE, offshore = offshoreDtoMedDefaultVerdier())
 
-        validator.validate(paLandUtenHjemmekontor, forenklet = true).shouldBeEmpty()
-        validator.validate(offshore, forenklet = true) shouldBe listOf(
+        validator.validate(paLandUtenHjemmekontor, statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(offshore, statsansattFlyt = true) shouldBe listOf(
             Violation(field = "paLand", translationKey = "arbeidsstedIUtlandetTranslation.maaOppgiArbeidsstedPaLand")
         )
-        validator.validate(arbeidsstedIUtlandetDtoMedDefaultVerdier(), forenklet = true) shouldBe listOf(
+        validator.validate(arbeidsstedIUtlandetDtoMedDefaultVerdier(), statsansattFlyt = true) shouldBe listOf(
             Violation(field = "erHjemmekontor", translationKey = "paLandTranslation.hjemmekontorSkalIkkeOppgis")
         )
     }

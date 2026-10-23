@@ -26,7 +26,7 @@ data class SkatteforholdOgInntektDto(
     val inntekt: String? = null,
     val inntektFraEgenVirksomhet: String? = null,
     /**
-     * Lønnsspørsmålet fra arbeidsgivers del, stilt til offentlig tjenesteperson som sender før arbeidsgiver.
+     * Lønnsspørsmålet fra arbeidsgivers del, stilt til statsansatt som sender før arbeidsgiver.
      * Samme betydning som i [ArbeidstakerensLonnDto].
      */
     val arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden: Boolean? = null,
