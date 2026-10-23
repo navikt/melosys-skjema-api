@@ -1,0 +1,15 @@
+{
+  "skjemadel" : "ARBEIDSGIVERS_DEL",
+  "arbeidsgiverNavn" : "Arbeidsgiver AS",
+  "juridiskEnhetOrgnr" : "987654321",
+  "fullmektigFnr" : "12345678901",
+  "arbeidstakerNavn" : "Ola Nordmann",
+  "erOffentligArbeidsgiver" : true,
+  "erNorskregistrertUtenlandskForetak" : false,
+  "antallAnsatte" : 42,
+  "erOffentligTjenesteperson" : true,
+  "kobletSkjemaId" : "11111111-1111-1111-1111-111111111111",
+  "erstatterSkjemaId" : "22222222-2222-2222-2222-222222222222",
+  "metadatatype" : "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVER_MED_FULLMAKT",
+  "representasjonstype" : "ARBEIDSGIVER_MED_FULLMAKT"
+}

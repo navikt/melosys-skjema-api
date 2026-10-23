@@ -1,0 +1,96 @@
+{
+  "type" : "UTSENDT_ARBEIDSTAKER_ARBEIDSGIVERS_DEL",
+  "arbeidsgiverensVirksomhetINorge" : {
+    "erArbeidsgiverenOffentligVirksomhet" : false,
+    "erArbeidsgiverenBemanningsEllerVikarbyraa" : false,
+    "opprettholderArbeidsgiverenVanligDrift" : true,
+    "antallAdministrativtAnsatte" : 10,
+    "antallUtsendteArbeidstakere" : 2,
+    "andelAnsatteRekruttertINorge" : 80,
+    "andelOmsetningINorge" : 70,
+    "andelOppdragUtfortINorge" : 60,
+    "andelOppdragskontrakterInngattINorge" : 50
+  },
+  "utenlandsoppdraget" : {
+    "arbeidsgiverHarOppdragILandet" : true,
+    "arbeidstakerBleAnsattForUtenlandsoppdraget" : false,
+    "arbeidstakerForblirAnsattIHelePerioden" : true,
+    "arbeidstakerErstatterAnnenPerson" : true,
+    "arbeidstakerVilJobbeForVirksomhetINorgeEtterOppdraget" : true,
+    "utenlandsoppholdetsBegrunnelse" : "Begrunnelse",
+    "ansettelsesforholdBeskrivelse" : "Beskrivelse",
+    "forrigeArbeidstakerUtsendelsePeriode" : {
+      "fraDato" : "2026-01-01",
+      "tilDato" : "2026-12-31"
+    }
+  },
+  "arbeidstakerensLonn" : {
+    "arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden" : false,
+    "virksomheterSomUtbetalerLonnOgNaturalytelser" : {
+      "norskeVirksomheter" : [ {
+        "organisasjonsnummer" : "123456789"
+      } ],
+      "utenlandskeVirksomheter" : [ {
+        "navn" : "Utenlandsk AB",
+        "organisasjonsnummer" : "SE123",
+        "vegnavnOgHusnummer" : "Storgatan 1",
+        "bygning" : "Bygg A",
+        "postkode" : "11122",
+        "byStedsnavn" : "Stockholm",
+        "region" : "Stockholms län",
+        "land" : "SE",
+        "tilhorerSammeKonsern" : true
+      } ]
+    }
+  },
+  "arbeidsstedIUtlandet" : {
+    "arbeidsstedType" : "PA_LAND",
+    "paLand" : {
+      "navnPaVirksomhet" : "Virksomhet",
+      "fastEllerVekslendeArbeidssted" : "FAST",
+      "fastArbeidssted" : {
+        "vegadresse" : "Storgatan",
+        "nummer" : "1",
+        "postkode" : "11122",
+        "bySted" : "Stockholm"
+      },
+      "erHjemmekontor" : true
+    },
+    "offshore" : {
+      "navnPaVirksomhet" : "Virksomhet",
+      "navnPaInnretning" : "Innretning",
+      "typeInnretning" : "PLATTFORM_ELLER_ANNEN_FAST_INNRETNING",
+      "sokkelLand" : "DK"
+    },
+    "paSkip" : {
+      "navnPaVirksomhet" : "Virksomhet",
+      "navnPaSkip" : "Skip",
+      "yrketTilArbeidstaker" : "Matros",
+      "seilerI" : "TERRITORIALFARVANN",
+      "flaggland" : "NL",
+      "territorialfarvannLand" : "DE"
+    },
+    "omBordPaFly" : {
+      "navnPaVirksomhet" : "Virksomhet",
+      "hjemmebaseLand" : "FI",
+      "hjemmebaseNavn" : "Helsinki",
+      "erVanligHjemmebase" : false,
+      "vanligHjemmebaseLand" : "SE",
+      "vanligHjemmebaseNavn" : "Arlanda"
+    }
+  },
+  "utsendingsperiodeOgLand" : {
+    "utsendelseLand" : "SE",
+    "utsendelsePeriode" : {
+      "fraDato" : "2026-01-01",
+      "tilDato" : "2026-12-31"
+    }
+  },
+  "tilleggsopplysninger" : {
+    "harFlereOpplysningerTilSoknaden" : true,
+    "tilleggsopplysningerTilSoknad" : "Tilleggsopplysninger"
+  },
+  "vedlegg" : {
+    "harAnnenDokumentasjon" : true
+  }
+}

@@ -6,6 +6,7 @@ plugins {
 group = "no.nav.melosys"
 
 val jacksonVersion = "2.22"
+val jackson3Version = "3.1.5"
 val jakartaValidationVersion = "3.1.1"
 val swaggerVersion = "2.2.55"
 val junitVersion = "6.1.3"
@@ -36,6 +37,9 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
     testImplementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    testImplementation(platform("tools.jackson:jackson-bom:$jackson3Version"))
+    testImplementation("tools.jackson.module:jackson-module-kotlin")
+    testImplementation("io.kotest:kotest-assertions-json:$kotestVersion")
 }
 
 tasks.test {
