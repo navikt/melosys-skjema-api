@@ -804,7 +804,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 dekketAvKomplettSkjemaAktivSak shouldBe 1
                 dekketAvKomplettSkjemaAvsluttetSak shouldBe 1
                 venterIngenMotpart shouldBe 1
-                totalt shouldBe medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema +
+                totalt shouldBe medMotpart + komplettSomStatsansatt + dekketAvKomplettSkjema +
                     venterMotpartHarUtkast + venterIngenMotpart
             }
         }
@@ -823,11 +823,11 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             with(s.arbeidstakerDeler) {
                 totalt shouldBe 4
                 medMotpart shouldBe 1
-                komplettSomOffentligTjenesteperson shouldBe 2
-                komplettSomOffentligTjenestepersonAktivSak shouldBe 1
-                komplettSomOffentligTjenestepersonAvsluttetSak shouldBe 1
+                komplettSomStatsansatt shouldBe 2
+                komplettSomStatsansattAktivSak shouldBe 1
+                komplettSomStatsansattAvsluttetSak shouldBe 1
                 venterIngenMotpart shouldBe 1
-                totalt shouldBe medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema +
+                totalt shouldBe medMotpart + komplettSomStatsansatt + dekketAvKomplettSkjema +
                     venterMotpartHarUtkast + venterIngenMotpart
             }
         }
@@ -1255,10 +1255,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 }
                 status?.let {
                     it.totalt + it.antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[del]
-                    it.totalt shouldBe it.medMotpart + it.komplettSomOffentligTjenesteperson + it.dekketAvKomplettSkjema +
+                    it.totalt shouldBe it.medMotpart + it.komplettSomStatsansatt + it.dekketAvKomplettSkjema +
                         it.venterMotpartHarUtkast + it.venterIngenMotpart
-                    it.komplettSomOffentligTjenesteperson shouldBe
-                        it.komplettSomOffentligTjenestepersonAktivSak + it.komplettSomOffentligTjenestepersonAvsluttetSak
+                    it.komplettSomStatsansatt shouldBe
+                        it.komplettSomStatsansattAktivSak + it.komplettSomStatsansattAvsluttetSak
                     it.medMotpart shouldBe it.medMotpartAktivSak + it.medMotpartAvsluttetSak
                     it.dekketAvKomplettSkjema shouldBe it.dekketAvKomplettSkjemaAktivSak + it.dekketAvKomplettSkjemaAvsluttetSak
                 }
