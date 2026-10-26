@@ -687,6 +687,14 @@ For detaljert dokumentasjon av fullmaktmodellen, se [fullmakt.md](fullmakt.md). 
 
 ## Utviklerdokumentasjon
 
+### Statsansattflyten
+
+`erStatligArbeidsgiver` betyr at arbeidsgiverens juridiske enhet har enhetstype
+`STAT` og sektorkode `6100` i EREG.
+Spørsmålsflyten for statsansatte bestemmes av denne klassifiseringen, skjemadelen
+og om et ordinært arbeidsforhold i AAREG dekker hele utsendingsperioden.
+`erStatsansatt` i metadata angir at arbeidstakers del er komplett alene.
+
 ### Skjemadefinisjoner
 
 Skjemadefinisjoner lagres som flerspråklige JSON-filer i `src/main/resources/skjema-definisjoner/`.

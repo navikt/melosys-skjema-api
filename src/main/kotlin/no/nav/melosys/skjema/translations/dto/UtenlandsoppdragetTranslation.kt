@@ -4,5 +4,6 @@ data class UtenlandsoppdragetTranslation(
     val duMaOppgiBegrunnelse: String,
     val duMaOppgiOmArbeidstakerVilJobbeEtterOppdraget: String,
     val duMaOppgiBeskrivelseAvAnsettelsesforhold: String,
-    val duMaOppgiForrigeArbeidstakerUtsendelsePeriode: String
+    val duMaOppgiForrigeArbeidstakerUtsendelsePeriode: String,
+    val utenlandsoppdragetSkalIkkeOppgis: String,
 )

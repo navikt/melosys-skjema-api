@@ -58,7 +58,8 @@ data class PaLandDto(
     val navnPaVirksomhet: String,
     val fastEllerVekslendeArbeidssted: FastEllerVekslendeArbeidssted,
     val fastArbeidssted: PaLandFastArbeidsstedDto?,
-    val erHjemmekontor: Boolean
+    /** Stilles ikke når arbeidsgiver er statlig. */
+    val erHjemmekontor: Boolean?
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

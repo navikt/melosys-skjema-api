@@ -11,11 +11,26 @@ import org.springframework.stereotype.Component
 @Component
 class PaLandValidator {
 
-    fun validate(dto: PaLandDto?): List<Violation> {
+    /** @param statsansattFlyt statlig arbeidsgiver: hjemmekontor-spørsmålet stilles ikke. */
+    fun validate(dto: PaLandDto?, statsansattFlyt: Boolean = false): List<Violation> {
         if (dto == null) return listOf(Violation(
             field = "paLand",
             translationKey = FELT_ER_PAAKREVD
         ))
+
+        if (statsansattFlyt && dto.erHjemmekontor != null) {
+            return listOf(Violation(
+                field = PaLandDto::erHjemmekontor.name,
+                translationKey = translationFieldName(PaLandTranslation::hjemmekontorSkalIkkeOppgis.name)
+            ))
+        }
+
+        if (!statsansattFlyt && dto.erHjemmekontor == null) {
+            return listOf(Violation(
+                field = PaLandDto::erHjemmekontor.name,
+                translationKey = FELT_ER_PAAKREVD
+            ))
+        }
 
         when (dto.fastEllerVekslendeArbeidssted) {
             FastEllerVekslendeArbeidssted.FAST -> {

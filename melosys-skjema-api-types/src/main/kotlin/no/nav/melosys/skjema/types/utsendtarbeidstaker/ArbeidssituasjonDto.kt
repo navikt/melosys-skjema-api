@@ -5,7 +5,8 @@ import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheterMedAnse
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ArbeidssituasjonDto(
-    val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean,
+    /** Stilles ikke til statsansatt. */
+    val harVaertEllerSkalVaereILonnetArbeidFoerUtsending: Boolean?,
     val aktivitetIMaanedenFoerUtsendingen: String?,
     val skalJobbeForFlereVirksomheter: Boolean,
     val virksomheterArbeidstakerJobberForIutsendelsesPeriode: NorskeOgUtenlandskeVirksomheterMedAnsettelsesform?

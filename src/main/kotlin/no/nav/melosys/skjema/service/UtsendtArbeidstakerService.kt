@@ -32,6 +32,7 @@ import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.UtsendtArbeidstakerFlyt
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
 import no.nav.melosys.skjema.validators.ValidationException
 import no.nav.melosys.skjema.validators.Violation
@@ -277,9 +278,10 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun saveUtenlandsoppdraget(skjemaId: UUID, klientVersjon: String?, request: UtenlandsoppdragetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving utenlandsoppdrag info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        skjemaDataValidator.validate(request, skjema.flyt())
 
-        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utenlandsoppdraget = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
@@ -309,15 +311,17 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun saveArbeidsstedIUtlandet(skjemaId: UUID, klientVersjon: String?, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        // Arbeidstakers del har bare steget når statsansatt sender før arbeidsgiver, og det sjekker flyten.
+        skjemaDataValidator.validate(request, skjema.flyt())
 
-        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(arbeidsstedIUtlandet = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidsgiversData = dto.arbeidsgiversData.copy(
                     arbeidsstedIUtlandet = request
                 ))
-                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> error("Kan ikke lagre arbeidssted i utlandet på arbeidstakers skjemadel")
+                is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(arbeidsstedIUtlandet = request)
             }
         }
     }
@@ -332,6 +336,7 @@ class UtsendtArbeidstakerService(
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
         skjemaDataValidator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
+            skjema.flyt(),
             metadata.erStatligArbeidsgiver,
             metadata.antallAnsatte,
             metadata.erNorskregistrertUtenlandskForetak
@@ -385,6 +390,7 @@ class UtsendtArbeidstakerService(
      *
      * Arbeidstaker med statlig arbeidsgiver og treff følger statsansattflyten: arbeidstakers del er da
      * komplett alene og venter ikke på arbeidsgivers del.
+     * Siden treffet styrer spørsmålsflyten, fjernes lagrede svar som ikke hører til flyten etter oppslaget.
      */
     private fun oppdaterAaregStatus(skjema: Skjema) {
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
@@ -405,6 +411,7 @@ class UtsendtArbeidstakerService(
         } else {
             oppdatertMetadata
         }
+        skjema.data = skjema.flyt().fjernSvarUtenforFlyten(skjema.utsendtArbeidstakerSkjemaDataOrEmpty())
     }
 
     /**
@@ -426,6 +433,12 @@ class UtsendtArbeidstakerService(
         )
         return AaregSjekkResponse(harArbeidsforhold = harArbeidsforhold)
     }
+
+    private fun Skjema.flyt(): UtsendtArbeidstakerFlyt =
+        UtsendtArbeidstakerFlyt.fra(
+            utsendtArbeidstakerMetadataOrThrow(),
+            prefyltFraSkjemaId,
+        )
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
         val skjema = hentSkjemaMedLesetilgang(skjemaId)
@@ -531,9 +544,10 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun saveArbeidssituasjon(skjemaId: UUID, klientVersjon: String?, request: ArbeidssituasjonDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssituasjon info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        skjemaDataValidator.validate(request, skjema.flyt())
 
-        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(arbeidssituasjon = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(
@@ -547,9 +561,10 @@ class UtsendtArbeidstakerService(
     @Transactional
     fun saveSkatteforholdOgInntekt(skjemaId: UUID, klientVersjon: String?, request: SkatteforholdOgInntektDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving skatteforhold og inntekt info for skjema: $skjemaId" }
-        skjemaDataValidator.validate(request)
+        val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
+        skjemaDataValidator.validate(request, skjema.flyt())
 
-        return updateSkjemaData(skjemaId, klientVersjon) { dto ->
+        return updateSkjemaData(skjema) { dto ->
             when (dto) {
                 is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> dto.copy(skatteforholdOgInntekt = request)
                 is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(arbeidstakersData = dto.arbeidstakersData.copy(

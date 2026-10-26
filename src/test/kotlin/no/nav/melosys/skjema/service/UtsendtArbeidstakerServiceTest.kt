@@ -52,7 +52,13 @@ import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
 import no.nav.melosys.skjema.types.common.Saksstatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.SkjemaDefinisjonDto
+import no.nav.melosys.skjema.validators.UtsendtArbeidstakerFlyt
 import no.nav.melosys.skjema.validators.UtsendtArbeidstakerSkjemaDataValidator
+import no.nav.melosys.skjema.arbeidssituasjonDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidsstedIUtlandetDtoMedDefaultVerdier
+import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
+import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
+import no.nav.melosys.skjema.skatteforholdOgInntektDtoMedDefaultVerdier
 import org.springframework.context.ApplicationEventPublisher
 
 class UtsendtArbeidstakerServiceTest : FunSpec({
@@ -573,6 +579,65 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 }
             }
 
+            test("svar som bare hører til statsansatt fjernes når AAREG-treffet forsvinner") {
+                val lonn = arbeidstakerensLonnDtoMedDefaultVerdier()
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
+                skjema.metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+                    .medHarArbeidsforholdIAareg(true)
+                    .medErStatsansatt(true)
+                skjema.data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                    skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+                        arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = lonn.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden,
+                        virksomheterSomUtbetalerLonnOgNaturalytelser = lonn.virksomheterSomUtbetalerLonnOgNaturalytelser,
+                    ),
+                )
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+                lagrePeriode(skjema)
+
+                val data = skjema.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+                data.arbeidsstedIUtlandet shouldBe null
+                data.skatteforholdOgInntekt?.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden shouldBe null
+                data.skatteforholdOgInntekt?.virksomheterSomUtbetalerLonnOgNaturalytelser shouldBe null
+                data.skatteforholdOgInntekt?.inntektFraNorskEllerUtenlandskVirksomhet shouldBe
+                    skatteforholdOgInntektDtoMedDefaultVerdier().inntektFraNorskEllerUtenlandskVirksomhet
+            }
+
+            test("svar som ikke hører til statsansatt fjernes når AAREG-treffet kommer") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
+                skjema.data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier(),
+                    skatteforholdOgInntekt = skatteforholdOgInntektDtoMedDefaultVerdier(),
+                )
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
+
+                lagrePeriode(skjema)
+
+                val data = skjema.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto
+                data.arbeidssituasjon shouldBe arbeidssituasjonDtoMedDefaultVerdier().copy(
+                    harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
+                    aktivitetIMaanedenFoerUtsendingen = null,
+                )
+                data.skatteforholdOgInntekt shouldBe skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+                    inntektFraNorskEllerUtenlandskVirksomhet = null,
+                    hvilkeTyperInntektHarDu = null,
+                )
+            }
+
+            test("arbeidsgivers svar beholdes når AAREG-treffet snur") {
+                val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, erStatligArbeidsgiver = true)
+                val data = arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                )
+                skjema.data = data
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
+
+                lagrePeriode(skjema)
+
+                skjema.data shouldBe data.copy(utsendingsperiodeOgLand = periode)
+            }
+
             test("feil fra AAREG gjør at lagringen feiler") {
                 val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
                 every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } throws
@@ -615,6 +680,35 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                     service.sjekkArbeidsforholdIAareg(skjema.id!!, periode.utsendelsePeriode)
                 }
                 verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+            }
+        }
+
+        test("statsansatt som sender før arbeidsgiver kan lagre arbeidssted i arbeidstakers del") {
+            val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
+            skjema.metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
+                .medHarArbeidsforholdIAareg(true)
+                .medErStatsansatt(true)
+            val arbeidssted = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                paLand = paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)
+            )
+            every { mockSubjectHandler.getUserID() } returns skjema.fnr
+            every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+            every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+
+            service.saveArbeidsstedIUtlandet(skjema.id!!, "2", arbeidssted)
+
+            (skjema.data as UtsendtArbeidstakerArbeidstakersSkjemaDataDto).arbeidsstedIUtlandet shouldBe arbeidssted
+            verify {
+                mockSkjemaDataValidator.validate(
+                    arbeidssted,
+                    UtsendtArbeidstakerFlyt(
+                        utenlandsoppdragetSkalOppgis = false,
+                        arbeidsstedSkalOppgis = true,
+                        arbeidsstedForStatsansatt = true,
+                        arbeidstakerdelForStatsansatt = true,
+                        lonnOppgisISkatteforhold = true,
+                    )
+                )
             }
         }
 

@@ -1,6 +1,8 @@
 package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import jakarta.validation.Valid
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 
 enum class ArbeidsinntektKilde {
     NORSK_VIRKSOMHET,
@@ -22,6 +24,13 @@ data class SkatteforholdOgInntektDto(
     val inntektFraNorskEllerUtenlandskVirksomhet: Set<ArbeidsinntektKilde>? = null,
     val hvilkeTyperInntektHarDu: Set<InntektType>? = null,
     val inntekt: String? = null,
-    val inntektFraEgenVirksomhet: String? = null
+    val inntektFraEgenVirksomhet: String? = null,
+    /**
+     * Lønnsspørsmålet fra arbeidsgivers del, stilt til statsansatt som sender før arbeidsgiver.
+     * Samme betydning som i [ArbeidstakerensLonnDto].
+     */
+    val arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden: Boolean? = null,
+    @field:Valid
+    val virksomheterSomUtbetalerLonnOgNaturalytelser: NorskeOgUtenlandskeVirksomheter? = null
 )
 

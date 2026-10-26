@@ -27,7 +27,8 @@ class ArbeidstakerensLonnValidator(
                 ))
             }
         } else {
-            if (dto.virksomheterSomUtbetalerLonnOgNaturalytelser == null) {
+            val virksomheter = dto.virksomheterSomUtbetalerLonnOgNaturalytelser
+            if (virksomheter?.norskeVirksomheter.isNullOrEmpty() && virksomheter?.utenlandskeVirksomheter.isNullOrEmpty()) {
                 return listOf(Violation(
                     field = ArbeidstakerensLonnDto::virksomheterSomUtbetalerLonnOgNaturalytelser.name,
                     translationKey = translationFieldName(ArbeidstakerensLonnTranslation::maaOppgiVirksomheter.name)

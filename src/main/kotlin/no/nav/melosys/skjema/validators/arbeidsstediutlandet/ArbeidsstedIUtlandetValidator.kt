@@ -15,11 +15,29 @@ class ArbeidsstedIUtlandetValidator(
     private val paSkipValidator: PaSkipValidator
 ) {
 
-    fun validate(dto: ArbeidsstedIUtlandetDto?): List<Violation> {
+    /**
+     * @param skalOppgis false når skjemadelen ikke har arbeidssted-steget, og svar ikke skal finnes.
+     * @param statsansattFlyt statlig arbeidsgiver: bare arbeidssted på land, uten hjemmekontor.
+     */
+    fun validate(dto: ArbeidsstedIUtlandetDto?, skalOppgis: Boolean = true, statsansattFlyt: Boolean = false): List<Violation> {
+        if (!skalOppgis) {
+            return if (dto == null) emptyList() else listOf(Violation(
+                field = "arbeidsstedIUtlandet",
+                translationKey = translationFieldName(ArbeidsstedIUtlandetTranslation::arbeidsstedSkalIkkeOppgis.name)
+            ))
+        }
+
         if (dto == null) return listOf(Violation(
             field = "arbeidsstedIUtlandet",
             translationKey = FELT_ER_PAAKREVD
         ))
+
+        if (statsansattFlyt && dto.arbeidsstedType != ArbeidsstedType.PA_LAND) {
+            return listOf(Violation(
+                field = ArbeidsstedIUtlandetDto::paLand.name,
+                translationKey = translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiArbeidsstedPaLand.name)
+            ))
+        }
 
         return when(dto.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> {
@@ -28,7 +46,7 @@ class ArbeidsstedIUtlandetValidator(
                         field = ArbeidsstedIUtlandetDto::paLand.name,
                         translationKey = translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiArbeidsstedPaLand.name)
                     ))
-                } else paLandValidator.validate(dto.paLand)
+                } else paLandValidator.validate(dto.paLand, statsansattFlyt)
             }
             ArbeidsstedType.OFFSHORE -> {
                 if (dto.offshore == null || dto.paLand != null || dto.paSkip != null || dto.omBordPaFly != null) {
