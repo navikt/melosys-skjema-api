@@ -24,6 +24,26 @@ class UtsendtArbeidstakerFlytTest {
         lonnOppgisISkatteforhold = false,
     )
 
+    @ParameterizedTest
+    @EnumSource(Skjemadel::class)
+    fun `MIDLERTIDIG MELOSYS-7694 deaktivert flyt beholder gamle krav selv med statlig arbeidsgiver og AAREG-treff`(
+        skjemadel: Skjemadel
+    ) {
+        val metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+            skjemadel = skjemadel,
+            erStatligArbeidsgiver = true,
+            harArbeidsforholdIAareg = true,
+            erStatsansatt = true,
+        )
+        val forventet = vanligFlyt.copy(
+            utenlandsoppdragetSkalOppgis = skjemadel != Skjemadel.ARBEIDSTAKERS_DEL,
+            arbeidsstedSkalOppgis = skjemadel != Skjemadel.ARBEIDSTAKERS_DEL,
+        )
+
+        UtsendtArbeidstakerFlyt.fra(metadata, null, statsansattFlytAktivert = false) shouldBe forventet
+        UtsendtArbeidstakerFlyt.fra(metadata, UUID.randomUUID(), statsansattFlytAktivert = false) shouldBe forventet
+    }
+
     private fun flyt(
         skjemadel: Skjemadel,
         erStatligArbeidsgiver: Boolean?,
@@ -33,6 +53,7 @@ class UtsendtArbeidstakerFlytTest {
         utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel, erStatligArbeidsgiver = erStatligArbeidsgiver)
             .medHarArbeidsforholdIAareg(harArbeidsforholdIAareg),
         prefyltFraSkjemaId,
+        statsansattFlytAktivert = true,
     )
 
     @ParameterizedTest

@@ -1,6 +1,8 @@
 package no.nav.melosys.skjema.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import io.getunleash.FakeUnleash
+import io.getunleash.Unleash
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -25,6 +27,7 @@ import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
@@ -67,6 +70,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
@@ -106,6 +110,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
+
+    @Autowired
+    private lateinit var unleash: Unleash
 
     @MockkBean
     private lateinit var notificationService: NotificationService
@@ -978,6 +985,86 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         // Uten sprak-parameter skal innsendingen persisteres med bokmål
         innsendingRepository.findBySkjemaId(skjemaSomSkalSendesInn.id!!)
             .shouldNotBeNull().innsendtSprak shouldBe Språk.NORSK_BOKMAL
+    }
+
+    @ParameterizedTest
+    @EnumSource(Skjemadel::class)
+    fun `MIDLERTIDIG MELOSYS-7694 toggle av validerer og sender inn vanlig flyt for statlig arbeidsgiver`(skjemadel: Skjemadel) {
+        val fakeUnleash = unleash as FakeUnleash
+        fakeUnleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+        try {
+            val data = when (skjemadel) {
+                Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsgiverensVirksomhetINorge = null,
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
+                )
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
+                    val kombinert = arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier()
+                    kombinert.copy(arbeidsgiversData = kombinert.arbeidsgiversData.copy(
+                        arbeidsgiverensVirksomhetINorge = null,
+                        arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier()
+                    ))
+                }
+            }
+            val representasjonstype = when (skjemadel) {
+                Skjemadel.ARBEIDSTAKERS_DEL -> Representasjonstype.DEG_SELV
+                Skjemadel.ARBEIDSGIVERS_DEL -> Representasjonstype.ARBEIDSGIVER
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
+            }
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+                data = data,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = skjemadel,
+                    representasjonstype = representasjonstype,
+                    fullmektigFnr = korrektSyntetiskFnr,
+                    erStatligArbeidsgiver = true,
+                    harArbeidsforholdIAareg = true,
+                    erStatsansatt = skjemadel == Skjemadel.ARBEIDSTAKERS_DEL,
+                ),
+            ))
+            every { reprService.harSkriverettigheterForMedlemskap(any()) } returns true
+            val token = createTokenForUser(skjema.fnr)
+
+            webTestClient.post()
+                .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/send-inn")
+                .header("Authorization", "Bearer $token")
+                .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
+                .exchange()
+                .expectStatus().isOk
+
+            skjemaRepository.findByIdOrNull(skjema.id!!)!!.status shouldBe SkjemaStatus.SENDT
+            verify(exactly = 0) { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+        } finally {
+            fakeUnleash.enableAll()
+        }
+    }
+
+    @Test
+    fun `MIDLERTIDIG MELOSYS-7694 aareg-sjekk svarer med treffet når statsansattflyten er av`() {
+        val fakeUnleash = unleash as FakeUnleash
+        fakeUnleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+        try {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier())
+            val token = createTokenForUser(skjema.fnr)
+            every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+            webTestClient.post()
+                .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/aareg-sjekk")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(utsendingsperiodeOgLandDtoMedDefaultVerdier().utsendelsePeriode)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody()
+                .jsonPath("$.harArbeidsforhold").isEqualTo(false)
+
+            verify(exactly = 1) { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+        } finally {
+            fakeUnleash.enableAll()
+        }
     }
 
     @Test

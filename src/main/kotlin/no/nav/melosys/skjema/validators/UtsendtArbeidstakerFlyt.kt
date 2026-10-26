@@ -67,7 +67,22 @@ data class UtsendtArbeidstakerFlyt(
     }
 
     companion object {
-        fun fra(metadata: UtsendtArbeidstakerMetadata, prefyltFraSkjemaId: UUID?): UtsendtArbeidstakerFlyt {
+        fun fra(
+            metadata: UtsendtArbeidstakerMetadata,
+            prefyltFraSkjemaId: UUID?,
+            statsansattFlytAktivert: Boolean,
+        ): UtsendtArbeidstakerFlyt {
+            // MIDLERTIDIG MELOSYS-7694: fjern gammel-flyt-grenen når statsansattflyten er permanent.
+            if (!statsansattFlytAktivert) {
+                val harArbeidsgiverdel = metadata.skjemadel != Skjemadel.ARBEIDSTAKERS_DEL
+                return UtsendtArbeidstakerFlyt(
+                    utenlandsoppdragetSkalOppgis = harArbeidsgiverdel,
+                    arbeidsstedSkalOppgis = harArbeidsgiverdel,
+                    arbeidsstedForStatsansatt = false,
+                    arbeidstakerdelForStatsansatt = false,
+                    lonnOppgisISkatteforhold = false,
+                )
+            }
             val erStatligArbeidsgiver = metadata.erStatligArbeidsgiver == true
             val erStatsansatt = erStatligArbeidsgiver && metadata.harArbeidsforholdIAareg == true
 

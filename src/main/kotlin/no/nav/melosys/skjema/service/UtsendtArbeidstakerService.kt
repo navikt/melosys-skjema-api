@@ -389,8 +389,8 @@ class UtsendtArbeidstakerService(
      * gjelder perioden som er lagret. Feil fra AAREG gjør at lagringen feiler.
      *
      * Arbeidstaker med statlig arbeidsgiver og treff følger statsansattflyten: arbeidstakers del er da
-     * komplett alene og venter ikke på arbeidsgivers del.
-     * Siden treffet styrer spørsmålsflyten, fjernes lagrede svar som ikke hører til flyten etter oppslaget.
+     * komplett alene og venter ikke på arbeidsgivers del. Med statsansattflyten aktivert styrer treffet
+     * også spørsmålene, og lagrede svar som ikke hører til flyten fjernes etter oppslaget.
      */
     private fun oppdaterAaregStatus(skjema: Skjema) {
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
@@ -411,7 +411,10 @@ class UtsendtArbeidstakerService(
         } else {
             oppdatertMetadata
         }
-        skjema.data = skjema.flyt().fjernSvarUtenforFlyten(skjema.utsendtArbeidstakerSkjemaDataOrEmpty())
+        // MIDLERTIDIG MELOSYS-7694: oppslaget er alltid aktivt, men svaropprydding krever statsansattflyten.
+        if (unleash.isEnabled(ToggleNavn.STATSANSATT_FLYT.navn)) {
+            skjema.data = skjema.flyt().fjernSvarUtenforFlyten(skjema.utsendtArbeidstakerSkjemaDataOrEmpty())
+        }
     }
 
     /**
@@ -438,6 +441,7 @@ class UtsendtArbeidstakerService(
         UtsendtArbeidstakerFlyt.fra(
             utsendtArbeidstakerMetadataOrThrow(),
             prefyltFraSkjemaId,
+            unleash.isEnabled(ToggleNavn.STATSANSATT_FLYT.navn),
         )
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {

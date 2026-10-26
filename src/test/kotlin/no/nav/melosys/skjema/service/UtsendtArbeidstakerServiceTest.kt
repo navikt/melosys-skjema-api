@@ -21,6 +21,7 @@ import no.nav.melosys.skjema.extensions.utsendtArbeidstakerMetadataOrThrow
 import no.nav.melosys.skjema.exception.AccessDeniedException
 import no.nav.melosys.skjema.exception.SkjemaErIkkeRedigerbartException
 import no.nav.melosys.skjema.exception.UtdatertSkjemaDefinisjonVersjonException
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
@@ -80,6 +81,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val referanseIdGenerator = mockk<ReferanseIdGenerator>()
     val mockSkjemaDefinisjonService = mockk<SkjemaDefinisjonService>()
     val mockVedleggService = mockk<VedleggService>(relaxed = true)
+    val unleash = FakeUnleash()
     val service = UtsendtArbeidstakerService(
         mockSkjemaRepository,
         mockInnsendingRepository,
@@ -96,7 +98,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         referanseIdGenerator,
         mockSkjemaDefinisjonService,
         mockVedleggService,
-        FakeUnleash().apply { enableAll() }
+        unleash
     )
 
     val testArbeidsgiver = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "123456789")
@@ -104,6 +106,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
     val testRadgiverfirma = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "987654321", navn = "Rådgiver AS")
 
     beforeTest {
+        unleash.enableAll()
         clearMocks(mockVedleggService, answers = false, recordedCalls = true)
         every { mockSkjemaDefinisjonService.hentAktivVersjon(SkjemaType.UTSENDT_ARBEIDSTAKER) } returns "2"
         every { mockSkjemaRepository.findByIdForUpdate(any()) } answers {
@@ -517,6 +520,61 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         beforeTest { clearMocks(mockAaregService) }
 
         context("lagring av utsendingsperiode") {
+            // MIDLERTIDIG MELOSYS-7694: regresjonstester for deaktivert statsansattflyt.
+            listOf(
+                Skjemadel.ARBEIDSTAKERS_DEL to false,
+                Skjemadel.ARBEIDSGIVERS_DEL to true,
+                Skjemadel.ARBEIDSGIVERS_DEL to false,
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL to true,
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL to false,
+            ).forEach { (skjemadel, statlig) ->
+                test("deaktivert flyt lagrer AAREG-status for $skjemadel med statlig=$statlig uten å endre svar") {
+                    unleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+                    val skjema = utkast(skjemadel, statlig)
+                    every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+                    val forventetData = when (val data = skjema.data) {
+                        is UtsendtArbeidstakerArbeidstakersSkjemaDataDto -> data.copy(utsendingsperiodeOgLand = periode)
+                        is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> data.copy(utsendingsperiodeOgLand = periode)
+                        is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> data.copy(utsendingsperiodeOgLand = periode)
+                        else -> error("Uventet skjemadata")
+                    }
+
+                    lagrePeriode(skjema)
+
+                    skjema.data shouldBe forventetData
+                    skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe false
+                    verify(exactly = 1) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+                }
+            }
+
+            listOf(true, false).forEach { treff ->
+                test("deaktivert flyt beholder eksisterende statsansattoppslag med treff=$treff uten å fjerne svar") {
+                    unleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+                    val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, true)
+                    val opprinneligData = skjema.data
+                    every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns treff
+
+                    lagrePeriode(skjema)
+
+                    skjema.data shouldBe opprinneligData
+                    skjema.utsendtArbeidstakerMetadataOrThrow().erStatsansatt shouldBe treff
+                    skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe treff
+                    verify(exactly = 1) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+                }
+            }
+
+            test("AAREG-status oppdateres også når statsansattflyten skrus av") {
+                val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, false)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returnsMany listOf(false, true)
+
+                lagrePeriode(skjema)
+                unleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+                lagrePeriode(skjema)
+
+                skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe true
+                verify(exactly = 2) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+            }
+
             test("arbeidstakers del hos statlig arbeidsgiver med treff i AAREG settes som statsansatt") {
                 val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
                 every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
@@ -650,6 +708,22 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
         }
 
         context("AAREG-sjekk uten lagring") {
+            test("MIDLERTIDIG MELOSYS-7694 AAREG-sjekk er tilgjengelig når statsansattflyten er deaktivert") {
+                unleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, true)
+                every { mockSubjectHandler.getUserID() } returns skjema.fnr
+                every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+                val resultat = service.sjekkArbeidsforholdIAareg(skjema.id!!, periode.utsendelsePeriode)
+
+                resultat.harArbeidsforhold shouldBe false
+                skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe null
+                verify(exactly = 0) { mockSkjemaRepository.save(skjema) }
+                verify(exactly = 1) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+            }
+
             test("svarer med treffet for perioden og lagrer ingenting") {
                 val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, erStatligArbeidsgiver = false)
                 every { mockSubjectHandler.getUserID() } returns skjema.fnr
