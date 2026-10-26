@@ -182,7 +182,7 @@ innsending:
 # Skjemadefinisjon
 skjemadefinisjon:
   aktive-versjoner:
-    UTSENDT_ARBEIDSTAKER: "4"
+    UTSENDT_ARBEIDSTAKER: "5"
 
 # Rate limiting
 rate-limit:
