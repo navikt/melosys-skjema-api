@@ -11,6 +11,7 @@ import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.featuretoggle.ToggleNavn
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
@@ -55,6 +56,9 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
     private lateinit var eregService: EregService
 
     @MockkBean
+    private lateinit var aaregService: AaregService
+
+    @MockkBean
     private lateinit var pdlService: PdlService
 
     @Autowired
@@ -64,6 +68,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
     fun setUp() {
         skjemaRepository.deleteAll()
         (unleash as FakeUnleash).enableAll()
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
     }
 
     @Test

@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
 import io.mockk.clearMocks
 import io.mockk.every
+import io.mockk.verify
 import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
@@ -24,6 +25,7 @@ import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
@@ -49,6 +51,7 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AaregSjekkResponse
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
@@ -111,6 +114,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     private lateinit var eregService: EregService
 
     @MockkBean
+    private lateinit var aaregService: AaregService
+
+    @MockkBean
     private lateinit var reprService: ReprService
 
 
@@ -120,7 +126,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         clearMocks(altinnService)
         clearMocks(eregService)
         clearMocks(reprService)
+        clearMocks(aaregService)
         skjemaRepository.deleteAll()
+
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
 
         every { altinnService.harBrukerTilgang(any()) } returns true
         every { altinnService.hentBrukersTilganger() } returns emptyList()
@@ -558,6 +567,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/tilleggsopplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/utsendingsperiode-og-land"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/aareg-sjekk"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer"),
@@ -1073,6 +1083,38 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         kvittering.skjemaId shouldBe skjema.id
         kvittering.referanseId shouldBe "ABC123"
         kvittering.status shouldBe SkjemaStatus.SENDT
+    }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/aareg-sjekk skal svare med AAREG-treffet uten å lagre")
+    fun `POST aareg-sjekk skal svare med AAREG-treffet uten aa lagre`() {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+        val periode = PeriodeDto(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+        val token = createTokenForUser(korrektSyntetiskFnr)
+
+        val respons = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/aareg-sjekk")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, savedSkjema.skjemaDefinisjonVersjon)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(periode)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<AaregSjekkResponse>()
+            .returnResult()
+            .responseBody
+
+        respons shouldBe AaregSjekkResponse(harArbeidsforhold = false)
+        verify { aaregService.harOrdinaertArbeidsforhold(korrektSyntetiskFnr, korrektSyntetiskOrgnr, any(), periode) }
+        skjemaRepository.findByIdOrNull(savedSkjema.id!!)!!.metadata shouldBe savedSkjema.metadata
     }
 
     @Test

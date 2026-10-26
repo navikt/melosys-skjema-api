@@ -538,22 +538,39 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 skjema.utsendtArbeidstakerMetadataOrThrow().erStatsansatt shouldBe false
             }
 
-            test("arbeidstakers del hos privat arbeidsgiver slår ikke opp i AAREG") {
-                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erOffentligArbeidsgiver = false)
+            test("arbeidstakers del hos statlig arbeidsgiver lagrer AAREG-treffet") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = true)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
 
                 lagrePeriode(skjema)
 
-                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe null
-                verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+                skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe true
             }
 
-            test("arbeidsgivers del hos offentlig arbeidsgiver slår ikke opp i AAREG") {
-                val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, erOffentligArbeidsgiver = true)
+            listOf(
+                Skjemadel.ARBEIDSTAKERS_DEL to false,
+                Skjemadel.ARBEIDSGIVERS_DEL to true,
+                Skjemadel.ARBEIDSGIVERS_DEL to false,
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL to true,
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL to false,
+            ).forEach { (skjemadel, erStatligArbeidsgiver) ->
+                test("$skjemadel med statlig arbeidsgiver=$erStatligArbeidsgiver lagrer AAREG-treffet uten å sette statsansatt") {
+                    val skjema = utkast(skjemadel, erStatligArbeidsgiver = erStatligArbeidsgiver)
+                    every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
 
-                lagrePeriode(skjema)
+                    lagrePeriode(skjema)
 
-                skjema.utsendtArbeidstakerMetadataOrThrow().erOffentligTjenesteperson shouldBe null
-                verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+                    skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe false
+                    skjema.utsendtArbeidstakerMetadataOrThrow().erStatsansatt shouldBe null
+                    verify(exactly = 1) {
+                        mockAaregService.harOrdinaertArbeidsforhold(
+                            skjema.fnr,
+                            skjema.orgnr,
+                            juridiskEnhetOrgnr,
+                            periode.utsendelsePeriode
+                        )
+                    }
+                }
             }
 
             test("feil fra AAREG gjør at lagringen feiler") {
@@ -564,6 +581,40 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
                 shouldThrow<IllegalStateException> { lagrePeriode(skjema) }
 
                 verify(exactly = 0) { mockSkjemaRepository.save(skjema) }
+            }
+        }
+
+        context("AAREG-sjekk uten lagring") {
+            test("svarer med treffet for perioden og lagrer ingenting") {
+                val skjema = utkast(Skjemadel.ARBEIDSGIVERS_DEL, erStatligArbeidsgiver = false)
+                every { mockSubjectHandler.getUserID() } returns skjema.fnr
+                every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+                every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+                val resultat = service.sjekkArbeidsforholdIAareg(skjema.id!!, periode.utsendelsePeriode)
+
+                resultat.harArbeidsforhold shouldBe false
+                skjema.utsendtArbeidstakerMetadataOrThrow().harArbeidsforholdIAareg shouldBe null
+                verify(exactly = 0) { mockSkjemaRepository.save(skjema) }
+                verify(exactly = 1) {
+                    mockAaregService.harOrdinaertArbeidsforhold(
+                        skjema.fnr,
+                        skjema.orgnr,
+                        juridiskEnhetOrgnr,
+                        periode.utsendelsePeriode
+                    )
+                }
+            }
+
+            test("krever skrivetilgang til skjemaet") {
+                val skjema = utkast(Skjemadel.ARBEIDSTAKERS_DEL, erStatligArbeidsgiver = false)
+                every { mockSubjectHandler.getUserID() } returns etAnnetKorrektSyntetiskFnr
+                every { mockSkjemaRepository.findById(skjema.id!!) } returns Optional.of(skjema)
+
+                shouldThrow<AccessDeniedException> {
+                    service.sjekkArbeidsforholdIAareg(skjema.id!!, periode.utsendelsePeriode)
+                }
+                verify(exactly = 0) { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
             }
         }
 
@@ -722,6 +773,7 @@ class UtsendtArbeidstakerServiceTest : FunSpec({
             every { mockSkjemaRepository.findById(skjemaId) } returns Optional.of(skjema)
             every { mockSkjemaRepository.findById(kildeId) } returns Optional.of(kilde)
             every { mockSkjemaRepository.save(any()) } answers { firstArg() }
+            every { mockAaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
 
             val resultat = service.hentSkjema(skjemaId, "2")
 

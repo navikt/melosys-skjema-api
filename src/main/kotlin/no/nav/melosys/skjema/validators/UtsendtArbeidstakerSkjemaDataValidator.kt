@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtenlandsoppdragetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
@@ -19,6 +20,7 @@ import no.nav.melosys.skjema.validators.arbeidssituasjon.ArbeidssituasjonValidat
 import no.nav.melosys.skjema.validators.arbeidsstediutlandet.ArbeidsstedIUtlandetValidator
 import no.nav.melosys.skjema.validators.arbeidstakerenslonn.ArbeidstakerensLonnValidator
 import no.nav.melosys.skjema.validators.familiemedlemmer.FamiliemedlemmerValidator
+import no.nav.melosys.skjema.validators.felles.PeriodeValidator
 import no.nav.melosys.skjema.validators.skatteforholdoginntekt.SkatteforholdOgInntektValidator
 import no.nav.melosys.skjema.validators.tilleggsopplysninger.TilleggsopplysningerValidator
 import no.nav.melosys.skjema.validators.utenlandsoppdraget.UtenlandsoppdragetValidator
@@ -56,6 +58,10 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 
     fun validate(dto: UtsendingsperiodeOgLandDto) {
         throwIfViolations(utsendingsperiodeOgLandValidator.validate(dto))
+    }
+
+    fun validate(dto: PeriodeDto) {
+        throwIfViolations(PeriodeValidator.validate(dto))
     }
 
     fun validate(dto: ArbeidstakerensLonnDto?) {

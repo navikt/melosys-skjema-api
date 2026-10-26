@@ -45,6 +45,11 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
      */
     abstract val erStatsansatt: Boolean?
     /**
+     * Fra AAREG hver gang utsendingsperioden settes, for alle skjemadeler: arbeidstakeren har et ordinært
+     * arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden. Null når perioden ikke er satt.
+     */
+    abstract val harArbeidsforholdIAareg: Boolean?
+    /**
      * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
      * basert på fnr, juridisk enhet og overlappende perioder.
@@ -67,6 +72,9 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
 
     /** Oppretter en kopi med ny erStatsansatt */
     abstract fun medErStatsansatt(erStatsansatt: Boolean?): UtsendtArbeidstakerMetadata
+
+    /** Oppretter en kopi med ny harArbeidsforholdIAareg */
+    abstract fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?): UtsendtArbeidstakerMetadata
 }
 
 /**
@@ -83,6 +91,7 @@ data class DegSelvMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -92,6 +101,8 @@ data class DegSelvMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -108,6 +119,7 @@ data class ArbeidsgiverMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -117,6 +129,8 @@ data class ArbeidsgiverMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -135,6 +149,7 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -144,6 +159,8 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -160,6 +177,7 @@ data class RadgiverMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -171,6 +189,8 @@ data class RadgiverMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -189,6 +209,7 @@ data class RadgiverMedFullmaktMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -200,6 +221,8 @@ data class RadgiverMedFullmaktMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -218,6 +241,7 @@ data class AnnenPersonMetadata(
     override val antallAnsatte: Int? = null,
     @param:JsonAlias("erOffentligTjenesteperson")
     override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -227,6 +251,8 @@ data class AnnenPersonMetadata(
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
     override fun medErStatsansatt(erStatsansatt: Boolean?) =
         copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 data class RadgiverfirmaInfo(

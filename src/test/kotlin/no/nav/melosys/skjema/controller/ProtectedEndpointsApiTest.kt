@@ -48,6 +48,7 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/tilleggsopplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/utsendingsperiode-og-land"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/aareg-sjekk"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/123/familiemedlemmer"),

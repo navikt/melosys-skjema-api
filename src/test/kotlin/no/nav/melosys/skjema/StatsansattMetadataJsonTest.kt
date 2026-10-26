@@ -25,6 +25,7 @@ class StatsansattMetadataJsonTest {
                 representasjonstype = representasjonstype,
                 erStatligArbeidsgiver = verdi,
                 erStatsansatt = verdi,
+                harArbeidsforholdIAareg = verdi,
             )
             val json = mapper.writeValueAsString(metadata)
             val eldreJson = json

@@ -27,6 +27,7 @@ import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.*
@@ -150,7 +151,7 @@ class UtsendtArbeidstakerService(
      * arbeidsgiver-del (motpart-CTA). Kilden må være innlogget brukers egen ventende
      * arbeidsgiver-del; alt annet ignoreres slik at opprettelsen aldri feiler på en ugyldig kilde.
      * Verdiene er kun startverdier og kan fritt overskrives i utfyllingen. Siden perioden settes her,
-     * slås offentlig tjenesteperson opp i AAREG på samme måte som når periodesteget lagres.
+     * slås arbeidsforholdet opp i AAREG på samme måte som når periodesteget lagres.
      */
     private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
         if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
@@ -182,7 +183,7 @@ class UtsendtArbeidstakerService(
 
         skjema.data = UtsendtArbeidstakerArbeidstakersSkjemaDataDto(utsendingsperiodeOgLand = utsendingsperiodeOgLand)
         skjema.prefyltFraSkjemaId = kilde.id
-        oppdaterOffentligTjenesteperson(skjema)
+        oppdaterAaregStatus(skjema)
     }
 
     /**
@@ -378,23 +379,52 @@ class UtsendtArbeidstakerService(
     }
 
     /**
-     * Arbeidstakers del hos en offentlig arbeidsgiver: slå opp i AAREG om arbeidstakeren er offentlig
-     * tjenesteperson i utsendingsperioden. Da er delen komplett alene og venter ikke på arbeidsgivers del.
-     * Kalles hver gang utsendingsperioden settes, så flagget alltid gjelder perioden som er lagret.
-     * Feil fra AAREG gjør at lagringen feiler.
+     * Slår opp i AAREG om arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren i hele
+     * utsendingsperioden, for alle skjemadeler. Kalles når utsendingsperioden settes, så flaggene
+     * gjelder perioden som er lagret. Feil fra AAREG gjør at lagringen feiler.
+     *
+     * Arbeidstaker med statlig arbeidsgiver og treff følger statsansattflyten: arbeidstakers del er da
+     * komplett alene og venter ikke på arbeidsgivers del.
      */
-    private fun oppdaterOffentligTjenesteperson(skjema: Skjema) {
+    private fun oppdaterAaregStatus(skjema: Skjema) {
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
-        if (metadata.skjemadel != Skjemadel.ARBEIDSTAKERS_DEL || metadata.erOffentligArbeidsgiver != true) return
+        val erArbeidstakerdelHosStatligArbeidsgiver =
+            metadata.skjemadel == Skjemadel.ARBEIDSTAKERS_DEL && metadata.erStatligArbeidsgiver == true
 
         val periode = checkNotNull(skjema.utsendelsePeriode()) { "Skjema ${skjema.id} mangler utsendelsesperiode" }
-        val erOffentligTjenesteperson = aaregService.harOrdinaertArbeidsforhold(
+        val harArbeidsforhold = aaregService.harOrdinaertArbeidsforhold(
             fnr = skjema.fnr,
             orgnr = skjema.orgnr,
             juridiskEnhetOrgnr = metadata.juridiskEnhetOrgnr,
             periode = periode
         )
-        skjema.metadata = metadata.medErOffentligTjenesteperson(erOffentligTjenesteperson)
+
+        val oppdatertMetadata = metadata.medHarArbeidsforholdIAareg(harArbeidsforhold)
+        skjema.metadata = if (erArbeidstakerdelHosStatligArbeidsgiver) {
+            oppdatertMetadata.medErStatsansatt(harArbeidsforhold)
+        } else {
+            oppdatertMetadata
+        }
+    }
+
+    /**
+     * Sjekker om arbeidstakeren har et arbeidsforhold i AAREG for en periode som ennå ikke er lagret,
+     * så brukeren kan varsles mens perioden fylles ut. Krever samme tilgang som lagring, men lagrer ingenting.
+     */
+    @Transactional(readOnly = true)
+    fun sjekkArbeidsforholdIAareg(skjemaId: UUID, periode: PeriodeDto): AaregSjekkResponse {
+        skjemaDataValidator.validate(periode)
+        val skjema = krevSkrivetilgang(findByIdOrThrow(skjemaId))
+        if (skjema.status != SkjemaStatus.UTKAST) {
+            throw SkjemaErIkkeRedigerbartException()
+        }
+        val harArbeidsforhold = aaregService.harOrdinaertArbeidsforhold(
+            fnr = skjema.fnr,
+            orgnr = skjema.orgnr,
+            juridiskEnhetOrgnr = skjema.utsendtArbeidstakerMetadataOrThrow().juridiskEnhetOrgnr,
+            periode = periode
+        )
+        return AaregSjekkResponse(harArbeidsforhold = harArbeidsforhold)
     }
 
     fun genererInnsendtKvittering(skjemaId: UUID): SkjemaInnsendtKvittering {
@@ -494,7 +524,7 @@ class UtsendtArbeidstakerService(
             is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> dto.copy(utsendingsperiodeOgLand = request)
         }
-        oppdaterOffentligTjenesteperson(skjema)
+        oppdaterAaregStatus(skjema)
         return skjemaRepository.save(skjema).toUtsendtArbeidstakerDto()
     }
 
@@ -900,6 +930,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
@@ -908,6 +939,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
@@ -916,6 +948,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
@@ -924,6 +957,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
@@ -932,6 +966,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
@@ -940,6 +975,7 @@ class UtsendtArbeidstakerService(
             juridiskEnhetOrgnr = juridiskEnhetOrgnr,
             erStatligArbeidsgiver = erStatligArbeidsgiver,
             erStatsansatt = null,
+            harArbeidsforholdIAareg = null,
             antallAnsatte = antallAnsatte,
             erNorskregistrertUtenlandskForetak = erNorskregistrertUtenlandskForetak
         )
