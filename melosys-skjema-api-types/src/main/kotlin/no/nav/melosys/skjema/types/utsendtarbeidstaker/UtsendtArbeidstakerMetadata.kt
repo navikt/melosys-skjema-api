@@ -41,12 +41,12 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     /**
      * Fra AAREG når utsendingsperioden settes i arbeidstakers del hos en statlig arbeidsgiver:
      * arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden.
-     * Da regnes delen som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
+     * Ved true er delen komplett alene og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
      */
     abstract val erStatsansatt: Boolean?
     /**
      * Fra AAREG hver gang utsendingsperioden settes, for alle skjemadeler: arbeidstakeren har et ordinært
-     * arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden. Null når perioden ikke er satt.
+     * arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden. Null før oppslag og i eldre metadata.
      */
     abstract val harArbeidsforholdIAareg: Boolean?
     /**
@@ -70,10 +70,8 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     /** Oppretter en kopi med ny erstatterSkjemaId */
     abstract fun medErstatterSkjemaId(erstatterSkjemaId: UUID?): UtsendtArbeidstakerMetadata
 
-    /** Oppretter en kopi med ny erStatsansatt */
     abstract fun medErStatsansatt(erStatsansatt: Boolean?): UtsendtArbeidstakerMetadata
 
-    /** Oppretter en kopi med ny harArbeidsforholdIAareg */
     abstract fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?): UtsendtArbeidstakerMetadata
 }
 

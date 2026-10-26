@@ -58,7 +58,7 @@ data class PaLandDto(
     val navnPaVirksomhet: String,
     val fastEllerVekslendeArbeidssted: FastEllerVekslendeArbeidssted,
     val fastArbeidssted: PaLandFastArbeidsstedDto?,
-    /** Stilles ikke når arbeidsgiver er statlig. */
+    /** Skal ikke besvares i statsansattflytens arbeidsstedsteg. */
     val erHjemmekontor: Boolean?
 )
 

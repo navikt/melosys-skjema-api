@@ -364,7 +364,8 @@ class SeksjonRenderer(
     ): String {
         val builder = StringBuilder()
 
-        // Arbeidssted type — vises ikke når typevalget var skjult (statlig arbeidsgiver / statsansatt)
+        // På land uten hjemmekontorsvar kjennetegner flyten med skjult typevalg.
+        // PDF-en skal ikke vise arbeidsstedstypen som et eget svar i denne flyten.
         val typevalgVist = data.arbeidsstedType != ArbeidsstedType.PA_LAND || data.paLand?.erHjemmekontor != null
         if (typevalgVist) {
             definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
@@ -548,4 +549,3 @@ private fun String.formaterSomKroner(språk: Språk): String {
     val formatert = java.text.NumberFormat.getNumberInstance(locale).format(tall)
     return "$formatert kr"
 }
-

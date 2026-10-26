@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 class ArbeidssituasjonValidator {
 
-    /** @param statsansattFlyt statsansatt: bare spørsmålet om flere virksomheter stilles. */
+    /** @param statsansattFlyt Spørsmål om lønnet arbeid og aktivitet før utsending skal ikke besvares. */
     fun validate(dto: ArbeidssituasjonDto?, statsansattFlyt: Boolean = false): List<Violation> {
         if (dto == null) return listOf(Violation(
             field = "arbeidssituasjon",

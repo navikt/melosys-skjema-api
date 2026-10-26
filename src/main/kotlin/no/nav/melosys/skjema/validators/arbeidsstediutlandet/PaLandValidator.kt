@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 @Component
 class PaLandValidator {
 
-    /** @param statsansattFlyt statlig arbeidsgiver: hjemmekontor-spørsmålet stilles ikke. */
+    /** @param statsansattFlyt Krever at hjemmekontorsvaret mangler, i stedet for at det er besvart. */
     fun validate(dto: PaLandDto?, statsansattFlyt: Boolean = false): List<Violation> {
         if (dto == null) return listOf(Violation(
             field = "paLand",

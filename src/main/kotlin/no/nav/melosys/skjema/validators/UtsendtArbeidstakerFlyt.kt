@@ -13,10 +13,11 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerSkjema
 /**
  * Hvilke spørsmål skjemadelen skal ha svar på, gitt arbeidsgivertype og AAREG-treff.
  *
+ * Regler i statsansattflyten:
  * - Statlig arbeidsgiver (arbeidsgivers del og kombinert skjema): utenlandsoppdraget faller bort,
  *   og arbeidssted oppgis som «på land» uten spørsmål om hjemmekontor.
  * - Statsansatt (statlig arbeidsgiver + arbeidsforhold i AAREG, arbeidstakers del og
- *   kombinert skjema): arbeidssituasjon og skatteforhold reduseres.
+ *   kombinert skjema): spørsmål om arbeid før utsending og om inntektskilder, inntektstype og inntektsbeløp utelates.
  * - Statsansatt i arbeidstakers del som sender før arbeidsgiver (ikke forhåndsutfylt fra en
  *   innsendt arbeidsgivers del): arbeidstaker oppgir selv arbeidssted på land og svarer på lønnsspørsmålet.
  */

@@ -17,7 +17,7 @@ class SkatteforholdOgInntektValidator(
 ) {
 
     /**
-     * @param statsansattFlyt statsansatt: inntektsspørsmålene stilles ikke.
+     * @param statsansattFlyt Inntektskilder, inntektstype og inntektsbeløp skal ikke oppgis. Pengestøtte valideres fortsatt.
      * @param medLonn statsansatt som sender før arbeidsgiver: lønnsspørsmålet fra
      * arbeidsgivers del stilles her. Ellers skal lønnsfeltene mangle.
      */

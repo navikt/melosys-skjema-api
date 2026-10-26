@@ -17,7 +17,7 @@ class ArbeidsstedIUtlandetValidator(
 
     /**
      * @param skalOppgis false når skjemadelen ikke har arbeidssted-steget, og svar ikke skal finnes.
-     * @param statsansattFlyt statlig arbeidsgiver: bare arbeidssted på land, uten hjemmekontor.
+     * @param statsansattFlyt Krever arbeidssted på land og at hjemmekontorsvaret mangler.
      */
     fun validate(dto: ArbeidsstedIUtlandetDto?, skalOppgis: Boolean = true, statsansattFlyt: Boolean = false): List<Violation> {
         if (!skalOppgis) {

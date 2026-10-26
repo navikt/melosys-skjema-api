@@ -312,7 +312,6 @@ class UtsendtArbeidstakerService(
     fun saveArbeidsstedIUtlandet(skjemaId: UUID, klientVersjon: String?, request: ArbeidsstedIUtlandetDto): UtsendtArbeidstakerSkjemaDto {
         log.info { "Saving arbeidssted i utlandet info for skjema: $skjemaId" }
         val skjema = hentRedigerbartSkjema(skjemaId, klientVersjon)
-        // Arbeidstakers del har bare steget når statsansatt sender før arbeidsgiver, og det sjekker flyten.
         skjemaDataValidator.validate(request, skjema.flyt())
 
         return updateSkjemaData(skjema) { dto ->
@@ -388,9 +387,8 @@ class UtsendtArbeidstakerService(
      * utsendingsperioden, for alle skjemadeler. Kalles når utsendingsperioden settes, så flaggene
      * gjelder perioden som er lagret. Feil fra AAREG gjør at lagringen feiler.
      *
-     * Arbeidstaker med statlig arbeidsgiver og treff følger statsansattflyten: arbeidstakers del er da
-     * komplett alene og venter ikke på arbeidsgivers del. Med statsansattflyten aktivert styrer treffet
-     * også spørsmålene, og lagrede svar som ikke hører til flyten fjernes etter oppslaget.
+     * For arbeidstakers del hos statlig arbeidsgiver settes også erStatsansatt:
+     * ved treff er delen komplett alene og venter ikke på arbeidsgivers del.
      */
     private fun oppdaterAaregStatus(skjema: Skjema) {
         val metadata = skjema.utsendtArbeidstakerMetadataOrThrow()
