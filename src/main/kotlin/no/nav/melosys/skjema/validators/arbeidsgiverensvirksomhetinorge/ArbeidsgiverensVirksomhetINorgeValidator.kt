@@ -17,16 +17,16 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
      */
     fun validate(
         dto: ArbeidsgiverensVirksomhetINorgeDto?,
-        erOffentligArbeidsgiver: Boolean?,
+        erStatligArbeidsgiver: Boolean?,
         antallAnsatte: Int?,
         erNorskregistrertUtenlandskForetak: Boolean?
     ): List<Violation> {
-        checkNotNull(erOffentligArbeidsgiver) { "Skjemaet mangler EREG-data om arbeidsgiveren er offentlig" }
+        checkNotNull(erStatligArbeidsgiver) { "Skjemaet mangler EREG-data om arbeidsgiveren er statlig" }
 
-        return if (erOffentligArbeidsgiver) {
-            validerOffentligArbeidsgiver(dto)
+        return if (erStatligArbeidsgiver) {
+            validerStatligArbeidsgiver(dto)
         } else {
-            validerPrivatArbeidsgiver(
+            validerIkkeStatligArbeidsgiver(
                 dto,
                 checkNotNull(antallAnsatte) { "Skjemaet mangler EREG-data om antall ansatte" },
                 checkNotNull(erNorskregistrertUtenlandskForetak) { "Skjemaet mangler EREG-data om arbeidsgiveren er NUF" }
@@ -34,26 +34,26 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
         }
     }
 
-    /** Offentlig arbeidsgiver får ikke oppfølgingsspørsmålene, så seksjonen kan mangle helt. */
-    private fun validerOffentligArbeidsgiver(dto: ArbeidsgiverensVirksomhetINorgeDto?): List<Violation> {
+    /** Statlig arbeidsgiver får ikke oppfølgingsspørsmålene, så seksjonen kan mangle helt. */
+    private fun validerStatligArbeidsgiver(dto: ArbeidsgiverensVirksomhetINorgeDto?): List<Violation> {
         if (dto == null) return emptyList()
 
         if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa != null) return listOf(
             Violation(
                 field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
-                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiBemanningsbyraa.name)
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::statligVirksomhetSkalIkkeOppgiBemanningsbyraa.name)
             )
         )
         if (dto.opprettholderArbeidsgiverenVanligDrift != null) return listOf(
             Violation(
                 field = ArbeidsgiverensVirksomhetINorgeDto::opprettholderArbeidsgiverenVanligDrift.name,
-                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::offentligVirksomhetSkalIkkeOppgiVanligDrift.name)
+                translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::statligVirksomhetSkalIkkeOppgiVanligDrift.name)
             )
         )
         return avvisSamletVirksomhet(dto)
     }
 
-    private fun validerPrivatArbeidsgiver(
+    private fun validerIkkeStatligArbeidsgiver(
         dto: ArbeidsgiverensVirksomhetINorgeDto?,
         antallAnsatte: Int,
         erNorskregistrertUtenlandskForetak: Boolean

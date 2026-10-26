@@ -44,7 +44,7 @@ class EregService(
         return OrganisasjonMedJuridiskEnhetDto(
             organisasjon = organisasjon.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-            erOffentligArbeidsgiver = juridiskEnhet.erOffentligArbeidsgiver(),
+            erStatligArbeidsgiver = juridiskEnhet.erStatligArbeidsgiver(),
             erNorskregistrertUtenlandskForetak = juridiskEnhet.erNorskregistrertUtenlandskForetak(),
             antallAnsatte = juridiskEnhet.antallAnsatte()
         )
@@ -74,7 +74,7 @@ class EregService(
 private const val ENHETSTYPE_STATEN = "STAT"
 private const val SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN = "6100"
 
-internal fun JuridiskEnhet.erOffentligArbeidsgiver(): Boolean =
+internal fun JuridiskEnhet.erStatligArbeidsgiver(): Boolean =
     juridiskEnhetDetaljer?.enhetstype == ENHETSTYPE_STATEN &&
         juridiskEnhetDetaljer.sektorkode == SEKTORKODE_STATS_OG_TRYGDEFORVALTNINGEN
 

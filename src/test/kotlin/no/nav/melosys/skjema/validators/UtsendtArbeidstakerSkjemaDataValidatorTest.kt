@@ -90,7 +90,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
     ) {
         validator.validateUtsendtArbeidstakerSkjemaData(
             skjemaData,
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             antallAnsatte = 50,
             erNorskregistrertUtenlandskForetak = false
         )
@@ -164,7 +164,7 @@ class UtsendtArbeidstakerSkjemaDataValidatorTest {
         shouldThrow<ValidationException> {
             validator.validateUtsendtArbeidstakerSkjemaData(
                 UtsendtArbeidstakerArbeidstakersSkjemaDataDto(),
-                erOffentligArbeidsgiver = false,
+                erStatligArbeidsgiver = false,
                 antallAnsatte = 50,
                 erNorskregistrertUtenlandskForetak = false
             )

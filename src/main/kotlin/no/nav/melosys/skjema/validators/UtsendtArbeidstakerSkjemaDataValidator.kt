@@ -41,12 +41,12 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 ) {
     fun validate(
         dto: ArbeidsgiverensVirksomhetINorgeDto?,
-        erOffentligArbeidsgiver: Boolean?,
+        erStatligArbeidsgiver: Boolean?,
         antallAnsatte: Int?,
         erNorskregistrertUtenlandskForetak: Boolean?
     ) {
         throwIfViolations(
-            arbeidsgiverensVirksomhetValidator.validate(dto, erOffentligArbeidsgiver, antallAnsatte, erNorskregistrertUtenlandskForetak)
+            arbeidsgiverensVirksomhetValidator.validate(dto, erStatligArbeidsgiver, antallAnsatte, erNorskregistrertUtenlandskForetak)
         )
     }
 
@@ -88,7 +88,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
 
     fun validateUtsendtArbeidstakerSkjemaData(
         skjemaData: UtsendtArbeidstakerSkjemaData,
-        erOffentligArbeidsgiver: Boolean?,
+        erStatligArbeidsgiver: Boolean?,
         antallAnsatte: Int?,
         erNorskregistrertUtenlandskForetak: Boolean?
     ) {
@@ -102,7 +102,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
             is UtsendtArbeidstakerArbeidsgiversSkjemaDataDto -> {
                 violations += arbeidsgiverensVirksomhetValidator.validate(
                     skjemaData.arbeidsgiverensVirksomhetINorge,
-                    erOffentligArbeidsgiver,
+                    erStatligArbeidsgiver,
                     antallAnsatte,
                     erNorskregistrertUtenlandskForetak
                 )
@@ -118,7 +118,7 @@ class UtsendtArbeidstakerSkjemaDataValidator(
             is UtsendtArbeidstakerArbeidsgiverOgArbeidstakerSkjemaDataDto -> {
                 violations += arbeidsgiverensVirksomhetValidator.validate(
                     skjemaData.arbeidsgiversData.arbeidsgiverensVirksomhetINorge,
-                    erOffentligArbeidsgiver,
+                    erStatligArbeidsgiver,
                     antallAnsatte,
                     erNorskregistrertUtenlandskForetak
                 )

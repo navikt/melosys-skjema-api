@@ -183,7 +183,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = skjema.orgnr, navn = "Oppdatert navn"),
                 juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
-                erOffentligArbeidsgiver = true,
+                erStatligArbeidsgiver = true,
                 erNorskregistrertUtenlandskForetak = false,
                 antallAnsatte = 50
             )

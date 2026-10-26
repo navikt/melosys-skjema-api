@@ -107,7 +107,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
@@ -310,7 +310,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
@@ -324,7 +324,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )

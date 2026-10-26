@@ -20,8 +20,8 @@ import no.nav.melosys.skjema.translations.dto.UtenlandsoppdragetTranslation
 val TRANSLATIONS = ErrorMessageTranslations(
     no = ErrorMessageTranslation(
         arbeidsgiverensVirksomhetINorgeTranslation = ArbeidsgiverensVirksomhetINorgeTranslation(
-            offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Offentlige virksomheter skal ikke oppgi om de er bemannings- eller vikarbyrå",
-            offentligVirksomhetSkalIkkeOppgiVanligDrift = "Offentlige virksomheter skal ikke oppgi vanlig drift",
+            statligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Statlige virksomheter skal ikke oppgi om de er bemannings- eller vikarbyrå",
+            statligVirksomhetSkalIkkeOppgiVanligDrift = "Statlige virksomheter skal ikke oppgi vanlig drift",
             maaOppgiOmBemanningsbyraa = "Du må oppgi om arbeidsgiver er bemannings- eller vikarbyrå",
             maaOppgiOmVanligDrift = "Du må oppgi om arbeidsgiver opprettholder vanlig drift",
             skalIkkeOppgiVanligDrift = "Vanlig drift skal ikke oppgis når foretakets samlede virksomhet oppgis",
@@ -99,8 +99,8 @@ val TRANSLATIONS = ErrorMessageTranslations(
     ),
     en = ErrorMessageTranslation(
         arbeidsgiverensVirksomhetINorgeTranslation = ArbeidsgiverensVirksomhetINorgeTranslation(
-            offentligVirksomhetSkalIkkeOppgiBemanningsbyraa = "Public organizations should not specify whether they are staffing or temporary employment agencies",
-            offentligVirksomhetSkalIkkeOppgiVanligDrift = "Public organizations should not specify normal operations",
+            statligVirksomhetSkalIkkeOppgiBemanningsbyraa = "State employers should not specify whether they are staffing or temporary employment agencies",
+            statligVirksomhetSkalIkkeOppgiVanligDrift = "State employers should not specify normal operations",
             maaOppgiOmBemanningsbyraa = "You must specify whether the employer is a staffing or temporary employment agency",
             maaOppgiOmVanligDrift = "You must specify whether the employer maintains normal operations",
             skalIkkeOppgiVanligDrift = "Normal operations must not be specified when information about the company's overall business is provided",
