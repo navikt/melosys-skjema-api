@@ -6,7 +6,7 @@ plugins {
 group = "no.nav.melosys"
 
 val jacksonVersion = "2.22"
-val jackson3Version = "3.1.5"
+val jackson3Version = "3.2.4"
 val jakartaValidationVersion = "3.1.1"
 val swaggerVersion = "2.2.55"
 val junitVersion = "6.1.3"
