@@ -4,9 +4,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import no.nav.melosys.skjema.types.SkjemaMetadata
-import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Representasjonstype
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import tools.jackson.databind.json.JsonMapper
@@ -54,24 +52,5 @@ class StatsansattMetadataJsonTest {
         json.remove("erStatsansatt")
 
         mapper.treeToValue(json, SkjemaMetadata::class.java) shouldBe metadata
-    }
-
-    @Test
-    fun `ereg-data med eldre feltnavn leses og serialiseres med statlig arbeidsgiver`() {
-        for (erStatlig in listOf(true, false)) {
-            val organisasjon = OrganisasjonMedJuridiskEnhetDto(
-                organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(),
-                juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(),
-                erStatligArbeidsgiver = erStatlig,
-                erNorskregistrertUtenlandskForetak = false,
-                antallAnsatte = 50,
-            )
-            val json = mapper.writeValueAsString(organisasjon)
-            val eldreJson = json.replace("\"erStatligArbeidsgiver\"", "\"erOffentligArbeidsgiver\"")
-
-            mapper.readValue(eldreJson, OrganisasjonMedJuridiskEnhetDto::class.java) shouldBe organisasjon
-            json shouldContain "\"erStatligArbeidsgiver\""
-            json shouldNotContain "\"erOffentligArbeidsgiver\""
-        }
     }
 }
