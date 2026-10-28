@@ -29,7 +29,7 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
+            .uri("/api/featuretoggle?features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
@@ -37,10 +37,7 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
             .returnResult().responseBody.shouldNotBeNull()
 
         // Test-profilen bruker FakeUnleash med alle toggles på
-        toggles shouldBe mapOf(
-            ToggleNavn.MOTPART_CTA.navn to true,
-            ToggleNavn.INNSENDT_SAMMENDRAG.navn to true
-        )
+        toggles shouldBe mapOf(ToggleNavn.INNSENDT_SAMMENDRAG.navn to true)
     }
 
     @Test
@@ -48,35 +45,32 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=melosys.annet.system.toggle")
+            .uri("/api/featuretoggle?features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}&features=melosys.annet.system.toggle")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
             .expectBody<Map<String, Boolean>>()
             .returnResult().responseBody.shouldNotBeNull()
 
-        toggles shouldBe mapOf(ToggleNavn.MOTPART_CTA.navn to true)
+        toggles shouldBe mapOf(ToggleNavn.INNSENDT_SAMMENDRAG.navn to true)
     }
 
     @Test
     fun `skal returnere false naar toggle er av`() {
         val fakeUnleash = unleash as FakeUnleash
-        fakeUnleash.enableAllExcept(ToggleNavn.MOTPART_CTA.navn)
+        fakeUnleash.enableAllExcept(ToggleNavn.INNSENDT_SAMMENDRAG.navn)
         try {
             val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
             val toggles = webTestClient.get()
-                .uri("/api/featuretoggle?features=${ToggleNavn.MOTPART_CTA.navn}&features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
+                .uri("/api/featuretoggle?features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
                 .header("Authorization", "Bearer $token")
                 .exchange()
                 .expectStatus().isOk
                 .expectBody<Map<String, Boolean>>()
                 .returnResult().responseBody.shouldNotBeNull()
 
-            toggles shouldBe mapOf(
-                ToggleNavn.MOTPART_CTA.navn to false,
-                ToggleNavn.INNSENDT_SAMMENDRAG.navn to true
-            )
+            toggles shouldBe mapOf(ToggleNavn.INNSENDT_SAMMENDRAG.navn to false)
         } finally {
             // Unleash-bønnen er delt singleton i test-konteksten
             fakeUnleash.enableAll()

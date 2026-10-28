@@ -9,9 +9,6 @@ package no.nav.melosys.skjema.featuretoggle
  * tilgjengelig for frontend uten eget vedlikehold av listen.
  */
 enum class ToggleNavn(val navn: String) {
-    /** «Motpart har sendt inn – start din del»-CTA på oversikten i melosys-skjema-web. */
-    MOTPART_CTA("melosys.skjema.motpart-cta"),
-
     /** Sammendrag over innsendte søknader (antall innsendt / venter på motpart) på oversikten. */
     INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag");
 
