@@ -155,10 +155,6 @@ class UtsendtArbeidstakerService(
      * slås arbeidsforholdet opp i AAREG på samme måte som når periodesteget lagres.
      */
     private fun prefyllFraMotpartsDel(skjema: Skjema, prefyllFraSkjemaId: UUID, innloggetBrukerFnr: String) {
-        if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
-            log.info { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: motpart-CTA-toggle er av" }
-            return
-        }
         if (skjema.utsendtArbeidstakerMetadataOrThrow().skjemadel != Skjemadel.ARBEIDSTAKERS_DEL) {
             log.warn { "Prefyll fra skjema $prefyllFraSkjemaId ignorert: gjelder kun arbeidstakers del" }
             return
