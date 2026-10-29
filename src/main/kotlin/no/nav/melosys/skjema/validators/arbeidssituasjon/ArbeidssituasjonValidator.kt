@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.felles.UtenlandskVirksomhetValidator
 import org.springframework.stereotype.Component
 
 @Component
@@ -32,6 +33,9 @@ class ArbeidssituasjonValidator {
                     translationKey = translationFieldName(ArbeidssituasjonTranslation::maaOppgiMinstEnVirksomhet.name)
                 ))
             }
+
+            val utenlandskVirksomhetViolations = UtenlandskVirksomhetValidator.validate(virksomheter?.utenlandskeVirksomheter)
+            if (utenlandskVirksomhetViolations.isNotEmpty()) return utenlandskVirksomhetViolations
         }
 
         return emptyList()

@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Farvann
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaSkipDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.validerPaakrevdeTekstfelter
 import org.springframework.stereotype.Component
 
 @Component
@@ -16,6 +17,13 @@ class PaSkipValidator {
             field = "paSkip",
             translationKey = FELT_ER_PAAKREVD
         ))
+
+        val tekstViolations = validerPaakrevdeTekstfelter(
+            PaSkipDto::navnPaVirksomhet.name to dto.navnPaVirksomhet,
+            PaSkipDto::navnPaSkip.name to dto.navnPaSkip,
+            PaSkipDto::yrketTilArbeidstaker.name to dto.yrketTilArbeidstaker,
+        )
+        if (tekstViolations.isNotEmpty()) return tekstViolations
 
         when(dto.seilerI) {
             Farvann.INTERNASJONALT_FARVANN -> {
