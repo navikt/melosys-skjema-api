@@ -9,6 +9,7 @@ import no.nav.melosys.skjema.arbeidstakerensLonnDtoMedDefaultVerdier
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.norskVirksomhetMedDefaultVerdier
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.validators.felles.OrganisasjonsnummerValidator
 import org.junit.jupiter.api.BeforeEach
@@ -59,6 +60,18 @@ class ArbeidstakerensLonnValidatorTest {
         arbeidstakerensLonnDtoMedDefaultVerdier().copy(
             arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
             virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier()
+        ),
+        arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+            virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                utenlandskeVirksomheter = null
+            )
+        ),
+        arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+            virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                norskeVirksomheter = null
+            )
         )
     ).map { Arguments.of(it) }.stream()
 
@@ -73,6 +86,18 @@ class ArbeidstakerensLonnValidatorTest {
             arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
             virksomheterSomUtbetalerLonnOgNaturalytelser = null
         )
+    ).plus(
+        listOf(
+            NorskeOgUtenlandskeVirksomheter(null, null),
+            NorskeOgUtenlandskeVirksomheter(emptyList(), null),
+            NorskeOgUtenlandskeVirksomheter(null, emptyList()),
+            NorskeOgUtenlandskeVirksomheter(emptyList(), emptyList())
+        ).map { virksomheter ->
+            arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+                arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                virksomheterSomUtbetalerLonnOgNaturalytelser = virksomheter
+            )
+        }
     ).map { Arguments.of(it) }.stream()
 
     fun invalidCombinationsWithNestedValidation(): Stream<Arguments> = listOf(

@@ -5,5 +5,6 @@ data class ArbeidsstedIUtlandetTranslation(
     val maaOppgiOffshoreArbeidssted: String,
     val maaOppgiArbeidsstedPaSkip: String,
     val maaOppgiArbeidsstedOmBordPaFly: String,
+    val arbeidsstedSkalIkkeOppgis: String,
 )
 

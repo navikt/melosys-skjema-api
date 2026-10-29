@@ -1,5 +1,9 @@
 package no.nav.melosys.skjema.validators.arbeidssituasjon
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -116,4 +120,47 @@ class ArbeidssituasjonValidatorTest {
             )
         )
     ).map { Arguments.of(it) }.stream()
+
+    @Test
+    fun `statsansatt skal ikke oppgi lønnet arbeid og aktivitet før utsendingen`() {
+        val statsansattFlyt = arbeidssituasjonDtoMedDefaultVerdier().copy(
+            harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
+            aktivitetIMaanedenFoerUtsendingen = null,
+        )
+
+        validator.validate(statsansattFlyt, statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(statsansattFlyt.copy(harVaertEllerSkalVaereILonnetArbeidFoerUtsending = true), statsansattFlyt = true) shouldBe listOf(
+            Violation(
+                field = "harVaertEllerSkalVaereILonnetArbeidFoerUtsending",
+                translationKey = "arbeidssituasjonTranslation.lonnetArbeidFoerUtsendingSkalIkkeOppgis"
+            )
+        )
+        validator.validate(statsansattFlyt.copy(aktivitetIMaanedenFoerUtsendingen = "STUDENT"), statsansattFlyt = true) shouldBe listOf(
+            Violation(
+                field = "aktivitetIMaanedenFoerUtsendingen",
+                translationKey = "arbeidssituasjonTranslation.aktivitetFoerUtsendingSkalIkkeOppgis"
+            )
+        )
+    }
+
+    @Test
+    fun `statsansatt må fortsatt oppgi virksomhetene ved flere arbeidsgivere`() {
+        val dto = arbeidssituasjonDtoMedDefaultVerdier().copy(
+            harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
+            aktivitetIMaanedenFoerUtsendingen = null,
+            skalJobbeForFlereVirksomheter = true,
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = null,
+        )
+
+        validator.validate(dto, statsansattFlyt = true).shouldHaveSize(1)
+    }
+
+    @Test
+    fun `lønnet arbeid før utsendingen er påkrevd i vanlig flyt`() {
+        val dto = arbeidssituasjonDtoMedDefaultVerdier().copy(harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null)
+
+        validator.validate(dto) shouldBe listOf(
+            Violation(field = "harVaertEllerSkalVaereILonnetArbeidFoerUtsending", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
 }

@@ -166,7 +166,7 @@ class AdminService(
                 innsenderFnr = innsending.innsenderFnr,
                 juridiskEnhet = metadata.juridiskEnhetOrgnr,
                 skjemadel = metadata.skjemadel,
-                erOffentligTjenesteperson = metadata.erOffentligTjenesteperson == true,
+                erStatsansatt = metadata.erStatsansatt == true,
                 flyt = metadata.representasjonstype,
                 sprak = innsending.innsendtSprak,
                 periode = innsending.skjema.utsendelsePeriode(),
@@ -318,8 +318,8 @@ class AdminService(
     }
 
     /**
-     * Status for en gjeldende del: har en innsendt separat motpart, er komplett alene som offentlig
-     * tjenesteperson, er dekket av et komplett skjema, eller venter. For de som venter skilles det på
+     * Status for en gjeldende del: har en innsendt separat motpart, er komplett alene som
+     * statsansatt, er dekket av et komplett skjema, eller venter. For de som venter skilles det på
      * om motparten har påbegynt et utkast eller ikke.
      * Kategoriene er gjensidig utelukkende og prioriteres i den rekkefølgen.
      *
@@ -336,8 +336,8 @@ class AdminService(
     ): DelStatusDto {
         var medMotpart = 0L
         var medMotpartAvsluttet = 0L
-        var offentligTjenesteperson = 0L
-        var offentligTjenestepersonAvsluttet = 0L
+        var statsansatt = 0L
+        var statsansattAvsluttet = 0L
         var dekketAvKomplett = 0L
         var dekketAvKomplettAvsluttet = 0L
         var venterMotpartHarUtkast = 0L
@@ -352,9 +352,9 @@ class AdminService(
                     medMotpart++
                     if (avsluttet) medMotpartAvsluttet++
                 }
-                del.erOffentligTjenesteperson -> {
-                    offentligTjenesteperson++
-                    if (avsluttet) offentligTjenestepersonAvsluttet++
+                del.erStatsansatt -> {
+                    statsansatt++
+                    if (avsluttet) statsansattAvsluttet++
                 }
                 indeks.komplettePerSak[del.sakNokkel()]?.any { del.matcher(it) } == true -> {
                     dekketAvKomplett++
@@ -377,9 +377,9 @@ class AdminService(
             medMotpart = medMotpart,
             medMotpartAktivSak = medMotpart - medMotpartAvsluttet,
             medMotpartAvsluttetSak = medMotpartAvsluttet,
-            komplettSomOffentligTjenesteperson = offentligTjenesteperson,
-            komplettSomOffentligTjenestepersonAktivSak = offentligTjenesteperson - offentligTjenestepersonAvsluttet,
-            komplettSomOffentligTjenestepersonAvsluttetSak = offentligTjenestepersonAvsluttet,
+            komplettSomStatsansatt = statsansatt,
+            komplettSomStatsansattAktivSak = statsansatt - statsansattAvsluttet,
+            komplettSomStatsansattAvsluttetSak = statsansattAvsluttet,
             dekketAvKomplettSkjema = dekketAvKomplett,
             dekketAvKomplettSkjemaAktivSak = dekketAvKomplett - dekketAvKomplettAvsluttet,
             dekketAvKomplettSkjemaAvsluttetSak = dekketAvKomplettAvsluttet,
@@ -639,8 +639,8 @@ class AdminService(
         val innsenderFnr: String,
         override val juridiskEnhet: String,
         val skjemadel: Skjemadel,
-        /** Arbeidstakers del fra offentlig tjenesteperson (AAREG) – komplett alene. */
-        val erOffentligTjenesteperson: Boolean,
+        /** Arbeidstakers del fra statsansatt (AAREG) – komplett alene. */
+        val erStatsansatt: Boolean,
         val flyt: Representasjonstype,
         val sprak: Språk,
         override val periode: PeriodeDto?,

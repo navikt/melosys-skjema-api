@@ -29,7 +29,7 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
         val token = mockOAuth2Server.getToken(claims = mapOf("pid" to "12345678901"))
 
         val toggles = webTestClient.get()
-            .uri("/api/featuretoggle?features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}")
+            .uri("/api/featuretoggle?features=${ToggleNavn.INNSENDT_SAMMENDRAG.navn}&features=${ToggleNavn.STATSANSATT_FLYT.navn}")
             .header("Authorization", "Bearer $token")
             .exchange()
             .expectStatus().isOk
@@ -37,7 +37,10 @@ class FeatureToggleControllerIntegrationTest : ApiTestBase() {
             .returnResult().responseBody.shouldNotBeNull()
 
         // Test-profilen bruker FakeUnleash med alle toggles på
-        toggles shouldBe mapOf(ToggleNavn.INNSENDT_SAMMENDRAG.navn to true)
+        toggles shouldBe mapOf(
+            ToggleNavn.INNSENDT_SAMMENDRAG.navn to true,
+            ToggleNavn.STATSANSATT_FLYT.navn to true,
+        )
     }
 
     @Test

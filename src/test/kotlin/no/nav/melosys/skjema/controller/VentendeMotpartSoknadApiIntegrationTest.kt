@@ -8,6 +8,7 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
 import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
@@ -52,11 +53,15 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
     private lateinit var eregService: EregService
 
     @MockkBean
+    private lateinit var aaregService: AaregService
+
+    @MockkBean
     private lateinit var pdlService: PdlService
 
     @BeforeEach
     fun setUp() {
         skjemaRepository.deleteAll()
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
     }
 
     @Test
@@ -100,7 +105,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
@@ -161,7 +166,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -206,7 +211,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -288,7 +293,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )
@@ -302,7 +307,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         every { eregService.hentOrganisasjonMedJuridiskEnhet(korrektSyntetiskOrgnr) } returns OrganisasjonMedJuridiskEnhetDto(
             organisasjon = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
             juridiskEnhet = SimpleOrganisasjonDto(orgnr = korrektSyntetiskOrgnr, navn = "Test Arbeidsgiver AS"),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )

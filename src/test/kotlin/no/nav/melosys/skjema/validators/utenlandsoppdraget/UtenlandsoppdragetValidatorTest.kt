@@ -1,5 +1,8 @@
 package no.nav.melosys.skjema.validators.utenlandsoppdraget
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -136,4 +139,24 @@ class UtenlandsoppdragetValidatorTest {
             forrigeArbeidstakerUtsendelsePeriode = null
         )
     ).map { Arguments.of(it) }.stream()
+
+    @Test
+    fun `utenlandsoppdraget skal ikke oppgis når steget ikke er i flyten`() {
+        validator.validate(utenlandsoppdragetDtoMedGyldigeVerdier, skalOppgis = false) shouldBe listOf(
+            Violation(
+                field = "utenlandsoppdraget",
+                translationKey = "utenlandsoppdragetTranslation.utenlandsoppdragetSkalIkkeOppgis"
+            )
+        )
+    }
+
+    @Test
+    fun `manglende utenlandsoppdrag er gyldig når steget ikke er i flyten`() {
+        validator.validate(null, skalOppgis = false).shouldBeEmpty()
+    }
+
+    @Test
+    fun `manglende utenlandsoppdrag er påkrevd når steget er i flyten`() {
+        validator.validate(null).shouldHaveSize(1)
+    }
 }

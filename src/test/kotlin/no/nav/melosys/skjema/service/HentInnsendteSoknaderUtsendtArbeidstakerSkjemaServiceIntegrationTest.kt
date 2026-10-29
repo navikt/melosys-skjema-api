@@ -1149,8 +1149,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
     }
 
     @Test
-    @DisplayName("MotpartStatus: IKKE_RELEVANT for arbeidstakers del fra offentlig tjenesteperson")
-    fun `motpartStatus skal være IKKE_RELEVANT for offentlig tjenesteperson`() {
+    @DisplayName("MotpartStatus: IKKE_RELEVANT for arbeidstakers del fra statsansatt")
+    fun `motpartStatus skal være IKKE_RELEVANT for statsansatt`() {
         val userFnr = korrektSyntetiskFnr
         every { subjectHandler.getUserID() } returns userFnr
 
@@ -1161,8 +1161,8 @@ class HentInnsendteSoknaderUtsendtArbeidstakerSkjemaServiceIntegrationTest : Api
                 metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                     representasjonstype = Representasjonstype.DEG_SELV,
                     skjemadel = Skjemadel.ARBEIDSTAKERS_DEL,
-                    erOffentligArbeidsgiver = true,
-                    erOffentligTjenesteperson = true
+                    erStatligArbeidsgiver = true,
+                    erStatsansatt = true
                 )
             )
         )

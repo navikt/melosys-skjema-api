@@ -560,7 +560,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
             saksstatus: Saksstatus? = null,
             saksnummer: String? = null,
             opprettetVia: OpprettetVia? = null,
-            erOffentligTjenesteperson: Boolean? = null
+            erStatsansatt: Boolean? = null
         ): Skjema = skjemaRepository.save(
             skjemaMedDefaultVerdier(
                 fnr = fnr,
@@ -574,7 +574,7 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                     skjemadel = skjemadel,
                     juridiskEnhetOrgnr = juridiskEnhet,
                     erstatterSkjemaId = erstatterSkjemaId,
-                    erOffentligTjenesteperson = erOffentligTjenesteperson
+                    erStatsansatt = erStatsansatt
                 ),
                 opprettetVia = opprettetVia,
                 opprettetDato = utkastStartet
@@ -804,30 +804,30 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 dekketAvKomplettSkjemaAktivSak shouldBe 1
                 dekketAvKomplettSkjemaAvsluttetSak shouldBe 1
                 venterIngenMotpart shouldBe 1
-                totalt shouldBe medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema +
+                totalt shouldBe medMotpart + komplettSomStatsansatt + dekketAvKomplettSkjema +
                     venterMotpartHarUtkast + venterIngenMotpart
             }
         }
 
         @Test
-        fun `arbeidstakers del fra offentlig tjenesteperson er komplett alene og venter ikke`() {
-            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000001", erOffentligTjenesteperson = true, saksstatus = Saksstatus.MOTTATT)
-            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000002", erOffentligTjenesteperson = true, saksstatus = Saksstatus.AVSLUTTET)
-            // Innsendt motpart prioriteres foran offentlig tjenesteperson
-            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000003", periode = periodeA, erOffentligTjenesteperson = true)
+        fun `arbeidstakers del fra statsansatt er komplett alene og venter ikke`() {
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000001", erStatsansatt = true, saksstatus = Saksstatus.MOTTATT)
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000002", erStatsansatt = true, saksstatus = Saksstatus.AVSLUTTET)
+            // Innsendt motpart prioriteres foran statsansatt
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000003", periode = periodeA, erStatsansatt = true)
             lagInnsendt(Skjemadel.ARBEIDSGIVERS_DEL, fnr = "37000000003", periode = periodeOverlapp)
-            // Offentlig arbeidsgiver uten treff i AAREG venter som foer
-            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000004", erOffentligTjenesteperson = false)
+            // Statlig arbeidsgiver uten treff i AAREG venter som foer
+            lagInnsendt(Skjemadel.ARBEIDSTAKERS_DEL, fnr = "37000000004", erStatsansatt = false)
 
             val s = hentBruk().saksdekning
             with(s.arbeidstakerDeler) {
                 totalt shouldBe 4
                 medMotpart shouldBe 1
-                komplettSomOffentligTjenesteperson shouldBe 2
-                komplettSomOffentligTjenestepersonAktivSak shouldBe 1
-                komplettSomOffentligTjenestepersonAvsluttetSak shouldBe 1
+                komplettSomStatsansatt shouldBe 2
+                komplettSomStatsansattAktivSak shouldBe 1
+                komplettSomStatsansattAvsluttetSak shouldBe 1
                 venterIngenMotpart shouldBe 1
-                totalt shouldBe medMotpart + komplettSomOffentligTjenesteperson + dekketAvKomplettSkjema +
+                totalt shouldBe medMotpart + komplettSomStatsansatt + dekketAvKomplettSkjema +
                     venterMotpartHarUtkast + venterIngenMotpart
             }
         }
@@ -1255,10 +1255,10 @@ class AdminControllerIntegrationTest : ApiTestBase() {
                 }
                 status?.let {
                     it.totalt + it.antallErstattedeVersjoner shouldBe body.innsendtPerSkjemadel[del]
-                    it.totalt shouldBe it.medMotpart + it.komplettSomOffentligTjenesteperson + it.dekketAvKomplettSkjema +
+                    it.totalt shouldBe it.medMotpart + it.komplettSomStatsansatt + it.dekketAvKomplettSkjema +
                         it.venterMotpartHarUtkast + it.venterIngenMotpart
-                    it.komplettSomOffentligTjenesteperson shouldBe
-                        it.komplettSomOffentligTjenestepersonAktivSak + it.komplettSomOffentligTjenestepersonAvsluttetSak
+                    it.komplettSomStatsansatt shouldBe
+                        it.komplettSomStatsansattAktivSak + it.komplettSomStatsansattAvsluttetSak
                     it.medMotpart shouldBe it.medMotpartAktivSak + it.medMotpartAvsluttetSak
                     it.dekketAvKomplettSkjema shouldBe it.dekketAvKomplettSkjemaAktivSak + it.dekketAvKomplettSkjemaAvsluttetSak
                 }

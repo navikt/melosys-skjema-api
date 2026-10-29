@@ -10,7 +10,10 @@ package no.nav.melosys.skjema.featuretoggle
  */
 enum class ToggleNavn(val navn: String) {
     /** Sammendrag over innsendte søknader (antall innsendt / venter på motpart) på oversikten. */
-    INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag");
+    INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag"),
+
+    /** MIDLERTIDIG MELOSYS-7694: spørsmål og svaropprydding i statsansattflyten. Se README for avvikling. */
+    STATSANSATT_FLYT("melosys.skjema.statsansatt-flyt");
 
     companion object {
         /** Allowlist for /api/featuretoggle – kun disse kan evalueres av frontend. */

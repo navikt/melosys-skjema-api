@@ -1,12 +1,15 @@
 package no.nav.melosys.skjema.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import io.getunleash.FakeUnleash
+import io.getunleash.Unleash
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
 import io.mockk.clearMocks
 import io.mockk.every
+import io.mockk.verify
 import java.time.LocalDate
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
@@ -24,11 +27,14 @@ import no.nav.melosys.skjema.familiemedlemmerDtoMedDefaultVerdier
 import no.nav.melosys.skjema.getToken
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.entity.Skjema
+import no.nav.melosys.skjema.featuretoggle.ToggleNavn
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
 import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.repr.ReprService
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
 import no.nav.melosys.skjema.norskeOgUtenlandskeVirksomheterMedDefaultVerdier
+import no.nav.melosys.skjema.paLandDtoMedDefaultVerdier
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.service.AltinnService
@@ -49,6 +55,8 @@ import no.nav.melosys.skjema.types.common.SkjemaStatus
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.felles.LandKode
 import no.nav.melosys.skjema.types.felles.PeriodeDto
+import no.nav.melosys.skjema.types.felles.NorskeOgUtenlandskeVirksomheter
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AaregSjekkResponse
 import no.nav.melosys.skjema.types.felles.OrganisasjonMedJuridiskEnhetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.utsendingsperiodeOgLandDtoMedDefaultVerdier
@@ -62,7 +70,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpMethod
@@ -101,6 +111,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
 
+    @Autowired
+    private lateinit var unleash: Unleash
+
     @MockkBean
     private lateinit var notificationService: NotificationService
 
@@ -109,6 +122,9 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @MockkBean
     private lateinit var eregService: EregService
+
+    @MockkBean
+    private lateinit var aaregService: AaregService
 
     @MockkBean
     private lateinit var reprService: ReprService
@@ -120,7 +136,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         clearMocks(altinnService)
         clearMocks(eregService)
         clearMocks(reprService)
+        clearMocks(aaregService)
         skjemaRepository.deleteAll()
+
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns true
 
         every { altinnService.harBrukerTilgang(any()) } returns true
         every { altinnService.hentBrukersTilganger() } returns emptyList()
@@ -152,7 +171,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -183,7 +202,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = skjema.orgnr, navn = "Oppdatert navn"),
                 juridiskEnhet = simpleOrganisasjonDtoMedDefaultVerdier(orgnr = "999888777"),
-                erOffentligArbeidsgiver = true,
+                erStatligArbeidsgiver = true,
                 erNorskregistrertUtenlandskForetak = false,
                 antallAnsatte = 50
             )
@@ -192,17 +211,17 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val response = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .exchange()
             .expectStatus().isOk
             .expectBody<UtsendtArbeidstakerSkjemaDto>()
             .returnResult().responseBody.shouldNotBeNull()
 
-        response.skjemaDefinisjonVersjon shouldBe "4"
+        response.skjemaDefinisjonVersjon shouldBe "5"
         response.utkastReinitialisert shouldBe true
         response.metadata.arbeidsgiverNavn shouldBe "Oppdatert navn"
         val lagret = skjemaRepository.findByIdOrNull(skjema.id!!).shouldNotBeNull()
-        lagret.skjemaDefinisjonVersjon shouldBe "4"
+        lagret.skjemaDefinisjonVersjon shouldBe "5"
         lagret.data shouldBe null
     }
 
@@ -226,7 +245,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         val responseBody = webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -252,7 +271,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/$nonExistentId")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "4")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isNotFound
@@ -558,6 +577,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssted-i-utlandet"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/tilleggsopplysninger"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/utsendingsperiode-og-land"),
+        Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/aareg-sjekk"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/arbeidssituasjon"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/skatteforhold-og-inntekt"),
         Arguments.of(HttpMethod.POST, "/api/skjema/utsendt-arbeidstaker/{id}/familiemedlemmer"),
@@ -573,6 +593,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             orgnr = korrektSyntetiskOrgnr,
             status = SkjemaStatus.UTKAST,
             data = data,
+            metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = Skjemadel.ARBEIDSGIVERS_DEL),
         )
 
         fun fullmaktSkjema(data: SkjemaData = agBaseData) = skjemaMedDefaultVerdier(
@@ -583,6 +604,7 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
                 representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT,
                 fullmektigFnr = korrektSyntetiskFnr,
+                skjemadel = Skjemadel.ARBEIDSGIVERS_DEL,
             ),
             opprettetAv = korrektSyntetiskFnr,
             endretAv = korrektSyntetiskFnr,
@@ -810,8 +832,17 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
     @MethodSource("endepunkterMedUgyldigData")
     fun `Påse at kjøres validering på alle request bodies`(fixture: UtsendtArbeidstakerControllerTestFixture<*>) {
         val token = createTokenForUser(korrektSyntetiskFnr)
+        val skjemadel = if (arbeidsgiverSteg.any { fixture.uri.endsWith("/$it") }) {
+            Skjemadel.ARBEIDSGIVERS_DEL
+        } else {
+            Skjemadel.ARBEIDSTAKERS_DEL
+        }
         val skjema = skjemaRepository.save(
-            skjemaMedDefaultVerdier(fnr = korrektSyntetiskFnr, status = SkjemaStatus.UTKAST)
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                status = SkjemaStatus.UTKAST,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(skjemadel = skjemadel),
+            )
         )
         val uri = fixture.uri.replace("f47ac10b-58cc-4372-a567-0e02b2c3d479", skjema.id.toString())
 
@@ -831,6 +862,10 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             }
 
     }
+
+    private val arbeidsgiverSteg = setOf(
+        "arbeidsgiverens-virksomhet-i-norge", "utenlandsoppdraget", "arbeidstakerens-lonn", "arbeidssted-i-utlandet"
+    )
 
     fun endepunkterMedUgyldigData(): List<Arguments> = listOf(
         UtsendtArbeidstakerControllerTestFixture<UtsendtArbeidstakerArbeidsgiversSkjemaDataDto>(
@@ -952,6 +987,86 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
             .shouldNotBeNull().innsendtSprak shouldBe Språk.NORSK_BOKMAL
     }
 
+    @ParameterizedTest
+    @EnumSource(Skjemadel::class)
+    fun `MIDLERTIDIG MELOSYS-7694 toggle av validerer og sender inn vanlig flyt for statlig arbeidsgiver`(skjemadel: Skjemadel) {
+        val fakeUnleash = unleash as FakeUnleash
+        fakeUnleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+        try {
+            val data = when (skjemadel) {
+                Skjemadel.ARBEIDSTAKERS_DEL -> arbeidstakersSkjemaDataDtoMedDefaultVerdier()
+                Skjemadel.ARBEIDSGIVERS_DEL -> arbeidsgiversSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsgiverensVirksomhetINorge = null,
+                    utsendingsperiodeOgLand = utsendingsperiodeOgLandDtoMedDefaultVerdier(),
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier(),
+                    tilleggsopplysninger = tilleggsopplysningerDtoMedDefaultVerdier(),
+                )
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> {
+                    val kombinert = arbeidsgiverOgArbeidstakerSkjemaDataDtoMedDefaultVerdier()
+                    kombinert.copy(arbeidsgiversData = kombinert.arbeidsgiversData.copy(
+                        arbeidsgiverensVirksomhetINorge = null,
+                        arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier()
+                    ))
+                }
+            }
+            val representasjonstype = when (skjemadel) {
+                Skjemadel.ARBEIDSTAKERS_DEL -> Representasjonstype.DEG_SELV
+                Skjemadel.ARBEIDSGIVERS_DEL -> Representasjonstype.ARBEIDSGIVER
+                Skjemadel.ARBEIDSGIVER_OG_ARBEIDSTAKERS_DEL -> Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
+            }
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier(
+                data = data,
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(
+                    skjemadel = skjemadel,
+                    representasjonstype = representasjonstype,
+                    fullmektigFnr = korrektSyntetiskFnr,
+                    erStatligArbeidsgiver = true,
+                    harArbeidsforholdIAareg = true,
+                    erStatsansatt = skjemadel == Skjemadel.ARBEIDSTAKERS_DEL,
+                ),
+            ))
+            every { reprService.harSkriverettigheterForMedlemskap(any()) } returns true
+            val token = createTokenForUser(skjema.fnr)
+
+            webTestClient.post()
+                .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/send-inn")
+                .header("Authorization", "Bearer $token")
+                .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
+                .exchange()
+                .expectStatus().isOk
+
+            skjemaRepository.findByIdOrNull(skjema.id!!)!!.status shouldBe SkjemaStatus.SENDT
+            verify(exactly = 0) { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+        } finally {
+            fakeUnleash.enableAll()
+        }
+    }
+
+    @Test
+    fun `MIDLERTIDIG MELOSYS-7694 aareg-sjekk svarer med treffet når statsansattflyten er av`() {
+        val fakeUnleash = unleash as FakeUnleash
+        fakeUnleash.enableAllExcept(ToggleNavn.STATSANSATT_FLYT.navn)
+        try {
+            val skjema = skjemaRepository.save(skjemaMedDefaultVerdier())
+            val token = createTokenForUser(skjema.fnr)
+            every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+            webTestClient.post()
+                .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/aareg-sjekk")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(utsendingsperiodeOgLandDtoMedDefaultVerdier().utsendelsePeriode)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody()
+                .jsonPath("$.harArbeidsforhold").isEqualTo(false)
+
+            verify(exactly = 1) { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) }
+        } finally {
+            fakeUnleash.enableAll()
+        }
+    }
+
     @Test
     @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/send-inn?sprak=nn skal persistere nynorsk som innsendt språk")
     fun `POST send-inn med sprak=nn skal persistere nynorsk`() {
@@ -979,6 +1094,54 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
         innsendingRepository.findBySkjemaId(skjemaSomSkalSendesInn.id!!)
             .shouldNotBeNull().innsendtSprak shouldBe Språk.NYNORSK
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["skatteforhold-og-inntekt", "send-inn"])
+    fun `statsansatt uten lønnsutbetalere får valideringsfeil ved lagring og innsending`(endepunkt: String) {
+        val skatteforhold = skatteforholdOgInntektDtoMedDefaultVerdier().copy(
+            inntektFraNorskEllerUtenlandskVirksomhet = null,
+            hvilkeTyperInntektHarDu = null,
+            inntekt = null,
+            inntektFraEgenVirksomhet = null,
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+            virksomheterSomUtbetalerLonnOgNaturalytelser = NorskeOgUtenlandskeVirksomheter(emptyList(), emptyList())
+        )
+        val skjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                data = arbeidstakersSkjemaDataDtoMedDefaultVerdier().copy(
+                    arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                        paLand = paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)
+                    ),
+                    arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(
+                        harVaertEllerSkalVaereILonnetArbeidFoerUtsending = null,
+                        aktivitetIMaanedenFoerUtsendingen = null
+                    ),
+                    skatteforholdOgInntekt = skatteforhold
+                ),
+                metadata = utsendtArbeidstakerMetadataMedDefaultVerdier(erStatligArbeidsgiver = true)
+                    .medHarArbeidsforholdIAareg(true)
+                    .medErStatsansatt(true)
+            )
+        )
+        val token = createTokenForUser(skjema.fnr)
+        val request = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}/$endepunkt")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
+        if (endepunkt == "skatteforhold-og-inntekt") request.bodyValue(skatteforhold)
+
+        val feil = request.exchange()
+            .expectStatus().isBadRequest
+            .expectBody(ErrorResponse::class.java)
+            .returnResult().responseBody
+
+        feil.shouldNotBeNull()
+        feil.errors shouldBe mapOf(
+            "virksomheterSomUtbetalerLonnOgNaturalytelser" to "arbeidstakerensLonnTranslation.maaOppgiVirksomheter"
+        )
+        skjemaRepository.findByIdOrNull(skjema.id!!)!!.status shouldBe SkjemaStatus.UTKAST
     }
 
     @Test
@@ -1073,6 +1236,38 @@ class UtsendtArbeidstakerControllerIntegrationTest : ApiTestBase() {
         kvittering.skjemaId shouldBe skjema.id
         kvittering.referanseId shouldBe "ABC123"
         kvittering.status shouldBe SkjemaStatus.SENDT
+    }
+
+    @Test
+    @DisplayName("POST /api/skjema/utsendt-arbeidstaker/{id}/aareg-sjekk skal svare med AAREG-treffet uten å lagre")
+    fun `POST aareg-sjekk skal svare med AAREG-treffet uten aa lagre`() {
+        val savedSkjema = skjemaRepository.save(
+            skjemaMedDefaultVerdier(
+                fnr = korrektSyntetiskFnr,
+                orgnr = korrektSyntetiskOrgnr,
+                status = SkjemaStatus.UTKAST
+            )
+        )
+        val periode = PeriodeDto(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        every { aaregService.harOrdinaertArbeidsforhold(any(), any(), any(), any()) } returns false
+
+        val token = createTokenForUser(korrektSyntetiskFnr)
+
+        val respons = webTestClient.post()
+            .uri("/api/skjema/utsendt-arbeidstaker/${savedSkjema.id}/aareg-sjekk")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, savedSkjema.skjemaDefinisjonVersjon)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(periode)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<AaregSjekkResponse>()
+            .returnResult()
+            .responseBody
+
+        respons shouldBe AaregSjekkResponse(harArbeidsforhold = false)
+        verify { aaregService.harOrdinaertArbeidsforhold(korrektSyntetiskFnr, korrektSyntetiskOrgnr, any(), periode) }
+        skjemaRepository.findByIdOrNull(savedSkjema.id!!)!!.metadata shouldBe savedSkjema.metadata
     }
 
     @Test

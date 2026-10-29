@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.types.utsendtarbeidstaker
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import java.util.UUID
 import no.nav.melosys.skjema.types.SkjemaMetadata
 
@@ -31,18 +32,23 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
      * Ulike underenheter kan tilhøre samme juridiske enhet.
      */
     abstract val juridiskEnhetOrgnr: String
-    /** Fra EREG. Null for eldre metadata. */
-    abstract val erOffentligArbeidsgiver: Boolean?
+    /** Fra EREG: juridisk enhet har enhetstype STAT og sektorkode 6100. Null for eldre metadata. */
+    abstract val erStatligArbeidsgiver: Boolean?
     /** Fra EREG: juridisk enhet er et norskregistrert utenlandsk foretak (NUF). Null for eldre metadata. */
     abstract val erNorskregistrertUtenlandskForetak: Boolean?
     /** Antall ansatte i A-registeret for juridisk enhet, fra EREG. Null for eldre metadata. */
     abstract val antallAnsatte: Int?
     /**
-     * Fra AAREG når utsendingsperioden settes i arbeidstakers del hos en offentlig arbeidsgiver:
+     * Fra AAREG når utsendingsperioden settes i arbeidstakers del hos en statlig arbeidsgiver:
      * arbeidstakeren har et ordinært arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden.
-     * Da regnes delen som komplett og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
+     * Ved true er delen komplett alene og venter ikke på arbeidsgivers del. Null når det ikke er slått opp.
      */
-    abstract val erOffentligTjenesteperson: Boolean?
+    abstract val erStatsansatt: Boolean?
+    /**
+     * Fra AAREG hver gang utsendingsperioden settes, for alle skjemadeler: arbeidstakeren har et ordinært
+     * arbeidsforhold hos arbeidsgiveren som dekker hele utsendingsperioden. Null før oppslag og i eldre metadata.
+     */
+    abstract val harArbeidsforholdIAareg: Boolean?
     /**
      * Referanse til koblet skjema-instans (motpart).
      * Når arbeidsgiver-del og arbeidstaker-del sendes separat, kobles de sammen
@@ -64,8 +70,9 @@ sealed class UtsendtArbeidstakerMetadata : SkjemaMetadata {
     /** Oppretter en kopi med ny erstatterSkjemaId */
     abstract fun medErstatterSkjemaId(erstatterSkjemaId: UUID?): UtsendtArbeidstakerMetadata
 
-    /** Oppretter en kopi med ny erOffentligTjenesteperson */
-    abstract fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?): UtsendtArbeidstakerMetadata
+    abstract fun medErStatsansatt(erStatsansatt: Boolean?): UtsendtArbeidstakerMetadata
+
+    abstract fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?): UtsendtArbeidstakerMetadata
 }
 
 /**
@@ -76,10 +83,13 @@ data class DegSelvMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -87,8 +97,10 @@ data class DegSelvMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.DEG_SELV
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -99,10 +111,13 @@ data class ArbeidsgiverMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -110,8 +125,10 @@ data class ArbeidsgiverMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -124,10 +141,13 @@ data class ArbeidsgiverMedFullmaktMetadata(
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -135,8 +155,10 @@ data class ArbeidsgiverMedFullmaktMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ARBEIDSGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -147,10 +169,13 @@ data class RadgiverMetadata(
     override val arbeidsgiverNavn: String,
     override val juridiskEnhetOrgnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -160,8 +185,10 @@ data class RadgiverMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -174,10 +201,13 @@ data class RadgiverMedFullmaktMetadata(
     /** Fødselsnummer til fullmektig (den som fyller ut på vegne av arbeidstaker) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null,
     /** Informasjon om rådgiverfirmaet */
@@ -187,8 +217,10 @@ data class RadgiverMedFullmaktMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.RADGIVER_MED_FULLMAKT
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 /**
@@ -201,10 +233,13 @@ data class AnnenPersonMetadata(
     /** Fødselsnummer til fullmektig (påkrevd for annen person) */
     val fullmektigFnr: String,
     override val arbeidstakerNavn: String,
-    override val erOffentligArbeidsgiver: Boolean? = null,
+    @param:JsonAlias("erOffentligArbeidsgiver")
+    override val erStatligArbeidsgiver: Boolean? = null,
     override val erNorskregistrertUtenlandskForetak: Boolean? = null,
     override val antallAnsatte: Int? = null,
-    override val erOffentligTjenesteperson: Boolean? = null,
+    @param:JsonAlias("erOffentligTjenesteperson")
+    override val erStatsansatt: Boolean? = null,
+    override val harArbeidsforholdIAareg: Boolean? = null,
     override val kobletSkjemaId: UUID? = null,
     override val erstatterSkjemaId: UUID? = null
 ) : UtsendtArbeidstakerMetadata() {
@@ -212,8 +247,10 @@ data class AnnenPersonMetadata(
     override val representasjonstype: Representasjonstype = Representasjonstype.ANNEN_PERSON
     override fun medKobletSkjemaId(kobletSkjemaId: UUID?) = copy(kobletSkjemaId = kobletSkjemaId)
     override fun medErstatterSkjemaId(erstatterSkjemaId: UUID?) = copy(erstatterSkjemaId = erstatterSkjemaId)
-    override fun medErOffentligTjenesteperson(erOffentligTjenesteperson: Boolean?) =
-        copy(erOffentligTjenesteperson = erOffentligTjenesteperson)
+    override fun medErStatsansatt(erStatsansatt: Boolean?) =
+        copy(erStatsansatt = erStatsansatt)
+    override fun medHarArbeidsforholdIAareg(harArbeidsforholdIAareg: Boolean?) =
+        copy(harArbeidsforholdIAareg = harArbeidsforholdIAareg)
 }
 
 data class RadgiverfirmaInfo(
