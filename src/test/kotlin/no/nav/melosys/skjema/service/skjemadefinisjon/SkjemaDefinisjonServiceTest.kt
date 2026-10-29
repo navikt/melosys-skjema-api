@@ -8,6 +8,7 @@ import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.types.SkjemaType
 import no.nav.melosys.skjema.types.common.Språk
 import no.nav.melosys.skjema.types.skjemadefinisjon.FeltFormat
+import no.nav.melosys.skjema.types.skjemadefinisjon.ListeFeltDefinisjon
 import no.nav.melosys.skjema.types.skjemadefinisjon.TextFeltDefinisjon
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.kotlinModule
@@ -74,5 +75,30 @@ class SkjemaDefinisjonServiceTest : FunSpec({
         antallFelter.forEach { (v3Felter[it] as TextFeltDefinisjon).format shouldBe null }
         andelFelter.forEach { (v3Felter[it] as TextFeltDefinisjon).format shouldBe FeltFormat.PROSENT }
         v3Felter["andelOmsetningINorge"].shouldNotBeNull().label shouldBe "Andel omsetning opptjent i Norge"
+    }
+
+    val virksomhetslister = listOf(
+        "arbeidssituasjon" to "virksomheterArbeidstakerJobberForIutsendelsesPeriode",
+        "arbeidstakerensLonn" to "virksomheterSomUtbetalerLonnOgNaturalytelser",
+        "skatteforholdOgInntekt" to "virksomheterSomUtbetalerLonnOgNaturalytelser"
+    )
+
+    test("v6 krever navn, postkode og by/stedsnavn for utenlandske virksomheter") {
+        val v6 = service.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "6", Språk.NORSK_BOKMAL)
+
+        virksomhetslister.forEach { (seksjon, felt) ->
+            val liste = v6.seksjoner[seksjon].shouldNotBeNull().felter[felt] as ListeFeltDefinisjon
+            val elementDefinisjon = liste.elementDefinisjon
+
+            elementDefinisjon.getValue("navn").label shouldBe "Navn på virksomheten"
+            elementDefinisjon.getValue("organisasjonsnummer").label shouldBe "Organisasjonsnummer"
+            elementDefinisjon.getValue("organisasjonsnummer").pakrevd shouldBe true
+            elementDefinisjon.getValue("organisasjonsnummerUtenlandsk").label shouldBe "Organisasjonsnummer eller registreringsnummer"
+            elementDefinisjon.getValue("organisasjonsnummerUtenlandsk").pakrevd shouldBe false
+            listOf("navn", "postkode", "byStedsnavn").forEach {
+                elementDefinisjon.getValue(it).pakrevd shouldBe true
+            }
+            elementDefinisjon.containsKey("ansettelsesform") shouldBe (seksjon == "arbeidssituasjon")
+        }
     }
 })

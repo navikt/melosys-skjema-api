@@ -173,7 +173,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "6")
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -218,7 +218,7 @@ class VentendeMotpartSoknadApiIntegrationTest : ApiTestBase() {
         webTestClient.get()
             .uri("/api/skjema/utsendt-arbeidstaker/${response.id}")
             .headers { it.setBearerAuth(token) }
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "6")
             .exchange()
             .expectStatus().isOk
             .expectBody()

@@ -153,6 +153,8 @@ class FeltRenderer(
         }
 
         val ed = felt.elementDefinisjon
+        // Definisjoner før v6 deler organisasjonsnummer-feltet mellom norske og utenlandske virksomheter
+        val utenlandskOrgnrDef = ed["organisasjonsnummerUtenlandsk"] ?: ed.getValue("organisasjonsnummer")
         val itemTypeLabels = requireNotNull(felt.itemTypeLabels) {
             "Mangler itemTypeLabels i definisjonen for virksomhetsliste '${felt.label}'"
         }
@@ -173,7 +175,7 @@ class FeltRenderer(
             builder.append("""<div class="list-item">""")
             builder.append("""<div class="list-item-title">${index++}. ${escapeHtml(itemTypeLabels.getValue(VirksomhetTypeKey.UTENLANDSK))}</div>""")
             builder.append(renderListeFelt(ed.getValue("navn"), virksomhet.navn))
-            builder.append(renderListeFelt(ed.getValue("organisasjonsnummer"), virksomhet.organisasjonsnummer))
+            builder.append(renderListeFelt(utenlandskOrgnrDef, virksomhet.organisasjonsnummer))
             builder.append(renderListeFelt(ed.getValue("vegnavnOgHusnummer"), virksomhet.vegnavnOgHusnummer))
             builder.append(renderListeFelt(ed.getValue("bygning"), virksomhet.bygning))
             builder.append(renderListeFelt(ed.getValue("postkode"), virksomhet.postkode))

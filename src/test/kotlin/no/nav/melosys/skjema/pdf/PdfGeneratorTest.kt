@@ -1050,7 +1050,9 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "12345"
             html shouldContain "Stockholm County"
             html shouldContain "Sverige"
-            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            verdiEtterLabel(html, "Navn på virksomheten") shouldBe "Foreign Company Ltd"
+            verdiEtterLabel(html, "Organisasjonsnummer eller registreringsnummer") shouldBe "ABC123"
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører virksomheten samme konsern som den norske arbeidsgiveren?")
             tilhorerKonsernVerdi shouldBe "Ja"
         }
 
@@ -1073,7 +1075,7 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører virksomheten samme konsern som den norske arbeidsgiveren?")
             tilhorerKonsernVerdi shouldBe "Nei"
         }
 

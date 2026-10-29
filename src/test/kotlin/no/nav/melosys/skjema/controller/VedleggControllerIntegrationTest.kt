@@ -193,7 +193,7 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
         webTestClient.post()
             .uri("/api/skjema/$ukjentId/vedlegg")
             .header("Authorization", "Bearer $token")
-            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "5")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, "6")
             .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
             .exchange()
             .expectStatus().isNotFound
