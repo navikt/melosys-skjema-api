@@ -1,5 +1,9 @@
 package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -55,4 +59,18 @@ class PaLandValidatorTest {
         )
     ).map { Arguments.of(it) }.stream()
 
+    @Test
+    fun `hjemmekontor skal ikke oppgis i arbeidssted for statsansatt`() {
+        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null), statsansattFlyt = true).shouldBeEmpty()
+        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = false), statsansattFlyt = true) shouldBe listOf(
+            Violation(field = "erHjemmekontor", translationKey = "paLandTranslation.hjemmekontorSkalIkkeOppgis")
+        )
+    }
+
+    @Test
+    fun `hjemmekontor er påkrevd i vanlig arbeidssted`() {
+        validator.validate(paLandDtoMedDefaultVerdier().copy(erHjemmekontor = null)) shouldBe listOf(
+            Violation(field = "erHjemmekontor", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
 }

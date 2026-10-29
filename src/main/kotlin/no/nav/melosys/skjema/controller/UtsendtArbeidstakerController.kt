@@ -30,7 +30,9 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidssituasjonDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FamiliemedlemmerDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.SkatteforholdOgInntektDto
 import no.nav.melosys.skjema.types.common.Språk
+import no.nav.melosys.skjema.types.felles.PeriodeDto
 import no.nav.melosys.skjema.types.felles.TilleggsopplysningerDto
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.AaregSjekkResponse
 import no.nav.melosys.skjema.types.felles.VedleggValgDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.security.token.support.core.api.Protected
@@ -264,6 +266,16 @@ class UtsendtArbeidstakerController(
         log.info { "Registering utsendingsperiode og land information for arbeidstaker" }
         val skjema = utsendtArbeidstakerService.saveUtsendingsperiodeOgLand(skjemaId, klientVersjon, request)
         return ResponseEntity.ok(skjema)
+    }
+
+    @PostMapping("/{skjemaId}/aareg-sjekk")
+    @Operation(summary = "Sjekk om arbeidstaker har arbeidsforhold i AAREG for perioden, uten å lagre")
+    @ApiResponse(responseCode = "200", description = "AAREG-sjekk utført")
+    @ApiResponse(responseCode = "400", description = "Ugyldig periode")
+    @ApiResponse(responseCode = "403", description = "Ingen tilgang")
+    @ApiResponse(responseCode = "404", description = "Skjema not found")
+    fun sjekkArbeidsforholdIAareg(@PathVariable skjemaId: UUID, @RequestBody @Valid request: PeriodeDto): ResponseEntity<AaregSjekkResponse> {
+        return ResponseEntity.ok(utsendtArbeidstakerService.sjekkArbeidsforholdIAareg(skjemaId, request))
     }
 
     @PostMapping("/{skjemaId}/arbeidssituasjon")

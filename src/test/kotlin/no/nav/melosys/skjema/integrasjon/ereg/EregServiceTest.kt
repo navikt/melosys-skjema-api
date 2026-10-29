@@ -43,7 +43,7 @@ class EregServiceTest {
             OrganisasjonMedJuridiskEnhetDto(
                 organisasjon = virksomhet.toSimpleOrganisasjonDto(),
                 juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-                erOffentligArbeidsgiver = false,
+                erStatligArbeidsgiver = false,
                 erNorskregistrertUtenlandskForetak = false,
                 antallAnsatte = 12
             )
@@ -105,21 +105,25 @@ class EregServiceTest {
     }
 
     @Test
-    fun `klassifiserer juridisk enhet som offentlig bare for STAT og sektorkode 6100`() {
-        val offentlig = juridiskEnhetMedDefaultVerdier().copy(
+    fun `klassifiserer juridisk enhet som statlig bare for STAT og sektorkode 6100`() {
+        val statlig = juridiskEnhetMedDefaultVerdier().copy(
             juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "STAT", sektorkode = "6100")
         )
-        val feilSektor = offentlig.copy(
+        val feilSektor = statlig.copy(
             juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "STAT", sektorkode = "6500")
         )
-        val feilEnhetstype = offentlig.copy(
+        val feilEnhetstype = statlig.copy(
             juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "AS", sektorkode = "6100")
         )
+        val kommunal = statlig.copy(
+            juridiskEnhetDetaljer = JuridiskEnhetDetaljer(enhetstype = "KOMM", sektorkode = "6500")
+        )
 
-        assertThat(offentlig.erOffentligArbeidsgiver()).isTrue()
-        assertThat(feilSektor.erOffentligArbeidsgiver()).isFalse()
-        assertThat(feilEnhetstype.erOffentligArbeidsgiver()).isFalse()
-        assertThat(juridiskEnhetMedDefaultVerdier().erOffentligArbeidsgiver()).isFalse()
+        assertThat(statlig.erStatligArbeidsgiver()).isTrue()
+        assertThat(feilSektor.erStatligArbeidsgiver()).isFalse()
+        assertThat(feilEnhetstype.erStatligArbeidsgiver()).isFalse()
+        assertThat(kommunal.erStatligArbeidsgiver()).isFalse()
+        assertThat(juridiskEnhetMedDefaultVerdier().erStatligArbeidsgiver()).isFalse()
     }
 
     @Test

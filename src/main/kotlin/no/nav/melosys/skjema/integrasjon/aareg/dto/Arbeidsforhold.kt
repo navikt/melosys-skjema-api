@@ -3,7 +3,7 @@ package no.nav.melosys.skjema.integrasjon.aareg.dto
 import java.time.LocalDate
 
 /**
- * Utdrag av arbeidsforhold fra AAREG v2 – bare feltene vi trenger for å avgjøre offentlig tjenesteperson.
+ * Utdrag av arbeidsforhold fra AAREG v2 – feltene vi trenger for å bekrefte arbeidsforholdet.
  */
 data class Arbeidsforhold(
     val type: Kodeverksentitet? = null,

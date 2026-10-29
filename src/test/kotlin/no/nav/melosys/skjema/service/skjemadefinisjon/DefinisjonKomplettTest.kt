@@ -42,18 +42,20 @@ class DefinisjonKomplettTest : FunSpec({
         }
     }
 
-    test("alle tekstnoder i UTSENDT_ARBEIDSTAKER v2 har nb, nn og en") {
-        val jsonMapper = JsonMapper.builder().build()
-        val definisjon = ClassPathResource("skjema-definisjoner/UTSENDT_ARBEIDSTAKER/v2/definisjon.json")
-            .inputStream.use { jsonMapper.readTree(it) }
+    listOf("v2" to 182, "v5" to 218).forEach { (versjon, minsteAntall) ->
+        test("alle tekstnoder i UTSENDT_ARBEIDSTAKER $versjon har nb, nn og en") {
+            val jsonMapper = JsonMapper.builder().build()
+            val definisjon = ClassPathResource("skjema-definisjoner/UTSENDT_ARBEIDSTAKER/$versjon/definisjon.json")
+                .inputStream.use { jsonMapper.readTree(it) }
 
-        val mangler = mutableListOf<String>()
-        val antall = intArrayOf(0)
-        finnMangler(definisjon, "", mangler, antall)
+            val mangler = mutableListOf<String>()
+            val antall = intArrayOf(0)
+            finnMangler(definisjon, "", mangler, antall)
 
-        withClue("traverseringen skal finne tekstnodene (fant ${antall[0]})") {
-            antall[0] shouldBeGreaterThanOrEqual 182
+            withClue("traverseringen skal finne tekstnodene (fant ${antall[0]})") {
+                antall[0] shouldBeGreaterThanOrEqual minsteAntall
+            }
+            mangler.shouldBeEmpty()
         }
-        mangler.shouldBeEmpty()
     }
 })

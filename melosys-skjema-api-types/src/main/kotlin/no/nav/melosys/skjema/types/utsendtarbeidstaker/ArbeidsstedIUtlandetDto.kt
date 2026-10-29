@@ -58,7 +58,8 @@ data class PaLandDto(
     val navnPaVirksomhet: String,
     val fastEllerVekslendeArbeidssted: FastEllerVekslendeArbeidssted,
     val fastArbeidssted: PaLandFastArbeidsstedDto?,
-    val erHjemmekontor: Boolean
+    /** Skal ikke besvares i statsansattflytens arbeidsstedsteg. */
+    val erHjemmekontor: Boolean?
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

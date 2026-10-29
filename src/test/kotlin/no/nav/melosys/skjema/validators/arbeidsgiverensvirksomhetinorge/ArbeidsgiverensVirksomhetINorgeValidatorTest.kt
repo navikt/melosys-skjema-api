@@ -44,35 +44,35 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
     @Test
     fun `manglende ansattall for privat arbeidsgiver er en systemfeil, ikke en brukerfeil`() {
         shouldThrow<IllegalStateException> {
-            validator.validate(privat(bemanningsbyraa = false), erOffentligArbeidsgiver = false, antallAnsatte = null, IKKE_NUF)
+            validator.validate(privat(bemanningsbyraa = false), erStatligArbeidsgiver = false, antallAnsatte = null, IKKE_NUF)
         }
     }
 
     @Test
     fun `manglende NUF-klassifisering for privat arbeidsgiver er en systemfeil, ikke en brukerfeil`() {
         shouldThrow<IllegalStateException> {
-            validator.validate(privat(bemanningsbyraa = false), erOffentligArbeidsgiver = false, antallAnsatte = MANGE, null)
+            validator.validate(privat(bemanningsbyraa = false), erStatligArbeidsgiver = false, antallAnsatte = MANGE, null)
         }
     }
 
     @Test
-    fun `offentlig arbeidsgiver trenger ikke ansattall eller NUF-klassifisering`() {
-        validator.validate(null, erOffentligArbeidsgiver = true, antallAnsatte = null, null).shouldBeEmpty()
+    fun `statlig arbeidsgiver trenger ikke ansattall eller NUF-klassifisering`() {
+        validator.validate(null, erStatligArbeidsgiver = true, antallAnsatte = null, null).shouldBeEmpty()
     }
 
     @Test
-    fun `offentlig arbeidsgiver krever ikke virksomhetsseksjonen i det hele tatt`() {
-        validator.validate(null, erOffentligArbeidsgiver = true, antallAnsatte = FAA, IKKE_NUF).shouldBeEmpty()
+    fun `statlig arbeidsgiver krever ikke virksomhetsseksjonen i det hele tatt`() {
+        validator.validate(null, erStatligArbeidsgiver = true, antallAnsatte = FAA, IKKE_NUF).shouldBeEmpty()
     }
 
     @Test
     fun `privat arbeidsgiver maa fylle ut virksomhetsseksjonen`() {
-        validator.validate(null, erOffentligArbeidsgiver = false, antallAnsatte = MANGE, IKKE_NUF).shouldHaveSize(1)
+        validator.validate(null, erStatligArbeidsgiver = false, antallAnsatte = MANGE, IKKE_NUF).shouldHaveSize(1)
     }
 
     @Test
     fun `alle manglende felter om samlet virksomhet rapporteres som paakrevd`() {
-        val avvik = validator.validate(privat(bemanningsbyraa = false), erOffentligArbeidsgiver = false, antallAnsatte = FAA, IKKE_NUF)
+        val avvik = validator.validate(privat(bemanningsbyraa = false), erStatligArbeidsgiver = false, antallAnsatte = FAA, IKKE_NUF)
 
         avvik.map { it.field } shouldContainExactlyInAnyOrder listOf(
             "antallAdministrativtAnsatte",
@@ -92,7 +92,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
             samletVirksomhet.copy(antallUtsendteArbeidstakere = -1, andelOmsetningINorge = 101, andelOppdragUtfortINorge = -1)
         )
 
-        val avvik = validator.validate(dto, erOffentligArbeidsgiver = false, antallAnsatte = FAA, IKKE_NUF)
+        val avvik = validator.validate(dto, erStatligArbeidsgiver = false, antallAnsatte = FAA, IKKE_NUF)
 
         avvik.map { it.field to it.translationKey } shouldContainExactlyInAnyOrder listOf(
             "antallUtsendteArbeidstakere" to "arbeidsgiverensVirksomhetINorgeTranslation.antallMaaVaereNullEllerMer",
@@ -105,7 +105,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
     fun `20 eller flere ansatte uten bemanningsbyraa skal ikke oppgi samlet virksomhet`() {
         val avvik = validator.validate(
             privat(bemanningsbyraa = false, samletVirksomhet.copy(antallUtsendteArbeidstakere = null), vanligDrift = true),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             antallAnsatte = GRENSE,
             IKKE_NUF
         )
@@ -124,7 +124,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         ).forEach { (antallAnsatte, bemanningsbyraa, erNuf) ->
             val avvik = validator.validate(
                 privat(bemanningsbyraa, samletVirksomhet, vanligDrift = false),
-                erOffentligArbeidsgiver = false,
+                erStatligArbeidsgiver = false,
                 antallAnsatte = antallAnsatte,
                 erNuf
             )
@@ -137,8 +137,8 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
     }
 
     @Test
-    fun `offentlig arbeidsgiver skal ikke oppgi samlet virksomhet`() {
-        validator.validate(samletVirksomhet, erOffentligArbeidsgiver = true, antallAnsatte = FAA, NUF) shouldHaveSize 6
+    fun `statlig arbeidsgiver skal ikke oppgi samlet virksomhet`() {
+        validator.validate(samletVirksomhet, erStatligArbeidsgiver = true, antallAnsatte = FAA, NUF) shouldHaveSize 6
     }
 
     @Test
@@ -156,28 +156,28 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
     @MethodSource("gyldigeKombinasjoner")
     fun `gyldige kombinasjoner gir ingen avvik`(
         dto: ArbeidsgiverensVirksomhetINorgeDto,
-        erOffentligArbeidsgiver: Boolean,
+        erStatligArbeidsgiver: Boolean,
         antallAnsatte: Int,
         beskrivelse: String,
         erNuf: Boolean
     ) {
-        validator.validate(dto, erOffentligArbeidsgiver, antallAnsatte, erNuf).shouldBeEmpty()
+        validator.validate(dto, erStatligArbeidsgiver, antallAnsatte, erNuf).shouldBeEmpty()
     }
 
     @ParameterizedTest(name = "{3}")
     @MethodSource("ugyldigeKombinasjoner")
     fun `ugyldige kombinasjoner gir avvik`(
         dto: ArbeidsgiverensVirksomhetINorgeDto,
-        erOffentligArbeidsgiver: Boolean,
+        erStatligArbeidsgiver: Boolean,
         antallAnsatte: Int,
         beskrivelse: String,
         erNuf: Boolean
     ) {
-        validator.validate(dto, erOffentligArbeidsgiver, antallAnsatte, erNuf).shouldHaveSize(1)
+        validator.validate(dto, erStatligArbeidsgiver, antallAnsatte, erNuf).shouldHaveSize(1)
     }
 
     fun gyldigeKombinasjoner(): Stream<Arguments> = Stream.of(
-        Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), true, FAA, "offentlig uten oppfoelgingssvar", IKKE_NUF),
+        Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), true, FAA, "statlig uten oppfoelgingssvar", IKKE_NUF),
         Arguments.of(
             ArbeidsgiverensVirksomhetINorgeDto(
                 erArbeidsgiverenBemanningsEllerVikarbyraa = false,
@@ -202,7 +202,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         Arguments.of(privat(bemanningsbyraa = true, samletVirksomhet), false, MANGE, "bemanningsbyraa med 20 eller flere ansatte uten vanlig drift", IKKE_NUF),
         Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, 0, "privat uten registrerte ansatte og vanlig drift", IKKE_NUF),
         Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, MANGE, "NUF med 20 eller flere ansatte uten vanlig drift", NUF),
-        Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), true, MANGE, "offentlig uten oppfoelgingssvar selv om NUF-flagget er satt", NUF)
+        Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), true, MANGE, "statlig uten oppfoelgingssvar selv om NUF-flagget er satt", NUF)
     )
 
     fun ugyldigeKombinasjoner(): Stream<Arguments> = Stream.of(
@@ -210,14 +210,14 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
             ArbeidsgiverensVirksomhetINorgeDto(erArbeidsgiverenBemanningsEllerVikarbyraa = true),
             true,
             FAA,
-            "offentlig som har svart om bemanningsbyraa",
+            "statlig som har svart om bemanningsbyraa",
             IKKE_NUF
         ),
         Arguments.of(
             ArbeidsgiverensVirksomhetINorgeDto(opprettholderArbeidsgiverenVanligDrift = true),
             true,
             FAA,
-            "offentlig som har svart om vanlig drift",
+            "statlig som har svart om vanlig drift",
             IKKE_NUF
         ),
         Arguments.of(
@@ -227,7 +227,7 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
             ),
             true,
             FAA,
-            "offentlig som har svart paa begge",
+            "statlig som har svart paa begge",
             IKKE_NUF
         ),
         Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), false, MANGE, "privat uten oppfoelgingssvar", IKKE_NUF),

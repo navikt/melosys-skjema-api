@@ -1,8 +1,8 @@
 package no.nav.melosys.skjema.translations.dto
 
 data class ArbeidsgiverensVirksomhetINorgeTranslation(
-    val offentligVirksomhetSkalIkkeOppgiBemanningsbyraa: String,
-    val offentligVirksomhetSkalIkkeOppgiVanligDrift: String,
+    val statligVirksomhetSkalIkkeOppgiBemanningsbyraa: String,
+    val statligVirksomhetSkalIkkeOppgiVanligDrift: String,
     val maaOppgiOmBemanningsbyraa: String,
     val maaOppgiOmVanligDrift: String,
     val skalIkkeOppgiVanligDrift: String,

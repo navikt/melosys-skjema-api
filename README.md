@@ -687,6 +687,42 @@ For detaljert dokumentasjon av fullmaktmodellen, se [fullmakt.md](fullmakt.md). 
 
 ## Utviklerdokumentasjon
 
+### Statsansattflyten
+
+`erStatligArbeidsgiver` betyr at arbeidsgiverens juridiske enhet har enhetstype
+`STAT` og sektorkode `6100` i EREG.
+Spørsmålsflyten for statsansatte bestemmes av denne klassifiseringen, skjemadelen
+og om et ordinært arbeidsforhold i AAREG dekker hele utsendingsperioden.
+`erStatsansatt` i metadata angir at arbeidstakers del er komplett alene.
+
+#### Midlertidig utrullingstoggle — MELOSYS-7694
+
+Unleash-togglen `melosys.skjema.statsansatt-flyt` styrer spørsmål, steg, validering
+og svaropprydding i statsansattflyten. Aktiver den i dev og la den være av i
+prod frem til flyten er godkjent. Lokal/test-profil har alle toggles på.
+Skjemadefinisjon v5 brukes uavhengig av togglen; togglevalget lagres ikke i metadata.
+
+Når togglen er av, beholdes vanlig spørsmålsflyt og validering, og lagrede svar
+fjernes ikke automatisk ved endret AAREG-status. AAREG-oppslag ved lagring og
+forhåndsutfylling av perioden kjøres for alle skjemadeler uavhengig av togglen.
+Forhåndssjekken `/aareg-sjekk` og AAREG-varslene er også uavhengige av togglen.
+`harArbeidsforholdIAareg` oppdateres ved periodelagring, og `erStatsansatt`
+avgjør fortsatt om arbeidstakers del hos statlig arbeidsgiver er komplett alene.
+
+Toggleendringer gjelder også påbegynte skjemaer. Frontend cacher togglevalget i
+inntil fem minutter; last siden på nytt etter endring under testing. Avslutt
+testskjemaer før togglen endres, siden spørsmål og valideringskrav kan endres.
+
+**Avvikling:** Søk etter `MIDLERTIDIG MELOSYS-7694`, `STATSANSATT_FLYT` og
+`statsansattFlytAktivert` i både melosys-skjema-api og melosys-skjema-web.
+Fjern enum-verdien, boolean-parameteren og gammel-flyt-grenen i
+`UtsendtArbeidstakerFlyt.fra`, samt togglebetingelsen rundt svaroppryddingen
+i `oppdaterAaregStatus`. Behold statsansattflyten, alle de
+utvidede AAREG-oppslagene og ryddingen av svar utenfor flyten. Fjern testene
+for toggle av og behold dekningen for toggle på. Følg avviklingsbeskrivelsen
+i frontendens README, og slett deretter togglen i Unleash og denne seksjonen.
+Ingen database- eller metadataopprydding er nødvendig.
+
 ### Skjemadefinisjoner
 
 Skjemadefinisjoner lagres som flerspråklige JSON-filer i `src/main/resources/skjema-definisjoner/`.

@@ -61,7 +61,7 @@ class EregControllerIntegrationTest : ApiTestBase() {
         val expected = OrganisasjonMedJuridiskEnhetDto(
             organisasjon = virksomhet.toSimpleOrganisasjonDto(),
             juridiskEnhet = juridiskEnhet.toSimpleOrganisasjonDto(),
-            erOffentligArbeidsgiver = false,
+            erStatligArbeidsgiver = false,
             erNorskregistrertUtenlandskForetak = false,
             antallAnsatte = 50
         )

@@ -894,6 +894,27 @@ class PdfGeneratorTest : FunSpec({
 
             html shouldContain "Om bord på fly"
         }
+
+        test("skjuler typevalg for arbeidssted på land uten hjemmekontor og viser arbeidstakerens tekster") {
+            val arbeidstakerData = lagKomplettArbeidstakerData().copy(
+                arbeidsstedIUtlandet = arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                    arbeidsstedType = ArbeidsstedType.PA_LAND,
+                    paLand = paLandDtoMedDefaultVerdier().copy(
+                        navnPaVirksomhet = "Ambassaden i Stockholm",
+                        erHjemmekontor = null
+                    )
+                )
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(
+                lagSkjemaPdfData(referanseId = "STATAT", arbeidstakerData = arbeidstakerData)
+            )
+
+            html shouldContain "Ambassaden i Stockholm"
+            html shouldContain "Har du fast arbeidssted i dette landet, eller veksler det ofte?"
+            html shouldNotContain "Hvor skal arbeidet utføres?"
+            (html.indexOf("Arbeidssituasjon") < html.indexOf("Ambassaden i Stockholm")) shouldBe true
+        }
     }
 
     context("HTML-escaping og sikkerhet") {

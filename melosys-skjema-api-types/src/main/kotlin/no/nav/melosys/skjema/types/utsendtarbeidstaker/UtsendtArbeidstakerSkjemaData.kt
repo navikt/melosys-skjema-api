@@ -27,6 +27,8 @@ data class UtsendtArbeidstakerArbeidsgiversSkjemaDataDto(
 data class UtsendtArbeidstakerArbeidstakersSkjemaDataDto(
     override val type: String = "UTSENDT_ARBEIDSTAKER_ARBEIDSTAKERS_DEL",
     override val utsendingsperiodeOgLand: UtsendingsperiodeOgLandDto? = null,
+    /** Bare for statsansatt når arbeidstaker sender før arbeidsgiver. */
+    val arbeidsstedIUtlandet: ArbeidsstedIUtlandetDto? = null,
     val arbeidssituasjon: ArbeidssituasjonDto? = null,
     val skatteforholdOgInntekt: SkatteforholdOgInntektDto? = null,
     val familiemedlemmer: FamiliemedlemmerDto? = null,

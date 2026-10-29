@@ -54,6 +54,17 @@ class SeksjonRenderer(
             }
         }
 
+        data.arbeidsstedIUtlandet?.let { dto ->
+            builder.append(
+                byggArbeidsstedIUtlandet(
+                    dto,
+                    definisjon,
+                    data.utsendingsperiodeOgLand?.utsendelseLand,
+                    paLandSeksjon = "arbeidsstedPaLandArbeidstaker"
+                )
+            )
+        }
+
         data.skatteforholdOgInntekt?.let { dto ->
             definisjon.seksjoner["skatteforholdOgInntekt"]?.let { seksjon ->
                 builder.append(byggSkatteforholdOgInntekt(dto, seksjon))
@@ -114,6 +125,11 @@ class SeksjonRenderer(
         seksjon: SeksjonDefinisjonDto
     ): String {
         return byggSeksjon(seksjon) {
+            felt(
+                "arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden",
+                data.arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden
+            )
+            felt("virksomheterSomUtbetalerLonnOgNaturalytelser", data.virksomheterSomUtbetalerLonnOgNaturalytelser)
             felt("erSkattepliktigTilNorgeIHeleutsendingsperioden", data.erSkattepliktigTilNorgeIHeleutsendingsperioden)
             felt("mottarPengestotteFraAnnetEosLandEllerSveits", data.mottarPengestotteFraAnnetEosLandEllerSveits)
             felt("landSomUtbetalerPengestotte", data.landSomUtbetalerPengestotte)
@@ -343,21 +359,26 @@ class SeksjonRenderer(
     private fun byggArbeidsstedIUtlandet(
         data: ArbeidsstedIUtlandetDto,
         definisjon: SkjemaDefinisjonDto,
-        utsendelseLand: LandKode? = null
+        utsendelseLand: LandKode? = null,
+        paLandSeksjon: String = "arbeidsstedPaLand"
     ): String {
         val builder = StringBuilder()
 
-        // Arbeidssted type — label og alternativer hentes fra definisjonen, som allerede er oversatt
-        definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
-            builder.append(byggSeksjon(seksjon) {
-                felt("arbeidsstedType", data.arbeidsstedType)
-            })
+        // På land uten hjemmekontorsvar kjennetegner flyten med skjult typevalg.
+        // PDF-en skal ikke vise arbeidsstedstypen som et eget svar i denne flyten.
+        val typevalgVist = data.arbeidsstedType != ArbeidsstedType.PA_LAND || data.paLand?.erHjemmekontor != null
+        if (typevalgVist) {
+            definisjon.seksjoner["arbeidsstedIUtlandet"]?.let { seksjon ->
+                builder.append(byggSeksjon(seksjon) {
+                    felt("arbeidsstedType", data.arbeidsstedType)
+                })
+            }
         }
 
         // Subtype-spesifikke seksjoner
         when (data.arbeidsstedType) {
             ArbeidsstedType.PA_LAND -> data.paLand?.let { dto ->
-                definisjon.seksjoner["arbeidsstedPaLand"]?.let { seksjon ->
+                definisjon.seksjoner[paLandSeksjon]?.let { seksjon ->
                     builder.append(byggArbeidsstedPaLand(dto, seksjon, utsendelseLand))
                 }
             }
@@ -528,4 +549,3 @@ private fun String.formaterSomKroner(språk: Språk): String {
     val formatert = java.text.NumberFormat.getNumberInstance(locale).format(tall)
     return "$formatert kr"
 }
-
