@@ -154,7 +154,7 @@ class FeltRenderer(
 
         val ed = felt.elementDefinisjon
         // Definisjoner før v6 deler organisasjonsnummer-feltet mellom norske og utenlandske virksomheter
-        val utenlandskOrgnrDef = ed["organisasjonsnummerUtenlandsk"] ?: ed.getValue("organisasjonsnummer")
+        val utenlandskOrgnrDef = ed["organisasjonsnummerEllerRegistreringsnummer"] ?: ed.getValue("organisasjonsnummer")
         val itemTypeLabels = requireNotNull(felt.itemTypeLabels) {
             "Mangler itemTypeLabels i definisjonen for virksomhetsliste '${felt.label}'"
         }

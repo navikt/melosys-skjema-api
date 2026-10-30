@@ -93,8 +93,8 @@ class SkjemaDefinisjonServiceTest : FunSpec({
             elementDefinisjon.getValue("navn").label shouldBe "Navn på virksomheten"
             elementDefinisjon.getValue("organisasjonsnummer").label shouldBe "Organisasjonsnummer"
             elementDefinisjon.getValue("organisasjonsnummer").pakrevd shouldBe true
-            elementDefinisjon.getValue("organisasjonsnummerUtenlandsk").label shouldBe "Organisasjonsnummer eller registreringsnummer"
-            elementDefinisjon.getValue("organisasjonsnummerUtenlandsk").pakrevd shouldBe false
+            elementDefinisjon.getValue("organisasjonsnummerEllerRegistreringsnummer").label shouldBe "Organisasjonsnummer eller registreringsnummer"
+            elementDefinisjon.getValue("organisasjonsnummerEllerRegistreringsnummer").pakrevd shouldBe false
             listOf("navn", "postkode", "byStedsnavn").forEach {
                 elementDefinisjon.getValue(it).pakrevd shouldBe true
             }

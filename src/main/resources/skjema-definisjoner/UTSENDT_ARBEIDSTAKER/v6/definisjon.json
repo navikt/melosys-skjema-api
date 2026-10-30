@@ -148,7 +148,7 @@
               },
               "pakrevd": true
             },
-            "organisasjonsnummerUtenlandsk": {
+            "organisasjonsnummerEllerRegistreringsnummer": {
               "type": "TEXT",
               "label": {
                 "nb": "Organisasjonsnummer eller registreringsnummer",
@@ -349,7 +349,7 @@
               },
               "pakrevd": true
             },
-            "organisasjonsnummerUtenlandsk": {
+            "organisasjonsnummerEllerRegistreringsnummer": {
               "type": "TEXT",
               "label": {
                 "nb": "Organisasjonsnummer eller registreringsnummer",
@@ -1536,7 +1536,7 @@
               },
               "pakrevd": true
             },
-            "organisasjonsnummerUtenlandsk": {
+            "organisasjonsnummerEllerRegistreringsnummer": {
               "type": "TEXT",
               "label": {
                 "nb": "Organisasjonsnummer eller registreringsnummer",
