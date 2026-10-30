@@ -5,6 +5,7 @@ import no.nav.melosys.skjema.translations.dto.OmBordPaFlyTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.OmBordPaFlyDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.validerPaakrevdeTekstfelter
 import org.springframework.stereotype.Component
 
 @Component
@@ -15,6 +16,12 @@ class OmBordPaFlyValidator {
             field = "omBordPaFly",
             translationKey = FELT_ER_PAAKREVD
         ))
+
+        val navnViolations = validerPaakrevdeTekstfelter(
+            OmBordPaFlyDto::navnPaVirksomhet.name to dto.navnPaVirksomhet,
+            OmBordPaFlyDto::hjemmebaseNavn.name to dto.hjemmebaseNavn,
+        )
+        if (navnViolations.isNotEmpty()) return navnViolations
 
         if (dto.erVanligHjemmebase) {
             if (dto.vanligHjemmebaseLand != null) {
@@ -36,7 +43,7 @@ class OmBordPaFlyValidator {
                     translationKey = translationFieldName(OmBordPaFlyTranslation::maaOppgiVanligHjemmebaseLand.name)
                 ))
             }
-            if (dto.vanligHjemmebaseNavn == null) {
+            if (dto.vanligHjemmebaseNavn.isNullOrBlank()) {
                 return listOf(Violation(
                     field = OmBordPaFlyDto::vanligHjemmebaseNavn.name,
                     translationKey = translationFieldName(OmBordPaFlyTranslation::maaOppgiVanligHjemmebaseNavn.name)

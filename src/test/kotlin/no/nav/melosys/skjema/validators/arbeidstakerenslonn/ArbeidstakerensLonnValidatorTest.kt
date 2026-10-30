@@ -1,5 +1,9 @@
 package no.nav.melosys.skjema.validators.arbeidstakerenslonn
 
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
+import no.nav.melosys.skjema.utenlandskVirksomhetMedDefaultVerdier
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -113,4 +117,16 @@ class ArbeidstakerensLonnValidatorTest {
             )
         )
     ).map { Arguments.of(it) }.stream()
+
+    @Test
+    fun `utenlandsk virksomhet som betaler lønn valideres`() {
+        val dto = arbeidstakerensLonnDtoMedDefaultVerdier().copy(
+            arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+            virksomheterSomUtbetalerLonnOgNaturalytelser = norskeOgUtenlandskeVirksomheterMedDefaultVerdier().copy(
+                utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier().copy(postkode = null))
+            )
+        )
+
+        validator.validate(dto) shouldBe listOf(Violation(field = "postkode", translationKey = FELT_ER_PAAKREVD))
+    }
 }

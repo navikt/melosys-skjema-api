@@ -1,5 +1,6 @@
 package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import io.kotest.matchers.shouldBe
 import no.nav.melosys.skjema.validators.Violation
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -14,6 +15,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.Farvann
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.FastEllerVekslendeArbeidssted
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OffshoreDto
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
@@ -212,6 +214,25 @@ class ArbeidsstedIUtlandetValidatorTest {
         validator.validate(null, skalOppgis = false).shouldBeEmpty()
         validator.validate(arbeidsstedIUtlandetDtoMedDefaultVerdier(), skalOppgis = false) shouldBe listOf(
             Violation(field = "arbeidsstedIUtlandet", translationKey = "arbeidsstedIUtlandetTranslation.arbeidsstedSkalIkkeOppgis")
+        )
+    }
+
+    @Test
+    fun `navn på innretning og virksomhet offshore kan ikke være blanke`() {
+        fun offshore(offshore: OffshoreDto) =
+            arbeidsstedIUtlandetDtoMedDefaultVerdier().copy(
+                arbeidsstedType = ArbeidsstedType.OFFSHORE,
+                paLand = null,
+                offshore = offshore,
+                paSkip = null,
+                omBordPaFly = null
+            )
+
+        validator.validate(offshore(offshoreDtoMedDefaultVerdier().copy(navnPaInnretning = "  "))) shouldBe listOf(
+            Violation(field = "navnPaInnretning", translationKey = FELT_ER_PAAKREVD)
+        )
+        validator.validate(offshore(offshoreDtoMedDefaultVerdier().copy(navnPaVirksomhet = ""))) shouldBe listOf(
+            Violation(field = "navnPaVirksomhet", translationKey = FELT_ER_PAAKREVD)
         )
     }
 }
