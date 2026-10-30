@@ -1,9 +1,7 @@
 package no.nav.melosys.skjema.service
 
-import io.getunleash.Unleash
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.UUID
-import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.repository.InnsendingRepository
 import no.nav.melosys.skjema.repository.SkjemaRepository
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
@@ -36,15 +34,10 @@ private val log = KotlinLogging.logger { }
 class VentendeMotpartSoknadService(
     private val skjemaRepository: SkjemaRepository,
     private val innsendingRepository: InnsendingRepository,
-    private val subjectHandler: SubjectHandler,
-    private val unleash: Unleash
+    private val subjectHandler: SubjectHandler
 ) {
 
     fun hentVentendeMotpartSoknader(): VentendeMotpartSoknaderResponse {
-        if (!unleash.isEnabled(ToggleNavn.MOTPART_CTA.navn)) {
-            return VentendeMotpartSoknaderResponse(emptyList())
-        }
-
         val innloggetBrukerFnr = subjectHandler.getUserID()
         val sendte = skjemaRepository.findByFnrAndTypeAndStatus(innloggetBrukerFnr, SkjemaType.UTSENDT_ARBEIDSTAKER, SkjemaStatus.SENDT)
 

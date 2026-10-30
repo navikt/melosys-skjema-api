@@ -1,8 +1,6 @@
 package no.nav.melosys.skjema.service
 
 import com.ninjasquad.springmockk.MockkBean
-import io.getunleash.FakeUnleash
-import io.getunleash.Unleash
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -13,7 +11,6 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.arbeidsgiversSkjemaDataDtoMedDefaultVerdier
 import no.nav.melosys.skjema.entity.Skjema
 import no.nav.melosys.skjema.etAnnetKorrektSyntetiskFnr
-import no.nav.melosys.skjema.featuretoggle.ToggleNavn
 import no.nav.melosys.skjema.innsendingMedDefaultVerdier
 import no.nav.melosys.skjema.korrektSyntetiskFnr
 import no.nav.melosys.skjema.korrektSyntetiskOrgnr
@@ -30,7 +27,6 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.Skjemadel
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendingsperiodeOgLandDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.UtsendtArbeidstakerArbeidsgiversSkjemaDataDto
 import no.nav.melosys.skjema.utsendtArbeidstakerMetadataMedDefaultVerdier
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -47,9 +43,6 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
     @Autowired
     private lateinit var innsendingRepository: InnsendingRepository
 
-    @Autowired
-    private lateinit var unleash: Unleash
-
     @MockkBean
     private lateinit var subjectHandler: SubjectHandler
 
@@ -62,12 +55,6 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
         every { subjectHandler.getUserID() } returns arbeidstakerFnr
         innsendingRepository.deleteAll()
         skjemaRepository.deleteAll()
-        (unleash as FakeUnleash).enableAll()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        (unleash as FakeUnleash).enableAll()
     }
 
     @Test
@@ -86,15 +73,6 @@ class VentendeMotpartSoknadServiceIntegrationTest : ApiTestBase() {
             utsendelseLand shouldBe LandKode.SE
             innsendtDato shouldBe skjemaRepository.findById(skjema.id!!).orElseThrow().endretDato
         }
-    }
-
-    @Test
-    @DisplayName("Toggle av gir alltid tom liste")
-    fun `toggle av gir tom liste`() {
-        lagreSendtArbeidsgiverDel()
-        (unleash as FakeUnleash).enableAllExcept(ToggleNavn.MOTPART_CTA.navn)
-
-        service.hentVentendeMotpartSoknader().soknader.shouldBeEmpty()
     }
 
     @Test
