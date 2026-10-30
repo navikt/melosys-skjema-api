@@ -1079,6 +1079,30 @@ class PdfGeneratorTest : FunSpec({
             tilhorerKonsernVerdi shouldBe "Nei"
         }
 
+        test("bruker organisasjonsnummer-feltet for utenlandsk virksomhet med definisjon før v6") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidstakerensLonn = ArbeidstakerensLonnDto(
+                    arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                    virksomheterSomUtbetalerLonnOgNaturalytelser = NorskeOgUtenlandskeVirksomheter(
+                        norskeVirksomheter = null,
+                        utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
+                    )
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "UTLAV5",
+                arbeidsgiverData = arbeidsgiverData
+            ).copy(
+                definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "5", Språk.NORSK_BOKMAL)
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            verdiEtterLabel(html, "Organisasjonsnummer") shouldBe "ABC123"
+            verdiEtterLabel(html, "Organisasjonsnummer eller registreringsnummer") shouldBe null
+        }
+
         test("viser alle felter inkludert ansettelsesform når arbeidstaker jobber for flere virksomheter") {
             val arbeidstakerData = lagKomplettArbeidstakerData().copy(
                 arbeidssituasjon = arbeidssituasjonDtoMedDefaultVerdier().copy(

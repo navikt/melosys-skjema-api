@@ -189,7 +189,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
         fellesTranslation = FellesTranslation(
             organisasjonsnummerHarUgyldigFormat = "Organization number has invalid format",
             organisasjonsnummerFinnesIkke = "Organization number does not exist in the Business Register",
-            utenlandskOrganisasjonsnummerErForLangt = "Organisation number or registration number cannot be longer than 25 characters",
+            utenlandskOrganisasjonsnummerErForLangt = "Organization number or registration number cannot be longer than 25 characters",
             ugyldigFodselsellerDNummer = "Invalid birth or D-number",
             feltErPaakrevd = "Field is required"
         )
