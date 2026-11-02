@@ -128,7 +128,7 @@ class VedleggService(
      * (ingen foreldreløse blob-filer på avveie, GDPR). Idempotent, så retry er trygt.
      */
     fun slettBlobberForSkjema(skjemaId: UUID) {
-        val storageReferanser = vedleggRepository.findBySkjemaId(skjemaId).map { it.storageReferanse }
+        val storageReferanser = vedleggRepository.findStorageReferanserBySkjemaId(skjemaId)
         if (storageReferanser.isEmpty()) return
 
         storageReferanser.forEach { referanse ->
