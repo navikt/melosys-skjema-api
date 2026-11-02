@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.verify
 import java.util.UUID
 import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.entity.Skjema
@@ -157,6 +158,37 @@ class VedleggControllerIntegrationTest : ApiTestBase() {
             .expectStatus().isOk
             .expectBodyList(VedleggDto::class.java)
             .hasSize(0)
+    }
+
+    @Test
+    fun `slett utkast med vedlegg - sletter skjema, vedlegg og blob`() {
+        val skjema = opprettSkjema()
+        val token = getToken()
+
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("fil", object : ByteArrayResource("%PDF-1.4 test content".toByteArray()) {
+            override fun getFilename() = "test.pdf"
+        }).contentType(MediaType.APPLICATION_PDF)
+
+        webTestClient.post()
+            .uri("/api/skjema/${skjema.id}/vedlegg")
+            .header("Authorization", "Bearer $token")
+            .header(SKJEMA_DEFINISJON_VERSJON_HEADER, skjema.skjemaDefinisjonVersjon)
+            .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+            .exchange()
+            .expectStatus().isOk
+
+        val storageReferanse = vedleggRepository.findStorageReferanserBySkjemaId(skjema.id!!).single()
+
+        webTestClient.delete()
+            .uri("/api/skjema/utsendt-arbeidstaker/${skjema.id}")
+            .header("Authorization", "Bearer $token")
+            .exchange()
+            .expectStatus().isNoContent
+
+        skjemaRepository.existsById(skjema.id!!) shouldBe false
+        vedleggRepository.existsBySkjemaId(skjema.id!!) shouldBe false
+        verify(exactly = 1) { vedleggStorageClient.slett(storageReferanse) }
     }
 
     @Test
