@@ -1,5 +1,9 @@
 package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -75,4 +79,27 @@ class OmBordPaFlyValidatorTest {
             vanligHjemmebaseNavn = "Stockholm Airport"
         )
     ).map { Arguments.of(it) }.stream()
+
+    @Test
+    fun `navn på hjemmebase og virksomhet kan ikke være blanke`() {
+        validator.validate(omBordPaFlyDtoMedDefaultVerdier().copy(hjemmebaseNavn = "  ")) shouldBe listOf(
+            Violation(field = "hjemmebaseNavn", translationKey = FELT_ER_PAAKREVD)
+        )
+        validator.validate(omBordPaFlyDtoMedDefaultVerdier().copy(navnPaVirksomhet = "")) shouldBe listOf(
+            Violation(field = "navnPaVirksomhet", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
+
+    @Test
+    fun `navn på vanlig hjemmebase kan ikke være blankt`() {
+        val dto = omBordPaFlyDtoMedDefaultVerdier().copy(
+            erVanligHjemmebase = false,
+            vanligHjemmebaseLand = LandKode.SE,
+            vanligHjemmebaseNavn = " "
+        )
+
+        validator.validate(dto) shouldBe listOf(
+            Violation(field = "vanligHjemmebaseNavn", translationKey = "omBordPaFlyTranslation.maaOppgiVanligHjemmebaseNavn")
+        )
+    }
 }

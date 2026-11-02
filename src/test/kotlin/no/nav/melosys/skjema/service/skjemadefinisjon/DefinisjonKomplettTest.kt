@@ -42,7 +42,7 @@ class DefinisjonKomplettTest : FunSpec({
         }
     }
 
-    listOf("v2" to 182, "v5" to 218).forEach { (versjon, minsteAntall) ->
+    listOf("v2" to 182, "v5" to 218, "v6" to 221).forEach { (versjon, minsteAntall) ->
         test("alle tekstnoder i UTSENDT_ARBEIDSTAKER $versjon har nb, nn og en") {
             val jsonMapper = JsonMapper.builder().build()
             val definisjon = ClassPathResource("skjema-definisjoner/UTSENDT_ARBEIDSTAKER/$versjon/definisjon.json")

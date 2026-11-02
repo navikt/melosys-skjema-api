@@ -163,4 +163,23 @@ class ArbeidssituasjonValidatorTest {
             Violation(field = "harVaertEllerSkalVaereILonnetArbeidFoerUtsending", translationKey = FELT_ER_PAAKREVD)
         )
     }
+
+    @Test
+    fun `utenlandsk virksomhet arbeidstaker skal jobbe for valideres`() {
+        val dto = arbeidssituasjonDtoMedDefaultVerdier().copy(
+            skalJobbeForFlereVirksomheter = true,
+            virksomheterArbeidstakerJobberForIutsendelsesPeriode = norskeOgUtenlandskeVirksomheterMedAnsettelsesformMedDefaultVerdier().copy(
+                utenlandskeVirksomheter = listOf(
+                    utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier().copy(organisasjonsnummer = "1".repeat(26))
+                )
+            )
+        )
+
+        validator.validate(dto) shouldBe listOf(
+            Violation(
+                field = "organisasjonsnummer",
+                translationKey = "fellesTranslation.utenlandskOrganisasjonsnummerErForLangt"
+            )
+        )
+    }
 }

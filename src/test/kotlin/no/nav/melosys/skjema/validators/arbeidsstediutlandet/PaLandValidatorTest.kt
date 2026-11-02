@@ -73,4 +73,21 @@ class PaLandValidatorTest {
             Violation(field = "erHjemmekontor", translationKey = FELT_ER_PAAKREVD)
         )
     }
+
+    @Test
+    fun `navn på virksomhet kan ikke være blankt`() {
+        validator.validate(paLandDtoMedDefaultVerdier().copy(navnPaVirksomhet = "   ")) shouldBe listOf(
+            Violation(field = "navnPaVirksomhet", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
+
+    @Test
+    fun `adressefeltene i fast arbeidssted kan ikke være blanke`() {
+        val dto = paLandDtoMedDefaultVerdier().copy(
+            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
+            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier().copy(bySted = " ")
+        )
+
+        validator.validate(dto) shouldBe listOf(Violation(field = "bySted", translationKey = FELT_ER_PAAKREVD))
+    }
 }

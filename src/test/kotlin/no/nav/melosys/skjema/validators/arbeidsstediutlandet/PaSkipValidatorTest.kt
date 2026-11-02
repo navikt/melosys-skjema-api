@@ -1,5 +1,9 @@
 package no.nav.melosys.skjema.validators.arbeidsstediutlandet
 
+import io.kotest.matchers.shouldBe
+import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
+import no.nav.melosys.skjema.validators.Violation
+import org.junit.jupiter.api.Test
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import java.util.stream.Stream
@@ -66,4 +70,21 @@ class PaSkipValidatorTest {
             territorialfarvannLand = LandKode.SE
         )
     ).map { Arguments.of(it) }.stream()
+
+    @Test
+    fun `navn på skip kan ikke være blankt`() {
+        validator.validate(paSkipDtoMedDefaultVerdier().copy(navnPaSkip = " ")) shouldBe listOf(
+            Violation(field = "navnPaSkip", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
+
+    @Test
+    fun `navn på virksomhet og yrke kan ikke være blanke`() {
+        validator.validate(paSkipDtoMedDefaultVerdier().copy(navnPaVirksomhet = "")) shouldBe listOf(
+            Violation(field = "navnPaVirksomhet", translationKey = FELT_ER_PAAKREVD)
+        )
+        validator.validate(paSkipDtoMedDefaultVerdier().copy(yrketTilArbeidstaker = "  ")) shouldBe listOf(
+            Violation(field = "yrketTilArbeidstaker", translationKey = FELT_ER_PAAKREVD)
+        )
+    }
 }

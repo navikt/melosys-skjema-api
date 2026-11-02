@@ -6,6 +6,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidstakerensLonnDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
 import no.nav.melosys.skjema.validators.felles.OrganisasjonsnummerValidator
+import no.nav.melosys.skjema.validators.felles.UtenlandskVirksomhetValidator
 import org.springframework.stereotype.Component
 
 @Component
@@ -41,7 +42,7 @@ class ArbeidstakerensLonnValidator(
             if (violations.isNotEmpty()) return violations
         }
 
-        return emptyList()
+        return UtenlandskVirksomhetValidator.validate(dto.virksomheterSomUtbetalerLonnOgNaturalytelser?.utenlandskeVirksomheter)
     }
 
     companion object {

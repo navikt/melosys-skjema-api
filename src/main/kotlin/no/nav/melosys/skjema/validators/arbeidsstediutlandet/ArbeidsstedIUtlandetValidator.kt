@@ -4,8 +4,10 @@ import no.nav.melosys.skjema.translations.dto.ArbeidsstedIUtlandetTranslation
 import no.nav.melosys.skjema.translations.dto.ErrorMessageTranslation
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedIUtlandetDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.ArbeidsstedType
+import no.nav.melosys.skjema.types.utsendtarbeidstaker.OffshoreDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.validerPaakrevdeTekstfelter
 import org.springframework.stereotype.Component
 
 @Component
@@ -49,12 +51,16 @@ class ArbeidsstedIUtlandetValidator(
                 } else paLandValidator.validate(dto.paLand, statsansattFlyt)
             }
             ArbeidsstedType.OFFSHORE -> {
-                if (dto.offshore == null || dto.paLand != null || dto.paSkip != null || dto.omBordPaFly != null) {
+                val offshore = dto.offshore
+                if (offshore == null || dto.paLand != null || dto.paSkip != null || dto.omBordPaFly != null) {
                     listOf(Violation(
                         field = ArbeidsstedIUtlandetDto::offshore.name,
                         translationKey = translationFieldName(ArbeidsstedIUtlandetTranslation::maaOppgiOffshoreArbeidssted.name)
                     ))
-                } else emptyList()
+                } else validerPaakrevdeTekstfelter(
+                    OffshoreDto::navnPaVirksomhet.name to offshore.navnPaVirksomhet,
+                    OffshoreDto::navnPaInnretning.name to offshore.navnPaInnretning,
+                )
             }
             ArbeidsstedType.PA_SKIP -> {
                 if (dto.paSkip == null || dto.paLand != null || dto.offshore != null || dto.omBordPaFly != null) {

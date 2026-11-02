@@ -1050,7 +1050,9 @@ class PdfGeneratorTest : FunSpec({
             html shouldContain "12345"
             html shouldContain "Stockholm County"
             html shouldContain "Sverige"
-            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            verdiEtterLabel(html, "Navn på virksomheten") shouldBe "Foreign Company Ltd"
+            verdiEtterLabel(html, "Organisasjonsnummer eller registreringsnummer") shouldBe "ABC123"
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører virksomheten samme konsern som den norske arbeidsgiveren?")
             tilhorerKonsernVerdi shouldBe "Ja"
         }
 
@@ -1073,8 +1075,32 @@ class PdfGeneratorTest : FunSpec({
 
             val html = HtmlDokumentGenerator.byggHtml(skjema)
 
-            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører samme konsern som norsk arbeidsgiver?")
+            val tilhorerKonsernVerdi = verdiEtterLabel(html, "Tilhører virksomheten samme konsern som den norske arbeidsgiveren?")
             tilhorerKonsernVerdi shouldBe "Nei"
+        }
+
+        test("bruker organisasjonsnummer-feltet for utenlandsk virksomhet med definisjon før v6") {
+            val arbeidsgiverData = lagKomplettArbeidsgiverData().copy(
+                arbeidstakerensLonn = ArbeidstakerensLonnDto(
+                    arbeidsgiverBetalerAllLonnOgNaturaytelserIUtsendingsperioden = false,
+                    virksomheterSomUtbetalerLonnOgNaturalytelser = NorskeOgUtenlandskeVirksomheter(
+                        norskeVirksomheter = null,
+                        utenlandskeVirksomheter = listOf(utenlandskVirksomhetMedDefaultVerdier())
+                    )
+                )
+            )
+
+            val skjema = lagSkjemaPdfData(
+                referanseId = "UTLAV5",
+                arbeidsgiverData = arbeidsgiverData
+            ).copy(
+                definisjon = skjemaDefinisjonService.hent(SkjemaType.UTSENDT_ARBEIDSTAKER, "5", Språk.NORSK_BOKMAL)
+            )
+
+            val html = HtmlDokumentGenerator.byggHtml(skjema)
+
+            verdiEtterLabel(html, "Organisasjonsnummer") shouldBe "ABC123"
+            verdiEtterLabel(html, "Organisasjonsnummer eller registreringsnummer") shouldBe null
         }
 
         test("viser alle felter inkludert ansettelsesform når arbeidstaker jobber for flere virksomheter") {
