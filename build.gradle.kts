@@ -27,16 +27,16 @@ gradle.beforeProject {
 }
 
 val tokenSupportVersion = "6.0.12"
-val mockOAuth2ServerVersion = "6.1.2"
+val mockOAuth2ServerVersion = "6.1.3"
 val kotlinLoggingVersion = "8.0.4"
 val kotestVersion = "6.2.6"
 val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 val springMockkVersion = "5.0.1"
-val springdocVersion = "3.1.1"
+val springdocVersion = "3.2.0"
 val shedlockVersion = "7.10.1"
 val logstashLogbackEncoderVersion = "9.0"
-val opentelemetryLogbackVersion = "2.32.0-alpha"
+val opentelemetryLogbackVersion = "2.33.0-alpha"
 
 repositories {
     mavenCentral()
