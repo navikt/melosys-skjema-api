@@ -65,7 +65,10 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
             )
         )
 
-        if (dto.erArbeidsgiverenBemanningsEllerVikarbyraa == null) return listOf(
+        if (
+            skalOppgiBemanningsbyraa(antallAnsatte, erNorskregistrertUtenlandskForetak) &&
+            dto.erArbeidsgiverenBemanningsEllerVikarbyraa == null
+        ) return listOf(
             Violation(
                 field = ArbeidsgiverensVirksomhetINorgeDto::erArbeidsgiverenBemanningsEllerVikarbyraa.name,
                 translationKey = translationFieldName(ArbeidsgiverensVirksomhetINorgeTranslation::maaOppgiOmBemanningsbyraa.name)
@@ -122,13 +125,20 @@ class ArbeidsgiverensVirksomhetINorgeValidator {
         /** Under denne grensen må arbeidsgiver oppgi opplysninger om foretakets samlede virksomhet. */
         const val ANSATTGRENSE_SAMLET_VIRKSOMHET = 20
 
+        /**
+         * NUF og foretak under ansattgrensen må oppgi samlet virksomhet uansett, så for dem
+         * avgjør ikke svaret om bemannings- eller vikarbyrå noe, og spørsmålet stilles ikke.
+         * Et svar som likevel er lagret, avvises ikke.
+         */
+        fun skalOppgiBemanningsbyraa(antallAnsatte: Int, erNorskregistrertUtenlandskForetak: Boolean): Boolean =
+            !erNorskregistrertUtenlandskForetak && antallAnsatte >= ANSATTGRENSE_SAMLET_VIRKSOMHET
+
         fun skalOppgiSamletVirksomhet(
             antallAnsatte: Int,
             erBemanningsEllerVikarbyraa: Boolean?,
             erNorskregistrertUtenlandskForetak: Boolean
         ): Boolean =
-            erNorskregistrertUtenlandskForetak ||
-                antallAnsatte < ANSATTGRENSE_SAMLET_VIRKSOMHET ||
+            !skalOppgiBemanningsbyraa(antallAnsatte, erNorskregistrertUtenlandskForetak) ||
                 erBemanningsEllerVikarbyraa == true
 
         private val ANTALL_FELTER = listOf(
