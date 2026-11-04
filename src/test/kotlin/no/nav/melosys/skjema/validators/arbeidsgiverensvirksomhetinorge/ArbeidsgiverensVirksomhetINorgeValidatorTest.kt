@@ -152,6 +152,13 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         ArbeidsgiverensVirksomhetINorgeValidator.skalOppgiSamletVirksomhet(MANGE, null, NUF) shouldBe true
     }
 
+    @Test
+    fun `skalOppgiBemanningsbyraa bare for foretak over terskelen som ikke er NUF`() {
+        ArbeidsgiverensVirksomhetINorgeValidator.skalOppgiBemanningsbyraa(19, IKKE_NUF) shouldBe false
+        ArbeidsgiverensVirksomhetINorgeValidator.skalOppgiBemanningsbyraa(GRENSE, IKKE_NUF) shouldBe true
+        ArbeidsgiverensVirksomhetINorgeValidator.skalOppgiBemanningsbyraa(MANGE, NUF) shouldBe false
+    }
+
     @ParameterizedTest(name = "{3}")
     @MethodSource("gyldigeKombinasjoner")
     fun `gyldige kombinasjoner gir ingen avvik`(
@@ -202,6 +209,8 @@ class ArbeidsgiverensVirksomhetINorgeValidatorTest {
         Arguments.of(privat(bemanningsbyraa = true, samletVirksomhet), false, MANGE, "bemanningsbyraa med 20 eller flere ansatte uten vanlig drift", IKKE_NUF),
         Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, 0, "privat uten registrerte ansatte og vanlig drift", IKKE_NUF),
         Arguments.of(privat(bemanningsbyraa = false, samletVirksomhet), false, MANGE, "NUF med 20 eller flere ansatte uten vanlig drift", NUF),
+        Arguments.of(samletVirksomhet, false, FAA, "privat med faerre enn 20 ansatte uten svar om bemanningsbyraa", IKKE_NUF),
+        Arguments.of(samletVirksomhet, false, MANGE, "NUF uten svar om bemanningsbyraa", NUF),
         Arguments.of(ArbeidsgiverensVirksomhetINorgeDto(), true, MANGE, "statlig uten oppfoelgingssvar selv om NUF-flagget er satt", NUF)
     )
 
