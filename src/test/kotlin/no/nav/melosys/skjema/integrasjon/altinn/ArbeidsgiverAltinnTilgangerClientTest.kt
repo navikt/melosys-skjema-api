@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.ninjasquad.springmockk.MockkBean
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.equals.shouldBeEqual
 import io.mockk.every
 import no.nav.melosys.skjema.ApiTestBase
@@ -138,6 +139,26 @@ class ArbeidsgiverAltinnTilgangerClientTest: ApiTestBase() {
         val respons = arbeidsgiverAltinnTilgangerClient.hentTilganger()
 
         respons.tilgangTilOrgNr shouldBeEqual mapOf("4936" to setOf("123456789"))
+    }
+
+    @Test
+    fun `hentTilganger skal kaste når respons har isError=true`() {
+        every {
+            oAuth2AccessTokenService.getAccessToken(any())
+        } returns OAuth2AccessTokenResponse(access_token = "token")
+
+        wireMockServer.stubFor(post(urlPathMatching(".*"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("""{"isError":true,"hierarki":[],"orgNrTilTilganger":{},"tilgangTilOrgNr":{}}""")
+            )
+        )
+
+        shouldThrow<RuntimeException> {
+            arbeidsgiverAltinnTilgangerClient.hentTilganger()
+        }
     }
 
     /** Komprimerer med rå DEFLATE (nowrap = true, RFC 1951) — uten zlib-header, slik enkelte tjenester svarer. */
