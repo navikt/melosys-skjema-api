@@ -13,7 +13,10 @@ enum class ToggleNavn(val navn: String) {
     INNSENDT_SAMMENDRAG("melosys.skjema.innsendt-sammendrag"),
 
     /** MIDLERTIDIG MELOSYS-7694: spørsmål og svaropprydding i statsansattflyten. Se README for avvikling. */
-    STATSANSATT_FLYT("melosys.skjema.statsansatt-flyt");
+    STATSANSATT_FLYT("melosys.skjema.statsansatt-flyt"),
+
+    /** Nedtrekksliste med arbeidsgivere fra Aa-registeret når brukeren søker for seg selv. */
+    ARBEIDSFORHOLD_AAREG("melosys.skjema.arbeidsforhold-aareg");
 
     companion object {
         /** Allowlist for /api/featuretoggle – kun disse kan evalueres av frontend. */
