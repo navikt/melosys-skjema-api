@@ -82,7 +82,7 @@ dependencies {
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.108")
 
     // GCP Cloud Storage for vedlegg
-    implementation("com.google.cloud:google-cloud-storage:2.76.0")
+    implementation("com.google.cloud:google-cloud-storage:2.77.0")
 
     runtimeOnly("org.postgresql:postgresql")
 
