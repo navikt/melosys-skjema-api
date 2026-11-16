@@ -20,11 +20,19 @@ class ArbeidsgiverAltinnTilgangerClient(
 
         val request = AltinnTilgangerRequest(altinnFilter)
 
-        return arbeidsgiverAltinnTilgangerRestClient.post()
+        val response = arbeidsgiverAltinnTilgangerRestClient.post()
             .uri("/altinn-tilganger")
             .body(request)
             .retrieve()
             .body<AltinnTilgangerResponse>()
             ?: throw RuntimeException("Fikk null response fra arbeidsgiver-altinn-tilganger")
+
+        // isError=true betyr i praksis en serverfeil hos arbeidsgiver-altinn-tilganger, og tilgangslisten er da alltid tom.
+        // Feltet skal fases ut til fordel for vanlige HTTP 500-responser.
+        if (response.isError) {
+            throw RuntimeException("arbeidsgiver-altinn-tilganger returnerte isError=true")
+        }
+
+        return response
     }
 }

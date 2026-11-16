@@ -112,44 +112,6 @@ class AltinnControllerIntegrationTest : ApiTestBase() {
     }
     
     @Test
-    fun `GET hentTilganger skal returnere tilganger selv om isError er true`() {
-        clearMocks(arbeidsgiverAltinnTilgangerClient)
-
-        val orgnr = "123456789"
-        val response = altinnTilgangerResponseMedDefaultVerdier().copy(
-            isError = true,
-            hierarki = listOf(
-                AltinnTilgang(
-                    orgnr = orgnr,
-                    navn = "Test Bedrift AS",
-                    organisasjonsform = "AS"
-                )
-            ),
-            tilgangTilOrgNr = mapOf(
-                "test-ressurs" to setOf(orgnr)
-            )
-        )
-
-        every { arbeidsgiverAltinnTilgangerClient.hentTilganger() } returns response
-
-        val token = mockOAuth2Server.getToken(
-            claims = mapOf("pid" to "12345678901")
-        )
-
-        webTestClient.get()
-            .uri("/api/hentTilganger")
-            .header("Authorization", "Bearer $token")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<List<OrganisasjonDto>>()
-            .consumeWith { result ->
-                result.responseBody.shouldNotBeNull()
-                result.responseBody!!.map { it.orgnr }.shouldContainAll(orgnr)
-            }
-    }
-
-    @Test
     fun `GET hentTilganger skal returnere 500 når kallet mot Altinn kaster`() {
         clearMocks(arbeidsgiverAltinnTilgangerClient)
 

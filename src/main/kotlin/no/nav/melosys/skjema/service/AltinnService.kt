@@ -21,12 +21,6 @@ class AltinnService(
 
         return try {
             val response = arbeidsgiverAltinnTilgangerClient.hentTilganger()
-
-            if (response.isError) {
-                // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
-                log.error { "Altinn-tilganger returnerte respons med isError=true, returnerer tilgjengelige tilganger likevel" }
-            }
-
             val organisasjoner = finnOrganisasjonerMedRessurs(response, altinnRessurs)
             
             organisasjoner.map { org ->
@@ -50,12 +44,6 @@ class AltinnService(
     
     private fun hentOrganisasjonerMedTilgang(): List<OrganisasjonMedTilgang> {
         val response = arbeidsgiverAltinnTilgangerClient.hentTilganger()
-        
-        if (response.isError) {
-            // isError kan være true selv med gyldige tilganger i responsen — behold dataene.
-            log.error { "Altinn-tilganger returnerte feil-status, bruker tilgjengelige tilganger likevel" }
-        }
-        
         return finnOrganisasjonerMedRessurs(response, altinnRessurs)
     }
 

@@ -2,7 +2,6 @@ package no.nav.melosys.skjema.service
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -52,21 +51,6 @@ class AltinnServiceTest : FunSpec({
         result[0].organisasjonsform shouldBe "AS"
         
         verify(exactly = 1) { mockClient.hentTilganger(null) }
-    }
-    
-    test("hentBrukersTilganger skal returnere tom liste når isError = true") {
-        val response = AltinnTilgangerResponse(
-            isError = true,
-            hierarki = emptyList(),
-            tilgangTilOrgNr = emptyMap(),
-            orgNrTilTilganger = emptyMap()
-        )
-        
-        every { mockClient.hentTilganger(null) } returns response
-        
-        val result = service.hentBrukersTilganger()
-        
-        result.shouldBeEmpty()
     }
     
     test("hentBrukersTilganger skal kaste videre ved exception") {
