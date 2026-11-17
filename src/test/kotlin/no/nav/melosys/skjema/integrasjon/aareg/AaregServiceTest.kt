@@ -94,4 +94,50 @@ class AaregServiceTest : FunSpec({
             arbeidsforhold()
         ) shouldBe true
     }
+
+    context("hentOpplysningspliktigeForAktiveArbeidsforhold") {
+        val iDag = LocalDate.now()
+
+        fun opplysningspliktige(vararg arbeidsforhold: Arbeidsforhold): List<String> {
+            every { aaregClient.hentOrdinaereArbeidsforhold(fnr) } returns arbeidsforhold.toList()
+            return aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold(fnr)
+        }
+
+        test("returnerer opplysningspliktig for arbeidsforhold uten sluttdato") {
+            opplysningspliktige(arbeidsforhold()) shouldBe listOf(juridiskEnhetOrgnr)
+        }
+
+        test("arbeidsforhold som starter eller slutter i dag er aktive") {
+            opplysningspliktige(
+                arbeidsforhold(opplysningspliktig = "920000000", fom = iDag),
+                arbeidsforhold(opplysningspliktig = "930000000", tom = iDag)
+            ) shouldBe listOf("920000000", "930000000")
+        }
+
+        test("avsluttede og fremtidige arbeidsforhold er ikke med") {
+            opplysningspliktige(
+                arbeidsforhold(tom = iDag.minusDays(1)),
+                arbeidsforhold(fom = iDag.plusDays(1))
+            ) shouldBe emptyList()
+        }
+
+        test("arbeidsforhold av annen type enn ordinært er ikke med") {
+            opplysningspliktige(arbeidsforhold(type = "maritimtArbeidsforhold")) shouldBe emptyList()
+        }
+
+        test("samme opplysningspliktig returneres bare én gang") {
+            opplysningspliktige(
+                arbeidsforhold(arbeidsgiver = orgnr),
+                arbeidsforhold(arbeidsgiver = "910000002")
+            ) shouldBe listOf(juridiskEnhetOrgnr)
+        }
+
+        test("opplysningspliktig som er en person er ikke med") {
+            opplysningspliktige(
+                arbeidsforhold().copy(
+                    opplysningspliktig = Enhet(type = "Person", identer = listOf(Ident(type = "FOLKEREGISTERIDENT", ident = fnr)))
+                )
+            ) shouldBe emptyList()
+        }
+    }
 })

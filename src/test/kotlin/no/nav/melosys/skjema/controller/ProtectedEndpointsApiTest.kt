@@ -58,6 +58,9 @@ class ProtectedEndpointsApiTes: ApiTestBase() {
         Arguments.of(HttpMethod.POST, "/api/preutfyll/person"),
         Arguments.of(HttpMethod.GET, "/api/preutfyll/org/123456789"),
 
+        // ArbeidstakerController
+        Arguments.of(HttpMethod.GET, "/api/arbeidstaker/arbeidsgivere-i-aareg"),
+
         // RepresentasjonController
         Arguments.of(HttpMethod.GET, "/api/representasjon"),
 

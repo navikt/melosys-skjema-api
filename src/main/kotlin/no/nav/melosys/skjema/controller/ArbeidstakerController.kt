@@ -7,13 +7,17 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonRequest
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonResponse
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.service.RateLimitOperationType
 import no.nav.melosys.skjema.service.RateLimiterService
 import no.nav.melosys.skjema.service.exception.RateLimitExceededException
 import no.nav.melosys.skjema.sikkerhet.context.SubjectHandler
+import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.security.token.support.core.api.Protected
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -27,8 +31,25 @@ private val log = KotlinLogging.logger { }
 @Protected
 class ArbeidstakerController(
     private val pdlService: PdlService,
-    private val rateLimiterService: RateLimiterService
+    private val rateLimiterService: RateLimiterService,
+    private val aaregService: AaregService,
+    private val eregService: EregService
 ) {
+
+    @GetMapping("/arbeidsgivere-i-aareg")
+    @Operation(
+        summary = "Hent arbeidsgivere fra Aa-registeret",
+        description = "Returnerer de juridiske enhetene (opplysningspliktige) der innlogget bruker har et " +
+                "ordinært arbeidsforhold som er aktivt i dag, med navn fra Enhetsregisteret."
+    )
+    @ApiResponse(responseCode = "200", description = "Arbeidsgivere, tom liste hvis brukeren ikke har aktive arbeidsforhold")
+    @ApiResponse(responseCode = "401", description = "Ikke autentisert")
+    fun hentArbeidsgivereIAareg(): ResponseEntity<List<SimpleOrganisasjonDto>> {
+        val fnr = SubjectHandler.getInstance().getUserID()
+        val arbeidsgivere = aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold(fnr)
+            .map { eregService.hentOrganisasjon(it) }
+        return ResponseEntity.ok(arbeidsgivere)
+    }
 
     @PostMapping("/verifiser-person")
     @Operation(

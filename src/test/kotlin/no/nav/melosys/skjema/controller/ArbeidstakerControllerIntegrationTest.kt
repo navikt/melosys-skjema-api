@@ -10,9 +10,12 @@ import no.nav.melosys.skjema.ApiTestBase
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonRequest
 import no.nav.melosys.skjema.controller.dto.VerifiserPersonResponse
 import no.nav.melosys.skjema.getToken
+import no.nav.melosys.skjema.integrasjon.aareg.AaregService
+import no.nav.melosys.skjema.integrasjon.ereg.EregService
 import no.nav.melosys.skjema.integrasjon.pdl.PdlService
 import no.nav.melosys.skjema.integrasjon.pdl.exception.PersonVerifiseringException
 import no.nav.melosys.skjema.korrektSyntetiskFnr
+import no.nav.melosys.skjema.types.felles.SimpleOrganisasjonDto
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -35,6 +38,39 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
 
     @MockkBean
     private lateinit var pdlService: PdlService
+
+    @MockkBean
+    private lateinit var aaregService: AaregService
+
+    @MockkBean
+    private lateinit var eregService: EregService
+
+    @Test
+    @DisplayName("GET /api/arbeidstaker/arbeidsgivere-i-aareg skal returnere arbeidsgivere med navn for innlogget bruker")
+    fun `GET arbeidsgivere-i-aareg skal returnere arbeidsgivere med navn for innlogget bruker`() {
+        clearMocks(aaregService, eregService)
+
+        every { aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold("98765432109") } returns listOf("910000000", "920000000")
+        every { eregService.hentOrganisasjon("910000000") } returns SimpleOrganisasjonDto("910000000", "Nordlys Bygg AS")
+        every { eregService.hentOrganisasjon("920000000") } returns SimpleOrganisasjonDto("920000000", "Havbris Rådgivning AS")
+
+        val accessToken = mockOAuth2Server.getToken(
+            claims = mapOf("pid" to "98765432109")
+        )
+
+        webTestClient.get()
+            .uri("/api/arbeidstaker/arbeidsgivere-i-aareg")
+            .header("Authorization", "Bearer $accessToken")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<List<SimpleOrganisasjonDto>>()
+            .isEqualTo(
+                listOf(
+                    SimpleOrganisasjonDto("910000000", "Nordlys Bygg AS"),
+                    SimpleOrganisasjonDto("920000000", "Havbris Rådgivning AS")
+                )
+            )
+    }
 
     @Test
     @DisplayName("POST /api/arbeidstaker/verifiser-person skal returnere person-data når verifisert")
