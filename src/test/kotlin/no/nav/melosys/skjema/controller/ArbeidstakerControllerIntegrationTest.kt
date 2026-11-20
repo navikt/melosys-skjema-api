@@ -50,7 +50,7 @@ class ArbeidstakerControllerIntegrationTest : ApiTestBase() {
     fun `GET arbeidsgivere-i-aareg skal returnere arbeidsgivere med navn for innlogget bruker`() {
         clearMocks(aaregService, eregService)
 
-        every { aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold("98765432109") } returns listOf("910000000", "920000000")
+        every { aaregService.hentOpplysningspliktigeForAktiveOgFremtidigeArbeidsforhold("98765432109") } returns listOf("910000000", "920000000")
         every { eregService.hentOrganisasjon("910000000") } returns SimpleOrganisasjonDto("910000000", "Nordlys Bygg AS")
         every { eregService.hentOrganisasjon("920000000") } returns SimpleOrganisasjonDto("920000000", "Havbris Rådgivning AS")
 

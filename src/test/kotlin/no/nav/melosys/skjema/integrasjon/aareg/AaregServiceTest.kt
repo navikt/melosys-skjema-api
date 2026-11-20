@@ -95,30 +95,33 @@ class AaregServiceTest : FunSpec({
         ) shouldBe true
     }
 
-    context("hentOpplysningspliktigeForAktiveArbeidsforhold") {
+    context("hentOpplysningspliktigeForAktiveOgFremtidigeArbeidsforhold") {
         val iDag = LocalDate.now()
 
         fun opplysningspliktige(vararg arbeidsforhold: Arbeidsforhold): List<String> {
             every { aaregClient.hentOrdinaereArbeidsforhold(fnr) } returns arbeidsforhold.toList()
-            return aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold(fnr)
+            return aaregService.hentOpplysningspliktigeForAktiveOgFremtidigeArbeidsforhold(fnr)
         }
 
         test("returnerer opplysningspliktig for arbeidsforhold uten sluttdato") {
             opplysningspliktige(arbeidsforhold()) shouldBe listOf(juridiskEnhetOrgnr)
         }
 
-        test("arbeidsforhold som starter eller slutter i dag er aktive") {
+        test("arbeidsforhold som starter eller slutter i dag er med") {
             opplysningspliktige(
                 arbeidsforhold(opplysningspliktig = "920000000", fom = iDag),
                 arbeidsforhold(opplysningspliktig = "930000000", tom = iDag)
             ) shouldBe listOf("920000000", "930000000")
         }
 
-        test("avsluttede og fremtidige arbeidsforhold er ikke med") {
+        test("fremtidige arbeidsforhold er med") {
             opplysningspliktige(
-                arbeidsforhold(tom = iDag.minusDays(1)),
-                arbeidsforhold(fom = iDag.plusDays(1))
-            ) shouldBe emptyList()
+                arbeidsforhold(fom = iDag.plusDays(1), tom = iDag.plusYears(1))
+            ) shouldBe listOf(juridiskEnhetOrgnr)
+        }
+
+        test("avsluttede arbeidsforhold er ikke med") {
+            opplysningspliktige(arbeidsforhold(tom = iDag.minusDays(1))) shouldBe emptyList()
         }
 
         test("arbeidsforhold av annen type enn ordinært er ikke med") {

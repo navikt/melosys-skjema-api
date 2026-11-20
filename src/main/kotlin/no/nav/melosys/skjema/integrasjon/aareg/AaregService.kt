@@ -29,20 +29,26 @@ class AaregService(
 
     /**
      * Organisasjonsnummeret til opplysningspliktig (juridisk enhet) for hvert ordinære arbeidsforhold som er
-     * aktivt i dag, uten duplikater. Arbeidsforhold der opplysningspliktig er en person, er ikke med.
+     * aktivt i dag eller starter senere, uten duplikater. Arbeidsforhold der opplysningspliktig er en person,
+     * er ikke med.
      */
-    fun hentOpplysningspliktigeForAktiveArbeidsforhold(fnr: String): List<String> {
-        val iDag = LocalDate.now().let { PeriodeDto(it, it) }
+    fun hentOpplysningspliktigeForAktiveOgFremtidigeArbeidsforhold(fnr: String): List<String> {
+        val iDag = LocalDate.now()
         val orgnumre = aaregClient.hentOrdinaereArbeidsforhold(fnr)
-            .filter { it.type?.kode == ARBEIDSFORHOLDTYPE_ORDINAERT && it.dekker(iDag) }
+            .filter { it.type?.kode == ARBEIDSFORHOLDTYPE_ORDINAERT && it.erAktivEllerFremtidig(iDag) }
             .mapNotNull { it.opplysningspliktig?.organisasjonsnummer() }
             .distinct()
-        log.info { "AAREG: ${orgnumre.size} opplysningspliktige med aktive ordinære arbeidsforhold" }
+        log.info { "AAREG: ${orgnumre.size} opplysningspliktige med aktive eller fremtidige ordinære arbeidsforhold" }
         return orgnumre
     }
 
     private fun Arbeidsforhold.gjelder(orgnr: String, juridiskEnhetOrgnr: String): Boolean =
         arbeidssted?.organisasjonsnummer() == orgnr || opplysningspliktig?.organisasjonsnummer() == juridiskEnhetOrgnr
+
+    private fun Arbeidsforhold.erAktivEllerFremtidig(dato: LocalDate): Boolean {
+        val ansatt = ansettelsesperiode ?: return false
+        return ansatt.sluttdato == null || !ansatt.sluttdato.isBefore(dato)
+    }
 
     private fun Arbeidsforhold.dekker(periode: PeriodeDto): Boolean {
         val ansatt = ansettelsesperiode ?: return false

@@ -40,13 +40,16 @@ class ArbeidstakerController(
     @Operation(
         summary = "Hent arbeidsgivere fra Aa-registeret",
         description = "Returnerer de juridiske enhetene (opplysningspliktige) der innlogget bruker har et " +
-                "ordinært arbeidsforhold som er aktivt i dag, med navn fra Enhetsregisteret."
+                "ordinært arbeidsforhold som er aktivt i dag eller starter senere, med navn fra Enhetsregisteret."
     )
-    @ApiResponse(responseCode = "200", description = "Arbeidsgivere, tom liste hvis brukeren ikke har aktive arbeidsforhold")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Arbeidsgivere, tom liste hvis brukeren ikke har aktive eller fremtidige arbeidsforhold"
+    )
     @ApiResponse(responseCode = "401", description = "Ikke autentisert")
     fun hentArbeidsgivereIAareg(): ResponseEntity<List<SimpleOrganisasjonDto>> {
         val fnr = SubjectHandler.getInstance().getUserID()
-        val arbeidsgivere = aaregService.hentOpplysningspliktigeForAktiveArbeidsforhold(fnr)
+        val arbeidsgivere = aaregService.hentOpplysningspliktigeForAktiveOgFremtidigeArbeidsforhold(fnr)
             .map { eregService.hentOrganisasjon(it) }
         return ResponseEntity.ok(arbeidsgivere)
     }
