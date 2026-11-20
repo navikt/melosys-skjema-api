@@ -35,7 +35,7 @@ object UtenlandskVirksomhetValidator {
             ))
         }
 
-        return emptyList()
+        return PostkodeValidator.validate(UtenlandskVirksomhetBase::postkode.name, virksomhet.postkode)
     }
 
     private fun translationFieldName(fieldName: String): String {

@@ -90,4 +90,17 @@ class PaLandValidatorTest {
 
         validator.validate(dto) shouldBe listOf(Violation(field = "bySted", translationKey = FELT_ER_PAAKREVD))
     }
+
+    @Test
+    fun `postkode i fast arbeidssted kan ikke være lengre enn 25 tegn`() {
+        fun dtoMedPostkode(postkode: String) = paLandDtoMedDefaultVerdier().copy(
+            fastEllerVekslendeArbeidssted = FastEllerVekslendeArbeidssted.FAST,
+            fastArbeidssted = paLandFastArbeidsstedDtoMedDefaultVerdier().copy(postkode = postkode)
+        )
+
+        validator.validate(dtoMedPostkode("A".repeat(25))).shouldBeEmpty()
+        validator.validate(dtoMedPostkode("A".repeat(26))) shouldBe listOf(
+            Violation(field = "postkode", translationKey = "fellesTranslation.postkodeErForLang")
+        )
+    }
 }

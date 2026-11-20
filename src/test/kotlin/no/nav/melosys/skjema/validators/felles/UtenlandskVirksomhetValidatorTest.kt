@@ -44,6 +44,18 @@ class UtenlandskVirksomhetValidatorTest {
     }
 
     @Test
+    fun `postkode lengre enn 25 tegn gir violation`() {
+        val virksomhet = utenlandskVirksomhetMedDefaultVerdier().copy(postkode = "1234 Stedsnavn som er for langt")
+
+        UtenlandskVirksomhetValidator.validate(listOf(virksomhet)) shouldBe listOf(
+            Violation(
+                field = "postkode",
+                translationKey = "fellesTranslation.postkodeErForLang"
+            )
+        )
+    }
+
+    @Test
     fun `validerer alle virksomhetene i lista`() {
         val virksomheter = listOf(
             utenlandskVirksomhetMedAnsettelsesformMedDefaultVerdier(),
@@ -66,6 +78,7 @@ class UtenlandskVirksomhetValidatorTest {
         utenlandskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = null, bygning = null, region = null),
         utenlandskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = ""),
         utenlandskVirksomhetMedDefaultVerdier().copy(organisasjonsnummer = "A".repeat(25)),
+        utenlandskVirksomhetMedDefaultVerdier().copy(postkode = "A".repeat(25)),
     ).map { Arguments.of(it) }.stream()
 
     fun manglendePaakrevdeFelter(): Stream<Arguments> = listOf(

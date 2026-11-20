@@ -102,6 +102,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
             organisasjonsnummerHarUgyldigFormat = "Organisasjonsnummer har ugyldig format",
             organisasjonsnummerFinnesIkke = "Organisasjonsnummer finnes ikke i Enhetsregisteret",
             utenlandskOrganisasjonsnummerErForLangt = "Organisasjonsnummer eller registreringsnummer kan ikke være lengre enn 25 tegn",
+            postkodeErForLang = "Postkode kan ikke være lengre enn 25 tegn. Skriv by eller sted i eget felt.",
             ugyldigFodselsellerDNummer = "Ugyldig fødsels- eller D-nummer",
             feltErPaakrevd = "Feltet er påkrevd"
         )
@@ -190,6 +191,7 @@ val TRANSLATIONS = ErrorMessageTranslations(
             organisasjonsnummerHarUgyldigFormat = "Organization number has invalid format",
             organisasjonsnummerFinnesIkke = "Organization number does not exist in the Business Register",
             utenlandskOrganisasjonsnummerErForLangt = "Organization number or registration number cannot be longer than 25 characters",
+            postkodeErForLang = "Postal code cannot be longer than 25 characters. Enter the city or place in its own field.",
             ugyldigFodselsellerDNummer = "Invalid birth or D-number",
             feltErPaakrevd = "Field is required"
         )

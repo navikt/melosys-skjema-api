@@ -7,6 +7,7 @@ import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandDto
 import no.nav.melosys.skjema.types.utsendtarbeidstaker.PaLandFastArbeidsstedDto
 import no.nav.melosys.skjema.validators.FELT_ER_PAAKREVD
 import no.nav.melosys.skjema.validators.Violation
+import no.nav.melosys.skjema.validators.felles.PostkodeValidator
 import no.nav.melosys.skjema.validators.validerPaakrevdeTekstfelter
 import org.springframework.stereotype.Component
 
@@ -48,7 +49,9 @@ class PaLandValidator {
                     PaLandFastArbeidsstedDto::nummer.name to fastArbeidssted.nummer,
                     PaLandFastArbeidsstedDto::postkode.name to fastArbeidssted.postkode,
                     PaLandFastArbeidsstedDto::bySted.name to fastArbeidssted.bySted,
-                )
+                ).ifEmpty {
+                    PostkodeValidator.validate(PaLandFastArbeidsstedDto::postkode.name, fastArbeidssted.postkode)
+                }
             }
 
             FastEllerVekslendeArbeidssted.VEKSLENDE -> {
