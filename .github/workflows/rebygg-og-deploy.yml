@@ -1,0 +1,45 @@
+name: Rebygg og deploy
+# Bygger og deployer på nytt for å få med sikkerhetsoppdateringer i Chainguard-baseimaget.
+# Logikken ligger i navikt/melosys-workflows.
+on:
+  schedule:
+    # Mandag morgen, så teamet er på jobb hvis noe feiler. Ikke på hel time: da er
+    # lasten høyest, og GitHub kan forsinke eller i verste fall droppe kjøringen.
+    # Appene starter med noen minutters mellomrom, så byggene ikke kjører samtidig.
+    - cron: '5 8 * * 1'
+      timezone: Europe/Oslo
+  workflow_dispatch:
+    inputs:
+      prod:
+        description: Deploy også til prod
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+  actions: read
+
+concurrency:
+  group: rebygg-og-deploy
+  cancel-in-progress: false
+
+jobs:
+  rebygg:
+    uses: navikt/melosys-workflows/.github/workflows/rebygg-og-deploy.yml@main
+    with:
+      bygg-kommando: DB_USERNAME=melosys DB_PASSWORD=melosys ./gradlew build
+      byggverktoy: gradle
+      dev-cluster: dev-gcp
+      prod-cluster: prod-gcp
+      uten-vars: true
+      dev-resource: .nais/app-dev.yaml
+      prod-resource: .nais/app-prod.yaml
+      dev-deploy-workflow: deploy-dev.yaml
+      prod-deploy-workflow: deploy-prod.yaml
+      # Planlagt kjøring har ingen inputs, og skal deploye til prod.
+      prod: ${{ github.event_name == 'schedule' || inputs.prod }}
+    secrets:
+      READER_TOKEN: ${{ secrets.READER_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
