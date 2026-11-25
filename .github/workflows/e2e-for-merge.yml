@@ -134,7 +134,7 @@ jobs:
       # finnes, og da kunne køens image nådd prod. nais/docker-build-push legger i
       # tillegg på en dato-tag, som ingen deploy-workflow bruker.
       - name: Build and push Docker image
-        uses: nais/docker-build-push@v0
+        uses: nais/docker-build-push@v1
         with:
           team: teammelosys
           tag: |

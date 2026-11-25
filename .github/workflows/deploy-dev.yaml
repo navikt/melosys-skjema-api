@@ -37,7 +37,7 @@ jobs:
           DB_PASSWORD: melosys
       - name: Build and publish Docker images (multi-arch)
         id: docker-push
-        uses: nais/docker-build-push@v0
+        uses: nais/docker-build-push@v1
         with:
           team: teammelosys
           tag: |
