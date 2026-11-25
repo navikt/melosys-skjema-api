@@ -65,7 +65,7 @@ jobs:
 
       - name: Build and push Docker image
         id: docker-push
-        uses: nais/docker-build-push@v0
+        uses: nais/docker-build-push@v1
         with:
           team: teammelosys
           tag: |

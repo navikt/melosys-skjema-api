@@ -95,7 +95,7 @@ jobs:
       # Bare <merge-sha>, aldri latest: da ville PR-koden gått til alle andre
       # repoers e2e-kjøringer. nais/docker-build-push legger i tillegg på en dato-tag.
       - name: Build and push Docker image
-        uses: nais/docker-build-push@v0
+        uses: nais/docker-build-push@v1
         with:
           team: teammelosys
           tag: |
