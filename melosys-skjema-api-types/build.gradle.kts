@@ -8,9 +8,9 @@ group = "no.nav.melosys"
 val jacksonVersion = "2.23"
 val jackson3Version = "3.3.0"
 val jakartaValidationVersion = "3.1.1"
-val swaggerVersion = "2.2.55"
+val swaggerVersion = "2.2.56"
 val junitVersion = "6.1.3"
-val kotestVersion = "6.2.6"
+val kotestVersion = "6.2.7"
 
 repositories {
     mavenCentral()
